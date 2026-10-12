@@ -73,8 +73,9 @@ func (s *Server) Results(w http.ResponseWriter, r *http.Request) {
 		res.Options[i].Percent = percent(res.Options[i].Count, res.TotalVotes)
 	}
 
-	// Snapshots change as the worker runs; a short shared cache absorbs spikes.
-	w.Header().Set("Cache-Control", "public, max-age=5, s-maxage=10")
+	// Snapshots change as the worker runs: the edge absorbs spikes for a few
+	// seconds, while browsers revalidate so a voter sees their vote land.
+	w.Header().Set("Cache-Control", "public, max-age=0, s-maxage=10")
 	writeJSON(w, http.StatusOK, res)
 }
 
