@@ -56,7 +56,7 @@ type QuestionResults struct {
 	Options    []OptionResult `json:"options"`
 }
 
-// APIError codes: invalid_request, missing_idempotency_key, unknown_question,
+// APIError codes: no_questions_today, invalid_request, missing_idempotency_key, unknown_question,
 // unknown_option, duplicate_vote.
 type APIError struct {
 	Error string `json:"error"`
@@ -93,8 +93,22 @@ func (s *Server) Routes() http.Handler {
 	return mux
 }
 
+// todayDate is the current question day. Days roll over at midnight UTC for now.
+func (s *Server) todayDate() string {
+	return s.clock().UTC().Format("2006-01-02")
+}
+
 func (s *Server) TodayQuestions(w http.ResponseWriter, r *http.Request) {
-	notImplemented(w)
+	set, ok := s.bank.GetSet(s.todayDate())
+	if !ok {
+		// Short shared cache so a set published later in the day shows up quickly.
+		w.Header().Set("Cache-Control", "public, max-age=30, s-maxage=30")
+		writeError(w, http.StatusNotFound, "no_questions_today")
+		return
+	}
+	// The set only changes at the day boundary, so the edge can hold it for a while.
+	w.Header().Set("Cache-Control", "public, max-age=60, s-maxage=300")
+	writeJSON(w, http.StatusOK, set)
 }
 
 func (s *Server) CastVote(w http.ResponseWriter, r *http.Request) {
@@ -112,7 +126,15 @@ func (s *Server) RunAggregation() error {
 }
 
 func notImplemented(w http.ResponseWriter) {
+	writeError(w, http.StatusNotImplemented, "not_implemented")
+}
+
+func writeJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusNotImplemented)
-	json.NewEncoder(w).Encode(APIError{Error: "not_implemented"})
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(v)
+}
+
+func writeError(w http.ResponseWriter, status int, code string) {
+	writeJSON(w, status, APIError{Error: code})
 }
