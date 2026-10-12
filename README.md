@@ -3,15 +3,16 @@ Build The Persona Index as a simple, engaging, trustworthy daily behavioral disc
 
 ## Development
 
-Requires Node 22+.
+Requires Go 1.22+ and Node 22+.
 
 ```bash
-npm ci
-npm run verify   # typecheck + smoke + acceptance tests
-npm run dev      # http://localhost:3000
+cd backend && go test ./...                # backend acceptance tests
+cd frontend && npm ci && npm test          # frontend smoke test
+cd backend && go run .                     # API on :8080
+cd frontend && npm run dev                 # UI on :5173
 ```
 
-The acceptance tests in `tests/acceptance/` define the core API (health, today's
+The acceptance tests in `backend/api_test.go` define the core API (today's
 3 questions, idempotent voting, community results) and were written before the
-implementation. Until each feature lands, its tests fail on purpose and
-`npm run verify` exits non-zero. See `CLAUDE.md` for the working rules.
+implementation. Until each feature lands, its tests fail on purpose. See
+`CLAUDE.md` for the working rules.
