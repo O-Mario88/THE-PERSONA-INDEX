@@ -13,9 +13,19 @@ func HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, `{"status":"ok"}`)
 }
 
+// aggregationInterval is how often the in-process worker publishes results.
+// It moves to a separate worker process once votes go through a queue.
+const aggregationInterval = time.Second
+
 func main() {
-	// No question source is wired up yet; the real one will come from the database.
-	srv := NewServer(time.Now, emptyBank{})
+	srv := NewServer(time.Now, rotatingBank{sets: editorialSets})
+	go func() {
+		for range time.Tick(aggregationInterval) {
+			if err := srv.RunAggregation(); err != nil {
+				log.Printf("aggregation: %v", err)
+			}
+		}
+	}()
 	log.Println("listening on :8080")
 	log.Fatal(http.ListenAndServe(":8080", srv.Routes()))
 }

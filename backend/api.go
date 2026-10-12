@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"regexp"
+	"sync"
 	"time"
 )
 
@@ -71,18 +72,19 @@ type emptyBank struct{}
 
 func (emptyBank) GetSet(string) (DailySet, bool) { return DailySet{}, false }
 
-var ErrNotImplemented = errors.New("not implemented")
-
 // Server holds the API's dependencies. Handlers are stateless over HTTP; vote
 // state lives behind the server so tests can use an in-memory store.
 type Server struct {
 	clock func() time.Time
 	bank  QuestionBank
 	votes VoteStore
+
+	aggMu   sync.Mutex
+	results *resultSnapshots
 }
 
 func NewServer(clock func() time.Time, bank QuestionBank) *Server {
-	return &Server{clock: clock, bank: bank, votes: newMemoryStore()}
+	return &Server{clock: clock, bank: bank, votes: newMemoryStore(), results: newResultSnapshots()}
 }
 
 func (s *Server) Routes() http.Handler {
@@ -181,20 +183,6 @@ func hasOption(q Question, optionID string) bool {
 		}
 	}
 	return false
-}
-
-func (s *Server) Results(w http.ResponseWriter, r *http.Request) {
-	notImplemented(w)
-}
-
-// RunAggregation is the worker step: fold accepted vote events into the
-// published result snapshots.
-func (s *Server) RunAggregation() error {
-	return ErrNotImplemented
-}
-
-func notImplemented(w http.ResponseWriter) {
-	writeError(w, http.StatusNotImplemented, "not_implemented")
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {
