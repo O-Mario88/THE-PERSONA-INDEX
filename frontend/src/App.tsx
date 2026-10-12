@@ -1,122 +1,85 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
+import { useEffect, useState } from 'react'
+import { ApiError, getToday, type DailySet } from './api'
+import { QuestionCard } from './QuestionCard'
 import './App.css'
 
+type State =
+  | { kind: 'loading' }
+  | { kind: 'ready'; set: DailySet }
+  | { kind: 'empty' }
+  | { kind: 'error' }
+
 function App() {
-  const [count, setCount] = useState(0)
+  const [state, setState] = useState<State>({ kind: 'loading' })
+  const [attempt, setAttempt] = useState(0)
+
+  useEffect(() => {
+    let live = true
+    getToday().then(
+      (set) => live && setState({ kind: 'ready', set }),
+      (e) => {
+        if (!live) return
+        const empty = e instanceof ApiError && e.code === 'no_questions_today'
+        setState({ kind: empty ? 'empty' : 'error' })
+      },
+    )
+    return () => {
+      live = false
+    }
+  }, [attempt])
+
+  function retry() {
+    setState({ kind: 'loading' })
+    setAttempt((n) => n + 1)
+  }
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
+    <main className="page">
+      <header className="masthead">
+        <h1>The Persona Index</h1>
+        {state.kind === 'ready' && (
+          <p className="muted">
+            Today's questions · {formatDate(state.set.date)}
           </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+        )}
+      </header>
 
-      <div className="ticks"></div>
+      {state.kind === 'loading' && <p className="muted">Loading today's questions…</p>}
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+      {state.kind === 'empty' && (
+        <p className="notice">No questions today yet. Check back soon.</p>
+      )}
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+      {state.kind === 'error' && (
+        <div className="notice" role="alert">
+          <p>We couldn't load today's questions.</p>
+          <button type="button" className="option" onClick={retry}>
+            Try again
+          </button>
+        </div>
+      )}
+
+      {state.kind === 'ready' &&
+        state.set.questions.map((q, i) => (
+          <QuestionCard
+            key={q.id}
+            question={q}
+            index={i}
+            total={state.set.questions.length}
+          />
+        ))}
+    </main>
   )
+}
+
+function formatDate(iso: string): string {
+  const d = new Date(`${iso}T00:00:00Z`)
+  return d.toLocaleDateString(undefined, {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    timeZone: 'UTC',
+  })
 }
 
 export default App

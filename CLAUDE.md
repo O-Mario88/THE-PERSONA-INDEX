@@ -18,6 +18,6 @@ Run `npm ci` in `frontend/` once before the frontend tests.
 - `backend/api_test.go` holds acceptance tests written before the code (today's
   questions, idempotent votes, results). They fail until those features are built;
   rule 3 applies to the feature being worked on.
-- The duplicate-vote rule is a placeholder: one vote per question per `voterId`.
+- The duplicate-vote rule (provisional): one vote per question per anonymous device id (`voterId`), defined only in `backend/voterule.go`.
   Update the tests when the real rule is chosen.
 - Never fabricate votes or results. Empty results are real zeros.
