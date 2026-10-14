@@ -36,13 +36,13 @@ func TestCastVoteRules(t *testing.T) {
 		}
 	})
 
-	t.Run("rejects voter ids and keys outside the allowed shape", func(t *testing.T) {
+	t.Run("rejects voter ids that are not server-issued device tokens, and badly shaped keys", func(t *testing.T) {
 		s := newTestServer()
 		bad := vote
 		bad.VoterID = "has spaces"
-		expectError(t, postVote(t, s, bad, "key-1"), http.StatusBadRequest, "invalid_request")
+		expectError(t, postRaw(t, s, bad, "key-1"), http.StatusUnauthorized, "invalid_device")
 		bad.VoterID = strings.Repeat("a", 129)
-		expectError(t, postVote(t, s, bad, "key-2"), http.StatusBadRequest, "invalid_request")
+		expectError(t, postRaw(t, s, bad, "key-2"), http.StatusUnauthorized, "invalid_device")
 		expectError(t, postVote(t, s, vote, "bad key!"), http.StatusBadRequest, "invalid_request")
 	})
 

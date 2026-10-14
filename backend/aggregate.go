@@ -1,71 +1,96 @@
 package main
 
 import (
+	"context"
 	"math"
 	"net/http"
 	"sync"
+	"time"
 )
-
-// resultSnapshots holds the published per-question counts. Results are read
-// from here, never computed from the event log on request, so a popular
-// question costs one map lookup and the edge can cache the answer.
-type resultSnapshots struct {
-	mu     sync.RWMutex
-	cursor int64                     // Seq of the last folded event
-	counts map[string]map[string]int // questionId -> optionId -> count
-}
-
-func newResultSnapshots() *resultSnapshots {
-	return &resultSnapshots{counts: map[string]map[string]int{}}
-}
-
-func (r *resultSnapshots) count(questionID, optionID string) int {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-	return r.counts[questionID][optionID]
-}
 
 const aggregationBatch = 1000
 
-// RunAggregation is the worker step: fold accepted vote events into the
-// published result snapshots. It resumes from a cursor, so running it again
-// never counts an event twice.
+// RunAggregation is the worker step: fold accepted votes into the tallies
+// until none are left. Any number of instances can run it at once; the store
+// guarantees each vote is counted exactly once.
 func (s *Server) RunAggregation() error {
-	s.aggMu.Lock() // one fold at a time; the cursor read and advance must not interleave
-	defer s.aggMu.Unlock()
+	ctx := context.Background()
 	for {
-		s.results.mu.RLock()
-		cursor := s.results.cursor
-		s.results.mu.RUnlock()
-
-		events := s.votes.EventsAfter(cursor, aggregationBatch)
-		if len(events) == 0 {
+		n, err := s.votes.Tally(ctx, aggregationBatch)
+		if err != nil {
+			return err
+		}
+		if n > 0 {
+			s.resultCache.clear()
+		}
+		if n < aggregationBatch {
 			return nil
 		}
-		s.results.mu.Lock()
-		for _, e := range events {
-			byOption := s.results.counts[e.QuestionID]
-			if byOption == nil {
-				byOption = map[string]int{}
-				s.results.counts[e.QuestionID] = byOption
-			}
-			byOption[e.OptionID]++
-			s.results.cursor = e.Seq
-		}
-		s.results.mu.Unlock()
 	}
 }
 
+// resultCache keeps each question's tallies in the instance for a moment, so
+// a popular question costs one query per instance per resultCacheTTL however
+// many requests get past the edge.
+type resultCache struct {
+	mu      sync.Mutex
+	entries map[string]cachedCounts
+}
+
+type cachedCounts struct {
+	counts map[string]int
+	at     time.Time
+}
+
+const resultCacheTTL = 2 * time.Second
+
+func (c *resultCache) get(questionID string, now time.Time) (map[string]int, bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	e, ok := c.entries[questionID]
+	if !ok || now.Sub(e.at) >= resultCacheTTL || now.Before(e.at) {
+		return nil, false
+	}
+	return e.counts, true
+}
+
+func (c *resultCache) put(questionID string, counts map[string]int, now time.Time) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.entries == nil || len(c.entries) > 10_000 {
+		c.entries = map[string]cachedCounts{}
+	}
+	c.entries[questionID] = cachedCounts{counts: counts, at: now}
+}
+
+func (c *resultCache) clear() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.entries = nil
+}
+
 func (s *Server) Results(w http.ResponseWriter, r *http.Request) {
-	q, ok := s.findQuestion(r.PathValue("questionId"))
+	q, ok := s.findQuestion(r.PathValue("questionId"), resultsWindow)
 	if !ok {
 		writeError(w, http.StatusNotFound, "unknown_question")
 		return
 	}
 
+	now := s.clock()
+	counts, ok := s.resultCache.get(q.ID, now)
+	if !ok {
+		var err error
+		if counts, err = s.votes.Counts(r.Context(), q.ID); err != nil {
+			w.Header().Set("Cache-Control", "no-store")
+			writeError(w, http.StatusServiceUnavailable, "unavailable")
+			return
+		}
+		s.resultCache.put(q.ID, counts, now)
+	}
+
 	res := QuestionResults{QuestionID: q.ID, Options: make([]OptionResult, 0, len(q.Options))}
 	for _, o := range q.Options {
-		n := s.results.count(q.ID, o.ID)
+		n := counts[o.ID]
 		res.Options = append(res.Options, OptionResult{OptionID: o.ID, Count: n})
 		res.TotalVotes += n
 	}
@@ -73,7 +98,7 @@ func (s *Server) Results(w http.ResponseWriter, r *http.Request) {
 		res.Options[i].Percent = percent(res.Options[i].Count, res.TotalVotes)
 	}
 
-	// Snapshots change as the worker runs: the edge absorbs spikes for a few
+	// Tallies change as the worker runs: the edge absorbs spikes for a few
 	// seconds, while browsers revalidate so a voter sees their vote land.
 	w.Header().Set("Cache-Control", "public, max-age=0, s-maxage=10")
 	writeJSON(w, http.StatusOK, res)

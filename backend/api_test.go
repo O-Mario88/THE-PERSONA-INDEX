@@ -52,8 +52,9 @@ func TestTodayQuestions(t *testing.T) {
 	})
 }
 
-// PLACEHOLDER duplicate rule: one vote per question per voterId.
-// Update these tests when the real rule (browser/day, account, or token) is decided.
+// Duplicate rule: one vote per question per server-signed device token
+// (default chosen 2026-10-14; per account once accounts exist). VoterID here
+// is a readable name; postVote swaps it for a signed token.
 var vote = VoteRequest{QuestionID: "q-dishes", OptionID: "right-away", VoterID: "voter-a"}
 
 func TestCastVote(t *testing.T) {
