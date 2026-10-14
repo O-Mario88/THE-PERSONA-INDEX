@@ -62,19 +62,31 @@ export function getResults(questionId: string): Promise<QuestionResults> {
   return request(`/api/questions/${encodeURIComponent(questionId)}/results`)
 }
 
-export function castVote(
+export async function castVote(
   questionId: string,
   optionId: string,
   idempotencyKey: string,
 ): Promise<{ status: string; eventId: string }> {
-  return request('/api/votes', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Idempotency-Key': idempotencyKey,
-    },
-    body: JSON.stringify({ questionId, optionId, voterId: deviceId() }),
-  })
+  const send = async () =>
+    request<{ status: string; eventId: string }>('/api/votes', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Idempotency-Key': idempotencyKey,
+      },
+      body: JSON.stringify({ questionId, optionId, voterId: await deviceToken() }),
+    })
+  try {
+    return await send()
+  } catch (e) {
+    // The server stopped accepting this token (its secret was rotated): get a
+    // new one and send the same vote, with the same key, once more.
+    if (e instanceof ApiError && e.code === 'invalid_device') {
+      remove(deviceKey)
+      return send()
+    }
+    throw e
+  }
 }
 
 // Local storage can be missing or blocked (private mode); fall back to memory.
@@ -110,15 +122,23 @@ function randomId(): string {
   return Math.random().toString(36).slice(2) + Date.now().toString(36)
 }
 
-// The anonymous device id that the one-vote-per-question rule is keyed on.
-// It is random and holds no personal data.
-export function deviceId(): string {
-  let id = load('pi.device')
-  if (!id) {
-    id = randomId()
-    save('pi.device', id)
-  }
-  return id
+// The anonymous device token that the one-vote-per-question rule is keyed on.
+// The server signs it, so it cannot be made up; it holds no personal data.
+const deviceKey = 'pi.device.v1'
+let pendingToken: Promise<string> | null = null
+
+export function deviceToken(): Promise<string> {
+  const saved = load(deviceKey)
+  if (saved) return Promise.resolve(saved)
+  pendingToken ??= request<{ token: string }>('/api/device', { method: 'POST' })
+    .then(({ token }) => {
+      save(deviceKey, token)
+      return token
+    })
+    .finally(() => {
+      pendingToken = null
+    })
+  return pendingToken
 }
 
 // A vote keeps the same idempotency key until it is accepted, so a retry after

@@ -71,16 +71,24 @@ function json({ status, body }: Route): Response {
 // Stubs fetch with a tiny router; returns the mock so tests can inspect calls.
 function stubApi(routes: {
   today?: Route
-  vote?: Route
+  vote?: Route | Route[]
   results?: Route
 }) {
+  let devices = 0
+  let votes = 0
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input)
+    if (url === '/api/device' && init?.method === 'POST') {
+      devices++
+      return json({ status: 201, body: { token: `v1.device${devices}.sig` } })
+    }
     if (url === '/api/questions/today') {
       return json(routes.today ?? { status: 200, body: today })
     }
     if (url === '/api/votes' && init?.method === 'POST') {
-      return json(routes.vote ?? { status: 202, body: { status: 'accepted', eventId: 'evt_1' } })
+      const r = Array.isArray(routes.vote) ? routes.vote[Math.min(votes, routes.vote.length - 1)] : routes.vote
+      votes++
+      return json(r ?? { status: 202, body: { status: 'accepted', eventId: 'evt_1' } })
     }
     if (url.endsWith('/results')) {
       return json(routes.results ?? { status: 200, body: dishesResults })
@@ -109,7 +117,7 @@ describe('App', () => {
     expect(screen.getByText('Question 1 of 3')).toBeInTheDocument()
   })
 
-  it('casts a vote with an idempotency key and device id, then shows the real results', async () => {
+  it('casts a vote with an idempotency key and a server-issued device token, then shows the real results', async () => {
     const fetchMock = stubApi({})
     render(<App />)
     fireEvent.click(await screen.findByRole('button', { name: 'Right after eating' }))
@@ -127,7 +135,44 @@ describe('App', () => {
     expect(headers['Idempotency-Key']).toMatch(/\S+/)
     const body = JSON.parse(String(init.body))
     expect(body).toMatchObject({ questionId: 'q-dishes', optionId: 'right-away' })
-    expect(body.voterId).toBe(localStorage.getItem('pi.device'))
+    expect(body.voterId).toBe('v1.device1.sig')
+    expect(localStorage.getItem('pi.device.v1')).toBe('v1.device1.sig')
+  })
+
+  it('asks the server for a device token once and reuses it', async () => {
+    const fetchMock = stubApi({})
+    render(<App />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Right after eating' }))
+    await screen.findByText('66.7%')
+    fireEvent.click(screen.getByRole('button', { name: 'Split it evenly' }))
+    await screen.findAllByText('66.7%')
+
+    expect(fetchMock.mock.calls.filter(([u]) => u === '/api/device')).toHaveLength(1)
+    const voters = fetchMock.mock.calls
+      .filter(([u]) => u === '/api/votes')
+      .map(([, init]) => JSON.parse(String(init!.body)).voterId)
+    expect(voters).toEqual(['v1.device1.sig', 'v1.device1.sig'])
+  })
+
+  it('replaces a token the server no longer accepts and retries the same vote once', async () => {
+    localStorage.setItem('pi.device.v1', 'v1.stale.sig')
+    const fetchMock = stubApi({
+      vote: [
+        { status: 401, body: { error: 'invalid_device' } },
+        { status: 202, body: { status: 'accepted', eventId: 'evt_1' } },
+      ],
+    })
+    render(<App />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Right after eating' }))
+    expect(await screen.findByText('Your answer')).toBeInTheDocument()
+
+    const calls = fetchMock.mock.calls.filter(([u]) => u === '/api/votes')
+    expect(calls.map(([, init]) => JSON.parse(String(init!.body)).voterId)).toEqual([
+      'v1.stale.sig',
+      'v1.device1.sig',
+    ])
+    const keys = calls.map(([, init]) => (init!.headers as Record<string, string>)['Idempotency-Key'])
+    expect(keys[0]).toBe(keys[1])
   })
 
   it('shows the insight card for the chosen answer right after voting', async () => {

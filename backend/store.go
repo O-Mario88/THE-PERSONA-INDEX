@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
@@ -8,15 +9,23 @@ import (
 	"time"
 )
 
-// VoteEvent is one accepted vote. Events are append-only and ordered by Seq,
-// which is what lets the aggregation worker resume from a cursor.
-type VoteEvent struct {
-	ID         string
-	Seq        int64
+// Vote is an accepted ballot as the store sees it. The device id is already
+// reduced to VoterHash; the raw id and token never reach storage.
+type Vote struct {
 	QuestionID string
 	OptionID   string
-	VoterID    string
+	VoterHash  string
+}
+
+// VoteEvent is one accepted vote.
+type VoteEvent struct {
+	ID         string
+	QuestionID string
+	OptionID   string
+	VoterHash  string
 	AcceptedAt time.Time
+	idemKey    string
+	tallied    bool
 }
 
 var (
@@ -25,15 +34,24 @@ var (
 )
 
 // VoteStore is the durable boundary: a vote is acknowledged only after Accept
-// returns. The in-memory implementation stands in until Postgres lands.
+// returns. Postgres (pgstore.go) is the production store and also the queue:
+// untallied rows are the backlog. The in-memory store backs local runs and
+// the default test suite.
 type VoteStore interface {
 	// Accept records the vote once. Repeating the same idempotency key with the
 	// same vote returns the original event; with a different vote it returns
-	// ErrIdempotencyKeyReuse. A second vote under the same dedupe key returns
-	// ErrDuplicateVote.
-	Accept(idempotencyKey string, v VoteRequest, at time.Time) (VoteEvent, error)
-	// EventsAfter returns up to limit events with Seq > after, in order.
-	EventsAfter(after int64, limit int) []VoteEvent
+	// ErrIdempotencyKeyReuse. A second vote under the same dedupe key
+	// (voterule.go) returns ErrDuplicateVote.
+	Accept(ctx context.Context, idempotencyKey string, v Vote, at time.Time) (VoteEvent, error)
+	// Tally folds up to limit untallied votes into the per-option counts and
+	// reports how many it folded. Each vote is folded exactly once, even with
+	// several workers running at the same time.
+	Tally(ctx context.Context, limit int) (int, error)
+	// Counts returns the tallied counts for one question, by option id.
+	Counts(ctx context.Context, questionID string) (map[string]int, error)
+	// DeleteTalliedBefore removes raw votes accepted before cutoff that are
+	// already tallied. Tallies are kept forever; raw votes are not.
+	DeleteTalliedBefore(ctx context.Context, cutoff time.Time) (int, error)
 }
 
 type memoryStore struct {
@@ -41,15 +59,16 @@ type memoryStore struct {
 	events    []VoteEvent
 	byIdemKey map[string]int // scoped idempotency key -> index into events
 	byDedupe  map[string]int // voteDedupeKey -> index into events
+	counts    map[string]map[string]int
 }
 
 func newMemoryStore() *memoryStore {
-	return &memoryStore{byIdemKey: map[string]int{}, byDedupe: map[string]int{}}
+	return &memoryStore{byIdemKey: map[string]int{}, byDedupe: map[string]int{}, counts: map[string]map[string]int{}}
 }
 
-func (m *memoryStore) Accept(idempotencyKey string, v VoteRequest, at time.Time) (VoteEvent, error) {
+func (m *memoryStore) Accept(_ context.Context, idempotencyKey string, v Vote, at time.Time) (VoteEvent, error) {
 	// Keys are scoped to the voter so one client cannot collide with another's.
-	idem := v.VoterID + "\x00" + idempotencyKey
+	idem := v.VoterHash + "\x00" + idempotencyKey
 	dedupe := voteDedupeKey(v)
 
 	m.mu.Lock()
@@ -66,31 +85,73 @@ func (m *memoryStore) Accept(idempotencyKey string, v VoteRequest, at time.Time)
 		return VoteEvent{}, ErrDuplicateVote
 	}
 
-	e := VoteEvent{
-		ID:         newEventID(),
-		Seq:        int64(len(m.events)) + 1,
-		QuestionID: v.QuestionID,
-		OptionID:   v.OptionID,
-		VoterID:    v.VoterID,
-		AcceptedAt: at,
-	}
+	e := VoteEvent{ID: newEventID(), QuestionID: v.QuestionID, OptionID: v.OptionID, VoterHash: v.VoterHash, AcceptedAt: at, idemKey: idempotencyKey}
 	m.events = append(m.events, e)
 	m.byIdemKey[idem] = len(m.events) - 1
 	m.byDedupe[dedupe] = len(m.events) - 1
 	return e, nil
 }
 
-func (m *memoryStore) EventsAfter(after int64, limit int) []VoteEvent {
+func (m *memoryStore) Tally(_ context.Context, limit int) (int, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if after < 0 {
-		after = 0
+	n := 0
+	for i := range m.events {
+		if n == limit {
+			break
+		}
+		e := &m.events[i]
+		if e.tallied {
+			continue
+		}
+		byOption := m.counts[e.QuestionID]
+		if byOption == nil {
+			byOption = map[string]int{}
+			m.counts[e.QuestionID] = byOption
+		}
+		byOption[e.OptionID]++
+		e.tallied = true
+		n++
 	}
-	if after >= int64(len(m.events)) {
-		return nil
+	return n, nil
+}
+
+func (m *memoryStore) Counts(_ context.Context, questionID string) (map[string]int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	out := make(map[string]int, len(m.counts[questionID]))
+	for k, v := range m.counts[questionID] {
+		out[k] = v
 	}
-	end := min(int(after)+limit, len(m.events))
-	return append([]VoteEvent(nil), m.events[after:end]...)
+	return out, nil
+}
+
+// DeleteTalliedBefore drops raw events along with their dedupe and
+// idempotency entries, as Postgres does when the rows go. That is safe
+// because a question only takes votes on its own day plus the rollover grace,
+// and retention is always far longer (see minRetention).
+func (m *memoryStore) DeleteTalliedBefore(_ context.Context, cutoff time.Time) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	drop := map[int]bool{}
+	kept := m.events[:0:0]
+	for i, e := range m.events {
+		if e.tallied && e.AcceptedAt.Before(cutoff) {
+			drop[i] = true
+			continue
+		}
+		kept = append(kept, e)
+	}
+	if len(drop) == 0 {
+		return 0, nil
+	}
+	m.events = kept
+	m.byIdemKey, m.byDedupe = map[string]int{}, map[string]int{}
+	for i, e := range m.events {
+		m.byIdemKey[e.VoterHash+"\x00"+e.idemKey] = i
+		m.byDedupe[voteDedupeKey(Vote{QuestionID: e.QuestionID, OptionID: e.OptionID, VoterHash: e.VoterHash})] = i
+	}
+	return len(drop), nil
 }
 
 func newEventID() string {

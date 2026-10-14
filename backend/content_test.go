@@ -160,7 +160,7 @@ func TestDailyPick(t *testing.T) {
 	})
 
 	t.Run("serves questions with insight cards, and votes on them, end to end", func(t *testing.T) {
-		s := NewServer(func() time.Time { return fixedNow }, b)
+		s := NewServer(func() time.Time { return fixedNow }, b, newMemoryStore(), newDeviceSigner(testSecret))
 		set := decode[DailySet](t, get(t, s, "/api/questions/today"))
 		q := set.Questions[0]
 		if q.Theme == "" || q.Options[0].Insight == nil {

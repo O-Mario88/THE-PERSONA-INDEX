@@ -2,9 +2,13 @@ package main
 
 import (
 	"bytes"
+	"context"
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -43,10 +47,43 @@ func (fixtureBank) GetSet(date string) (DailySet, bool) {
 	return DailySet{}, false
 }
 
+var testSecret = []byte("test-only-device-secret-0123456789")
+
 // newTestServer gives each test a fresh server: fixed clock, fixture
 // questions, in-memory state. No live database.
+//
+// When PERSONA_TEST_DATABASE_URL is set (CI does this), the same tests run
+// against a real, freshly truncated Postgres store instead.
 func newTestServer() *Server {
-	return NewServer(func() time.Time { return fixedNow }, fixtureBank{})
+	return NewServer(func() time.Time { return fixedNow }, fixtureBank{}, testStore(), newDeviceSigner(testSecret))
+}
+
+var testPG *pgStore
+
+func testStore() VoteStore {
+	url := os.Getenv("PERSONA_TEST_DATABASE_URL")
+	if url == "" {
+		return newMemoryStore()
+	}
+	ctx := context.Background()
+	if testPG == nil {
+		st, err := openPGStore(ctx, url, 8)
+		if err != nil {
+			panic(err)
+		}
+		testPG = st
+	}
+	if err := testPG.truncateForTests(ctx); err != nil {
+		panic(err)
+	}
+	return testPG
+}
+
+// tokenFor turns a readable test voter name into a valid signed device token,
+// so tests can keep writing VoterID: "voter-a".
+func tokenFor(s *Server, name string) string {
+	sum := sha256.Sum256([]byte(name))
+	return s.devices.tokenFor(base64.RawURLEncoding.EncodeToString(sum[:16]))
 }
 
 func do(t *testing.T, s *Server, req *http.Request) *httptest.ResponseRecorder {
@@ -62,8 +99,18 @@ func get(t *testing.T, s *Server, path string) *httptest.ResponseRecorder {
 }
 
 // postVote sends body (a VoteRequest, any value, or a raw string) with an
-// optional Idempotency-Key.
+// optional Idempotency-Key. A VoteRequest's VoterID is a readable name that is
+// swapped for a signed device token; use postRaw to send it unchanged.
 func postVote(t *testing.T, s *Server, body any, idempotencyKey string) *httptest.ResponseRecorder {
+	t.Helper()
+	if v, ok := body.(VoteRequest); ok && v.VoterID != "" && !strings.HasPrefix(v.VoterID, tokenVersion) {
+		v.VoterID = tokenFor(s, v.VoterID)
+		body = v
+	}
+	return postRaw(t, s, body, idempotencyKey)
+}
+
+func postRaw(t *testing.T, s *Server, body any, idempotencyKey string) *httptest.ResponseRecorder {
 	t.Helper()
 	var raw []byte
 	if str, ok := body.(string); ok {
