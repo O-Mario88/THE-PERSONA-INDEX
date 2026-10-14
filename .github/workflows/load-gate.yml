@@ -1,0 +1,43 @@
+name: load-gate
+
+on:
+  workflow_dispatch:
+    inputs:
+      rate:
+        description: votes per second
+        default: "1000"
+      duration:
+        description: how long to send votes
+        default: 60s
+
+jobs:
+  load:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: persona_load
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 2s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+      - run: go build -o api . && go build -o loadgen ./cmd/loadgen
+      - name: start the API
+        run: ./api > api.log 2>&1 &
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/persona_load?sslmode=disable
+          DEVICE_TOKEN_SECRET: ci-only-secret-0123456789abcdef0123
+          TRUST_CF_CONNECTING_IP: "1"
+      - run: for i in $(seq 30); do curl -sf localhost:8080/api/health && break; sleep 1; done
+      - run: ./loadgen -url http://localhost:8080 -rate "${{ inputs.rate }}" -duration "${{ inputs.duration }}"
+      - if: always()
+        run: tail -50 api.log
