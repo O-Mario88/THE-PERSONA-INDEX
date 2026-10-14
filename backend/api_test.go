@@ -26,7 +26,9 @@ func TestTodayQuestions(t *testing.T) {
 		if body.Date != today {
 			t.Fatalf("expected date %s, got %s", today, body.Date)
 		}
-		if !reflect.DeepEqual(body, todaySet) {
+		want := todaySet
+		want.Edition = editionNumber(today)
+		if !reflect.DeepEqual(body, want) {
 			t.Fatalf("expected %+v, got %+v", todaySet, body)
 		}
 	})

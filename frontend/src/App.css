@@ -169,3 +169,59 @@
 .insight-note {
   font-size: 0.8rem;
 }
+
+.link-button {
+  align-self: flex-start;
+  min-height: 44px;
+  padding: 8px 4px;
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--muted);
+  background: none;
+  border: none;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.guess {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.guess-prompt {
+  margin: 0;
+  font-weight: 600;
+}
+
+.guess-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.guess-feedback {
+  margin: 0 0 8px;
+  font-weight: 600;
+}
+
+.squares {
+  margin: 0;
+  font-size: 1.8rem;
+  letter-spacing: 0.15em;
+}
+
+.option.primary {
+  text-align: center;
+  font-weight: 600;
+  color: var(--bg);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.option.primary:hover:not(:disabled),
+.option.primary:focus-visible {
+  color: var(--bg);
+  background: var(--accent);
+  opacity: 0.9;
+}

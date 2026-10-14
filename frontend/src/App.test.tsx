@@ -4,6 +4,8 @@ import type { DailySet, QuestionResults } from './api'
 
 const today: DailySet = {
   date: '2026-10-12',
+  edition: 3,
+  tomorrowThemes: ['money', 'friendship'],
   questions: [
     {
       id: 'q-dishes',
@@ -103,6 +105,12 @@ beforeEach(() => {
   localStorage.clear()
 })
 
+// Taps an answer, then answers the guess-the-crowd step.
+async function answer(label: string, guess = 'Skip the guess') {
+  fireEvent.click(await screen.findByRole('button', { name: label }))
+  fireEvent.click(await screen.findByRole('button', { name: guess }))
+}
+
 afterEach(() => {
   vi.unstubAllGlobals()
 })
@@ -120,7 +128,7 @@ describe('App', () => {
   it('casts a vote with an idempotency key and a server-issued device token, then shows the real results', async () => {
     const fetchMock = stubApi({})
     render(<App />)
-    fireEvent.click(await screen.findByRole('button', { name: 'Right after eating' }))
+    await answer('Right after eating')
 
     const card = screen.getByRole('region', { name: 'When do you wash the dishes?' })
     expect(await within(card).findByText('66.7%')).toBeInTheDocument()
@@ -142,9 +150,9 @@ describe('App', () => {
   it('asks the server for a device token once and reuses it', async () => {
     const fetchMock = stubApi({})
     render(<App />)
-    fireEvent.click(await screen.findByRole('button', { name: 'Right after eating' }))
+    await answer('Right after eating')
     await screen.findByText('66.7%')
-    fireEvent.click(screen.getByRole('button', { name: 'Split it evenly' }))
+    await answer('Split it evenly')
     await screen.findAllByText('66.7%')
 
     expect(fetchMock.mock.calls.filter(([u]) => u === '/api/device')).toHaveLength(1)
@@ -163,7 +171,7 @@ describe('App', () => {
       ],
     })
     render(<App />)
-    fireEvent.click(await screen.findByRole('button', { name: 'Right after eating' }))
+    await answer('Right after eating')
     expect(await screen.findByText('Your answer')).toBeInTheDocument()
 
     const calls = fetchMock.mock.calls.filter(([u]) => u === '/api/votes')
@@ -181,7 +189,7 @@ describe('App', () => {
     expect(
       screen.queryByText(/unfinished tasks noisier/),
     ).not.toBeInTheDocument()
-    fireEvent.click(await screen.findByRole('button', { name: 'Right after eating' }))
+    await answer('Right after eating')
 
     const insight = await screen.findByRole('note', { name: 'What your answer may say' })
     expect(insight).toHaveTextContent('unfinished tasks noisier than most')
@@ -197,7 +205,7 @@ describe('App', () => {
   it('shows a card without research when the insight cites none', async () => {
     stubApi({})
     render(<App />)
-    fireEvent.click(await screen.findByRole('button', { name: 'At the end of the day' }))
+    await answer('At the end of the day')
     const insight = await screen.findByRole('note', { name: 'What your answer may say' })
     expect(insight).toHaveTextContent('Batching chores suggests')
     expect(within(insight).queryByRole('link')).not.toBeInTheDocument()
@@ -219,7 +227,7 @@ describe('App', () => {
       },
     })
     render(<App />)
-    fireEvent.click(await screen.findByRole('button', { name: 'Right after eating' }))
+    await answer('Right after eating')
     expect(
       await screen.findByText('Your vote is in. Results update in a few seconds.'),
     ).toBeInTheDocument()
@@ -261,5 +269,113 @@ describe('App', () => {
     render(<App />)
     fireEvent.click(await screen.findByRole('button', { name: 'Try again' }))
     expect(fetchMock.mock.calls.filter(([u]) => u === '/api/questions/today')).toHaveLength(2)
+  })
+
+  it('asks how many people chose the same answer before showing anything else', async () => {
+    stubApi({})
+    render(<App />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Right after eating' }))
+    const guess = await screen.findByRole('group', { name: 'How many people do you think chose what you chose?' })
+    expect(within(guess).getAllByRole('button').map((b) => b.textContent)).toEqual([
+      'Almost nobody',
+      'Some people',
+      'About half',
+      'Most people',
+    ])
+    expect(screen.queryByRole('note')).not.toBeInTheDocument()
+    expect(screen.queryByText('66.7%')).not.toBeInTheDocument()
+  })
+
+  it('shows the gap between the guess and the real split', async () => {
+    stubApi({
+      results: {
+        status: 200,
+        body: {
+          questionId: 'q-dishes',
+          totalVotes: 100,
+          options: [
+            { optionId: 'right-away', count: 31, percent: 31 },
+            { optionId: 'end-of-day', count: 69, percent: 69 },
+          ],
+        },
+      },
+    })
+    render(<App />)
+    await answer('Right after eating', 'Most people')
+    expect(await screen.findByText('You guessed most people. It is 31%.')).toBeInTheDocument()
+  })
+
+  it('says when the guess was right', async () => {
+    stubApi({
+      results: {
+        status: 200,
+        body: {
+          questionId: 'q-dishes',
+          totalVotes: 100,
+          options: [
+            { optionId: 'right-away', count: 31, percent: 31 },
+            { optionId: 'end-of-day', count: 69, percent: 69 },
+          ],
+        },
+      },
+    })
+    render(<App />)
+    await answer('Right after eating', 'Some people')
+    expect(await screen.findByText('You guessed right: 31% chose this too.')).toBeInTheDocument()
+  })
+
+  it('does not judge a guess against too few votes', async () => {
+    stubApi({})
+    render(<App />)
+    await answer('Right after eating', 'Most people')
+    expect(await screen.findByText(/Too few votes yet to check your guess/)).toBeInTheDocument()
+  })
+
+  it('lets every question be skipped without sending a vote', async () => {
+    const fetchMock = stubApi({})
+    render(<App />)
+    const card = await screen.findByRole('region', { name: 'How do you split the bill?' })
+    fireEvent.click(within(card).getByRole('button', { name: 'Skip' }))
+    expect(within(card).getByText('Skipped')).toBeInTheDocument()
+    expect(fetchMock.mock.calls.filter(([u]) => u === '/api/votes')).toHaveLength(0)
+  })
+
+  it('ends the edition with a share that shows only with or against the crowd, and names tomorrow', async () => {
+    const share = vi.fn(async () => {})
+    vi.stubGlobal('navigator', { ...navigator, share })
+    stubApi({})
+    render(<App />)
+    await answer('Right after eating')
+    await screen.findByText('66.7%')
+    const bill = screen.getByRole('region', { name: 'How do you split the bill?' })
+    fireEvent.click(within(bill).getByRole('button', { name: 'Skip' }))
+    await answer('Several')
+
+    const summary = await screen.findByRole('region', { name: 'Edition #3 done' })
+    expect(summary).toHaveTextContent('Tomorrow: Money · Friendship')
+    expect(summary).toHaveTextContent('You played 1 of the last 7 days')
+
+    fireEvent.click(within(summary).getByRole('button', { name: 'Share' }))
+    expect(share).toHaveBeenCalledTimes(1)
+    const text = (share.mock.calls[0] as unknown as [{ text: string }])[0].text
+    // Dishes: with the crowd. Bill: skipped. Alarm: against (the stub says right-away leads).
+    expect(text).toContain('Persona Index #3')
+    expect(text).toContain('🟩⬜🟧')
+    for (const label of ['Right after eating', 'Several', 'dishes', 'alarm']) {
+      expect(text).not.toContain(label)
+    }
+  })
+
+  it('counts the days played this week from this phone only', async () => {
+    localStorage.setItem('pi.days', JSON.stringify(['2026-10-06', '2026-10-09', '2026-10-11', '2026-09-01']))
+    stubApi({})
+    render(<App />)
+    for (const q of ['When do you wash the dishes?', 'How do you split the bill?', 'How many alarms do you set?']) {
+      const card = await screen.findByRole('region', { name: q })
+      fireEvent.click(within(card).getByRole('button', { name: 'Skip' }))
+    }
+    expect(await screen.findByRole('region', { name: 'Edition #3 done' })).toHaveTextContent(
+      'You played 3 of the last 7 days',
+    )
   })
 })
