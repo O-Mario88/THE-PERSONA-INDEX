@@ -75,9 +75,10 @@ func (d *deviceSigner) Verify(token string) (string, bool) {
 }
 
 // voterHash is the only form of the device id that is stored. It is keyed by
-// the server secret, so a leaked vote table cannot be joined back to tokens.
-func (d *deviceSigner) voterHash(id string) string {
+// the server secret and by the question, so a leaked vote table can be joined
+// neither back to tokens nor across questions into one person's answers.
+func (d *deviceSigner) voterHash(id, questionID string) string {
 	m := hmac.New(sha256.New, d.key)
-	m.Write([]byte("voter:" + id))
+	m.Write([]byte("voter:" + id + "\x00" + questionID))
 	return hex.EncodeToString(m.Sum(nil)[:16])
 }

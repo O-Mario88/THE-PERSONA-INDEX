@@ -10,11 +10,23 @@ import (
 )
 
 func TestCastVoteRules(t *testing.T) {
-	t.Run("reusing an Idempotency-Key for a different vote is rejected with 422", func(t *testing.T) {
+	t.Run("reusing an Idempotency-Key for a different answer is rejected with 422", func(t *testing.T) {
+		s := newTestServer()
+		expectStatus(t, postVote(t, s, vote, "key-1"), http.StatusAccepted)
+		other := vote
+		other.OptionID = "when-full"
+		expectError(t, postVote(t, s, other, "key-1"), http.StatusUnprocessableEntity, "idempotency_key_reused")
+	})
+
+	t.Run("idempotency keys are scoped per device and question, so the same key on another question is its own vote", func(t *testing.T) {
+		// The server deliberately keeps no device-wide key (see voterHash).
 		s := newTestServer()
 		expectStatus(t, postVote(t, s, vote, "key-1"), http.StatusAccepted)
 		other := VoteRequest{QuestionID: "q-bill", OptionID: "even", VoterID: vote.VoterID}
-		expectError(t, postVote(t, s, other, "key-1"), http.StatusUnprocessableEntity, "idempotency_key_reused")
+		expectStatus(t, postVote(t, s, other, "key-1"), http.StatusAccepted)
+		if n := totalVotes(t, s, "q-bill"); n != 1 {
+			t.Fatalf("expected 1 vote on q-bill, got %d", n)
+		}
 	})
 
 	t.Run("idempotency keys are scoped to the voter", func(t *testing.T) {

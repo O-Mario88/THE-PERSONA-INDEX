@@ -225,3 +225,94 @@
   background: var(--accent);
   opacity: 0.9;
 }
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.tabs button {
+  min-height: 40px;
+  padding: 6px 16px;
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--muted);
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.tabs button[aria-pressed='true'] {
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+.gate h2,
+.week h2 {
+  font-size: 1.15rem;
+}
+
+.confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.traits {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.traits p {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.trait-name {
+  font-weight: 600;
+}
+
+.support {
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.support p {
+  margin: 0 0 8px;
+  line-height: 1.45;
+}
+
+.support a {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.privacy {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+.switch {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.switch input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--accent);
+}
