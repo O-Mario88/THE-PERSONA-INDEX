@@ -109,6 +109,9 @@ function stubApi(routes: {
     if (url === '/api/questions/today') {
       return json(routes.today ?? { status: 200, body: today })
     }
+    if (url === '/api/ratings' && init?.method === 'POST') {
+      return json({ status: 202, body: { status: 'accepted', eventId: 'evt_r' } })
+    }
     if (url === '/api/votes' && init?.method === 'POST') {
       const r = Array.isArray(routes.vote) ? routes.vote[Math.min(votes, routes.vote.length - 1)] : routes.vote
       votes++
@@ -135,7 +138,11 @@ async function answer(label: string, guess = 'Skip the guess') {
 
 afterEach(() => {
   vi.unstubAllGlobals()
+  window.location.hash = ''
 })
+
+const encodeCompare = (v: unknown) =>
+  btoa(JSON.stringify(v)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 
 describe('App', () => {
   it("shows today's three questions", async () => {
@@ -157,7 +164,7 @@ describe('App', () => {
     expect(within(card).getByText('33.3%')).toBeInTheDocument()
     expect(within(card).getByText('3 votes so far')).toBeInTheDocument()
     expect(within(card).getByText('Your answer')).toBeInTheDocument()
-    expect(within(card).queryByRole('button')).not.toBeInTheDocument()
+    expect(within(card).queryByRole('button', { name: 'At the end of the day' })).not.toBeInTheDocument()
 
     const voteCall = fetchMock.mock.calls.find(([u]) => u === '/api/votes')!
     const init = voteCall[1]!
@@ -507,5 +514,61 @@ describe('App', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'My week' }))
     const note = screen.getByRole('note', { name: 'Support' })
     expect(within(note).getByRole('link', { name: /Find a helpline/ })).toHaveAttribute('href', 'https://findahelpline.com')
+  })
+
+  it('asks whether the card taught something, and sends only that tap', async () => {
+    const fetchMock = stubApi({})
+    render(<App />)
+    await answer('Right after eating')
+    const insight = await screen.findByRole('note', { name: 'What your answer may say' })
+    fireEvent.click(within(insight).getByRole('button', { name: 'I learned something' }))
+    expect(await within(insight).findByText('Thanks. This helps us keep the good cards.')).toBeInTheDocument()
+    expect(within(insight).queryByRole('button', { name: 'Not really' })).not.toBeInTheDocument()
+    const call = fetchMock.mock.calls.find(([u]) => u === '/api/ratings')!
+    expect(JSON.parse(String(call[1]!.body))).toMatchObject({ questionId: 'q-dishes', optionId: 'right-away', learned: true })
+  })
+
+  it('makes a compare link with the answers given, leaving out skipped ones', async () => {
+    const share = vi.fn(async () => {})
+    vi.stubGlobal('navigator', { ...navigator, share })
+    stubApi({})
+    render(<App />)
+    await answer('Right after eating')
+    await screen.findByText('66.7%')
+    fireEvent.click(within(screen.getByRole('region', { name: 'How do you split the bill?' })).getByRole('button', { name: 'Skip' }))
+    await answer('Several')
+    const summary = await screen.findByRole('region', { name: 'Edition #3 done' })
+    fireEvent.click(within(summary).getByRole('button', { name: 'Compare with someone' }))
+
+    const { text } = (share.mock.calls[0] as unknown as [{ text: string }])[0]
+    const payload = text.split('#c=')[1].trim()
+    const decoded = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')))
+    expect(decoded).toEqual({ e: 3, a: [['q-dishes', 'right-away'], ['q-alarm', 'many']] })
+    expect(text).not.toContain('Right after eating')
+  })
+
+  it('opens a compare link on the same questions and shows agreement only after answering', async () => {
+    window.location.hash = '#c=' + encodeCompare({ e: 3, a: [['q-dishes', 'end-of-day'], ['q-payday', 'bills']] })
+    stubApi({})
+    render(<App />)
+    expect(await screen.findByText('Someone wants to compare answers with you.')).toBeInTheDocument()
+    expect(screen.getByText('Payday arrives. What goes first?')).toBeInTheDocument()
+    expect(screen.getAllByText(/Question \d of 2/)).toHaveLength(2)
+    expect(screen.queryByText(/agreed/)).not.toBeInTheDocument()
+
+    await answer('Right after eating')
+    expect(screen.queryByText(/agreed/)).not.toBeInTheDocument()
+    await answer('Bills')
+    const result = await screen.findByRole('region', { name: 'You agreed on 1 of 2' })
+    expect(result).toHaveTextContent('When do you wash the dishes?')
+    expect(result).toHaveTextContent('You: Right after eating · Them: At the end of the day')
+  })
+
+  it('says so when a compare link is from an earlier edition', async () => {
+    window.location.hash = '#c=' + encodeCompare({ e: 2, a: [['q-old', 'x']] })
+    stubApi({})
+    render(<App />)
+    expect(await screen.findByText(/from an earlier edition/)).toBeInTheDocument()
+    expect(await screen.findByText('Question 1 of 3')).toBeInTheDocument()
   })
 })

@@ -102,6 +102,25 @@ export async function castVote(
   }
 }
 
+// The one-tap "I learned something" on an insight card. Anonymous, like votes.
+export function rateCard(questionId: string, optionId: string, learned: boolean): Promise<unknown> {
+  return deviceToken().then((voterId) =>
+    request('/api/ratings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Idempotency-Key': randomId() },
+      body: JSON.stringify({ questionId, optionId, learned, voterId }),
+    }),
+  )
+}
+
+export function rememberRated(questionId: string) {
+  save(`pi.rated.${questionId}`, '1')
+}
+
+export function wasRated(questionId: string): boolean {
+  return load(`pi.rated.${questionId}`) === '1'
+}
+
 // Local storage can be missing or blocked (private mode); fall back to memory.
 const memory = new Map<string, string>()
 function load(key: string): string | null {

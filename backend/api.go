@@ -131,6 +131,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/questions/today", s.TodayQuestions)
 	mux.HandleFunc("POST /api/device", s.IssueDevice)
 	mux.HandleFunc("POST /api/votes", s.CastVote)
+	mux.HandleFunc("POST /api/ratings", s.RateCard)
 	mux.HandleFunc("GET /api/questions/{questionId}/results", s.Results)
 	return mux
 }
@@ -237,47 +238,93 @@ const maxVoteBodyBytes = 4 << 10
 var tokenPattern = regexp.MustCompile(`^[A-Za-z0-9_-]{1,128}$`)
 
 func (s *Server) CastVote(w http.ResponseWriter, r *http.Request) {
+	var v VoteRequest
+	q, deviceID, key, ok := s.readBallot(w, r, &v, func() (string, string, string) { return v.QuestionID, v.OptionID, v.VoterID })
+	if !ok {
+		return
+	}
+	// The stored key is per device and question, so the server can enforce one
+	// vote per question but cannot join one device's answers into a profile.
+	s.accept(w, r, key, Vote{QuestionID: q.ID, OptionID: v.OptionID, VoterHash: s.devices.voterHash(deviceID, q.ID)})
+}
+
+// RatingRequest is the body of POST /api/ratings: the one-tap "I learned
+// something" (or not) on the insight card for the chosen option.
+type RatingRequest struct {
+	QuestionID string `json:"questionId"`
+	OptionID   string `json:"optionId"`
+	Learned    bool   `json:"learned"`
+	VoterID    string `json:"voterId"`
+}
+
+// ratingKey is where a card's ratings are counted in the vote store, with
+// options "learned" and "not". The prefix cannot clash with question ids,
+// which start with a date.
+func ratingKey(questionID, optionID string) string {
+	return "rating/" + questionID + "/" + optionID
+}
+
+func (s *Server) RateCard(w http.ResponseWriter, r *http.Request) {
+	var v RatingRequest
+	q, deviceID, key, ok := s.readBallot(w, r, &v, func() (string, string, string) { return v.QuestionID, v.OptionID, v.VoterID })
+	if !ok {
+		return
+	}
+	answer := "not"
+	if v.Learned {
+		answer = "learned"
+	}
+	// One rating per device per question, kept apart from the vote itself.
+	scope := "rating/" + q.ID
+	s.accept(w, r, key, Vote{QuestionID: ratingKey(q.ID, v.OptionID), OptionID: answer, VoterHash: s.devices.voterHash(deviceID, scope)})
+}
+
+// readBallot does the checks votes and ratings share: idempotency key, body,
+// device token, rate limit, and that the option belongs to a question open
+// for votes. It writes the error response itself when a check fails.
+func (s *Server) readBallot(w http.ResponseWriter, r *http.Request, body any, fields func() (string, string, string)) (Question, string, string, bool) {
 	w.Header().Set("Cache-Control", "no-store")
 
 	key := r.Header.Get("Idempotency-Key")
 	if key == "" {
 		writeError(w, http.StatusBadRequest, "missing_idempotency_key")
-		return
+		return Question{}, "", "", false
 	}
 	if !tokenPattern.MatchString(key) {
 		writeError(w, http.StatusBadRequest, "invalid_request")
-		return
+		return Question{}, "", "", false
 	}
 
-	var v VoteRequest
 	dec := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxVoteBodyBytes))
-	if err := dec.Decode(&v); err != nil || v.QuestionID == "" || v.OptionID == "" || v.VoterID == "" {
+	err := dec.Decode(body)
+	questionID, optionID, voterID := fields()
+	if err != nil || questionID == "" || optionID == "" || voterID == "" {
 		writeError(w, http.StatusBadRequest, "invalid_request")
-		return
+		return Question{}, "", "", false
 	}
-	deviceID, ok := s.devices.Verify(v.VoterID)
+	deviceID, ok := s.devices.Verify(voterID)
 	if !ok {
 		writeError(w, http.StatusUnauthorized, "invalid_device")
-		return
+		return Question{}, "", "", false
 	}
 	if ok, retry := s.voteLimit.Allow(deviceID, s.clock()); !ok {
 		rateLimited(w, retry)
-		return
+		return Question{}, "", "", false
 	}
 
-	q, ok := s.findQuestion(v.QuestionID, voteWindow)
+	q, ok := s.findQuestion(questionID, voteWindow)
 	if !ok {
 		writeError(w, http.StatusNotFound, "unknown_question")
-		return
+		return Question{}, "", "", false
 	}
-	if !hasOption(q, v.OptionID) {
+	if !hasOption(q, optionID) {
 		writeError(w, http.StatusBadRequest, "unknown_option")
-		return
+		return Question{}, "", "", false
 	}
+	return q, deviceID, key, true
+}
 
-	// The stored key is per device and question, so the server can enforce one
-	// vote per question but cannot join one device's answers into a profile.
-	ballot := Vote{QuestionID: q.ID, OptionID: v.OptionID, VoterHash: s.devices.voterHash(deviceID, q.ID)}
+func (s *Server) accept(w http.ResponseWriter, r *http.Request, key string, ballot Vote) {
 	e, err := s.votes.Accept(r.Context(), key, ballot, s.clock())
 	switch {
 	case errors.Is(err, ErrDuplicateVote):
@@ -285,7 +332,7 @@ func (s *Server) CastVote(w http.ResponseWriter, r *http.Request) {
 	case errors.Is(err, ErrIdempotencyKeyReuse):
 		writeError(w, http.StatusUnprocessableEntity, "idempotency_key_reused")
 	case err != nil:
-		log.Printf("accept vote: %v", err)
+		log.Printf("accept: %v", err)
 		writeError(w, http.StatusServiceUnavailable, "unavailable")
 	default:
 		writeJSON(w, http.StatusAccepted, VoteAccepted{Status: "accepted", EventID: e.ID})

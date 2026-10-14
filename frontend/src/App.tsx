@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { ApiError, getToday, recalledChoice, type DailySet } from './api'
+import { ApiError, getToday, recalledChoice, SKIPPED, type DailySet, type Question } from './api'
+import { readCompare } from './compare'
 import { QuestionCard } from './QuestionCard'
 import { EditionSummary } from './EditionSummary'
 import { MyWeek } from './MyWeek'
@@ -20,6 +21,7 @@ function App() {
   const [tab, setTab] = useState<'today' | 'week'>('today')
   const [prefs, setPrefs] = useState<Prefs>(loadPrefs)
   const [pickVersion, setPickVersion] = useState(0)
+  const [invite] = useState(() => readCompare(window.location.hash))
   const [outcomes, setOutcomes] = useState<Record<string, Outcome>>({})
   const onOutcome = useCallback((id: string, o: Outcome) => {
     setOutcomes((prev) => (prev[id] === o ? prev : { ...prev, [id]: o }))
@@ -41,11 +43,16 @@ function App() {
   }, [attempt])
 
   const set = state.kind === 'ready' ? state.set : null
+  // A compare link for today's edition replaces the pick with its questions.
+  const compareQs = useMemo(() => (set && invite ? compareQuestions(set, invite.e, invite.a) : null), [set, invite])
+  const staleInvite = !!(set && invite && !compareQs)
   const questions = useMemo(
-    () => (set ? todaysPick(set.pool ?? [], set.questions, set.date, intimacyOn(prefs)) : []),
+    () =>
+      compareQs?.map((c) => c.question) ??
+      (set ? todaysPick(set.pool ?? [], set.questions, set.date, intimacyOn(prefs)) : []),
     // pickVersion forces a fresh pick after a preference change
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [set, prefs, pickVersion],
+    [set, prefs, pickVersion, compareQs],
   )
   const hasIntimate = !!set?.pool?.some((q) => q.care === 'intimate')
 
@@ -104,6 +111,13 @@ function App() {
 
       {set && tab === 'week' && <MyWeek today={set.date} />}
 
+      {set && tab === 'today' && compareQs && (
+        <p className="notice">Someone wants to compare answers with you.</p>
+      )}
+      {set && tab === 'today' && staleInvite && (
+        <p className="notice">That compare link is from an earlier edition. Here are today's questions instead.</p>
+      )}
+
       {set && tab === 'today' && hasIntimate && prefs.adult === null && (
         <section className="notice gate" aria-labelledby="gate-title">
           <h2 id="gate-title">Are you 18 or older?</h2>
@@ -141,8 +155,17 @@ function App() {
             edition={set.edition}
             outcomes={questions.map((q) => outcomes[q.id])}
             tomorrowThemes={set.tomorrowThemes ?? []}
+            answers={questions
+              .filter((q) => q.care !== 'intimate')
+              .map((q): [string, string] => [q.id, recalledChoice(q.id) ?? ''])
+              .filter(([, c]) => c !== '' && c !== SKIPPED && c !== '?')}
           />
         )}
+
+      {set &&
+        tab === 'today' &&
+        compareQs &&
+        questions.every((q) => outcomes[q.id]) && <CompareResult items={compareQs} />}
 
       {set && tab === 'today' && prefs.adult === true && (
         <label className="switch">
@@ -155,6 +178,47 @@ function App() {
         </label>
       )}
     </main>
+  )
+}
+
+type CompareItem = { question: Question; theirs: string }
+
+function compareQuestions(set: DailySet, edition: number, answers: [string, string][]): CompareItem[] | null {
+  if (edition !== set.edition) return null
+  const all = [...(set.pool ?? []), ...set.questions]
+  const items: CompareItem[] = []
+  for (const [id, theirs] of answers) {
+    const question = all.find((q) => q.id === id)
+    if (!question || question.care === 'intimate' || !question.options.some((o) => o.id === theirs)) return null
+    if (!items.some((i) => i.question.id === id)) items.push({ question, theirs })
+  }
+  return items.length ? items : null
+}
+
+function CompareResult({ items }: { items: CompareItem[] }) {
+  const both = items
+    .map((i) => ({ ...i, mine: recalledChoice(i.question.id) }))
+    .filter((i): i is CompareItem & { mine: string } => !!i.mine && i.question.options.some((o) => o.id === i.mine))
+  const agreed = both.filter((i) => i.mine === i.theirs).length
+  const label = (q: Question, id: string) => q.options.find((o) => o.id === id)?.label ?? ''
+  const title = both.length ? `You agreed on ${agreed} of ${both.length}` : 'Nothing to compare yet'
+  return (
+    <section className="card" aria-labelledby="compare-title">
+      <h2 id="compare-title">{title}</h2>
+      <ul className="compare-list">
+        {both.map((i) => (
+          <li key={i.question.id}>
+            <p className="trait-name">
+              {i.mine === i.theirs ? 'Same: ' : 'Split: '}
+              {i.question.prompt}
+            </p>
+            <p className="muted">
+              You: {label(i.question, i.mine)} · Them: {label(i.question, i.theirs)}
+            </p>
+          </li>
+        ))}
+      </ul>
+    </section>
   )
 }
 
