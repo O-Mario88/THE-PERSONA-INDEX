@@ -3,15 +3,30 @@ import {
   ApiError,
   castVote,
   getResults,
+  recalledGuess,
   rememberChoice,
+  rememberGuess,
+  rememberSkip,
   recalledChoice,
+  recordPlayed,
+  SKIPPED,
   voteKey,
   type Insight,
   type Question,
   type QuestionResults,
 } from './api'
+import { GUESSES, guessFeedback, outcomeFor, type Outcome } from './crowd'
 
-type Props = { question: Question; index: number; total: number }
+type Props = {
+  question: Question
+  index: number
+  total: number
+  date: string
+  onOutcome?: (questionId: string, outcome: Outcome) => void
+}
+
+// Stored when the player skips the guess-the-crowd step.
+const NO_GUESS = 'none'
 
 // Results are published by a worker, so a fresh vote may take a moment to show.
 const REFRESH_DELAYS_MS = [1500, 3000, 6000]
@@ -19,17 +34,27 @@ const REFRESH_DELAYS_MS = [1500, 3000, 6000]
 // Stored when the server says this device already voted but we don't know which option.
 const UNKNOWN_CHOICE = '?'
 
-export function QuestionCard({ question, index, total }: Props) {
+export function QuestionCard({ question, index, total, date, onOutcome }: Props) {
   const [choice, setChoice] = useState<string | null>(() =>
     recalledChoice(question.id),
   )
+  const [guess, setGuess] = useState<string | null>(() => recalledGuess(question.id))
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [results, setResults] = useState<QuestionResults | null>(null)
 
-  // Once answered, fetch results and refresh a few times while the count catches up.
+  const answered = choice !== null && choice !== SKIPPED
+  // Results and the insight wait until the player has guessed the crowd.
+  const revealed = answered && (guess !== null || choice === UNKNOWN_CHOICE)
+
   useEffect(() => {
-    if (!choice) return
+    if (choice === SKIPPED || choice === UNKNOWN_CHOICE) onOutcome?.(question.id, 'skipped')
+    else if (choice && results && revealed) onOutcome?.(question.id, outcomeFor(choice, results.options))
+  }, [choice, results, revealed, question.id, onOutcome])
+
+  // Once revealed, fetch results and refresh a few times while the count catches up.
+  useEffect(() => {
+    if (!revealed) return
     let live = true
     const load = () =>
       getResults(question.id).then(
@@ -42,7 +67,7 @@ export function QuestionCard({ question, index, total }: Props) {
       live = false
       timers.forEach(clearTimeout)
     }
-  }, [choice, question.id])
+  }, [revealed, question.id])
 
   async function vote(optionId: string) {
     setSending(true)
@@ -50,6 +75,7 @@ export function QuestionCard({ question, index, total }: Props) {
     try {
       await castVote(question.id, optionId, voteKey(question.id))
       rememberChoice(question.id, optionId)
+      recordPlayed(date)
       setChoice(optionId)
     } catch (e) {
       if (e instanceof ApiError && e.code === 'duplicate_vote') {
@@ -64,7 +90,18 @@ export function QuestionCard({ question, index, total }: Props) {
     }
   }
 
+  function skip() {
+    rememberSkip(question.id)
+    setChoice(SKIPPED)
+  }
+
+  function chooseGuess(g: string) {
+    rememberGuess(question.id, g)
+    setGuess(g)
+  }
+
   const headingId = `q-${question.id}`
+  const guessId = `g-${question.id}`
 
   return (
     <section className="card" aria-labelledby={headingId}>
@@ -86,13 +123,36 @@ export function QuestionCard({ question, index, total }: Props) {
               {o.label}
             </button>
           ))}
+          <button type="button" className="link-button" disabled={sending} onClick={skip}>
+            Skip
+          </button>
         </div>
       )}
 
-      {choice && <InsightCard insight={chosenInsight(question, choice)} />}
+      {choice === SKIPPED && <p className="muted">Skipped</p>}
 
-      {choice && (
-        <Results question={question} choice={choice} results={results} />
+      {answered && !revealed && (
+        <div className="guess">
+          <p id={guessId} className="guess-prompt">
+            How many people do you think chose what you chose?
+          </p>
+          <div className="guess-options" role="group" aria-labelledby={guessId}>
+            {GUESSES.map((g) => (
+              <button key={g.id} type="button" className="option" onClick={() => chooseGuess(g.id)}>
+                {g.label}
+              </button>
+            ))}
+          </div>
+          <button type="button" className="link-button" onClick={() => chooseGuess(NO_GUESS)}>
+            Skip the guess
+          </button>
+        </div>
+      )}
+
+      {revealed && <InsightCard insight={chosenInsight(question, choice)} />}
+
+      {revealed && (
+        <Results question={question} choice={choice} results={results} guess={guess} />
       )}
 
       {error && (
@@ -146,15 +206,21 @@ function Results({
   question,
   choice,
   results,
+  guess,
 }: {
   question: Question
   choice: string
   results: QuestionResults | null
+  guess: string | null
 }) {
   if (!results) {
     return <p className="muted">Loading results…</p>
   }
   const byId = new Map(results.options.map((r) => [r.optionId, r]))
+  const feedback =
+    guess && choice !== UNKNOWN_CHOICE
+      ? guessFeedback(guess, byId.get(choice)?.percent ?? 0, results.totalVotes)
+      : null
   return (
     <div className="results">
       <ul aria-label="Community results">
@@ -177,6 +243,7 @@ function Results({
           )
         })}
       </ul>
+      {feedback && <p className="guess-feedback">{feedback}</p>}
       {choice === UNKNOWN_CHOICE && (
         <p className="muted">You already answered this one on this device.</p>
       )}

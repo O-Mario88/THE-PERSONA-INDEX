@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"regexp"
+	"slices"
 	"strconv"
 	"time"
 )
@@ -28,8 +29,25 @@ type Question struct {
 
 // DailySet is the response of GET /api/questions/today.
 type DailySet struct {
-	Date      string     `json:"date"` // YYYY-MM-DD, UTC for now
+	Date      string     `json:"date"`              // YYYY-MM-DD, UTC
+	Edition   int        `json:"edition,omitempty"` // shared worldwide: "Persona Index #142"
 	Questions []Question `json:"questions"`
+	// TomorrowThemes names the themes of the next edition, each once, so the
+	// session can end on anticipation. Tomorrow's questions are never sent.
+	TomorrowThemes []string `json:"tomorrowThemes,omitempty"`
+}
+
+// editionEpoch is the date of edition #1. Move it to the public launch date
+// before launch so the first public edition is #1.
+const editionEpoch = "2026-10-12"
+
+func editionNumber(date string) int {
+	d, err1 := time.Parse("2006-01-02", date)
+	e, err2 := time.Parse("2006-01-02", editionEpoch)
+	if err1 != nil || err2 != nil {
+		return 0
+	}
+	return int(d.Sub(e).Hours()/24) + 1
 }
 
 // VoteRequest is the body of POST /api/votes. The Idempotency-Key header is required.
@@ -143,6 +161,16 @@ func (s *Server) TodayQuestions(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "no_questions_today")
 		return
 	}
+	set.Edition = editionNumber(set.Date)
+	tomorrow := s.clock().UTC().AddDate(0, 0, 1).Format("2006-01-02")
+	if next, ok := s.bank.GetSet(tomorrow); ok {
+		for _, q := range next.Questions {
+			if q.Theme != "" && !slices.Contains(set.TomorrowThemes, q.Theme) {
+				set.TomorrowThemes = append(set.TomorrowThemes, q.Theme)
+			}
+		}
+	}
+
 	// The set only changes at midnight, so the edge holds it until then and no longer.
 	left := s.untilRollover()
 	edge, browser := min(todayEdgeTTL, left), min(todayBrowserTTL, left)

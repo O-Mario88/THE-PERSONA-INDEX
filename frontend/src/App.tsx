@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { ApiError, getToday, type DailySet } from './api'
 import { QuestionCard } from './QuestionCard'
+import { EditionSummary } from './EditionSummary'
+import type { Outcome } from './crowd'
 import './App.css'
 
 type State =
@@ -12,6 +14,10 @@ type State =
 function App() {
   const [state, setState] = useState<State>({ kind: 'loading' })
   const [attempt, setAttempt] = useState(0)
+  const [outcomes, setOutcomes] = useState<Record<string, Outcome>>({})
+  const onOutcome = useCallback((id: string, o: Outcome) => {
+    setOutcomes((prev) => (prev[id] === o ? prev : { ...prev, [id]: o }))
+  }, [])
 
   useEffect(() => {
     let live = true
@@ -66,8 +72,21 @@ function App() {
             question={q}
             index={i}
             total={state.set.questions.length}
+            date={state.set.date}
+            onOutcome={onOutcome}
           />
         ))}
+
+      {state.kind === 'ready' &&
+        state.set.edition !== undefined &&
+        state.set.questions.every((q) => outcomes[q.id]) && (
+          <EditionSummary
+            date={state.set.date}
+            edition={state.set.edition}
+            outcomes={state.set.questions.map((q) => outcomes[q.id])}
+            tomorrowThemes={state.set.tomorrowThemes ?? []}
+          />
+        )}
     </main>
   )
 }

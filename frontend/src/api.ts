@@ -17,7 +17,12 @@ export type Question = {
   prompt: string
   options: Option[]
 }
-export type DailySet = { date: string; questions: Question[] }
+export type DailySet = {
+  date: string
+  edition?: number
+  questions: Question[]
+  tomorrowThemes?: string[]
+}
 export type OptionResult = { optionId: string; count: number; percent: number }
 export type QuestionResults = {
   questionId: string
@@ -160,4 +165,36 @@ export function rememberChoice(questionId: string, optionId: string) {
 
 export function recalledChoice(questionId: string): string | null {
   return load(`pi.choice.${questionId}`)
+}
+
+export function rememberSkip(questionId: string) {
+  save(`pi.choice.${questionId}`, SKIPPED)
+}
+export const SKIPPED = '-'
+
+export function rememberGuess(questionId: string, guess: string) {
+  save(`pi.guess.${questionId}`, guess)
+}
+
+export function recalledGuess(questionId: string): string | null {
+  return load(`pi.guess.${questionId}`)
+}
+
+// Days this phone answered at least one question, newest last. Kept on the
+// phone only; the server never learns who plays when.
+const daysKey = 'pi.days'
+
+export function playedDays(): string[] {
+  try {
+    const v = JSON.parse(load(daysKey) ?? '[]')
+    return Array.isArray(v) ? v.filter((d): d is string => typeof d === 'string') : []
+  } catch {
+    return []
+  }
+}
+
+export function recordPlayed(date: string) {
+  const days = playedDays()
+  if (days.includes(date)) return
+  save(daysKey, JSON.stringify([...days, date].sort().slice(-60)))
 }
