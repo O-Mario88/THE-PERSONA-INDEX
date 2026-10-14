@@ -136,3 +136,36 @@
     transition: none;
   }
 }
+
+.insight {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent);
+}
+
+.insight p {
+  margin: 0;
+}
+
+.insight-reveal {
+  font-size: 1.05rem;
+  line-height: 1.45;
+  font-weight: 600;
+}
+
+.insight-research,
+.insight-step {
+  line-height: 1.45;
+}
+
+.insight a {
+  color: var(--accent);
+}
+
+.insight-note {
+  font-size: 0.8rem;
+}

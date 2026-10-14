@@ -18,7 +18,11 @@ func HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
 const aggregationInterval = time.Second
 
 func main() {
-	srv := NewServer(time.Now, rotatingBank{sets: editorialSets})
+	bank, err := loadContentBank(questionsJSON)
+	if err != nil {
+		log.Fatal(err)
+	}
+	srv := NewServer(time.Now, bank)
 	go func() {
 		for range time.Tick(aggregationInterval) {
 			if err := srv.RunAggregation(); err != nil {

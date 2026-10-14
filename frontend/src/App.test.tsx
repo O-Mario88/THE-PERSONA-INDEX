@@ -9,8 +9,26 @@ const today: DailySet = {
       id: 'q-dishes',
       prompt: 'When do you wash the dishes?',
       options: [
-        { id: 'right-away', label: 'Right after eating' },
-        { id: 'end-of-day', label: 'At the end of the day' },
+        {
+          id: 'right-away',
+          label: 'Right after eating',
+          insight: {
+            reveal: 'People who wash up straight away often find unfinished tasks noisier than most.',
+            research: 'Making a specific when-then plan helps people reach goals.',
+            sourceTitle: 'Gollwitzer & Sheeran, 2006',
+            sourceUrl: 'https://example.org/study',
+            strength: 'strong',
+            step: 'Next time a small task appears, notice the itch to finish it.',
+          },
+        },
+        {
+          id: 'end-of-day',
+          label: 'At the end of the day',
+          insight: {
+            reveal: 'Batching chores suggests you protect your evenings for one big reset.',
+            step: 'Try one batch of chores at a set time this week.',
+          },
+        },
       ],
     },
     {
@@ -110,6 +128,35 @@ describe('App', () => {
     const body = JSON.parse(String(init.body))
     expect(body).toMatchObject({ questionId: 'q-dishes', optionId: 'right-away' })
     expect(body.voterId).toBe(localStorage.getItem('pi.device'))
+  })
+
+  it('shows the insight card for the chosen answer right after voting', async () => {
+    stubApi({})
+    render(<App />)
+    expect(
+      screen.queryByText(/unfinished tasks noisier/),
+    ).not.toBeInTheDocument()
+    fireEvent.click(await screen.findByRole('button', { name: 'Right after eating' }))
+
+    const insight = await screen.findByRole('note', { name: 'What your answer may say' })
+    expect(insight).toHaveTextContent('unfinished tasks noisier than most')
+    expect(insight).toHaveTextContent('Strong evidence')
+    expect(within(insight).getByRole('link', { name: 'Gollwitzer & Sheeran, 2006' })).toHaveAttribute(
+      'href',
+      'https://example.org/study',
+    )
+    expect(insight).toHaveTextContent('Try this: Next time a small task appears')
+    expect(screen.queryByText(/Batching chores/)).not.toBeInTheDocument()
+  })
+
+  it('shows a card without research when the insight cites none', async () => {
+    stubApi({})
+    render(<App />)
+    fireEvent.click(await screen.findByRole('button', { name: 'At the end of the day' }))
+    const insight = await screen.findByRole('note', { name: 'What your answer may say' })
+    expect(insight).toHaveTextContent('Batching chores suggests')
+    expect(within(insight).queryByRole('link')).not.toBeInTheDocument()
+    expect(insight).not.toHaveTextContent('evidence')
   })
 
   it('says the vote is in rather than inventing numbers when the count is still zero', async () => {

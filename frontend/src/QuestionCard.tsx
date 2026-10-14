@@ -6,6 +6,7 @@ import {
   rememberChoice,
   recalledChoice,
   voteKey,
+  type Insight,
   type Question,
   type QuestionResults,
 } from './api'
@@ -88,6 +89,8 @@ export function QuestionCard({ question, index, total }: Props) {
         </div>
       )}
 
+      {choice && <InsightCard insight={chosenInsight(question, choice)} />}
+
       {choice && (
         <Results question={question} choice={choice} results={results} />
       )}
@@ -98,6 +101,44 @@ export function QuestionCard({ question, index, total }: Props) {
         </p>
       )}
     </section>
+  )
+}
+
+function chosenInsight(question: Question, choice: string): Insight | undefined {
+  return question.options.find((o) => o.id === choice)?.insight
+}
+
+const STRENGTH_LABEL: Record<NonNullable<Insight['strength']>, string> = {
+  strong: 'Strong evidence',
+  moderate: 'Some evidence',
+  early: 'Early evidence',
+}
+
+function InsightCard({ insight }: { insight: Insight | undefined }) {
+  if (!insight) return null
+  return (
+    <div className="insight" role="note" aria-label="What your answer may say">
+      <p className="insight-reveal">{insight.reveal}</p>
+      {insight.research && (
+        <p className="insight-research">
+          {insight.research}{' '}
+          <span className="muted">
+            {insight.strength && `${STRENGTH_LABEL[insight.strength]} · `}
+            {insight.sourceUrl ? (
+              <a href={insight.sourceUrl} target="_blank" rel="noreferrer">
+                {insight.sourceTitle}
+              </a>
+            ) : (
+              insight.sourceTitle
+            )}
+          </span>
+        </p>
+      )}
+      <p className="insight-step">
+        <strong>Try this:</strong> {insight.step}
+      </p>
+      <p className="muted insight-note">For self-reflection, not a diagnosis.</p>
+    </div>
   )
 }
 
