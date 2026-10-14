@@ -78,6 +78,7 @@ func TestDeviceTokens(t *testing.T) {
 		tok := issueDevice(t, s, "")
 		expectStatus(t, postVote(t, s, VoteRequest{QuestionID: "q-dishes", OptionID: "right-away", VoterID: tok}, "k1"), http.StatusAccepted)
 		id, _ := s.devices.Verify(tok)
+		_ = id
 		mem, ok := s.votes.(*memoryStore)
 		if !ok {
 			t.Skip("inspects the in-memory store only")

@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import App from './App'
-import type { DailySet, QuestionResults } from './api'
+import type { DailySet, Question, QuestionResults } from './api'
 
 const today: DailySet = {
   date: '2026-10-12',
@@ -51,6 +51,28 @@ const today: DailySet = {
     },
   ],
 }
+
+const payday: Question = {
+  id: 'q-payday',
+  theme: 'money',
+  care: 'everyday',
+  prompt: 'Payday arrives. What goes first?',
+  options: [
+    { id: 'bills', label: 'Bills', depth: 1, traits: { conscientiousness: 1 } },
+    { id: 'treat', label: 'Something for me', depth: 4, traits: { present_bias: 2 } },
+  ],
+}
+const closeness: Question = {
+  id: 'q-close',
+  theme: 'intimacy',
+  care: 'intimate',
+  prompt: 'How do you most often show a partner affection?',
+  options: [
+    { id: 'touch', label: 'Small touches', depth: 1 },
+    { id: 'wait', label: 'I wait for them first', depth: 4 },
+  ],
+}
+today.pool = [...today.questions, payday, closeness]
 
 const dishesResults: QuestionResults = {
   questionId: 'q-dishes',
@@ -377,5 +399,113 @@ describe('App', () => {
     expect(await screen.findByRole('region', { name: 'Edition #3 done' })).toHaveTextContent(
       'You played 3 of the last 7 days',
     )
+  })
+
+  it('gives a returning phone its own three from the pool, by its interests', async () => {
+    localStorage.setItem(
+      'pi.history.v1',
+      JSON.stringify({
+        answers: [
+          { date: '2026-10-11', questionId: 'x', theme: 'money', depth: 4, traits: {} },
+          { date: '2026-10-10', questionId: 'y', theme: 'money', depth: 4, traits: {} },
+        ],
+        skips: [],
+      }),
+    )
+    stubApi({})
+    render(<App />)
+    expect(await screen.findByText('Payday arrives. What goes first?')).toBeInTheDocument()
+    expect(screen.getAllByRole('region', { name: /./ }).filter((r) => r.classList.contains('card'))).toHaveLength(3)
+  })
+
+  it('records each answer on this phone only, with its theme and depth', async () => {
+    localStorage.setItem(
+      'pi.history.v1',
+      JSON.stringify({ answers: [{ date: '2026-10-11', questionId: 'x', theme: 'money', depth: 4, traits: {} }], skips: [] }),
+    )
+    stubApi({})
+    render(<App />)
+    await answer('Something for me')
+    const h = JSON.parse(localStorage.getItem('pi.history.v1')!)
+    expect(h.answers).toContainEqual({
+      date: '2026-10-12',
+      questionId: 'q-payday',
+      theme: 'money',
+      depth: 4,
+      traits: { present_bias: 2 },
+    })
+  })
+
+  it('asks once whether the player is 18 or older before any intimacy question', async () => {
+    localStorage.setItem(
+      'pi.history.v1',
+      JSON.stringify({
+        answers: [
+          { date: '2026-10-11', questionId: 'x', theme: 'intimacy', depth: 4, traits: {} },
+          { date: '2026-10-11', questionId: 'y', theme: 'intimacy', depth: 4, traits: {} },
+        ],
+        skips: [],
+      }),
+    )
+    stubApi({})
+    const { unmount } = render(<App />)
+    const gate = await screen.findByRole('region', { name: 'Are you 18 or older?' })
+    expect(screen.queryByText(closeness.prompt)).not.toBeInTheDocument()
+    fireEvent.click(within(gate).getByRole('button', { name: "Yes, I'm 18 or older" }))
+    expect(await screen.findByText(closeness.prompt)).toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Are you 18 or older?' })).not.toBeInTheDocument()
+
+    // The keep-it-mild switch is always there and takes intimacy out again.
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Keep it mild (no intimacy questions)' }))
+    expect(screen.queryByText(closeness.prompt)).not.toBeInTheDocument()
+    unmount()
+    render(<App />)
+    await screen.findByText('Question 1 of 3')
+    expect(screen.queryByRole('region', { name: 'Are you 18 or older?' })).not.toBeInTheDocument()
+  })
+
+  it('never shows intimacy questions to someone who says no', async () => {
+    localStorage.setItem(
+      'pi.history.v1',
+      JSON.stringify({ answers: [{ date: '2026-10-11', questionId: 'x', theme: 'intimacy', depth: 4, traits: {} }], skips: [] }),
+    )
+    stubApi({})
+    render(<App />)
+    const gate = await screen.findByRole('region', { name: 'Are you 18 or older?' })
+    fireEvent.click(within(gate).getByRole('button', { name: 'No' }))
+    expect(screen.queryByText(closeness.prompt)).not.toBeInTheDocument()
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
+  })
+
+  it('shows the week on this phone: an honest trait read and a way to delete it all', async () => {
+    const a = (d: string, w: number) => ({ date: d, questionId: d + w, theme: 'habits', depth: 3, traits: { conscientiousness: w } })
+    localStorage.setItem('pi.history.v1', JSON.stringify({ answers: [a('2026-10-10', 1), a('2026-10-11', 1)], skips: [] }))
+    stubApi({})
+    render(<App />)
+    fireEvent.click(await screen.findByRole('button', { name: 'My week' }))
+    const week = screen.getByRole('region', { name: 'Your week' })
+    expect(week).toHaveTextContent('Early read, 2 answers')
+    expect(week).toHaveTextContent('Getting things done')
+    expect(week).toHaveTextContent('You tend to finish the task before you rest')
+    expect(week).toHaveTextContent('For self-reflection, not a diagnosis.')
+    expect(week).toHaveTextContent('lives only on this phone')
+
+    fireEvent.click(within(week).getByRole('button', { name: 'Delete everything on this phone' }))
+    fireEvent.click(within(week).getByRole('button', { name: 'Yes, delete it all' }))
+    expect(localStorage.getItem('pi.history.v1')).toBeNull()
+    expect(week).toHaveTextContent('No answers this week yet')
+  })
+
+  it('offers support contacts, calmly, when low-mood answers repeat in a week', async () => {
+    const a = (d: string) => ({ date: d, questionId: d, theme: 'sadness-stress', depth: 4, traits: {} })
+    localStorage.setItem(
+      'pi.history.v1',
+      JSON.stringify({ answers: [a('2026-10-09'), a('2026-10-10'), a('2026-10-11')], skips: [] }),
+    )
+    stubApi({})
+    render(<App />)
+    fireEvent.click(await screen.findByRole('button', { name: 'My week' }))
+    const note = screen.getByRole('note', { name: 'Support' })
+    expect(within(note).getByRole('link', { name: /Find a helpline/ })).toHaveAttribute('href', 'https://findahelpline.com')
   })
 })

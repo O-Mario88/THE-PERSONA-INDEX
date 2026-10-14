@@ -256,7 +256,8 @@ func decodeStrict(raw []byte, v any) error {
 
 // contentBank serves daily sets from the question bank.
 type contentBank struct {
-	byArea map[string][]bankQuestion // daily-eligible questions per area, sorted by id
+	byArea   map[string][]bankQuestion // daily-eligible questions per area, sorted by id
+	intimate []bankQuestion            // pool-only questions for adults who opted in, sorted by id
 }
 
 func loadContentBank(raw []byte) (contentBank, error) {
@@ -271,10 +272,12 @@ func loadContentBank(raw []byte) (contentBank, error) {
 	for _, q := range f.Questions {
 		t := themes[q.Theme]
 		if t.care == careIntimate {
+			b.intimate = append(b.intimate, q)
 			continue
 		}
 		b.byArea[t.area] = append(b.byArea[t.area], q)
 	}
+	slices.SortFunc(b.intimate, func(x, y bankQuestion) int { return strings.Compare(x.ID, y.ID) })
 	for _, a := range areas {
 		slices.SortFunc(b.byArea[a], func(x, y bankQuestion) int { return strings.Compare(x.ID, y.ID) })
 		if len(b.byArea[a]) == 0 {
@@ -298,24 +301,73 @@ func (b contentBank) GetSet(date string) (DailySet, bool) {
 	if d < 0 {
 		return DailySet{}, false
 	}
-	rest := d % len(areas)
 	set := DailySet{Date: date}
 	for ai, area := range areas {
-		if ai == rest {
-			continue
+		if i, ok := b.mainPick(ai, d); ok {
+			q := b.dailyQuestion(b.byArea[area][i], date)
+			set.Questions = append(set.Questions, q)
+			set.Pool = append(set.Pool, q)
 		}
-		qs := b.byArea[area]
-		// Days before d on which this area was drawn.
-		rested := 0
-		if d > ai {
-			rested = (d - ai + len(areas) - 1) / len(areas)
-		}
-		drawn := d - rested
-		cycle, pos := drawn/len(qs), drawn%len(qs)
-		order := shuffled(len(qs), area, cycle)
-		set.Questions = append(set.Questions, b.dailyQuestion(qs[order[pos]], date))
 	}
+	set.Pool = append(set.Pool, b.poolExtras(d, date)...)
 	return set, true
+}
+
+// mainPick is the index (into byArea) of area ai's question in day d's
+// default three, or false on the day that area rests.
+func (b contentBank) mainPick(ai, d int) (int, bool) {
+	if d < 0 || d%len(areas) == ai {
+		return 0, false
+	}
+	qs := b.byArea[areas[ai]]
+	// Days before d on which this area was drawn.
+	rested := 0
+	if d > ai {
+		rested = (d - ai + len(areas) - 1) / len(areas)
+	}
+	drawn := d - rested
+	// One fixed order per area, repeated cycle after cycle: a fresh shuffle per
+	// cycle could put a question last in one cycle and first in the next.
+	return shuffled(len(qs), areas[ai], 0)[drawn%len(qs)], true
+}
+
+// The edition pool: the default three plus extras, so each phone can pick
+// its own three by the player's interests (computed on the phone). Extras
+// come from a second fixed rotation per area, three slots a day; an extra
+// that is any day's default question within poolSpacing days is dropped, so
+// nobody sees a question twice in a week.
+const (
+	poolPerArea = 3
+	poolSpacing = 7
+)
+
+func (b contentBank) poolExtras(d int, date string) []Question {
+	var out []Question
+	for ai, area := range areas {
+		qs := b.byArea[area]
+		_, drawn := b.mainPick(ai, d)
+		want := poolPerArea
+		if drawn {
+			want--
+		}
+		near := map[int]bool{}
+		for dd := d - poolSpacing; dd <= d+poolSpacing; dd++ {
+			if i, ok := b.mainPick(ai, dd); ok {
+				near[i] = true
+			}
+		}
+		order := shuffled(len(qs), area+"/pool", 0)
+		for k := range want {
+			if i := order[(poolPerArea*d+k)%len(qs)]; !near[i] {
+				out = append(out, b.dailyQuestion(qs[i], date))
+			}
+		}
+	}
+	if len(b.intimate) > 0 {
+		order := shuffled(len(b.intimate), "intimate/pool", 0)
+		out = append(out, b.dailyQuestion(b.intimate[order[d%len(b.intimate)]], date))
+	}
+	return out
 }
 
 // shuffled is a fixed permutation of 0..n-1 for one area and cycle.
@@ -329,13 +381,13 @@ func shuffled(n int, area string, cycle int) []int {
 // dailyQuestion turns a bank question into the API shape. Ids carry the date,
 // so a question that comes round again starts with fresh votes.
 func (contentBank) dailyQuestion(q bankQuestion, date string) Question {
-	out := Question{ID: date + "-" + q.ID, Theme: q.Theme, Prompt: q.Prompt}
+	out := Question{ID: date + "-" + q.ID, Theme: q.Theme, Care: themes[q.Theme].care, Prompt: q.Prompt}
 	for _, o := range q.Options {
 		in := &Insight{Reveal: o.Insight.Reveal, Step: o.Insight.Step}
 		if src, ok := sources[o.Insight.Source]; ok {
 			in.Research, in.SourceTitle, in.SourceURL, in.Strength = o.Insight.Research, src.title, src.url, o.Insight.Strength
 		}
-		out.Options = append(out.Options, Option{ID: o.ID, Label: o.Label, Insight: in})
+		out.Options = append(out.Options, Option{ID: o.ID, Label: o.Label, Depth: o.Depth, Traits: o.Traits, Insight: in})
 	}
 	return out
 }

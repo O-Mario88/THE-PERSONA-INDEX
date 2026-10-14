@@ -10,10 +10,17 @@ export type Insight = {
   strength?: 'strong' | 'moderate' | 'early'
   step: string
 }
-export type Option = { id: string; label: string; insight?: Insight }
+export type Option = {
+  id: string
+  label: string
+  depth?: number
+  traits?: Record<string, number>
+  insight?: Insight
+}
 export type Question = {
   id: string
   theme?: string
+  care?: 'everyday' | 'personal' | 'intimate'
   prompt: string
   options: Option[]
 }
@@ -21,6 +28,7 @@ export type DailySet = {
   date: string
   edition?: number
   questions: Question[]
+  pool?: Question[]
   tomorrowThemes?: string[]
 }
 export type OptionResult = { optionId: string; count: number; percent: number }

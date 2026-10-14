@@ -1,8 +1,11 @@
-import { useCallback, useEffect, useState } from 'react'
-import { ApiError, getToday, type DailySet } from './api'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { ApiError, getToday, recalledChoice, type DailySet } from './api'
 import { QuestionCard } from './QuestionCard'
 import { EditionSummary } from './EditionSummary'
+import { MyWeek } from './MyWeek'
 import type { Outcome } from './crowd'
+import { forgetPick, todaysPick } from './profile'
+import { intimacyOn, loadPrefs, savePrefs, type Prefs } from './prefs'
 import './App.css'
 
 type State =
@@ -14,6 +17,9 @@ type State =
 function App() {
   const [state, setState] = useState<State>({ kind: 'loading' })
   const [attempt, setAttempt] = useState(0)
+  const [tab, setTab] = useState<'today' | 'week'>('today')
+  const [prefs, setPrefs] = useState<Prefs>(loadPrefs)
+  const [pickVersion, setPickVersion] = useState(0)
   const [outcomes, setOutcomes] = useState<Record<string, Outcome>>({})
   const onOutcome = useCallback((id: string, o: Outcome) => {
     setOutcomes((prev) => (prev[id] === o ? prev : { ...prev, [id]: o }))
@@ -34,6 +40,26 @@ function App() {
     }
   }, [attempt])
 
+  const set = state.kind === 'ready' ? state.set : null
+  const questions = useMemo(
+    () => (set ? todaysPick(set.pool ?? [], set.questions, set.date, intimacyOn(prefs)) : []),
+    // pickVersion forces a fresh pick after a preference change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [set, prefs, pickVersion],
+  )
+  const hasIntimate = !!set?.pool?.some((q) => q.care === 'intimate')
+
+  function changePrefs(next: Prefs) {
+    savePrefs(next)
+    setPrefs(next)
+    // Re-pick only while nothing of today's three is answered yet, so the
+    // questions never change under someone mid-edition.
+    if (set && !questions.some((q) => recalledChoice(q.id))) {
+      forgetPick(set.date)
+      setPickVersion((v) => v + 1)
+    }
+  }
+
   function retry() {
     setState({ kind: 'loading' })
     setAttempt((n) => n + 1)
@@ -43,10 +69,21 @@ function App() {
     <main className="page">
       <header className="masthead">
         <h1>The Persona Index</h1>
-        {state.kind === 'ready' && (
+        {set && (
           <p className="muted">
-            Today's questions · {formatDate(state.set.date)}
+            {set.edition ? `Edition #${set.edition} · ` : "Today's questions · "}
+            {formatDate(set.date)}
           </p>
+        )}
+        {set && (
+          <nav className="tabs" aria-label="Sections">
+            <button type="button" aria-pressed={tab === 'today'} onClick={() => setTab('today')}>
+              Today
+            </button>
+            <button type="button" aria-pressed={tab === 'week'} onClick={() => setTab('week')}>
+              My week
+            </button>
+          </nav>
         )}
       </header>
 
@@ -65,28 +102,58 @@ function App() {
         </div>
       )}
 
-      {state.kind === 'ready' &&
-        state.set.questions.map((q, i) => (
+      {set && tab === 'week' && <MyWeek today={set.date} />}
+
+      {set && tab === 'today' && hasIntimate && prefs.adult === null && (
+        <section className="notice gate" aria-labelledby="gate-title">
+          <h2 id="gate-title">Are you 18 or older?</h2>
+          <p className="muted">Some questions are about intimacy and sex. They are frank, never graphic, and your answers stay on this phone.</p>
+          <div className="confirm">
+            <button type="button" className="option" onClick={() => changePrefs({ ...prefs, adult: true })}>
+              Yes, I'm 18 or older
+            </button>
+            <button type="button" className="option" onClick={() => changePrefs({ ...prefs, adult: false })}>
+              No
+            </button>
+          </div>
+        </section>
+      )}
+
+      {set &&
+        tab === 'today' &&
+        questions.map((q, i) => (
           <QuestionCard
             key={q.id}
             question={q}
             index={i}
-            total={state.set.questions.length}
-            date={state.set.date}
+            total={questions.length}
+            date={set.date}
             onOutcome={onOutcome}
           />
         ))}
 
-      {state.kind === 'ready' &&
-        state.set.edition !== undefined &&
-        state.set.questions.every((q) => outcomes[q.id]) && (
+      {set &&
+        tab === 'today' &&
+        set.edition !== undefined &&
+        questions.every((q) => outcomes[q.id]) && (
           <EditionSummary
-            date={state.set.date}
-            edition={state.set.edition}
-            outcomes={state.set.questions.map((q) => outcomes[q.id])}
-            tomorrowThemes={state.set.tomorrowThemes ?? []}
+            date={set.date}
+            edition={set.edition}
+            outcomes={questions.map((q) => outcomes[q.id])}
+            tomorrowThemes={set.tomorrowThemes ?? []}
           />
         )}
+
+      {set && tab === 'today' && prefs.adult === true && (
+        <label className="switch">
+          <input
+            type="checkbox"
+            checked={prefs.mild}
+            onChange={(e) => changePrefs({ ...prefs, mild: e.target.checked })}
+          />
+          Keep it mild (no intimacy questions)
+        </label>
+      )}
     </main>
   )
 }

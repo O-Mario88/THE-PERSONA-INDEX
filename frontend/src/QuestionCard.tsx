@@ -16,6 +16,7 @@ import {
   type QuestionResults,
 } from './api'
 import { GUESSES, guessFeedback, outcomeFor, type Outcome } from './crowd'
+import { recordAnswer, recordSkip } from './profile'
 
 type Props = {
   question: Question
@@ -75,6 +76,7 @@ export function QuestionCard({ question, index, total, date, onOutcome }: Props)
     try {
       await castVote(question.id, optionId, voteKey(question.id))
       rememberChoice(question.id, optionId)
+      recordAnswer(question, optionId, date)
       recordPlayed(date)
       setChoice(optionId)
     } catch (e) {
@@ -92,6 +94,7 @@ export function QuestionCard({ question, index, total, date, onOutcome }: Props)
 
   function skip() {
     rememberSkip(question.id)
+    recordSkip(question, date)
     setChoice(SKIPPED)
   }
 

@@ -15,14 +15,17 @@ import (
 // API contracts. The acceptance tests in api_test.go pin these shapes.
 
 type Option struct {
-	ID      string   `json:"id"`
-	Label   string   `json:"label"`
-	Insight *Insight `json:"insight,omitempty"` // the card shown after this option is chosen
+	ID      string         `json:"id"`
+	Label   string         `json:"label"`
+	Depth   int            `json:"depth,omitempty"`  // 1 light .. 4 most revealing; feeds the phone's interest score
+	Traits  map[string]int `json:"traits,omitempty"` // trait weights; the phone builds the profile from these
+	Insight *Insight       `json:"insight,omitempty"`
 }
 
 type Question struct {
 	ID      string   `json:"id"`
 	Theme   string   `json:"theme,omitempty"`
+	Care    string   `json:"care,omitempty"` // everyday | personal | intimate
 	Prompt  string   `json:"prompt"`
 	Options []Option `json:"options"`
 }
@@ -31,7 +34,10 @@ type Question struct {
 type DailySet struct {
 	Date      string     `json:"date"`              // YYYY-MM-DD, UTC
 	Edition   int        `json:"edition,omitempty"` // shared worldwide: "Persona Index #142"
-	Questions []Question `json:"questions"`
+	Questions []Question `json:"questions"`         // the default three, for a phone with no history
+	// Pool holds every question of the edition, the default three included.
+	// Each phone picks its own three from it; intimate ones only after the 18+ tap.
+	Pool []Question `json:"pool,omitempty"`
 	// TomorrowThemes names the themes of the next edition, each once, so the
 	// session can end on anticipation. Tomorrow's questions are never sent.
 	TomorrowThemes []string `json:"tomorrowThemes,omitempty"`
@@ -165,7 +171,7 @@ func (s *Server) TodayQuestions(w http.ResponseWriter, r *http.Request) {
 	tomorrow := s.clock().UTC().AddDate(0, 0, 1).Format("2006-01-02")
 	if next, ok := s.bank.GetSet(tomorrow); ok {
 		for _, q := range next.Questions {
-			if q.Theme != "" && !slices.Contains(set.TomorrowThemes, q.Theme) {
+			if q.Theme != "" && q.Care != careIntimate && !slices.Contains(set.TomorrowThemes, q.Theme) {
 				set.TomorrowThemes = append(set.TomorrowThemes, q.Theme)
 			}
 		}
@@ -197,7 +203,11 @@ func (s *Server) findQuestion(id string, window questionWindow) (Question, bool)
 		if !ok {
 			continue
 		}
-		for _, q := range set.Questions {
+		qs := set.Pool
+		if len(qs) == 0 {
+			qs = set.Questions
+		}
+		for _, q := range qs {
 			if q.ID == id {
 				return q, true
 			}
@@ -265,7 +275,9 @@ func (s *Server) CastVote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ballot := Vote{QuestionID: v.QuestionID, OptionID: v.OptionID, VoterHash: s.devices.voterHash(deviceID)}
+	// The stored key is per device and question, so the server can enforce one
+	// vote per question but cannot join one device's answers into a profile.
+	ballot := Vote{QuestionID: q.ID, OptionID: v.OptionID, VoterHash: s.devices.voterHash(deviceID, q.ID)}
 	e, err := s.votes.Accept(r.Context(), key, ballot, s.clock())
 	switch {
 	case errors.Is(err, ErrDuplicateVote):
