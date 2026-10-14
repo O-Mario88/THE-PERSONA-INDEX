@@ -12,12 +12,14 @@ import (
 // API contracts. The acceptance tests in api_test.go pin these shapes.
 
 type Option struct {
-	ID    string `json:"id"`
-	Label string `json:"label"`
+	ID      string   `json:"id"`
+	Label   string   `json:"label"`
+	Insight *Insight `json:"insight,omitempty"` // the card shown after this option is chosen
 }
 
 type Question struct {
 	ID      string   `json:"id"`
+	Theme   string   `json:"theme,omitempty"`
 	Prompt  string   `json:"prompt"`
 	Options []Option `json:"options"`
 }

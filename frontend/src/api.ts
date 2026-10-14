@@ -1,7 +1,22 @@
 // Client for the backend API. Shapes mirror backend/api.go.
 
-export type Option = { id: string; label: string }
-export type Question = { id: string; prompt: string; options: Option[] }
+// The card shown right after an option is chosen. Research fields appear only
+// when the card cites a study.
+export type Insight = {
+  reveal: string
+  research?: string
+  sourceTitle?: string
+  sourceUrl?: string
+  strength?: 'strong' | 'moderate' | 'early'
+  step: string
+}
+export type Option = { id: string; label: string; insight?: Insight }
+export type Question = {
+  id: string
+  theme?: string
+  prompt: string
+  options: Option[]
+}
 export type DailySet = { date: string; questions: Question[] }
 export type OptionResult = { optionId: string; count: number; percent: number }
 export type QuestionResults = {
