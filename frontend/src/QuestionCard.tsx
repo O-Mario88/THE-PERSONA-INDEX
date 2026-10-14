@@ -7,6 +7,9 @@ import {
   rememberChoice,
   rememberGuess,
   rememberSkip,
+  rateCard,
+  rememberRated,
+  wasRated,
   recalledChoice,
   recordPlayed,
   SKIPPED,
@@ -152,7 +155,13 @@ export function QuestionCard({ question, index, total, date, onOutcome }: Props)
         </div>
       )}
 
-      {revealed && <InsightCard insight={chosenInsight(question, choice)} />}
+      {revealed && (
+        <InsightCard
+          insight={chosenInsight(question, choice)}
+          rate={(learned) => rateCard(question.id, choice, learned)}
+          questionId={question.id}
+        />
+      )}
 
       {revealed && (
         <Results question={question} choice={choice} results={results} guess={guess} />
@@ -177,8 +186,24 @@ const STRENGTH_LABEL: Record<NonNullable<Insight['strength']>, string> = {
   early: 'Early evidence',
 }
 
-function InsightCard({ insight }: { insight: Insight | undefined }) {
+function InsightCard({
+  insight,
+  rate,
+  questionId,
+}: {
+  insight: Insight | undefined
+  rate: (learned: boolean) => Promise<unknown>
+  questionId: string
+}) {
+  const [rated, setRated] = useState(() => wasRated(questionId))
   if (!insight) return null
+  function tap(learned: boolean) {
+    setRated(true)
+    rememberRated(questionId)
+    rate(learned).catch(() => {
+      // a lost rating is not worth bothering anyone about
+    })
+  }
   return (
     <div className="insight" role="note" aria-label="What your answer may say">
       <p className="insight-reveal">{insight.reveal}</p>
@@ -200,6 +225,18 @@ function InsightCard({ insight }: { insight: Insight | undefined }) {
       <p className="insight-step">
         <strong>Try this:</strong> {insight.step}
       </p>
+      {rated ? (
+        <p className="muted">Thanks. This helps us keep the good cards.</p>
+      ) : (
+        <div className="rate">
+          <button type="button" className="chip" onClick={() => tap(true)}>
+            I learned something
+          </button>
+          <button type="button" className="chip" onClick={() => tap(false)}>
+            Not really
+          </button>
+        </div>
+      )}
       <p className="muted insight-note">For self-reflection, not a diagnosis.</p>
     </div>
   )

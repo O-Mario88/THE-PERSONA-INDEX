@@ -1,17 +1,19 @@
 import { useState } from 'react'
 import { playedDays } from './api'
 import { daysPlayedThisWeek, SQUARE, themeName, type Outcome } from './crowd'
+import { encodeCompare } from './compare'
 
 type Props = {
   date: string
   edition: number
   outcomes: Outcome[]
   tomorrowThemes: string[]
+  answers: [string, string][] // what a compare link may carry: no intimate answers
 }
 
 // The end of a session: the shareable edition squares, the week's rhythm and
 // tomorrow's themes. Nothing here resets or punishes a missed day.
-export function EditionSummary({ date, edition, outcomes, tomorrowThemes }: Props) {
+export function EditionSummary({ date, edition, outcomes, tomorrowThemes, answers }: Props) {
   const [copied, setCopied] = useState(false)
   const squares = outcomes.map((o) => SQUARE[o]).join('')
   const played = daysPlayedThisWeek(playedDays(), date)
@@ -19,7 +21,15 @@ export function EditionSummary({ date, edition, outcomes, tomorrowThemes }: Prop
 
   async function share() {
     const url = window.location.origin
-    const text = `Persona Index #${edition}\n${squares}\n🟩 with the crowd · 🟧 against it\n${url}`
+    await send(`Persona Index #${edition}\n${squares}\n🟩 with the crowd · 🟧 against it\n${url}`)
+  }
+
+  async function compare() {
+    const link = `${window.location.origin}/#c=${encodeCompare({ e: edition, a: answers })}`
+    await send(`I answered today's Persona Index. Answer the same questions and see where we agree: ${link}`)
+  }
+
+  async function send(text: string) {
     try {
       if (navigator.share) {
         await navigator.share({ text })
@@ -41,6 +51,11 @@ export function EditionSummary({ date, edition, outcomes, tomorrowThemes }: Prop
       <button type="button" className="option primary" onClick={share}>
         Share
       </button>
+      {answers.length > 0 && (
+        <button type="button" className="option" onClick={compare}>
+          Compare with someone
+        </button>
+      )}
       {copied && <p className="muted">Copied. Paste it anywhere.</p>}
       <p className="muted">You played {played} of the last 7 days.</p>
       {tomorrowThemes.length > 0 && (

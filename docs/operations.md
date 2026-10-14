@@ -42,3 +42,22 @@ The API has its own per-instance limits (30 votes per device per minute, 20 new 
 - Rate limit `POST /api/votes`: 60 requests per IP per minute, managed challenge.
 - Cache `GET /api/questions/today` and `GET /api/questions/*/results` by respecting origin `Cache-Control` (`s-maxage`). Never cache `POST` routes; they send `no-store`.
 - Bot Fight Mode on for `/api/*`.
+
+## Insight card ratings
+
+`POST /api/ratings` counts the one-tap "I learned something" / "Not really" on each card, anonymously and once per device per question, in the same vote store under `rating/<questionId>/<optionId>`. Learned rate per card across all days:
+
+```sql
+SELECT split_part(question_id, '/', 3) AS option_id,
+       substring(split_part(question_id, '/', 2) from 12) AS bank_question,
+       sum(count) FILTER (WHERE option_id = 'learned')::float / sum(count) AS learned_rate,
+       sum(count) AS ratings
+FROM vote_tallies WHERE question_id LIKE 'rating/%'
+GROUP BY 1, 2 HAVING sum(count) >= 100 ORDER BY learned_rate;
+```
+
+Cards at the bottom with enough ratings are the ones to rewrite. (Automatic retirement from these numbers is the next step.)
+
+## Compare with someone
+
+Handled entirely on the phones: the link carries the edition number and the sender's chosen answers (never intimate ones) in the URL fragment, which browsers do not send to the server.
