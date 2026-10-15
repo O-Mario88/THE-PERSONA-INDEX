@@ -617,3 +617,59 @@
     display: none;
   }
 }
+
+/* Evening check-in: the same cards, in a calmer night palette. */
+.evening-intro {
+  margin: 0;
+  font-weight: 600;
+}
+
+.said {
+  margin: 0;
+  padding: 8px 12px;
+  border-left: 3px solid var(--t-from);
+  border-radius: 0 10px 10px 0;
+  background: color-mix(in srgb, var(--t-from) 8%, var(--surface));
+  line-height: 1.4;
+}
+
+.reflection {
+  --t-from: #6366f1;
+  --t-to: #8b5cf6;
+}
+
+.morning-toggle {
+  align-self: center;
+}
+
+.move-check {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.move-check p {
+  margin: 0;
+}
+
+.move-step {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  line-height: 1.4;
+}
+
+.step:disabled {
+  cursor: default;
+}
+
+.week h3 {
+  margin: 4px 0 0;
+  font-size: 1rem;
+}
+
+.week .steps p,
+.week .advice p {
+  margin: 0;
+}

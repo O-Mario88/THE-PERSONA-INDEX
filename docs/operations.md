@@ -32,7 +32,11 @@ Stored per vote: question, option, an HMAC of the device id keyed by the server 
 
 ## Daily rollover
 
-One global edition, rolling over at 00:00 UTC. Today's set is cached at most 5 minutes at the edge and 1 minute in the browser, and never past midnight. Votes on yesterday's questions are accepted for 10 minutes after midnight, longer than any cached copy can live. Yesterday's results stay readable all of the next day.
+Each phone plays the edition for its own local date, from `GET /api/editions/{date}`, so the morning questions arrive in the person's morning. The evening check-in opens at 5 pm on the phone's clock; its follow-up answers stay on the phone and are never sent.
+
+Time zones run from UTC-12 to UTC+14, so a date is today somewhere for about 50 hours: from 10:00 UTC the day before until 12:00 UTC the day after. The server serves a date, and accepts votes on its questions, only in that window, plus 10 minutes of grace for votes. A set is cached at most 5 minutes at the edge and 1 minute in the browser, shorter than the grace. Results stay readable for a day after the window closes. Edition numbers and question ids are the same everywhere for a date.
+
+`GET /api/questions/today` still serves the UTC date's set; the app falls back to it when its own date is not open (a phone clock far off).
 
 ## Edge rules (Cloudflare)
 
@@ -40,7 +44,7 @@ The API has its own per-instance limits (30 votes per device per minute, 20 new 
 
 - Rate limit `POST /api/device`: 20 requests per IP per hour, block for 1 hour.
 - Rate limit `POST /api/votes`: 60 requests per IP per minute, managed challenge.
-- Cache `GET /api/questions/today` and `GET /api/questions/*/results` by respecting origin `Cache-Control` (`s-maxage`). Never cache `POST` routes; they send `no-store`.
+- Cache `GET /api/editions/*`, `GET /api/questions/today` and `GET /api/questions/*/results` by respecting origin `Cache-Control` (`s-maxage`). Never cache `POST` routes; they send `no-store`.
 - Bot Fight Mode on for `/api/*`.
 
 ## Insight card ratings

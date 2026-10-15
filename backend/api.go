@@ -23,16 +23,17 @@ type Option struct {
 }
 
 type Question struct {
-	ID      string   `json:"id"`
-	Theme   string   `json:"theme,omitempty"`
-	Care    string   `json:"care,omitempty"` // everyday | personal | intimate
-	Prompt  string   `json:"prompt"`
-	Options []Option `json:"options"`
+	ID       string    `json:"id"`
+	Theme    string    `json:"theme,omitempty"`
+	Care     string    `json:"care,omitempty"` // everyday | personal | intimate
+	Prompt   string    `json:"prompt"`
+	Options  []Option  `json:"options"`
+	FollowUp *FollowUp `json:"followUp,omitempty"` // the evening question on this one; see content.go
 }
 
-// DailySet is the response of GET /api/questions/today.
+// DailySet is the response of GET /api/questions/today and GET /api/editions/{date}.
 type DailySet struct {
-	Date      string     `json:"date"`              // YYYY-MM-DD, UTC
+	Date      string     `json:"date"`              // YYYY-MM-DD
 	Edition   int        `json:"edition,omitempty"` // shared worldwide: "Persona Index #142"
 	Questions []Question `json:"questions"`         // the default three, for a phone with no history
 	// Pool holds every question of the edition, the default three included.
@@ -85,7 +86,7 @@ type QuestionResults struct {
 	Options    []OptionResult `json:"options"`
 }
 
-// APIError codes: no_questions_today, invalid_request, missing_idempotency_key, unknown_question,
+// APIError codes: no_questions_today, no_edition, invalid_request, missing_idempotency_key, unknown_question,
 // unknown_option, duplicate_vote, idempotency_key_reused, invalid_device, rate_limited, unavailable.
 type APIError struct {
 	Error string `json:"error"`
@@ -129,6 +130,7 @@ func (s *Server) Routes() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/health", HealthCheckHandler)
 	mux.HandleFunc("GET /api/questions/today", s.TodayQuestions)
+	mux.HandleFunc("GET /api/editions/{date}", s.Edition)
 	mux.HandleFunc("POST /api/device", s.IssueDevice)
 	mux.HandleFunc("POST /api/votes", s.CastVote)
 	mux.HandleFunc("POST /api/ratings", s.RateCard)
@@ -136,16 +138,25 @@ func (s *Server) Routes() http.Handler {
 	return mux
 }
 
-// todayDate is the current question day. Days roll over at midnight UTC: one
-// global edition, the same moment everywhere.
+// todayDate is today in UTC, the edition GET /api/questions/today serves.
 func (s *Server) todayDate() string {
 	return s.clock().UTC().Format("2006-01-02")
 }
 
-// Rollover. A phone that loaded the set just before midnight, or an edge copy
-// a few seconds old, still holds yesterday's questions. Votes on those are
-// accepted for rolloverGrace after midnight, and the cache lifetimes of
-// today's set are capped at midnight and are always shorter than the grace.
+// Local days. Each phone plays the edition for its own date (GET
+// /api/editions/{date}), so the morning questions arrive in the person's
+// morning wherever they live. Time zones run from UTC-12 to UTC+14, so a date
+// is today somewhere from 14 hours before its UTC midnight until 12 hours
+// after its UTC end: about 50 hours.
+const (
+	eastmostOffset = 14 * time.Hour
+	westmostOffset = 12 * time.Hour
+)
+
+// Rollover. A phone that loaded the set just before its midnight, or an edge
+// copy a few seconds old, still holds that day's questions. Votes on those
+// are accepted for rolloverGrace after the day has ended everywhere, and the
+// cache lifetimes of a set are always shorter than the grace.
 const (
 	rolloverGrace   = 10 * time.Minute
 	todayEdgeTTL    = 5 * time.Minute
@@ -156,9 +167,73 @@ const (
 type questionWindow int
 
 const (
-	voteWindow    questionWindow = iota // today, plus yesterday during the grace
-	resultsWindow                       // today and yesterday ("yesterday's verdict")
+	voteWindow    questionWindow = iota // dates that are today somewhere, plus the grace
+	resultsWindow                       // those dates and the day before ("yesterday's verdict")
+	editionWindow                       // dates that are today somewhere
 )
+
+// openDates lists, oldest first, the dates whose questions the window allows.
+func (s *Server) openDates(window questionWindow) []string {
+	now := s.clock().UTC()
+	first := now.Add(-westmostOffset)
+	switch window {
+	case voteWindow:
+		first = first.Add(-rolloverGrace)
+	case resultsWindow:
+		first = first.AddDate(0, 0, -1)
+	}
+	last := now.Add(eastmostOffset).Format("2006-01-02")
+	var dates []string
+	for d := first; ; d = d.AddDate(0, 0, 1) {
+		date := d.Format("2006-01-02")
+		dates = append(dates, date)
+		if date >= last {
+			return dates
+		}
+	}
+}
+
+// Edition serves one date's set, for a phone whose local date it is. Only
+// dates that are today somewhere can be fetched, so no one sees a day's
+// questions before its morning has begun anywhere.
+func (s *Server) Edition(w http.ResponseWriter, r *http.Request) {
+	date := r.PathValue("date")
+	if d, err := time.Parse("2006-01-02", date); err != nil || d.Format("2006-01-02") != date {
+		w.Header().Set("Cache-Control", "public, max-age=3600, s-maxage=3600")
+		writeError(w, http.StatusBadRequest, "invalid_request")
+		return
+	}
+	set, ok := DailySet{}, false
+	if slices.Contains(s.openDates(editionWindow), date) {
+		set, ok = s.bank.GetSet(date)
+	}
+	if !ok {
+		// Short shared cache: the date may open, or its set be published, soon.
+		w.Header().Set("Cache-Control", "public, max-age=30, s-maxage=30")
+		writeError(w, http.StatusNotFound, "no_edition")
+		return
+	}
+	s.completeSet(&set)
+	w.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d, s-maxage=%d", int(todayBrowserTTL.Seconds()), int(todayEdgeTTL.Seconds())))
+	writeJSON(w, http.StatusOK, set)
+}
+
+// completeSet adds the edition number and the next day's themes (never its
+// questions), so a session can end on anticipation.
+func (s *Server) completeSet(set *DailySet) {
+	set.Edition = editionNumber(set.Date)
+	d, err := time.Parse("2006-01-02", set.Date)
+	if err != nil {
+		return
+	}
+	if next, ok := s.bank.GetSet(d.AddDate(0, 0, 1).Format("2006-01-02")); ok {
+		for _, q := range next.Questions {
+			if q.Theme != "" && q.Care != careIntimate && !slices.Contains(set.TomorrowThemes, q.Theme) {
+				set.TomorrowThemes = append(set.TomorrowThemes, q.Theme)
+			}
+		}
+	}
+}
 
 func (s *Server) TodayQuestions(w http.ResponseWriter, r *http.Request) {
 	set, ok := s.bank.GetSet(s.todayDate())
@@ -168,15 +243,7 @@ func (s *Server) TodayQuestions(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "no_questions_today")
 		return
 	}
-	set.Edition = editionNumber(set.Date)
-	tomorrow := s.clock().UTC().AddDate(0, 0, 1).Format("2006-01-02")
-	if next, ok := s.bank.GetSet(tomorrow); ok {
-		for _, q := range next.Questions {
-			if q.Theme != "" && q.Care != careIntimate && !slices.Contains(set.TomorrowThemes, q.Theme) {
-				set.TomorrowThemes = append(set.TomorrowThemes, q.Theme)
-			}
-		}
-	}
+	s.completeSet(&set)
 
 	// The set only changes at midnight, so the edge holds it until then and no longer.
 	left := s.untilRollover()
@@ -193,14 +260,8 @@ func (s *Server) untilRollover() time.Duration {
 
 // findQuestion looks a question up in the sets the window allows.
 func (s *Server) findQuestion(id string, window questionWindow) (Question, bool) {
-	now := s.clock().UTC()
-	days := []time.Time{now}
-	sinceMidnight := now.Sub(now.Truncate(24 * time.Hour))
-	if window == resultsWindow || sinceMidnight < rolloverGrace {
-		days = append(days, now.AddDate(0, 0, -1))
-	}
-	for _, day := range days {
-		set, ok := s.bank.GetSet(day.Format("2006-01-02"))
+	for _, day := range s.openDates(window) {
+		set, ok := s.bank.GetSet(day)
 		if !ok {
 			continue
 		}

@@ -153,9 +153,10 @@ func TestMidnightRollover(t *testing.T) {
 		expectStatus(t, postVote(t, s, vote, "k1"), http.StatusAccepted)
 	})
 
-	t.Run("yesterday's questions stop taking votes once the grace window ends", func(t *testing.T) {
+	t.Run("yesterday's questions stop taking votes once the day has ended everywhere and the grace is over", func(t *testing.T) {
+		// Days are local (localday_test.go): Oct 12 ends last in UTC-12, at 12:00 UTC on Oct 13.
 		s := newTestServer()
-		s.clock = func() time.Time { return nextDay(0, 0).Add(rolloverGrace + time.Second) }
+		s.clock = func() time.Time { return nextDay(12, 0).Add(rolloverGrace + time.Second) }
 		expectError(t, postVote(t, s, vote, "k1"), http.StatusNotFound, "unknown_question")
 	})
 

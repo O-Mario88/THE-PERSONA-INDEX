@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { playedDays } from './api'
+import { TRAIT_ADVICE } from './advice'
+import { movesThisWeek } from './game'
 import { daysPlayedThisWeek, themeName } from './themes'
 import { loadHistory, lowMoodRepeated, readTraits, TRAIT_WORDS } from './profile'
 
@@ -11,6 +13,9 @@ export function MyWeek({ today }: { today: string }) {
   const read = readTraits(history, today)
   const played = daysPlayedThisWeek([...playedDays(), ...history.answers.map((a) => a.date)], today)
   const themes = [...new Set(history.answers.map((a) => a.theme))]
+  const moves = movesThisWeek(today)
+  // One focus for next week: the clearest leaning of the week, and how to grow from it.
+  const focus = read.traits.find((t) => t.direction !== 'middle' && TRAIT_ADVICE[t.trait] && TRAIT_WORDS[t.trait])
 
   function deleteAll() {
     try {
@@ -57,6 +62,27 @@ export function MyWeek({ today }: { today: string }) {
       <p className="muted insight-note">
         For self-reflection, not a diagnosis. One week of answers gives a rough read, not a verdict.
       </p>
+
+      <div className="steps">
+        <h3>
+          <span aria-hidden="true">🎯 </span>Your moves
+        </h3>
+        <p>
+          {moves.picked === 0
+            ? 'Pick a move after your morning questions, and the evening check-in will ask how it went.'
+            : `Moves tried this week: ${moves.tried} of ${moves.picked}.`}
+        </p>
+      </div>
+
+      {focus && focus.direction !== 'middle' && (
+        <div className="advice" role="note" aria-label="Focus for next week">
+          <h3>
+            <span aria-hidden="true">🌱 </span>Focus for next week
+          </h3>
+          <p className="trait-name">{TRAIT_WORDS[focus.trait].name}</p>
+          <p>{TRAIT_ADVICE[focus.trait][focus.direction].grow}</p>
+        </div>
+      )}
 
       {lowMoodRepeated(history, today) && (
         <div className="support" role="note" aria-label="Support">

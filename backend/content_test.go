@@ -38,7 +38,11 @@ func TestValidateBankCatchesBrokenCards(t *testing.T) {
 			{ID: "bills", Label: "Bills", Depth: 1, Insight: card("Your answer suggests you like to clear worries before you enjoy anything. People like this tend to tidy before guests arrive and answer the hard email first.")},
 			{ID: "savings", Label: "Savings", Depth: 2, Insight: card("Saving first suggests you trust your future self more than most. People like this tend to plan trips early and are often the calm one when a bill surprises everyone.")},
 			{ID: "treat", Label: "Something for me", Depth: 3, Insight: card("Choosing this suggests the week took more out of you than you admit. People like you tend to give a lot at work and are often the last to notice they need a break.")},
-		}}
+		}, FollowUp: FollowUp{Prompt: "Did money come in or go out today? What did you do first?", Options: []FollowUpOption{
+			{ID: "paid-bills", Label: "I paid what was due", Traits: map[string]int{"conscientiousness": 1}, Reflection: "Paying what was due first suggests you like a clear head before anything else. Tomorrow, you might notice how that calm feels, and give yourself one small treat for it."},
+			{ID: "treated-myself", Label: "I bought something for me", Reflection: "A treat on a money day may mean you needed a lift. That is allowed. Tomorrow, you could check whether it still feels good, which tends to show what was really worth it."},
+			{ID: "no-money", Label: "Money didn't come up today", Reflection: "No money moments today, and that is fine. Quiet days with your money often leave room to think about what you want it to do for you next."},
+		}}}
 	}
 	cases := []struct {
 		name   string
@@ -73,6 +77,22 @@ func TestValidateBankCatchesBrokenCards(t *testing.T) {
 		{"uncited research claim in a reveal", func(q *bankQuestion) {
 			q.Options[2].Insight.Reveal = "Your answer suggests you are tired. Studies show people like you tend to give a lot at work and are often the last to notice they need a break."
 		}, "uncited research"},
+		{"no evening follow-up", func(q *bankQuestion) { q.FollowUp = FollowUp{} }, "follow-up prompt"},
+		{"follow-up with too few options", func(q *bankQuestion) { q.FollowUp.Options = q.FollowUp.Options[:2] }, "follow-up needs 3 or 4 options"},
+		{"follow-up survey answer", func(q *bankQuestion) { q.FollowUp.Options[0].Label = "Strongly agree" }, "survey"},
+		{"thin reflection", func(q *bankQuestion) { q.FollowUp.Options[1].Reflection = "You treated yourself today." }, "characters"},
+		{"reflection about other people only", func(q *bankQuestion) {
+			q.FollowUp.Options[1].Reflection = "People who treat themselves on payday tend to be tired by the end of the week, and a small treat is often how they keep going until the weekend comes."
+		}, "speak to the reader"},
+		{"reflection with an uncited claim", func(q *bankQuestion) {
+			q.FollowUp.Options[1].Reflection = "Research shows a treat on payday lifts your mood for the week, so you made a sound choice and you can enjoy it without any worry at all tonight."
+		}, "uncited research"},
+		{"the app calls itself a therapist", func(q *bankQuestion) {
+			q.FollowUp.Options[2].Reflection = "Like a good therapist would say, quiet money days are a chance for you to rest. Tomorrow, you might think about what you want your money to do for you."
+		}, "banned word"},
+		{"copied reflection", func(q *bankQuestion) { q.FollowUp.Options[1].Reflection = q.FollowUp.Options[0].Reflection }, "repeats"},
+		{"bad follow-up trait", func(q *bankQuestion) { q.FollowUp.Options[0].Traits = map[string]int{"luck": 1} }, "trait"},
+		{"duplicate follow-up option id", func(q *bankQuestion) { q.FollowUp.Options[1].ID = q.FollowUp.Options[0].ID }, "duplicate"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -89,6 +109,18 @@ func TestValidateBankCatchesBrokenCards(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("no two questions share an evening prompt", func(t *testing.T) {
+		a, b := good(), good()
+		b.ID = "money-test-two"
+		var found bool
+		for _, err := range validateBank(bankFile{Questions: []bankQuestion{a, b}}) {
+			found = found || strings.Contains(err.Error(), "follow-up prompt repeats")
+		}
+		if !found {
+			t.Fatal("expected a repeated follow-up prompt to fail")
+		}
+	})
 
 	t.Run("a good question passes every per-question rule", func(t *testing.T) {
 		for _, err := range validateBank(bankFile{Questions: []bankQuestion{good()}}) {

@@ -65,7 +65,8 @@ func TestCastVoteRules(t *testing.T) {
 
 	t.Run("questions from other days do not accept votes", func(t *testing.T) {
 		s := newTestServer()
-		s.clock = func() time.Time { return fixedNow.AddDate(0, 0, 1) }
+		// Two days on, Oct 12 is over in every time zone.
+		s.clock = func() time.Time { return fixedNow.AddDate(0, 0, 2) }
 		expectError(t, postVote(t, s, vote, "key-1"), http.StatusNotFound, "unknown_question")
 	})
 

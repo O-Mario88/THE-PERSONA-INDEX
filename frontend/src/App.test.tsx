@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import App from './App'
 import type { DailySet, Question } from './api'
+import { TRAIT_ADVICE } from './advice'
 
 const today: DailySet = {
   date: '2026-10-12',
@@ -34,6 +35,24 @@ const today: DailySet = {
           },
         },
       ],
+      followUp: {
+        prompt: 'Did any dishes pile up today?',
+        options: [
+          {
+            id: 'washed',
+            label: 'I washed them straight away',
+            traits: { conscientiousness: 1 },
+            reflection: 'You kept on top of it again today, which suggests tidy surroundings help your head feel clear.',
+          },
+          {
+            id: 'piled',
+            label: 'They piled up a bit',
+            traits: { conscientiousness: -1 },
+            reflection: 'A pile on a full day is normal. You may have spent your energy on things that mattered more today.',
+          },
+          { id: 'no-dishes', label: "I didn't cook today", reflection: 'No dishes, no decision. Tomorrow you might notice when you choose to clear up.' },
+        ],
+      },
     },
     {
       id: 'q-bill',
@@ -58,6 +77,19 @@ const today: DailySet = {
           },
         },
       ],
+      followUp: {
+        prompt: 'How did getting up go this morning?',
+        options: [
+          { id: 'first-alarm', label: 'Up at the first alarm', reflection: 'Up at the first alarm suggests you went to bed with a plan you trusted.' },
+          {
+            id: 'snoozed',
+            label: 'I snoozed a few times',
+            traits: { neuroticism: 1 },
+            reflection: 'Snoozing may mean your night was short or your day felt heavy before it began.',
+          },
+          { id: 'no-alarm', label: 'No alarm today', reflection: 'A morning without an alarm tends to show what your body wants when you let it lead.' },
+        ],
+      },
     },
   ],
 }
@@ -96,6 +128,7 @@ function json({ status, body }: Route): Response {
 // Stubs fetch with a tiny router; returns the mock so tests can inspect calls.
 function stubApi(routes: {
   today?: Route
+  edition?: Route
   vote?: Route | Route[]
 }) {
   let devices = 0
@@ -106,6 +139,9 @@ function stubApi(routes: {
     if (url === '/api/device' && init?.method === 'POST') {
       devices++
       return json({ status: 201, body: { token: `v1.device${devices}.sig` } })
+    }
+    if (url.startsWith('/api/editions/')) {
+      return json(routes.edition ?? routes.today ?? { status: 200, body: today })
     }
     if (url === '/api/questions/today') {
       return json(routes.today ?? { status: 200, body: today })
@@ -128,8 +164,14 @@ function stubApi(routes: {
   return fetchMock
 }
 
+// The phone's clock: 9 am on the fixture's date, local time. Only Date is
+// faked, so timers and waits run normally.
+const at = (hour: number) => new Date(2026, 9, 12, hour, 0)
+
 beforeEach(() => {
   localStorage.clear()
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(at(9))
 })
 
 // Taps an answer and waits for its card to finish.
@@ -139,9 +181,22 @@ async function answer(label: string) {
 }
 
 afterEach(() => {
+  vi.useRealTimers()
   vi.unstubAllGlobals()
   window.location.hash = ''
 })
+
+// This morning, before 9 am: dishes answered, the bill skipped, alarms answered.
+function answeredThisMorning() {
+  const morning = String(at(8).getTime())
+  localStorage.setItem('pi.choice.q-dishes', 'right-away')
+  localStorage.setItem('pi.at.q-dishes', morning)
+  localStorage.setItem('pi.choice.q-bill', '-')
+  localStorage.setItem('pi.choice.q-alarm', 'many')
+  localStorage.setItem('pi.at.q-alarm', morning)
+}
+
+const noClinicianWords = /therap|psycholog|psychiatr|counsel/i
 
 const encodeCompare = (v: unknown) =>
   btoa(JSON.stringify(v)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
@@ -277,17 +332,36 @@ describe('App', () => {
     expect(keys[0]).toBe(keys[1])
   })
 
+  it("loads the edition for the phone's own date", async () => {
+    const fetchMock = stubApi({})
+    render(<App />)
+    await screen.findByText('When do you wash the dishes?')
+    const urls = fetchMock.mock.calls.map(([u]) => String(u))
+    expect(urls).toContain('/api/editions/2026-10-12')
+    expect(urls).not.toContain('/api/questions/today')
+  })
+
+  it("falls back to the shared edition when the phone's date is not open", async () => {
+    const fetchMock = stubApi({ edition: { status: 404, body: { error: 'no_edition' } } })
+    render(<App />)
+    expect(await screen.findByText('When do you wash the dishes?')).toBeInTheDocument()
+    expect(fetchMock.mock.calls.map(([u]) => String(u))).toContain('/api/questions/today')
+  })
+
   it('says so when no questions are published today', async () => {
-    stubApi({ today: { status: 404, body: { error: 'no_questions_today' } } })
+    stubApi({
+      edition: { status: 404, body: { error: 'no_edition' } },
+      today: { status: 404, body: { error: 'no_questions_today' } },
+    })
     render(<App />)
     expect(await screen.findByText(/No questions today yet/)).toBeInTheDocument()
   })
 
   it('offers a retry when the questions fail to load', async () => {
-    const fetchMock = stubApi({ today: { status: 500, body: {} } })
+    const fetchMock = stubApi({ edition: { status: 500, body: {} } })
     render(<App />)
     fireEvent.click(await screen.findByRole('button', { name: 'Try again' }))
-    expect(fetchMock.mock.calls.filter(([u]) => u === '/api/questions/today')).toHaveLength(2)
+    expect(fetchMock.mock.calls.filter(([u]) => u === '/api/editions/2026-10-12')).toHaveLength(2)
   })
 
   it('lets every question be skipped without sending a vote', async () => {
@@ -299,7 +373,7 @@ describe('App', () => {
     expect(fetchMock.mock.calls.filter(([u]) => u === '/api/votes')).toHaveLength(0)
   })
 
-  it('ends the edition with advice built from the insights and moves to try, without repeating the cards', async () => {
+  it('ends the morning with advice and one move to pick for the day, without repeating the cards', async () => {
     stubApi({})
     render(<App />)
     await answer('Right after eating')
@@ -307,8 +381,8 @@ describe('App', () => {
     fireEvent.click(within(bill).getByRole('button', { name: 'Skip' }))
     await answer('Several')
 
-    const summary = await screen.findByRole('region', { name: 'Edition #3 complete' })
-    expect(summary).toHaveTextContent('2 insights today')
+    const summary = await screen.findByRole('region', { name: 'Morning complete' })
+    expect(summary).toHaveTextContent('Edition #3 · 2 insights today')
     // The cards stay above; the recap does not repeat them.
     expect(summary).not.toHaveTextContent('unfinished tasks noisier than most')
     expect(summary).not.toHaveTextContent('Several alarms suggest')
@@ -316,16 +390,97 @@ describe('App', () => {
     expect(advice).toHaveTextContent('Getting things done')
     expect(advice).toHaveTextContent('Worry and tension')
     expect(advice).toHaveTextContent('How to grow:')
-    expect(summary).toHaveTextContent('Tomorrow: Money · Friendship')
     expect(summary).toHaveTextContent('played 1 of the last 7 days')
+    expect(summary).toHaveTextContent('Your evening check-in opens at 5 pm')
     expect(await within(summary).findByText('+20 pts bonus')).toBeInTheDocument()
-
-    // Points: two insights and the edition bonus, then a ticked move.
     expect(summary).toHaveTextContent('Curious · 40 pts')
-    const move = within(summary).getByRole('button', { name: /set one alarm fewer/ })
+
+    // One move for the day. Points come in the evening, once it is tried.
+    const moves = within(summary).getByRole('group', { name: 'Pick your move' })
+    const move = within(moves).getByRole('button', { name: /set one alarm fewer/ })
     fireEvent.click(move)
     expect(move).toHaveAttribute('aria-pressed', 'true')
-    expect(summary).toHaveTextContent('Curious · 45 pts')
+    expect(within(moves).getByRole('button', { name: /Next time a small task appears/ })).toHaveAttribute('aria-pressed', 'false')
+    expect(moves).toHaveTextContent('The evening check-in will ask how it went.')
+    expect(JSON.parse(localStorage.getItem('pi.moves.v1')!)).toEqual([
+      { date: '2026-10-12', questionId: 'q-alarm', step: 'Tonight, set one alarm fewer and see how the morning goes.' },
+    ])
+    expect(summary).toHaveTextContent('Curious · 40 pts')
+    expect(document.body.textContent).not.toMatch(noClinicianWords)
+  })
+
+  it('in the evening, follows up on each morning answer with one quiet line, and keeps the answers on this phone', async () => {
+    answeredThisMorning()
+    vi.setSystemTime(at(19))
+    const fetchMock = stubApi({})
+    render(<App />)
+
+    const card = await screen.findByRole('region', { name: 'Did any dishes pile up today?' })
+    expect(card).toHaveTextContent('This morning you said: Right after eating')
+    expect(screen.getByRole('region', { name: 'How did getting up go this morning?' })).toHaveTextContent(
+      'This morning you said: Several',
+    )
+    expect(screen.getAllByText(/^Evening · \d of 2$/)).toHaveLength(2)
+    // The skipped question gets no follow-up, and the morning cards are tucked away.
+    expect(screen.queryByText('How do you split the bill?')).not.toBeInTheDocument()
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+
+    fireEvent.click(within(card).getByRole('button', { name: 'They piled up a bit' }))
+    const reflection = await within(card).findByRole('note', { name: "Tonight's reflection" })
+    expect(reflection).toHaveTextContent('A pile on a full day is normal.')
+    expect(reflection).toHaveTextContent('+10 pts')
+    expect(reflection).toHaveTextContent('For self-reflection, not a diagnosis.')
+    expect(within(card).queryByRole('button', { name: 'I washed them straight away' })).not.toBeInTheDocument()
+
+    expect(fetchMock.mock.calls.filter(([u]) => u === '/api/votes')).toHaveLength(0)
+    const h = JSON.parse(localStorage.getItem('pi.history.v1')!)
+    expect(h.answers).toContainEqual(
+      expect.objectContaining({ questionId: 'q-dishes#evening', evening: true, traits: { conscientiousness: -1 } }),
+    )
+
+    // This morning's cards are one tap away.
+    fireEvent.click(screen.getByRole('button', { name: /This morning's questions/ }))
+    expect(screen.getByRole('region', { name: 'When do you wash the dishes?' })).toHaveTextContent('Insight unlocked')
+  })
+
+  it("ends the day with the move check-in, a thought for tomorrow and tomorrow's themes", async () => {
+    answeredThisMorning()
+    localStorage.setItem(
+      'pi.moves.v1',
+      JSON.stringify([{ date: '2026-10-12', questionId: 'q-alarm', step: 'Tonight, set one alarm fewer and see how the morning goes.' }]),
+    )
+    vi.setSystemTime(at(19))
+    stubApi({})
+    render(<App />)
+    await answer('I washed them straight away')
+    await answer('I snoozed a few times')
+
+    const day = await screen.findByRole('region', { name: 'Day complete' })
+    expect(day).toHaveTextContent('2 reflections tonight')
+    expect(await within(day).findByText('+20 pts bonus')).toBeInTheDocument()
+    const check = within(day).getByRole('group', { name: 'Your move' })
+    expect(check).toHaveTextContent('Did you get a chance to try it?')
+    expect(check).toHaveTextContent('set one alarm fewer')
+    fireEvent.click(within(check).getByRole('button', { name: /Yes, I tried it/ }))
+    expect(check).toHaveTextContent('You tried your move.')
+    expect(within(check).queryByRole('button')).not.toBeInTheDocument()
+
+    expect(day).toHaveTextContent('For tomorrow')
+    expect(day).toHaveTextContent('Tomorrow: Money · Friendship')
+    expect(day).toHaveTextContent('See you tomorrow morning.')
+    // Two reflections, the day's bonus and the move tried.
+    expect(day).toHaveTextContent('Curious · 45 pts')
+    expect(document.body.textContent).not.toMatch(noClinicianWords)
+  })
+
+  it('gives no follow-up the same evening to a question first answered in the evening', async () => {
+    vi.setSystemTime(at(19))
+    stubApi({})
+    render(<App />)
+    expect(await screen.findByText('When do you wash the dishes?')).toBeInTheDocument()
+    expect(screen.getByText(/The evening check-in follows up on answers from before 5 pm/)).toBeInTheDocument()
+    await answer('Right after eating')
+    expect(screen.queryByText('Did any dishes pile up today?')).not.toBeInTheDocument()
   })
 
   it('awards points for an insight once, however often the page is opened', async () => {
@@ -345,7 +500,7 @@ describe('App', () => {
       const card = await screen.findByRole('region', { name: q })
       fireEvent.click(within(card).getByRole('button', { name: 'Skip' }))
     }
-    expect(await screen.findByRole('region', { name: 'Edition #3 complete' })).toHaveTextContent(
+    expect(await screen.findByRole('region', { name: 'Morning complete' })).toHaveTextContent(
       'played 3 of the last 7 days',
     )
   })
@@ -445,6 +600,21 @@ describe('App', () => {
     expect(week).toHaveTextContent('No answers this week yet')
   })
 
+  it('shows the moves tried this week and one focus for next week', async () => {
+    const a = (d: string, w: number) => ({ date: d, questionId: d + w, theme: 'habits', depth: 3, traits: { conscientiousness: w } })
+    localStorage.setItem('pi.history.v1', JSON.stringify({ answers: [a('2026-10-10', 1), a('2026-10-11', 2)], skips: [] }))
+    const m = (date: string, tried?: boolean) => ({ date, questionId: date, step: 'A move', tried })
+    localStorage.setItem('pi.moves.v1', JSON.stringify([m('2026-10-01', true), m('2026-10-09', true), m('2026-10-10', false), m('2026-10-11', true)]))
+    stubApi({})
+    render(<App />)
+    fireEvent.click(await screen.findByRole('button', { name: 'My week' }))
+    const week = screen.getByRole('region', { name: 'Your week' })
+    expect(week).toHaveTextContent('Moves tried this week: 2 of 3.')
+    const focus = within(week).getByRole('note', { name: 'Focus for next week' })
+    expect(focus).toHaveTextContent('Getting things done')
+    expect(focus).toHaveTextContent(TRAIT_ADVICE.conscientiousness.higher.grow)
+  })
+
   it('offers support contacts, calmly, when low-mood answers repeat in a week', async () => {
     const a = (d: string) => ({ date: d, questionId: d, theme: 'sadness-stress', depth: 4, traits: {} })
     localStorage.setItem(
@@ -478,7 +648,7 @@ describe('App', () => {
     await answer('Right after eating')
     fireEvent.click(within(screen.getByRole('region', { name: 'How do you split the bill?' })).getByRole('button', { name: 'Skip' }))
     await answer('Several')
-    const summary = await screen.findByRole('region', { name: 'Edition #3 complete' })
+    const summary = await screen.findByRole('region', { name: 'Morning complete' })
     fireEvent.click(within(summary).getByRole('button', { name: 'Compare with someone' }))
 
     const { text } = (share.mock.calls[0] as unknown as [{ text: string }])[0]
