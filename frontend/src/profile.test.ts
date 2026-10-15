@@ -92,13 +92,13 @@ describe('picking three from the pool', () => {
   })
 })
 
-describe('picking the afternoon three', () => {
+describe('picking the evening three', () => {
   const day = pool.concat([q('l1', 'learning'), q('d1', 'dating', 'personal'), q('o1', 'honesty', 'personal')])
-  const afternoonDefaults = [day[4], day[6], day[7]]
+  const eveningDefaults = [day[4], day[6], day[7]]
 
-  it('gives a phone with no history the shared afternoon three', () => {
-    expect(pickThree(day, afternoonDefaults, { answers: [], skips: [] }, '2026-10-12', false, defaults)).toEqual(
-      afternoonDefaults,
+  it('gives a phone with no history the shared evening three', () => {
+    expect(pickThree(day, eveningDefaults, { answers: [], skips: [] }, '2026-10-12', false, defaults)).toEqual(
+      eveningDefaults,
     )
   })
 
@@ -108,18 +108,18 @@ describe('picking the afternoon three', () => {
       skips: [],
     }
     const morning = pickThree(day, defaults, h, '2026-10-12', false)
-    const afternoon = pickThree(day, afternoonDefaults, h, '2026-10-12', false, morning)
-    expect(afternoon).toHaveLength(3)
+    const evening = pickThree(day, eveningDefaults, h, '2026-10-12', false, morning)
+    expect(evening).toHaveLength(3)
     const morningThemes = new Set(morning.map((m) => m.theme))
-    expect(afternoon.some((a) => morning.includes(a) || morningThemes.has(a.theme))).toBe(false)
+    expect(evening.some((a) => morning.includes(a) || morningThemes.has(a.theme))).toBe(false)
   })
 
   it('tops the defaults up from the pool when the morning took one of them', () => {
-    const took = [afternoonDefaults[0]]
-    const afternoon = pickThree(day, afternoonDefaults, { answers: [], skips: [] }, '2026-10-12', false, took)
-    expect(afternoon).toHaveLength(3)
-    expect(afternoon).not.toContain(afternoonDefaults[0])
-    expect(afternoon.some((a) => a.care === 'intimate')).toBe(false)
+    const took = [eveningDefaults[0]]
+    const evening = pickThree(day, eveningDefaults, { answers: [], skips: [] }, '2026-10-12', false, took)
+    expect(evening).toHaveLength(3)
+    expect(evening).not.toContain(eveningDefaults[0])
+    expect(evening.some((a) => a.care === 'intimate')).toBe(false)
   })
 })
 

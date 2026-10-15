@@ -1,13 +1,17 @@
 // The words of the weekly mirror: what each trait reading means, the
 // archetype name it gives the week, and the research behind each claim.
 // Every number on the mirror comes from the server; this file only turns
-// those numbers into plain, human sentences.
+// those numbers into plain, human sentences. The research and sources are not
+// shown in the app (Edwin, 2026-10-15); they stay here so every claim can be
+// traced and kept accurate (mirrorText.test.ts).
 
 import type { Mirror, TraitRead } from './api'
 
 export type Source = { title: string; url: string; strength: 'strong' | 'moderate' }
 
-// Research cited on the mirror, each linked to the paper or a summary of it.
+// The research behind the mirror's words, each linked to the paper or a
+// summary of it. soto2019 backs "Reading this honestly", and roberts2006,
+// hudson2015 and gollwitzer2006 back "Why movement is possible" (Mirror.tsx).
 export const SOURCES = {
   roberts2007: {
     title: 'Roberts et al., 2007',
@@ -413,13 +417,11 @@ export const AREA_NAMES: Record<string, string> = {
   desire: 'Desire & lifestyle',
 }
 
-export const pct = (n: number, of: number) => (of > 0 ? Math.round((100 * n) / of) : 0)
-
 // summary is the hero's opening paragraph, spoken to the person.
 export function summary(m: Mirror): string {
   const { daysActive, answers, daysSoFar } = m.stats
   if (answers === 0) {
-    return m.weeksPlayed > 0
+    return m.weeksActive > 0
       ? "This week is quiet so far. That's fine; your read below still draws on the last three weeks, and it will sharpen as soon as you answer again."
       : 'Your mirror fills in as you answer. A few days of questions is enough for the first patterns to show.'
   }

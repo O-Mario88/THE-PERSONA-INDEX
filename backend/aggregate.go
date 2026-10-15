@@ -99,6 +99,20 @@ func (s *Server) Results(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, res)
 }
 
+// counts is a question's tallies, through the instance's short result cache.
+func (s *Server) counts(ctx context.Context, questionID string) (map[string]int, error) {
+	now := s.clock()
+	if c, ok := s.resultCache.get(questionID, now); ok {
+		return c, nil
+	}
+	c, err := s.votes.Counts(ctx, questionID)
+	if err != nil {
+		return nil, err
+	}
+	s.resultCache.put(questionID, c, now)
+	return c, nil
+}
+
 // percent rounds to one decimal place. With no votes it is a real 0, not an estimate.
 func percent(n, total int) float64 {
 	if total == 0 {

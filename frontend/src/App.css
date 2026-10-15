@@ -235,7 +235,7 @@
   font-size: 0.92rem;
 }
 
-/* The answer: what you chose, the crowd, the insight, a step. */
+/* The answer: what you chose, the insight, a step. */
 .answer {
   display: flex;
   flex-direction: column;
@@ -261,68 +261,6 @@
   letter-spacing: -0.02em;
 }
 
-.points-pill {
-  display: inline-block;
-  margin-left: 8px;
-  padding: 2px 9px;
-  border-radius: 999px;
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: #1a1305;
-  background: var(--amber);
-  animation: pop 320ms ease-out;
-}
-
-.you-chose .points-pill {
-  margin-left: 0;
-}
-
-.crowd {
-  padding: 16px;
-  border-radius: var(--radius);
-  background: var(--panel);
-  border: 1px solid var(--line);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.crowd-big {
-  font-family: var(--display);
-  font-weight: 700;
-  font-size: 1.25rem;
-  color: var(--accent);
-}
-
-.crowd ul {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 6px;
-}
-
-.crowd li {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 4px 10px;
-  font-size: 0.9rem;
-  color: var(--muted);
-}
-
-.crowd-track {
-  grid-column: 1 / -1;
-  height: 4px;
-  border-radius: 999px;
-  background: var(--line);
-  overflow: hidden;
-}
-
-.crowd-track span {
-  display: block;
-  height: 100%;
-  background: #4a5070;
-}
-
 .insight {
   padding: 20px 18px;
   border-radius: var(--radius);
@@ -345,21 +283,6 @@
 .insight-body {
   color: #d9dcea;
   line-height: 1.55;
-}
-
-.insight-research {
-  margin-top: 4px;
-  padding-top: 12px;
-  border-top: 1px solid var(--line);
-  font-size: 0.88rem;
-  color: var(--muted);
-}
-
-.insight-source {
-  display: block;
-  margin-top: 4px;
-  color: var(--accent);
-  font-size: 0.82rem;
 }
 
 .insight-note {
@@ -405,12 +328,6 @@
   cursor: pointer;
 }
 
-.pill-button.ghost {
-  background: transparent;
-  color: var(--text);
-  border: 1px solid var(--line);
-}
-
 .rate-thanks {
   font-size: 0.85rem;
 }
@@ -453,10 +370,6 @@
 
 .followup .insight {
   border-color: color-mix(in srgb, var(--pink) 30%, transparent);
-}
-
-.morning-toggle {
-  align-self: flex-start;
 }
 
 /* "Done for today." */
@@ -592,21 +505,8 @@
   padding: 10px 16px;
 }
 
-.step-points {
-  margin-left: 6px;
-  color: var(--amber);
-  font-weight: 700;
-  font-size: 0.85rem;
-}
-
 .move-reply {
   color: var(--green);
-}
-
-.done-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
 }
 
 .tomorrow {
@@ -617,36 +517,6 @@
 
 .check-in {
   color: var(--muted);
-}
-
-.level {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 0.9rem;
-}
-
-.level-bar {
-  height: 6px;
-  border-radius: 999px;
-  background: var(--line);
-  overflow: hidden;
-}
-
-.level-fill {
-  height: 100%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, var(--accent), var(--pink));
-}
-
-.compare-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.compare-q {
-  font-weight: 600;
 }
 
 .switch {
@@ -661,31 +531,6 @@
   width: 18px;
   height: 18px;
   accent-color: var(--accent);
-}
-
-.confetti {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  overflow: hidden;
-}
-
-.confetti span {
-  position: absolute;
-  top: -12px;
-  left: calc(var(--i) * 4.2%);
-  width: 8px;
-  height: 14px;
-  border-radius: 2px;
-  background: hsl(calc(var(--i) * 47deg) 85% 65%);
-  animation: fall 1.6s calc(var(--i) * 40ms) ease-in forwards;
-}
-
-@keyframes fall {
-  to {
-    transform: translateY(520px) rotate(540deg);
-    opacity: 0;
-  }
 }
 
 @keyframes rise {
@@ -892,18 +737,6 @@
   gap: 10px;
 }
 
-.m-dark {
-  background: var(--m-dark);
-  color: var(--text);
-  border-radius: var(--radius);
-  padding: 18px 16px;
-}
-
-.m-dark .m-num,
-.m-dark .m-note {
-  color: var(--muted);
-}
-
 /* Week at a glance. */
 .m-days {
   display: grid;
@@ -951,20 +784,8 @@
   vertical-align: middle;
 }
 
-.sq.with {
-  background: var(--sq-with);
-}
-
-.sq.against {
-  background: var(--sq-against);
-}
-
 .sq.private {
   background: var(--sq-private);
-}
-
-.sq.early {
-  background: #b9bdf3;
 }
 
 .sq.missed {
@@ -1004,86 +825,6 @@
 }
 
 /* Bars. */
-.m-bars {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.m-bar {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 4px 10px;
-  font-size: 0.9rem;
-}
-
-.m-bar-track {
-  grid-column: 1 / -1;
-  grid-row: 2;
-  height: 8px;
-  border-radius: 999px;
-  background: var(--m-line);
-  overflow: hidden;
-}
-
-.m-bar-fill {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: var(--sq-against);
-}
-
-.m-bar-note {
-  color: var(--m-muted);
-  font-size: 0.82rem;
-}
-
-.m-bar-total .m-bar-label {
-  font-weight: 700;
-}
-
-.m-split-q {
-  font-weight: 600;
-}
-
-.m-split ul {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.m-split li {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 4px 10px;
-  font-size: 0.9rem;
-}
-
-.m-split li.yours {
-  font-weight: 700;
-}
-
-.m-you {
-  color: var(--sq-with);
-}
-
-.m-split-track {
-  grid-column: 1 / -1;
-  height: 6px;
-  border-radius: 999px;
-  background: var(--m-line);
-  overflow: hidden;
-}
-
-.m-split-track span {
-  display: block;
-  height: 100%;
-  background: #b9bdf3;
-}
-
-.m-split li.yours .m-split-track span {
-  background: var(--sq-with);
-}
 
 /* Trait read. */
 .m-traits {
@@ -1280,15 +1021,6 @@
   gap: 8px;
 }
 
-.m-badge {
-  font-size: 0.7rem;
-  font-weight: 700;
-  padding: 3px 8px;
-  border-radius: 999px;
-  background: #e8f7ef;
-  color: #136c43;
-}
-
 .m-who-trait {
   font-size: 0.82rem;
   color: var(--m-muted);
@@ -1306,55 +1038,13 @@
   color: var(--m-muted);
 }
 
-.m-who-research {
-  font-size: 0.86rem;
-  color: var(--m-muted);
-  border-top: 1px solid var(--m-line);
-  padding-top: 8px;
-}
-
 .m-who-kind {
   font-size: 0.82rem;
   font-weight: 600;
   color: var(--sq-with);
 }
 
-.m-cite {
-  display: block;
-  font-size: 0.8rem;
-  color: var(--sq-with);
-}
-
-.m-dark .m-cite {
-  color: var(--accent);
-}
-
 /* Strengths. */
-.m-strengths {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.m-strengths li {
-  display: flex;
-  gap: 14px;
-  align-items: center;
-}
-
-.m-strength-n {
-  flex: none;
-  width: 48px;
-  height: 48px;
-  border-radius: 14px;
-  display: grid;
-  place-items: center;
-  font-family: var(--display);
-  font-weight: 700;
-  font-size: 1.3rem;
-  color: var(--bg);
-  background: var(--green);
-}
 
 /* Steps. */
 .m-steps,
@@ -1474,12 +1164,6 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-}
-
-.m-sources ul {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
 }
 
 @media (min-width: 640px) {

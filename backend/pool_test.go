@@ -11,7 +11,7 @@ import (
 
 // Acceptance tests for the edition pool: each day publishes about sixteen
 // questions; the phone picks its own three for the morning and three for the
-// afternoon from them by the player's interests, which never leave the phone.
+// evening from them by the person's interests, which never leave the phone.
 
 var poolBank *contentBank
 
@@ -59,7 +59,7 @@ func TestEditionPool(t *testing.T) {
 			}
 			seen[q.ID] = true
 		}
-		for _, q := range append(append([]Question{}, set.Questions...), set.Afternoon...) {
+		for _, q := range append(append([]Question{}, set.Questions...), set.Evening...) {
 			if !seen[q.ID] {
 				t.Fatalf("default question %s is missing from the pool", q.ID)
 			}

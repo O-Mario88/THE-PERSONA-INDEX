@@ -9,14 +9,14 @@ import (
 )
 
 // Acceptance tests for the week (Edwin, 2026-10-15): Monday to Saturday bring
-// three questions in the morning and three in the afternoon; Sunday is for
-// review, with no new questions, and opens on the weekly mirror.
+// three questions in the morning and three more that open at 4 pm; Sunday is
+// for review, with no new questions, and opens on the weekly mirror.
 
 func TestTheWeek(t *testing.T) {
 	b := shippedBank(t)
 	area := func(q Question) string { return themes[q.Theme].area }
 
-	t.Run("Monday to Saturday: three in the morning and three in the afternoon, six different questions", func(t *testing.T) {
+	t.Run("Monday to Saturday: three in the morning and three in the evening, six different questions", func(t *testing.T) {
 		for d := range 730 {
 			day := fixedNow.AddDate(0, 0, d)
 			date := day.Format(dateLayout)
@@ -27,11 +27,11 @@ func TestTheWeek(t *testing.T) {
 			if day.Weekday() == time.Sunday {
 				continue
 			}
-			if set.Review || len(set.Questions) != 3 || len(set.Afternoon) != 3 {
-				t.Fatalf("%s: expected 3 + 3 questions, got %d + %d (review %v)", date, len(set.Questions), len(set.Afternoon), set.Review)
+			if set.Review || len(set.Questions) != 3 || len(set.Evening) != 3 {
+				t.Fatalf("%s: expected 3 + 3 questions, got %d + %d (review %v)", date, len(set.Questions), len(set.Evening), set.Review)
 			}
 			ids := map[string]bool{}
-			for _, half := range [][]Question{set.Questions, set.Afternoon} {
+			for _, half := range [][]Question{set.Questions, set.Evening} {
 				areasSeen := map[string]bool{}
 				for _, q := range half {
 					if ids[q.ID] {
@@ -55,7 +55,7 @@ func TestTheWeek(t *testing.T) {
 			day := fixedNow.AddDate(0, 0, d)
 			set, _ := b.GetSet(day.Format(dateLayout))
 			seen := map[string]bool{}
-			for _, q := range append(append([]Question{}, set.Questions...), set.Afternoon...) {
+			for _, q := range append(append([]Question{}, set.Questions...), set.Evening...) {
 				if seen[q.Theme] {
 					t.Fatalf("%s: two %s questions", day.Format(dateLayout), q.Theme)
 				}
@@ -90,7 +90,7 @@ func TestTheWeek(t *testing.T) {
 			}
 			set, _ := b.GetSet(day.Format(dateLayout))
 			seen := map[string]bool{}
-			for _, q := range append(append([]Question{}, set.Questions...), set.Afternoon...) {
+			for _, q := range append(append([]Question{}, set.Questions...), set.Evening...) {
 				seen[area(q)] = true
 			}
 			if len(seen) != len(areas) {
@@ -102,7 +102,7 @@ func TestTheWeek(t *testing.T) {
 	t.Run("Sunday is for review: no questions, nothing to vote on", func(t *testing.T) {
 		sunday := "2026-10-18"
 		set, ok := b.GetSet(sunday)
-		if !ok || !set.Review || len(set.Questions)+len(set.Afternoon)+len(set.Pool) != 0 {
+		if !ok || !set.Review || len(set.Questions)+len(set.Evening)+len(set.Pool) != 0 {
 			t.Fatalf("expected a review day with no questions, got %+v", set)
 		}
 		at := time.Date(2026, 10, 18, 9, 0, 0, 0, time.UTC)
@@ -126,7 +126,7 @@ func TestTheWeek(t *testing.T) {
 		for d := range 1500 {
 			date := time.Unix(0, 0).UTC().AddDate(0, 0, d).Format(dateLayout)
 			set, _ := b.GetSet(date)
-			for _, q := range append(append([]Question{}, set.Questions...), set.Afternoon...) {
+			for _, q := range append(append([]Question{}, set.Questions...), set.Evening...) {
 				draws[area(q)] = append(draws[area(q)], strings.TrimPrefix(q.ID, date+"-"))
 			}
 		}
@@ -166,11 +166,11 @@ func TestTheWeek(t *testing.T) {
 		}
 	})
 
-	t.Run("an afternoon question takes votes like a morning one", func(t *testing.T) {
+	t.Run("an evening question takes votes like a morning one", func(t *testing.T) {
 		at := time.Date(2026, 10, 14, 13, 0, 0, 0, time.UTC)
 		s := NewServer(func() time.Time { return at }, b, newMemoryStore(), newDeviceSigner(testSecret))
 		set := decode[DailySet](t, get(t, s, "/api/editions/2026-10-14"))
-		q := set.Afternoon[0]
+		q := set.Evening[0]
 		expectStatus(t, postVote(t, s, VoteRequest{QuestionID: q.ID, OptionID: q.Options[0].ID, VoterID: "a"}, "k1"), http.StatusAccepted)
 		if n := totalVotes(t, s, q.ID); n != 1 {
 			t.Fatalf("expected 1 vote, got %d", n)

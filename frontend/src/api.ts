@@ -1,7 +1,8 @@
 // Client for the backend API. Shapes mirror backend/api.go.
 
-// The card shown right after an option is chosen. Research fields appear only
-// when the card cites a study.
+// The card shown right after an option is chosen. The server also sends the
+// research behind a card and its source; the app keeps them out of sight
+// (Edwin, 2026-10-15: citing is not needed "as long as the source is accurate").
 export type Insight = {
   reveal: string
   research?: string
@@ -38,7 +39,7 @@ export type DailySet = {
   date: string
   edition?: number
   questions: Question[] // the morning's default three
-  afternoon?: Question[] // the afternoon's default three, opened at noon on the phone
+  evening?: Question[] // the evening's default three, opened at 4 pm on the phone
   pool?: Question[]
   review?: boolean // Sunday: no new questions, the day for the weekly mirror
   tomorrowThemes?: string[]
@@ -121,46 +122,16 @@ async function withDevice<T>(send: (token: string) => Promise<T>): Promise<T> {
   }
 }
 
-export type OptionResult = { optionId: string; count: number; percent: number }
-export type QuestionResults = { questionId: string; totalVotes: number; options: OptionResult[] }
-
-// The crowd's split on a question. Shown only from CROWD_MIN_VOTES votes, as
-// the server's mirror does; below that a split says more about chance than people.
-export const CROWD_MIN_VOTES = 100
-
-// An answer goes with the crowd when at least an even share of players picked
-// it (a third, on a three-option question), the same rule as the server's
-// mirror (backend/mirror.go verdicts). "At least half" would put nearly every
-// answer to a three- or four-option question against the crowd.
-export function withCrowd(count: number, total: number, options: number): boolean {
-  return count * options >= total
-}
-
-export function getResults(questionId: string): Promise<QuestionResults> {
-  return request(`/api/questions/${encodeURIComponent(questionId)}/results`)
-}
-
-// The weekly mirror, built by the server from this phone's kept answers.
-// Shapes mirror backend/mirror.go.
-export type Crowd = 'with' | 'against' | 'early' | 'private'
+// The weekly mirror, built by the server from this phone's kept answers and
+// only ever set against this phone's own past. Shapes mirror backend/mirror.go.
+export type Depth = 'light' | 'deeper' | 'deep' | 'private'
 export type StepStatus = 'started' | 'helped' | 'no_change' | 'not_tried'
-export type SplitOption = { label: string; count: number; percent: number; yours?: boolean }
-export type AnswerSplit = {
-  questionId: string
-  prompt: string
-  theme: string
-  edition: number
-  total: number
-  final: boolean
-  options: SplitOption[]
-}
-export type WeekScore = { week: number; score?: number; ranked: boolean; solid: boolean }
+export type WeekScore = { week: number; score?: number; solid: boolean }
 export type TraitRead = {
   trait: string
   answers: number
   solid: boolean
-  score: number
-  ranked: boolean
+  score: number // 0..100: where the answers sit among their questions' options
   change?: number
   history: WeekScore[]
   evidence: string[]
@@ -173,7 +144,7 @@ export type Mirror = {
   from: string
   to: string
   editions: [number, number]
-  weeksPlayed: number
+  weeksActive: number
   stats: {
     daysActive: number
     daysActiveLastWeek: number
@@ -181,22 +152,15 @@ export type Mirror = {
     answers: number
     private: number
     deepest: number
-    minority: number
-    judged: number
     learned: number
     rated: number
     stepsStarted: number
     stepsTried: number
     stepsHelped: number
   }
-  days: { date: string; edition: number; answers: { theme: string; crowd: Crowd }[] }[]
-  areas: { area: string; minority: number; judged: number; lastMinority: number; lastJudged: number }[]
-  rarest?: AnswerSplit
-  minority: AnswerSplit[]
-  divisive?: AnswerSplit
+  days: { date: string; edition: number; answers: { theme: string; depth: Depth }[] }[]
   traits: TraitRead[]
-  ranked: boolean
-  themes: { theme: string; area: string; answers: number; depth: 'light' | 'deeper' | 'deep' | 'private' }[]
+  themes: { theme: string; area: string; answers: number; depth: Depth }[]
   steps: {
     questionId: string
     optionId: string
@@ -207,7 +171,6 @@ export type Mirror = {
     edition: number
   }[]
   stepRecord: { started: number; tried: number; helped: number }
-  strengths: { kind: 'days' | 'deepest' | 'minority' | 'learned' | 'steps'; you: number; median: number; players: number }[]
   nextSteps: { questionId: string; optionId: string; theme: string; step: string; edition: number }[]
   comingUp: string[]
   lowMood: boolean
@@ -369,21 +332,3 @@ export function rememberSkip(questionId: string) {
 }
 export const SKIPPED = '-'
 
-// Days this phone answered at least one question, newest last. Kept on the
-// phone only; the server never learns who plays when.
-const daysKey = 'pi.days'
-
-export function playedDays(): string[] {
-  try {
-    const v = JSON.parse(load(daysKey) ?? '[]')
-    return Array.isArray(v) ? v.filter((d): d is string => typeof d === 'string') : []
-  } catch {
-    return []
-  }
-}
-
-export function recordPlayed(date: string) {
-  const days = playedDays()
-  if (days.includes(date)) return
-  save(daysKey, JSON.stringify([...days, date].sort().slice(-60)))
-}

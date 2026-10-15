@@ -2,11 +2,8 @@ import { useEffect, useState } from 'react'
 import {
   ApiError,
   castVote,
-  CROWD_MIN_VOTES,
-  getResults,
   rateCard,
   recalledChoice,
-  recordPlayed,
   rememberChoice,
   rememberRated,
   rememberSkip,
@@ -17,9 +14,9 @@ import {
   type Insight,
   type Option,
   type Question,
-  type QuestionResults,
 } from './api'
-import { awardInsight, moveFor, startMove } from './game'
+import { isEvening } from './day'
+import { moveFor, startMove } from './moves'
 import { recordAnswer, recordSkip } from './profile'
 import { splitReveal } from './reveal'
 import { themeName, themeStyle, themeVars } from './themes'
@@ -37,13 +34,12 @@ type Props = {
 export const UNKNOWN_CHOICE = '?'
 
 // One question on its own screen. Tap an answer and the same screen turns
-// into what it says about you: the crowd (only when real and big enough),
-// the insight, one small step to try and a way to say whether it landed.
+// into what it says about you: the insight, one small step to try and a way
+// to say whether it landed. Never what anyone else answered, and no score.
 export function QuestionCard({ question, date, onDone, onNext }: Props) {
   const [choice, setChoice] = useState<string | null>(() => recalledChoice(question.id))
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [earned, setEarned] = useState(0)
   const theme = themeStyle(question.theme)
 
   // Report a finished card, including one restored from storage.
@@ -58,8 +54,6 @@ export function QuestionCard({ question, date, onDone, onNext }: Props) {
       await castVote(question.id, optionId, voteKey(question.id))
       rememberChoice(question.id, optionId)
       recordAnswer(question, optionId, date)
-      recordPlayed(date)
-      setEarned(awardInsight(question.id, question.theme))
       setChoice(optionId)
     } catch (e) {
       if (e instanceof ApiError && e.code === 'duplicate_vote') {
@@ -130,9 +124,7 @@ export function QuestionCard({ question, date, onDone, onNext }: Props) {
         </>
       )}
 
-      {chosen && (
-        <Answer question={question} option={chosen} earned={earned} date={date} onNext={onNext} />
-      )}
+      {chosen && <Answer question={question} option={chosen} date={date} onNext={onNext} />}
 
       {error && (
         <p className="error" role="alert">
@@ -143,34 +135,14 @@ export function QuestionCard({ question, date, onDone, onNext }: Props) {
   )
 }
 
-const STRENGTH_LABEL: Record<NonNullable<Insight['strength']>, string> = {
-  strong: 'Strong evidence',
-  moderate: 'Some evidence',
-  early: 'Early evidence',
-}
-
-function Answer({
-  question,
-  option,
-  earned,
-  date,
-  onNext,
-}: {
-  question: Question
-  option: Option
-  earned: number
-  date: string
-  onNext: () => void
-}) {
+function Answer({ question, option, date, onNext }: { question: Question; option: Option; date: string; onNext: () => void }) {
   const insight = option.insight
   return (
     <div className="answer">
       <p className="you-chose">
         <span className="eyebrow">You chose</span>
         <span className="chosen">{option.label}</span>
-        {earned > 0 && <span className="points-pill">+{earned}</span>}
       </p>
-      <CrowdSplit question={question} option={option} />
       {insight && <InsightPanel insight={insight} />}
       {insight?.step && <TryThis question={question} option={option} step={insight.step} date={date} />}
       {insight && <Rate questionId={question.id} optionId={option.id} />}
@@ -181,75 +153,22 @@ function Answer({
   )
 }
 
-// The crowd's real split, from the server's counts. Hidden below
-// CROWD_MIN_VOTES votes or when the counts can't be loaded: never estimated.
-function CrowdSplit({ question, option }: { question: Question; option: Option }) {
-  const [results, setResults] = useState<QuestionResults | null>(null)
-  useEffect(() => {
-    let live = true
-    getResults(question.id).then(
-      (r) => live && setResults(r),
-      () => {
-        // no split is better than a wrong one
-      },
-    )
-    return () => {
-      live = false
-    }
-  }, [question.id])
-  if (!results || results.totalVotes < CROWD_MIN_VOTES) return null
-  const mine = results.options.find((o) => o.optionId === option.id)
-  const others = results.options.filter((o) => o.optionId !== option.id)
-  const label = (id: string) => question.options.find((o) => o.id === id)?.label ?? ''
-  return (
-    <div className="crowd" role="group" aria-label="How players answered">
-      <p className="crowd-big">You and {Math.round(mine?.percent ?? 0)}% of players</p>
-      <p className="muted">{results.totalVotes.toLocaleString('en')} votes</p>
-      <ul>
-        {others.map((o) => (
-          <li key={o.optionId}>
-            <span>{label(o.optionId)}</span>
-            <span className="crowd-pct">{Math.round(o.percent)}%</span>
-            <span className="crowd-track" aria-hidden="true">
-              <span style={{ width: `${o.percent}%` }} />
-            </span>
-          </li>
-        ))}
-      </ul>
-    </div>
-  )
-}
-
 function InsightPanel({ insight }: { insight: Insight }) {
   const { headline, body } = splitReveal(insight.reveal)
   return (
     <div className="insight" role="note" aria-label="What your answer may say">
       <p className="insight-headline">{headline}</p>
       {body && <p className="insight-body">{body}</p>}
-      {insight.research && (
-        <p className="insight-research">
-          {insight.research}{' '}
-          <span className="insight-source">
-            {insight.strength && `${STRENGTH_LABEL[insight.strength]} · `}
-            {insight.sourceUrl ? (
-              <a href={insight.sourceUrl} target="_blank" rel="noreferrer">
-                {insight.sourceTitle}
-              </a>
-            ) : (
-              insight.sourceTitle
-            )}
-          </span>
-        </p>
-      )}
       <p className="insight-note">For self-reflection, not a diagnosis.</p>
     </div>
   )
 }
 
-// One small step from the card. "I'll try it" keeps it as today's move: the
-// evening asks how it went, and the mirror counts it.
+// One small step from the card. "I'll try it" keeps it as one of today's
+// moves: the evening asks how a morning move went, and the mirror keeps them all.
 function TryThis({ question, option, step, date }: { question: Question; option: Option; step: string; date: string }) {
   const [state, setState] = useState<'open' | 'started' | 'later'>(() => (moveFor(question.id) ? 'started' : 'open'))
+  const [evening] = useState(() => isEvening())
   function start() {
     startMove(date, question.id, option.id, step)
     setState('started')
@@ -272,7 +191,13 @@ function TryThis({ question, option, step, date }: { question: Question; option:
           </button>
         </div>
       )}
-      {state === 'started' && <p className="muted">Added to today's moves. I'll check in with you about it later.</p>}
+      {state === 'started' && (
+        <p className="muted">
+          {evening
+            ? 'Added to your moves. Give it a go tomorrow; your mirror will ask how it went.'
+            : "Added to today's moves. I'll ask how it went at 4 pm."}
+        </p>
+      )}
     </div>
   )
 }

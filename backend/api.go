@@ -36,8 +36,8 @@ type DailySet struct {
 	Date      string     `json:"date"`              // YYYY-MM-DD
 	Edition   int        `json:"edition,omitempty"` // shared worldwide: "Persona Index #142"
 	Questions []Question `json:"questions"`         // the morning's default three, for a phone with no history
-	// Afternoon is the afternoon's default three; the phone opens them at noon.
-	Afternoon []Question `json:"afternoon,omitempty"`
+	// Evening is the second sitting's three; the phone opens them at 4 pm.
+	Evening []Question `json:"evening,omitempty"`
 	// Pool holds every question of the edition, both halves' defaults included.
 	// Each phone picks its own three for each half from it; intimate ones only
 	// after the 18+ tap.
@@ -123,7 +123,6 @@ type Server struct {
 
 	resultCache resultCache
 	questions   questionCache
-	crowdCache  crowdCache
 	voteLimit   *windowLimiter // per device
 	deviceLimit *windowLimiter // per network address
 	trustCF     bool           // read the client address from CF-Connecting-IP
@@ -251,7 +250,7 @@ func (s *Server) completeSet(set *DailySet) {
 		return
 	}
 	if next, ok := s.bank.GetSet(d.AddDate(0, 0, 1).Format("2006-01-02")); ok {
-		for _, q := range append(append([]Question{}, next.Questions...), next.Afternoon...) {
+		for _, q := range append(append([]Question{}, next.Questions...), next.Evening...) {
 			if q.Theme != "" && q.Care != careIntimate && !slices.Contains(set.TomorrowThemes, q.Theme) {
 				set.TomorrowThemes = append(set.TomorrowThemes, q.Theme)
 			}
