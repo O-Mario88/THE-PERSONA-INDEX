@@ -749,7 +749,7 @@ function Footer({ reload }: { reload: () => void }) {
         <p>
           Your answers are kept on our server under an anonymous key made from this phone's code: no name, no email, no
           account. That's how this mirror is built. Intimate answers are kept only as "a private answer", never what you
-          chose. Anything you write in your own words stays on this phone and is never sent.
+          chose. Anything you write in your own words stays on this phone, is never sent, and is cleared after five weeks.
         </p>
         <p>
           Your answers and steps are deleted after five weeks. For your month, quarter and year, a small note of each

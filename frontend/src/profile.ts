@@ -152,10 +152,10 @@ export function todaysPick(
   return qs
 }
 
-export function forgetPick(today: string) {
+// forgetPick drops the given halves' picks for today, so they are picked again.
+export function forgetPick(today: string, halves: Half[] = ['morning', 'evening']) {
   try {
-    localStorage.removeItem(pickKey(today, 'morning'))
-    localStorage.removeItem(pickKey(today, 'evening'))
+    for (const half of halves) localStorage.removeItem(pickKey(today, half))
   } catch {
     // nothing to do
   }

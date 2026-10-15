@@ -118,7 +118,7 @@ export function PrivacyLine() {
   return (
     <p className="privacy-line">
       <span aria-hidden="true">🔒</span> Private to you: no name, no email, no account. Your answers are never shown to
-      anyone else, and words you type never leave this phone.
+      anyone else, and the app keeps the words you type on this phone only.
     </p>
   )
 }

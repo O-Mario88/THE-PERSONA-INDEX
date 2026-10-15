@@ -6,13 +6,13 @@ import { DayClose } from './DayClose'
 import { DayPlan, NightScreen, PauseScreen, PrivacyLine, Upcoming, type Progress } from './Sittings'
 import { Mirror } from './Mirror'
 import { themeVars } from './themes'
-import { forgetPick, todaysPick } from './profile'
+import { forgetPick, todaysPick, type Half } from './profile'
 import { intimacyOn, loadPrefs, savePrefs, type Prefs } from './prefs'
 import './App.css'
 
 type State =
   | { kind: 'loading' }
-  | { kind: 'ready'; set: DailySet }
+  | { kind: 'ready'; set: DailySet; day: string } // day: the phone's date it was loaded for
   | { kind: 'empty' }
   | { kind: 'error' }
 
@@ -43,7 +43,7 @@ function App() {
     getDay(date).then(
       (set) => {
         if (!live) return
-        setState({ kind: 'ready', set })
+        setState({ kind: 'ready', set, day: date })
         // Sunday has no new questions: it opens on the week in the mirror.
         if (set.review) setTab('mirror')
       },
@@ -58,7 +58,10 @@ function App() {
     }
   }, [date, attempt])
 
-  const set = state.kind === 'ready' ? state.set : null
+  // Just after midnight the set on hand is yesterday's until the new one
+  // arrives; it is not shown as today's.
+  const set = state.kind === 'ready' && state.day === date ? state.set : null
+  const loading = state.kind === 'loading' || (state.kind === 'ready' && !set)
   const morningQs = useMemo(
     () => (set ? todaysPick(set.pool ?? [], set.questions ?? [], set.date, intimacyOn(prefs)) : []),
     // pickVersion forces a fresh pick after a preference change
@@ -89,10 +92,13 @@ function App() {
   function changePrefs(next: Prefs) {
     savePrefs(next)
     setPrefs(next)
-    // Re-pick only while nothing of today's questions is answered yet, so
-    // they never change under someone mid-edition.
-    if (set && !morningQs.some((q) => recalledChoice(q.id))) {
-      forgetPick(set.date)
+    // Re-pick only a sitting nobody has started, so questions never change
+    // under someone mid-sitting.
+    if (!set) return
+    const started = (qs: Question[]) => qs.some((q) => recalledChoice(q.id))
+    const halves = (['morning', 'evening'] as Half[]).filter((h) => !started(h === 'morning' ? morningQs : eveningQs))
+    if (halves.length > 0) {
+      forgetPick(set.date, halves)
       setPickVersion((v) => v + 1)
     }
   }
@@ -118,7 +124,7 @@ function App() {
         )}
       </header>
 
-      {state.kind === 'loading' && <p className="muted center">Getting today's questions ready…</p>}
+      {loading && <p className="muted center">Getting today's questions ready…</p>}
 
       {state.kind === 'empty' && <p className="notice">No questions today yet. Check back soon.</p>}
 
@@ -135,49 +141,32 @@ function App() {
 
       {set && tab === 'today' && (
         <div className="today">
-          {/* The side of the day: on a phone its parts fall into place around
-              the card; on a wide screen it stands beside it. */}
-          <div className="today-side">
-            <div className="edition-bar">
-              <p className="edition-line">
-                {set.review ? 'Review day' : set.edition ? `Edition #${set.edition}` : "Today's questions"} ·{' '}
-                {weekday(set.date)}
-                {!set.review && (sitting === 'pause' || sitting === 'evening') && ' evening'}
-              </p>
-              {steps.length > 0 && (
-                <nav className="dashes" aria-label="Today's questions">
-                  {steps.map((q, i) => {
-                    const done = doneOf(recalledChoice(q.id))
-                    return (
-                      <button
-                        key={q.id}
-                        type="button"
-                        className={`dash ${done ?? ''}`}
-                        style={themeVars(q.theme)}
-                        aria-label={`Question ${i + 1} of ${steps.length}`}
-                        aria-current={flow.at === i ? 'step' : undefined}
-                        disabled={!done && flow.at !== i}
-                        onClick={() => flow.go(i)}
-                      />
-                    )
-                  })}
-                </nav>
-              )}
-            </div>
-            {!set.review && <DayPlan sitting={sitting} morning={morning} evening={evening} />}
-            <PrivacyLine />
-            {prefs.adult === true && (
-              <label className="switch">
-                <input
-                  type="checkbox"
-                  checked={prefs.mild}
-                  onChange={(e) => changePrefs({ ...prefs, mild: e.target.checked })}
-                />
-                Keep it mild (no intimacy questions)
-              </label>
+          <div className="edition-bar">
+            <p className="edition-line">
+              {set.review ? 'Review day' : set.edition ? `Edition #${set.edition}` : "Today's questions"} ·{' '}
+              {weekday(set.date)}
+              {!set.review && (sitting === 'pause' || sitting === 'evening') && ' evening'}
+            </p>
+            {steps.length > 0 && (
+              <nav className="dashes" aria-label="Today's questions">
+                {steps.map((q, i) => {
+                  const done = doneOf(recalledChoice(q.id))
+                  return (
+                    <button
+                      key={q.id}
+                      type="button"
+                      className={`dash ${done ?? ''}`}
+                      style={themeVars(q.theme)}
+                      aria-label={`Question ${i + 1} of ${steps.length}`}
+                      aria-current={flow.at === i ? 'step' : undefined}
+                      disabled={!done && flow.at !== i}
+                      onClick={() => flow.go(i)}
+                    />
+                  )
+                })}
+              </nav>
             )}
           </div>
-
           <div className="today-main">
             {set.review && (
               <section className="notice review" aria-labelledby="review-title">
@@ -250,6 +239,22 @@ function App() {
                     )
                   ))}
               </>
+            )}
+          </div>
+          {/* The rest of the day: under the card on a phone, beside it on a
+              wide screen. */}
+          <div className="today-side">
+            {!set.review && <DayPlan sitting={sitting} morning={morning} evening={evening} />}
+            <PrivacyLine />
+            {prefs.adult === true && (
+              <label className="switch">
+                <input
+                  type="checkbox"
+                  checked={prefs.mild}
+                  onChange={(e) => changePrefs({ ...prefs, mild: e.target.checked })}
+                />
+                Keep it mild (no intimacy questions)
+              </label>
             )}
           </div>
         </div>

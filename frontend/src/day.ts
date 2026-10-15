@@ -68,8 +68,9 @@ export function nextTurn(now: Date): number {
 }
 
 // useDay is the phone's date and its sitting. It turns by itself while the
-// app is open, and checks again whenever the app comes back into view, since
-// a phone asleep at a turn may miss the timer.
+// app is open, checks again whenever the app comes back into view, since a
+// phone asleep at a turn may miss the timer, and checks once a minute in case
+// the clock itself moved (a new time zone, a corrected clock).
 export function useDay(): Day {
   const [day, setDay] = useState(() => dayAt(new Date()))
   useEffect(() => {
@@ -80,10 +81,12 @@ export function useDay(): Day {
       })
     const now = new Date()
     const id = setTimeout(check, nextTurn(now) - now.getTime() + 1000)
+    const backstop = setInterval(check, 60_000)
     window.addEventListener('focus', check)
     document.addEventListener('visibilitychange', check)
     return () => {
       clearTimeout(id)
+      clearInterval(backstop)
       window.removeEventListener('focus', check)
       document.removeEventListener('visibilitychange', check)
     }

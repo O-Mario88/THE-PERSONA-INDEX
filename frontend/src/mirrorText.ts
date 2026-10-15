@@ -201,7 +201,7 @@ export const TRAITS: Record<string, TraitText> = {
       headline: 'You say what you think.',
       prediction:
         'People tend to know exactly where they stand with you. Your directness lands best when the other person feels heard first.',
-      cost: 'Directness can cost you closeness. This leaning tends to go with thinner friendships and more stress, even when it pays at work.',
+      cost: 'Directness can cost you closeness. This leaning tends to go with a smaller circle of support and more stress, even when it pays at work.',
       costSource: 'judge2012',
     },
     research: 'Warmer, more agreeable people are more likely to help others, strangers included, across many situations.',
@@ -302,8 +302,8 @@ export const TRAITS: Record<string, TraitText> = {
       headline: 'You play fair, even unseen.',
       prediction:
         "People are likely to trust you with things that matter. Fairness includes asking for the credit you've earned.",
-      cost: 'Modesty can go unrewarded. People who play down what they did tend to be passed over for those who talk themselves up, so say plainly what you did.',
-      costSource: 'judge2012',
+      cost: "Honestly, there is no proven downside to playing fair. Just don't let it keep you quiet when a deal is unfair to you.",
+      costSource: 'hexaco2005',
     },
     low: {
       adj: 'Pragmatic',

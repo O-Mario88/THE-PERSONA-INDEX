@@ -170,7 +170,7 @@ export function QuestionCard({ question, date, onDone, onNext }: Props) {
           />
           <p className="own-meta">
             <span>
-              <span aria-hidden="true">🔒 </span>Only on this phone. Never sent.
+              <span aria-hidden="true">🔒 </span>Kept on this phone. The app never sends it.
             </span>
             <span>{MAX_WORDS - draft.length} left</span>
           </p>
@@ -198,9 +198,13 @@ export function QuestionCard({ question, date, onDone, onNext }: Props) {
               </button>
             ))}
             <div className="own-buttons">
-              <button type="button" className="text-button" disabled={sending} onClick={noneClose}>
-                None of these
-              </button>
+              {/* After a failed vote the server may still have counted it, so
+                  the only way on is to try that answer again. */}
+              {!error && (
+                <button type="button" className="text-button" disabled={sending} onClick={noneClose}>
+                  None of these
+                </button>
+              )}
               <button type="button" className="text-button" disabled={sending} onClick={() => setMode('writing')}>
                 Change my words
               </button>

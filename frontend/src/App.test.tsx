@@ -249,7 +249,7 @@ describe('the daily questions', () => {
     expect(within(card).queryByRole('textbox')).not.toBeInTheDocument()
     fireEvent.click(within(card).getByRole('button', { name: 'In my own words' }))
     const box = within(card).getByRole('textbox', { name: 'In your own words' })
-    expect(card).toHaveTextContent('Only on this phone. Never sent.')
+    expect(card).toHaveTextContent('Kept on this phone. The app never sends it.')
     expect(within(card).getByRole('button', { name: 'Keep my words' })).toBeDisabled()
     fireEvent.change(box, { target: { value: 'Depends who cooked. If it was me, straight away.' } })
     fireEvent.click(within(card).getByRole('button', { name: 'Keep my words' }))
@@ -273,6 +273,44 @@ describe('the daily questions', () => {
       words: 'Depends who cooked. If it was me, straight away.',
       closest: 'Right after eating',
     })
+  })
+
+  it('after a failed vote on own words, only offers that answer again, since the server may have counted it', async () => {
+    stubApi({
+      vote: [
+        { status: 503, body: { error: 'unavailable' } },
+        { status: 202, body: { status: 'accepted', eventId: 'evt_1' } },
+      ],
+    })
+    render(<App />)
+    const card = await screen.findByRole('region', { name: 'When do you wash the dishes?' })
+    fireEvent.click(within(card).getByRole('button', { name: 'In my own words' }))
+    fireEvent.change(within(card).getByRole('textbox'), { target: { value: 'Straight after, mostly.' } })
+    fireEvent.click(within(card).getByRole('button', { name: 'Keep my words' }))
+    fireEvent.click(within(card).getByRole('button', { name: 'Right after eating' }))
+    expect(await within(card).findByRole('alert')).toHaveTextContent('did not go through')
+    expect(within(card).queryByRole('button', { name: 'None of these' })).not.toBeInTheDocument()
+    expect(localStorage.getItem('pi.words.q-dishes')).toBeNull()
+    fireEvent.click(within(card).getByRole('button', { name: 'Right after eating' }))
+    expect(await within(card).findByRole('note', { name: 'What your answer may say' })).toBeInTheDocument()
+    expect(JSON.parse(localStorage.getItem('pi.words.q-dishes')!).words).toBe('Straight after, mostly.')
+  })
+
+  it('keeps own words five weeks, like answers on the server', async () => {
+    const keep = (id: string, date: string) =>
+      localStorage.setItem(`pi.words.${id}`, JSON.stringify({ questionId: id, date, prompt: 'P', words: 'W' }))
+    keep('q-old', '2026-09-06') // 36 days before
+    keep('q-recent', '2026-09-08') // 34 days before
+    stubApi({})
+    render(<App />)
+    const card = await screen.findByRole('region', { name: 'When do you wash the dishes?' })
+    fireEvent.click(within(card).getByRole('button', { name: 'In my own words' }))
+    fireEvent.change(within(card).getByRole('textbox'), { target: { value: 'Paper plates.' } })
+    fireEvent.click(within(card).getByRole('button', { name: 'Keep my words' }))
+    fireEvent.click(within(card).getByRole('button', { name: 'None of these' }))
+    expect(localStorage.getItem('pi.words.q-old')).toBeNull()
+    expect(localStorage.getItem('pi.words.q-recent')).not.toBeNull()
+    expect(localStorage.getItem('pi.words.q-dishes')).not.toBeNull()
   })
 
   it('keeps own words that no option comes close to, sending nothing and guessing nothing', async () => {
@@ -844,6 +882,20 @@ describe('the evening, from 5 pm', () => {
     expect(within(day).getByRole('group', { name: 'Tomorrow' })).toHaveTextContent('Money')
     expect(day).toHaveTextContent('For self-reflection, not a diagnosis.')
     expect(document.body.textContent).not.toMatch(noClinicianWords)
+  })
+
+  it('never changes a sitting someone has started when the 18+ answer comes in', async () => {
+    vi.setSystemTime(at(18))
+    stubApi({ today: { status: 200, body: { ...sixADay, pool: [...sixADay.pool!, closeness] } } })
+    render(<App />)
+    await answer('I get out for a walk')
+    const before = within(screen.getByRole('navigation', { name: "Today's questions" })).getAllByRole('button')
+    expect(before).toHaveLength(3)
+    fireEvent.click(screen.getByRole('button', { name: "Yes, I'm 18 or older" }))
+    // Still the same card, answered, and still three.
+    expect(await screen.findByRole('region', { name: 'Lunch time. What usually happens?' })).toHaveTextContent('You chose')
+    expect(within(screen.getByRole('navigation', { name: "Today's questions" })).getAllByRole('button')).toHaveLength(3)
+    expect(JSON.parse(localStorage.getItem('pi.pick.2026-10-12.pm')!)).toEqual(['q-lunch', 'q-queue', 'q-ring'])
   })
 
   it('ends the day quietly when an edition has no evening questions', async () => {

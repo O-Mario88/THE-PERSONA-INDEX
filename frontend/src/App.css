@@ -535,37 +535,21 @@
   accent-color: var(--accent);
 }
 
-/* The day around the card. On a phone the side's parts fall into place
-   around the card: the dashes above it, the plan and the privacy line below.
-   On a wide screen the side stands beside the card. */
+/* The day around the card, in reading order: the dashes, the card, then the
+   plan and the privacy line. On a wide screen the dashes and the plan stand
+   beside the card. */
 .today {
   display: flex;
   flex-direction: column;
   gap: 18px;
 }
 
+.today-main,
 .today-side {
-  display: contents;
-}
-
-.today-main {
-  order: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 18px;
-}
-
-.today-side > .day-plan {
-  order: 2;
-}
-
-.today-side > .privacy-line {
-  order: 3;
-}
-
-.today-side > .switch {
-  order: 4;
 }
 
 /* In your own words. */
@@ -906,8 +890,7 @@
 }
 
 .mirror > :not(.m-hero, .m-spans) {
-  width: calc(100% - 32px);
-  max-width: 688px;
+  width: calc(100% - 2 * var(--m-gutter));
   margin-inline: auto;
 }
 
@@ -1671,19 +1654,25 @@
   .today {
     display: grid;
     grid-template-columns: 300px minmax(0, 1fr);
-    gap: 64px;
+    grid-template-rows: auto 1fr;
+    grid-template-areas:
+      'bar main'
+      'side main';
+    gap: 20px 64px;
     align-items: start;
   }
 
+  .today > .edition-bar {
+    grid-area: bar;
+  }
+
   .today-side {
-    position: sticky;
-    top: 28px;
-    display: flex;
-    flex-direction: column;
+    grid-area: side;
     gap: 20px;
   }
 
   .today-main {
+    grid-area: main;
     max-width: 680px;
     gap: 22px;
   }

@@ -417,8 +417,27 @@ export const MAX_WORDS = 280
 
 const wordsPrefix = 'pi.words.'
 
+// Own words are kept five weeks, like answers on the server, so they last
+// for the weekly mirror and no longer.
+export const WORDS_KEPT_DAYS = 35
+
 export function rememberWords(w: OwnWords) {
   save(wordsPrefix + w.questionId, JSON.stringify(w))
+  const cutoff = new Date(Date.parse(`${w.date}T00:00:00Z`) - WORDS_KEPT_DAYS * 86400_000).toISOString().slice(0, 10)
+  for (const k of wordKeys()) {
+    const old = parseWords(load(k))
+    if (!old || old.date < cutoff) remove(k)
+  }
+}
+
+function wordKeys(): string[] {
+  const keys = new Set([...memory.keys()])
+  try {
+    for (const k of Object.keys(localStorage)) keys.add(k)
+  } catch {
+    // memory only
+  }
+  return [...keys].filter((k) => k.startsWith(wordsPrefix))
 }
 
 function parseWords(v: string | null): OwnWords | null {
@@ -436,14 +455,7 @@ export function recalledWords(questionId: string): OwnWords | null {
 
 // wordsBetween lists the own words kept for dates from..to (YYYY-MM-DD), oldest first.
 export function wordsBetween(from: string, to: string): OwnWords[] {
-  const keys = new Set([...memory.keys()])
-  try {
-    for (const k of Object.keys(localStorage)) keys.add(k)
-  } catch {
-    // memory only
-  }
-  return [...keys]
-    .filter((k) => k.startsWith(wordsPrefix))
+  return wordKeys()
     .flatMap((k) => {
       const w = parseWords(load(k))
       return w && w.date >= from && w.date <= to ? [w] : []
