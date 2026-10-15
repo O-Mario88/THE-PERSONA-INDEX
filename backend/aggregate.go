@@ -70,22 +70,17 @@ func (c *resultCache) clear() {
 }
 
 func (s *Server) Results(w http.ResponseWriter, r *http.Request) {
-	q, ok := s.findQuestion(r.PathValue("questionId"), resultsWindow)
+	q, _, ok := s.findQuestion(r.PathValue("questionId"), resultsWindow)
 	if !ok {
 		writeError(w, http.StatusNotFound, "unknown_question")
 		return
 	}
 
-	now := s.clock()
-	counts, ok := s.resultCache.get(q.ID, now)
-	if !ok {
-		var err error
-		if counts, err = s.votes.Counts(r.Context(), q.ID); err != nil {
-			w.Header().Set("Cache-Control", "no-store")
-			writeError(w, http.StatusServiceUnavailable, "unavailable")
-			return
-		}
-		s.resultCache.put(q.ID, counts, now)
+	counts, err := s.counts(r.Context(), q.ID)
+	if err != nil {
+		w.Header().Set("Cache-Control", "no-store")
+		writeError(w, http.StatusServiceUnavailable, "unavailable")
+		return
 	}
 
 	res := QuestionResults{QuestionID: q.ID, Options: make([]OptionResult, 0, len(q.Options))}

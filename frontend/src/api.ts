@@ -37,8 +37,10 @@ export type Question = {
 export type DailySet = {
   date: string
   edition?: number
-  questions: Question[]
+  questions: Question[] // the morning's default three
+  afternoon?: Question[] // the afternoon's default three, opened at noon on the phone
   pool?: Question[]
+  review?: boolean // Sunday: no new questions, the day for the weekly mirror
   tomorrowThemes?: string[]
 }
 
@@ -92,31 +94,157 @@ export async function castVote(
   optionId: string,
   idempotencyKey: string,
 ): Promise<{ status: string; eventId: string }> {
-  const send = async () =>
+  return withDevice((voterId) =>
     request<{ status: string; eventId: string }>('/api/votes', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Idempotency-Key': idempotencyKey,
       },
-      body: JSON.stringify({ questionId, optionId, voterId: await deviceToken() }),
-    })
+      body: JSON.stringify({ questionId, optionId, voterId }),
+    }),
+  )
+}
+
+// withDevice runs a request with this phone's token. When the server stops
+// accepting the token (its secret was rotated), it gets a new one and sends
+// the same request, with the same idempotency key, once more.
+async function withDevice<T>(send: (token: string) => Promise<T>): Promise<T> {
   try {
-    return await send()
+    return await send(await deviceToken())
   } catch (e) {
-    // The server stopped accepting this token (its secret was rotated): get a
-    // new one and send the same vote, with the same key, once more.
     if (e instanceof ApiError && e.code === 'invalid_device') {
       remove(deviceKey)
-      return send()
+      return send(await deviceToken())
     }
     throw e
   }
 }
 
-// The one-tap "I learned something" on an insight card. Anonymous, like votes.
+export type OptionResult = { optionId: string; count: number; percent: number }
+export type QuestionResults = { questionId: string; totalVotes: number; options: OptionResult[] }
+
+// The crowd's split on a question. Shown only from CROWD_MIN_VOTES votes, as
+// the server's mirror does; below that a split says more about chance than people.
+export const CROWD_MIN_VOTES = 100
+
+// An answer goes with the crowd when at least an even share of players picked
+// it (a third, on a three-option question), the same rule as the server's
+// mirror (backend/mirror.go verdicts). "At least half" would put nearly every
+// answer to a three- or four-option question against the crowd.
+export function withCrowd(count: number, total: number, options: number): boolean {
+  return count * options >= total
+}
+
+export function getResults(questionId: string): Promise<QuestionResults> {
+  return request(`/api/questions/${encodeURIComponent(questionId)}/results`)
+}
+
+// The weekly mirror, built by the server from this phone's kept answers.
+// Shapes mirror backend/mirror.go.
+export type Crowd = 'with' | 'against' | 'early' | 'private'
+export type StepStatus = 'started' | 'helped' | 'no_change' | 'not_tried'
+export type SplitOption = { label: string; count: number; percent: number; yours?: boolean }
+export type AnswerSplit = {
+  questionId: string
+  prompt: string
+  theme: string
+  edition: number
+  total: number
+  final: boolean
+  options: SplitOption[]
+}
+export type WeekScore = { week: number; score?: number; ranked: boolean; solid: boolean }
+export type TraitRead = {
+  trait: string
+  answers: number
+  solid: boolean
+  score: number
+  ranked: boolean
+  change?: number
+  history: WeekScore[]
+  evidence: string[]
+  theme?: string
+  edition?: number
+}
+export type Mirror = {
+  date: string
+  week: number
+  from: string
+  to: string
+  editions: [number, number]
+  weeksPlayed: number
+  stats: {
+    daysActive: number
+    daysActiveLastWeek: number
+    daysSoFar: number // question days so far, 1 to 6
+    answers: number
+    private: number
+    deepest: number
+    minority: number
+    judged: number
+    learned: number
+    rated: number
+    stepsStarted: number
+    stepsTried: number
+    stepsHelped: number
+  }
+  days: { date: string; edition: number; answers: { theme: string; crowd: Crowd }[] }[]
+  areas: { area: string; minority: number; judged: number; lastMinority: number; lastJudged: number }[]
+  rarest?: AnswerSplit
+  minority: AnswerSplit[]
+  divisive?: AnswerSplit
+  traits: TraitRead[]
+  ranked: boolean
+  themes: { theme: string; area: string; answers: number; depth: 'light' | 'deeper' | 'deep' | 'private' }[]
+  steps: {
+    questionId: string
+    optionId: string
+    theme: string
+    step: string
+    started: string
+    status: StepStatus
+    edition: number
+  }[]
+  stepRecord: { started: number; tried: number; helped: number }
+  strengths: { kind: 'days' | 'deepest' | 'minority' | 'learned' | 'steps'; you: number; median: number; players: number }[]
+  nextSteps: { questionId: string; optionId: string; theme: string; step: string; edition: number }[]
+  comingUp: string[]
+  lowMood: boolean
+}
+
+const deviceHeader = (token: string) => ({ Authorization: `Device ${token}` })
+
+export function getMirror(date: string): Promise<Mirror> {
+  return withDevice((token) => request<Mirror>(`/api/mirror?date=${date}`, { headers: deviceHeader(token) }))
+}
+
+// forgetMirror deletes everything the server keeps for this phone.
+export async function forgetMirror(): Promise<void> {
+  await withDevice(async (token) => {
+    const res = await fetch('/api/mirror', { method: 'DELETE', headers: deviceHeader(token) })
+    if (!res.ok) {
+      const body = await res.json().catch(() => null)
+      throw new ApiError(res.status, body?.error ?? 'unavailable')
+    }
+  })
+}
+
+// saveStep starts the small step on an answered card, or says how it went.
+export function saveStep(questionId: string, optionId: string, status: StepStatus, date: string): Promise<unknown> {
+  return withDevice((voterId) =>
+    request('/api/steps', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ questionId, optionId, status, date, voterId }),
+    }),
+  )
+}
+
+// The one-tap "I learned something" on an insight card. Kept with the
+// phone's answers for its mirror, and counted to retire weak cards.
 export function rateCard(questionId: string, optionId: string, learned: boolean): Promise<unknown> {
-  return deviceToken().then((voterId) =>
+  return withDevice((voterId) =>
     request('/api/ratings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Idempotency-Key': randomId() },
@@ -156,6 +284,20 @@ function remove(key: string) {
     localStorage.removeItem(key)
   } catch {
     // nothing to do
+  }
+}
+
+// forgetLocal deletes everything this app keeps on the phone except the
+// device token: it holds nothing personal, and dropping it would let this
+// phone vote twice on today's questions.
+export function forgetLocal() {
+  for (const k of [...memory.keys()]) if (k.startsWith('pi.') && k !== deviceKey) memory.delete(k)
+  try {
+    for (const k of Object.keys(localStorage)) {
+      if (k.startsWith('pi.') && k !== deviceKey) localStorage.removeItem(k)
+    }
+  } catch {
+    // nothing stored
   }
 }
 

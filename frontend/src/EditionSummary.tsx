@@ -1,39 +1,79 @@
 import { useEffect, useState, type CSSProperties } from 'react'
-import { playedDays, recalledChoice, type Question } from './api'
+import { CROWD_MIN_VOTES, getResults, playedDays, recalledChoice, SKIPPED, withCrowd, type Question } from './api'
 import { adviceFor } from './advice'
 import { encodeCompare } from './compare'
-import { awardEdition, levelFor, loadGame, pickMove, todaysMove } from './game'
-import { daysPlayedThisWeek, THEME_COUNT } from './themes'
+import { isSaturday } from './day'
+import { awardEdition, levelFor, loadGame, movesOn } from './game'
+import { daysPlayedThisWeek, themeName, themeStyle, themeVars } from './themes'
 
 // When the evening check-in comes, as the morning summary tells it.
 export type CheckIn = 'later' | 'open' | 'tomorrow'
+// Whether the afternoon three are still to come (before noon), answered with
+// the rest of the day, or not part of this edition.
+export type Afternoon = 'later' | 'done' | 'none'
 
 type Props = {
   date: string
   edition: number
   questions: Question[]
   checkIn: CheckIn
+  afternoon?: Afternoon
   answers: [string, string][] // what a compare link may carry: no intimate answers
+  tomorrowThemes: string[]
 }
 
 const CHECK_IN_LINE: Record<CheckIn, string> = {
-  later: 'Your evening check-in opens at 5 pm: a quick follow-up on how today went.',
+  later: "Your evening check-in opens at 5 pm. I'll ask how the day went.",
   open: 'Your evening check-in is open.',
-  tomorrow: 'Answer before 5 pm tomorrow and the evening check-in will follow up on how your day went.',
+  tomorrow: 'Answer before 5 pm tomorrow and the evening check-in will ask how your day went.',
 }
 
-// The end of the morning: advice built from today's insight cards (which stay
-// on screen above), one move to try today, and progress kept on this phone.
+// Saturday's summary looks ahead to Sunday, the review day.
+const SUNDAY_LINE = 'Tomorrow is Sunday: no new questions, just your week in the mirror.'
+
+// Your share of the crowd on each answered question, once it has enough votes.
+type Share = { percent: number; with: boolean }
+
+function useCrowdShares(questions: Question[]): Record<string, Share> {
+  const [shares, setShares] = useState<Record<string, Share>>({})
+  useEffect(() => {
+    let live = true
+    for (const q of questions) {
+      const mine = recalledChoice(q.id)
+      if (!q.options.some((o) => o.id === mine)) continue
+      getResults(q.id).then(
+        (r) => {
+          const o = r.options.find((o) => o.optionId === mine)
+          if (live && r.totalVotes >= CROWD_MIN_VOTES && o) {
+            const share = { percent: o.percent, with: withCrowd(o.count, r.totalVotes, q.options.length) }
+            setShares((s) => ({ ...s, [q.id]: share }))
+          }
+        },
+        () => {
+          // no share shown
+        },
+      )
+    }
+    return () => {
+      live = false
+    }
+  }, [questions])
+  return shares
+}
+
+// "Done for today.": what the day's answers add up to, the moves chosen, and
+// what's next. The insight cards are not repeated here; they were just shown.
 // Nothing here resets or punishes a missed day.
-export function EditionSummary({ date, edition, questions, checkIn, answers }: Props) {
-  const [copied, setCopied] = useState(false)
+export function EditionSummary({ date, edition, questions, checkIn, afternoon = 'none', answers, tomorrowThemes }: Props) {
+  const [copied, setCopied] = useState<'compare' | 'share' | null>(null)
   const [bonus, setBonus] = useState(0)
-  const [move, setMove] = useState(() => todaysMove(date))
+  const shares = useCrowdShares(questions)
   const cards = questions
     .map((q) => ({ q, o: q.options.find((o) => o.id === recalledChoice(q.id)) }))
     .filter((c): c is { q: Question; o: NonNullable<typeof c.o> } => !!c.o?.insight)
   const advice = adviceFor(cards.map((c) => c.o))
-  const headingId = `morning-${edition}`
+  const moves = movesOn(date)
+  const headingId = `done-${edition}`
 
   useEffect(() => {
     if (cards.length > 0) setBonus(awardEdition(date))
@@ -41,129 +81,151 @@ export function EditionSummary({ date, edition, questions, checkIn, answers }: P
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date])
 
-  function choose(questionId: string, step: string) {
-    pickMove(date, questionId, step)
-    setMove(todaysMove(date))
-  }
-
-  async function compare() {
-    const link = `${window.location.origin}/#c=${encodeCompare({ e: edition, a: answers })}`
+  async function send(text: string, kind: 'compare' | 'share') {
     try {
-      const text = `I answered today's Persona Index. Answer the same questions and see where we agree: ${link}`
       if (navigator.share) {
         await navigator.share({ text })
         return
       }
       await navigator.clipboard.writeText(text)
-      setCopied(true)
+      setCopied(kind)
     } catch {
       // the person closed the share sheet; nothing to do
     }
   }
 
+  // Squares say only whether each answer went with the crowd: never the
+  // question or the answer, and nothing at all about an intimate one.
+  function square(q: Question): string {
+    const c = recalledChoice(q.id)
+    if (!c || c === SKIPPED) return '⬜'
+    if (q.care === 'intimate' || shares[q.id] === undefined) return '⬛'
+    return shares[q.id].with ? '🟪' : '🟧'
+  }
+
+  const share = () =>
+    send(`The Persona Index #${edition}\n${questions.map(square).join('')}\n${window.location.origin}`, 'share')
+  const compare = () =>
+    send(
+      `I answered today's Persona Index. Answer the same questions and see where we agree: ${window.location.origin}/#c=${encodeCompare({ e: edition, a: answers })}`,
+      'compare',
+    )
+
   return (
-    <section className="card summary" aria-labelledby={headingId}>
+    <section className="screen done" aria-labelledby={headingId}>
       {bonus > 0 && <Confetti />}
-      <div className="summary-head">
-        <span className="summary-badge" aria-hidden="true">
-          🏆
-        </span>
-        <div>
-          <h2 id={headingId}>Morning complete</h2>
-          <p className="muted">
-            Edition #{edition} · {cards.length} {cards.length === 1 ? 'insight' : 'insights'} today
-            {bonus > 0 && <span className="points-pill">+{bonus} pts bonus</span>}
-          </p>
-        </div>
-      </div>
-
-      {cards.length > 0 && (
-        <>
-          <div className="advice" role="note" aria-label="Advice for you">
-            <h3>
-              <span aria-hidden="true">💡 </span>Advice for you
-            </h3>
-            <p>{advice.headline}</p>
-            {advice.points.map((p) => (
-              <div key={p.trait} className="advice-point">
-                <p className="trait-name">{p.name}</p>
-                <p>{p.strength}</p>
-                <p>
-                  <strong>How to grow:</strong> {p.grow}
-                </p>
-              </div>
-            ))}
-          </div>
-
-          <div className="steps" role="group" aria-labelledby={`${headingId}-move`}>
-            <h3 id={`${headingId}-move`}>
-              <span aria-hidden="true">🎯 </span>Pick your move
-            </h3>
-            <ul>
-              {cards.map(({ q, o }) => {
-                const picked = move?.questionId === q.id
-                return (
-                  <li key={q.id}>
-                    <button
-                      type="button"
-                      className={picked ? 'step done' : 'step'}
-                      aria-pressed={picked}
-                      disabled={move?.tried !== undefined}
-                      onClick={() => choose(q.id, o.insight!.step)}
-                    >
-                      <span className="step-box" aria-hidden="true">
-                        {picked ? '✓' : ''}
-                      </span>
-                      <span>{o.insight!.step}</span>
-                    </button>
-                  </li>
-                )
-              })}
-            </ul>
-            <p className="muted">{move ? 'The evening check-in will ask how it went.' : 'Pick one to try.'}</p>
-          </div>
-        </>
-      )}
-
-      <p className="tomorrow">
-        <span aria-hidden="true">🌙 </span>
-        {CHECK_IN_LINE[checkIn]}
+      <h2 id={headingId} className="done-title">
+        {afternoon === 'later' ? 'Morning done.' : 'Done for today.'}
+      </h2>
+      <p className="muted">
+        Edition #{edition} · {cards.length} {cards.length === 1 ? 'insight' : 'insights'} today
+        {bonus > 0 && <span className="points-pill">+{bonus} bonus</span>}
       </p>
 
-      <LevelBlock date={date} />
+      <ul className="tiles" aria-label="Today's answers">
+        {questions.map((q) => {
+          const c = recalledChoice(q.id)
+          const status =
+            !c || c === SKIPPED
+              ? 'skipped'
+              : q.care === 'intimate'
+                ? 'private'
+                : shares[q.id] !== undefined
+                  ? `with ${Math.round(shares[q.id].percent)}%`
+                  : 'answered'
+          return (
+            <li key={q.id} className={c && c !== SKIPPED ? 'tile on' : 'tile'} style={themeVars(q.theme)}>
+              <span className="tile-icon" aria-hidden="true">
+                {themeStyle(q.theme).icon}
+              </span>
+              <span className="tile-theme">{q.theme ? themeName(q.theme) : 'Today'}</span>
+              <span className="tile-status">{status}</span>
+            </li>
+          )
+        })}
+      </ul>
 
-      {answers.length > 0 && (
-        <button type="button" className="option" onClick={compare}>
-          Compare with someone
-        </button>
+      {cards.length > 0 && (
+        <div className="thread" role="note" aria-label="Today's thread">
+          <p className="eyebrow">Today's thread</p>
+          <p className="thread-headline">{advice.headline}</p>
+          {advice.points.map((p) => (
+            <div key={p.trait} className="thread-point">
+              <p className="thread-name">{p.name}</p>
+              <p>{p.strength}</p>
+              <p>
+                <strong>For the rest of today:</strong> {p.grow}
+              </p>
+            </div>
+          ))}
+        </div>
       )}
+
+      <div className="moves" role="group" aria-label="Moves you'll try">
+        <p className="eyebrow">Moves you'll try{checkIn === 'later' ? ' · check-in tonight' : ''}</p>
+        {moves.length > 0 ? (
+          <ul>
+            {moves.map((m) => (
+              <li key={m.questionId}>
+                <span className="move-dot" aria-hidden="true" />
+                {m.step}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="muted">No move picked today. That's okay; noticing is a step too.</p>
+        )}
+      </div>
+
+      <div className="done-actions">
+        <button type="button" className="pill-button" onClick={share}>
+          Share #{edition}
+        </button>
+        {answers.length > 0 && (
+          <button type="button" className="pill-button ghost" onClick={compare}>
+            Compare with someone
+          </button>
+        )}
+      </div>
       {copied && <p className="muted">Copied. Paste it anywhere.</p>}
-      <p className="muted insight-note">For self-reflection, not a diagnosis.</p>
+
+      {afternoon === 'later' && <p className="tomorrow">Three more questions open at noon.</p>}
+      {afternoon !== 'later' && isSaturday(date) && <p className="tomorrow">{SUNDAY_LINE}</p>}
+      {afternoon !== 'later' && tomorrowThemes.length > 0 && (
+        <p className="tomorrow">
+          <span className="eyebrow">Tomorrow</span> {tomorrowThemes.map(themeName).join(' · ')}
+        </p>
+      )}
+      <p className="check-in">
+        {checkIn === 'tomorrow' && isSaturday(date)
+          ? 'On Monday, answer before 5 pm and the evening check-in will ask how your day went.'
+          : CHECK_IN_LINE[checkIn]}
+      </p>
+      <LevelLine date={date} />
+      <p className="insight-note">For self-reflection, not a diagnosis.</p>
     </section>
   )
 }
 
 // The level, points and the week's play, all kept on this phone.
-export function LevelBlock({ date }: { date: string }) {
+export function LevelLine({ date }: { date: string }) {
   const game = loadGame()
   const level = levelFor(game.insights)
   const played = daysPlayedThisWeek(playedDays(), date)
   return (
     <div className="level" aria-label="Your level">
-      <p className="level-name">
+      <p>
         <span aria-hidden="true">{level.icon} </span>
-        {level.name} · {game.points} pts
+        {level.name} · {game.points} pts · played {played} of the last 7 days
       </p>
       <div className="level-bar" aria-hidden="true">
         <div className="level-fill" style={{ width: `${Math.round(level.progress * 100)}%` }} />
       </div>
-      <p className="muted">
-        {level.next
-          ? `${level.toNext} more ${level.toNext === 1 ? 'insight' : 'insights'} to ${level.next.name}`
-          : 'Top level reached'}
-        {' · '}
-        {game.themes.length} of {THEME_COUNT} life areas discovered · played {played} of the last 7 days
-      </p>
+      {level.next && (
+        <p className="muted">
+          {level.toNext} more {level.toNext === 1 ? 'insight' : 'insights'} to {level.next.name}
+        </p>
+      )}
     </div>
   )
 }

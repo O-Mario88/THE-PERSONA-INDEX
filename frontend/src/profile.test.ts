@@ -92,6 +92,37 @@ describe('picking three from the pool', () => {
   })
 })
 
+describe('picking the afternoon three', () => {
+  const day = pool.concat([q('l1', 'learning'), q('d1', 'dating', 'personal'), q('o1', 'honesty', 'personal')])
+  const afternoonDefaults = [day[4], day[6], day[7]]
+
+  it('gives a phone with no history the shared afternoon three', () => {
+    expect(pickThree(day, afternoonDefaults, { answers: [], skips: [] }, '2026-10-12', false, defaults)).toEqual(
+      afternoonDefaults,
+    )
+  })
+
+  it("never repeats the morning's questions or themes", () => {
+    const h: History = {
+      answers: [answer('2026-10-10', 'money', 4), answer('2026-10-11', 'friendship', 3), answer('2026-10-11', 'learning', 4)],
+      skips: [],
+    }
+    const morning = pickThree(day, defaults, h, '2026-10-12', false)
+    const afternoon = pickThree(day, afternoonDefaults, h, '2026-10-12', false, morning)
+    expect(afternoon).toHaveLength(3)
+    const morningThemes = new Set(morning.map((m) => m.theme))
+    expect(afternoon.some((a) => morning.includes(a) || morningThemes.has(a.theme))).toBe(false)
+  })
+
+  it('tops the defaults up from the pool when the morning took one of them', () => {
+    const took = [afternoonDefaults[0]]
+    const afternoon = pickThree(day, afternoonDefaults, { answers: [], skips: [] }, '2026-10-12', false, took)
+    expect(afternoon).toHaveLength(3)
+    expect(afternoon).not.toContain(afternoonDefaults[0])
+    expect(afternoon.some((a) => a.care === 'intimate')).toBe(false)
+  })
+})
+
 describe('the trait read', () => {
   it('says how many answers it rests on, and stays early below three weeks of daily play', () => {
     const answers = Array.from({ length: 4 }, (_, i) => answer('2026-10-11', `t${i}`, 3, { conscientiousness: 1 }))

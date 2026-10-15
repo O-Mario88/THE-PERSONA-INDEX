@@ -9,7 +9,7 @@
 // - Trait read: answers from the last 7 days. For each trait, the mean of the
 //   weights of the options chosen; shown only with 2+ answers touching it.
 //   A mean above +0.25 reads "higher", below -0.25 "lower", else "middle".
-//   Under 21 morning answers (one full week of play) the read is labelled "Early".
+//   Under 21 answers (about a week of play) the read is labelled "Early".
 // - Evening follow-up answers (version 2) count towards the trait read only:
 //   they carry trait weights but no depth, so they never move interest.
 
@@ -88,18 +88,30 @@ export function interestScores(h: History, today: string): Record<string, number
   return out
 }
 
-// pickThree chooses this phone's three questions: the two highest-interest
-// themes, then the theme seen least in two weeks, never two from one theme.
-// A phone with no history gets the shared default three.
-export function pickThree(pool: Question[], defaults: Question[], h: History, today: string, adult: boolean): Question[] {
-  if (h.answers.length === 0 && h.skips.length === 0) return defaults
-  const eligible = pool.filter((q) => q.care !== 'intimate' || adult)
+// pickThree chooses this phone's three questions for one half of the day:
+// the two highest-interest themes, then the theme seen least in two weeks,
+// never two from one theme, and none of the questions or themes already taken
+// that morning. A phone with no history gets the shared default three.
+export function pickThree(
+  pool: Question[],
+  defaults: Question[],
+  h: History,
+  today: string,
+  adult: boolean,
+  taken: Question[] = [],
+): Question[] {
+  const takenIds = new Set(taken.map((q) => q.id))
+  const eligible = pool.filter((q) => (q.care !== 'intimate' || adult) && !takenIds.has(q.id))
+  // The shared defaults, less any the morning already took, topped up from the pool.
+  const fallback = defaults.filter((q) => !takenIds.has(q.id))
+  for (const q of eligible) if (fallback.length < 3 && !fallback.includes(q)) fallback.push(q)
+  if (h.answers.length === 0 && h.skips.length === 0) return fallback
   const interest = interestScores(h, today)
   const seen: Record<string, number> = {}
   for (const a of h.answers) if (!a.evening && days(a.date, today) <= 14) seen[a.theme] = (seen[a.theme] ?? 0) + 1
 
   const picked: Question[] = []
-  const usedThemes = new Set<string>()
+  const usedThemes = new Set<string>(taken.map((q) => q.theme ?? q.id))
   const take = (q: Question | undefined) => {
     if (!q) return
     picked.push(q)
@@ -112,13 +124,25 @@ export function pickThree(pool: Question[], defaults: Question[], h: History, to
   take([...fresh()].sort(byInterest)[0])
   take([...fresh()].sort(byInterest)[0])
   take([...fresh()].sort(bySeen)[0])
-  return picked.length === 3 ? picked : defaults
+  return picked.length === 3 ? picked : fallback
 }
 
-// The day's pick is fixed at first sight, so the three don't change while
-// someone is answering them.
-export function todaysPick(pool: Question[], defaults: Question[], today: string, adult: boolean): Question[] {
-  const key = `pi.pick.${today}`
+export type Half = 'morning' | 'afternoon'
+
+const pickKey = (today: string, half: Half) => (half === 'morning' ? `pi.pick.${today}` : `pi.pick.${today}.pm`)
+
+// Each half's pick is fixed at first sight, so the three don't change while
+// someone is answering them. The afternoon is picked when it opens, after the
+// morning's answers, and never repeats the morning's questions or themes.
+export function todaysPick(
+  pool: Question[],
+  defaults: Question[],
+  today: string,
+  adult: boolean,
+  half: Half = 'morning',
+  taken: Question[] = [],
+): Question[] {
+  const key = pickKey(today, half)
   try {
     const ids: unknown = JSON.parse(localStorage.getItem(key) ?? 'null')
     if (Array.isArray(ids)) {
@@ -128,7 +152,7 @@ export function todaysPick(pool: Question[], defaults: Question[], today: string
   } catch {
     // fall through and pick again
   }
-  const qs = pickThree(pool.length ? pool : defaults, defaults, loadHistory(), today, adult)
+  const qs = pickThree(pool.length ? pool : defaults, defaults, loadHistory(), today, adult, taken)
   try {
     localStorage.setItem(key, JSON.stringify(qs.map((q) => q.id)))
   } catch {
@@ -139,7 +163,8 @@ export function todaysPick(pool: Question[], defaults: Question[], today: string
 
 export function forgetPick(today: string) {
   try {
-    localStorage.removeItem(`pi.pick.${today}`)
+    localStorage.removeItem(pickKey(today, 'morning'))
+    localStorage.removeItem(pickKey(today, 'afternoon'))
   } catch {
     // nothing to do
   }
@@ -147,7 +172,7 @@ export function forgetPick(today: string) {
 
 export type TraitRead = { trait: string; direction: 'higher' | 'lower' | 'middle'; answers: number }
 
-export const SOLID_READ_ANSWERS = 21 // a full week of three a day
+export const SOLID_READ_ANSWERS = 21 // about a week of play
 
 export function readTraits(h: History, today: string): { label: string; traits: TraitRead[] } {
   const week = h.answers.filter((a) => days(a.date, today) >= 0 && days(a.date, today) < 7)

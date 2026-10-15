@@ -85,52 +85,67 @@ const (
 
 type themeInfo struct{ area, care string }
 
+// Each theme's display name, icon and colors live in frontend/src/themes.ts;
+// TestThemesMatchTheFrontend keeps the two lists in step.
 var themes = map[string]themeInfo{
 	"habits":           {"everyday", careEveryday},
 	"sleep-health":     {"everyday", careEveryday},
 	"money":            {"everyday", careEveryday},
 	"work-career":      {"everyday", careEveryday},
 	"learning":         {"everyday", careEveryday},
+	"school":           {"everyday", careEveryday},
+	"home":             {"everyday", careEveryday},
+	"food":             {"everyday", careEveryday},
+	"phone":            {"everyday", careEveryday},
+	"getting-around":   {"everyday", careEveryday},
+	"body":             {"everyday", careEveryday},
 	"friendship":       {"people", carePersonal},
 	"family":           {"people", carePersonal},
+	"relatives":        {"people", carePersonal},
+	"parenting":        {"people", carePersonal},
 	"partnership":      {"people", carePersonal},
 	"dating":           {"people", carePersonal},
+	"neighbours":       {"people", carePersonal},
+	"colleagues":       {"people", carePersonal},
 	"helping":          {"people", carePersonal},
 	"happiness":        {"inner", carePersonal},
 	"sadness-stress":   {"inner", carePersonal},
 	"anger":            {"inner", carePersonal},
 	"honesty":          {"inner", carePersonal},
+	"faith":            {"inner", carePersonal},
+	"confidence":       {"inner", carePersonal},
 	"quality-quantity": {"desire", careEveryday},
 	"wealth-luxury":    {"desire", careEveryday},
 	"ambition-desire":  {"desire", careEveryday},
+	"celebrations":     {"desire", careEveryday},
+	"plans":            {"desire", careEveryday},
+	"rest":             {"desire", careEveryday},
 	"intimacy":         {"desire", careIntimate},
 }
 
 // areas is the fixed order the daily set follows.
 var areas = []string{"everyday", "people", "inner", "desire"}
 
-type source struct{ title, url, strength string }
-
-// sources is the citation library: the only research a card may cite. Each
-// entry was checked against its source; cards restate the claim, never add to it.
-var sources = map[string]source{
-	"roberts2007":       {"Roberts et al., 2007", "https://www.psychologicalscience.org/journals/perspectives/j.1745-6916.2007.00047.x/", "strong"},
-	"soto2019":          {"Soto, 2019", "https://www.psychologicalscience.org/observer/new-replicability-project-bolsters-research-correlating-personality-traits-and-life-outcomes", "strong"},
-	"vazire2010":        {"Vazire, 2010", "https://source.washu.edu/2010/03/others-may-know-us-better-than-we-know-ourselves-study-finds/", "moderate"},
-	"ross1977":          {"Ross, Greene & House, 1977", "https://spsp.org/news-center/blog/pelham-false-consensus", "strong"},
-	"fraley_ecr":        {"Fraley, adult attachment research", "https://labs.psychology.illinois.edu/~rcfraley/measures/measures.html", "strong"},
-	"hexaco2005":        {"Lee, Ashton & de Vries, 2005", "https://research.vu.nl/en/publications/predicting-workplace-delinquency-and-integrity-with-the-hexaco-an/", "moderate"},
-	"meier2010":         {"Meier & Sprenger, 2010", "https://www.newyorkfed.org/medialibrary/media/banking/MeierSlides_NYU.pdf", "moderate"},
-	"gollwitzer2006":    {"Gollwitzer & Sheeran, 2006", "https://kops.uni-konstanz.de/entities/publication/2e749bfb-8533-437c-8203-7e788c910c5f", "strong"},
-	"lally2010":         {"Lally et al., 2010", "https://www.ucl.ac.uk/news/2009/aug/how-long-does-it-take-form-habit", "moderate"},
-	"bushman2002":       {"Bushman, 2002", "https://journals.sagepub.com/doi/10.1177/0146167202289002", "moderate"},
-	"muise2016":         {"Muise et al., 2016", "https://www.eurekalert.org/news-releases/654391", "moderate"},
-	"gottman":           {"Gottman Institute", "https://www.gottman.com/blog/the-four-h", "moderate"},
-	"vanboven2003":      {"Van Boven & Gilovich, 2003", "https://cdn.vanderbilt.edu/vu-wp0/wp-content/uploads/sites/59/2011/05/06143905/to-do-or-to-have.pdf", "moderate"},
-	"dunn2008":          {"Dunn, Aknin & Norton, 2008", "https://www.nationalgeographic.com/science/article/money-can-buy-happiness-if-you-spend-it-on-other-people", "moderate"},
-	"killingsworth2023": {"Killingsworth, Kahneman & Mellers, 2023", "https://sciencedaily.com/releases/2023/03/230306163006.htm", "strong"},
-	"holtlunstad2010":   {"Holt-Lunstad et al., 2010", "https://journals.plos.org/plosmedicine/article/info:doi/10.1371/journal.pmed.1000316", "strong"},
+// source is one entry of the citation library (content/sources.json): the
+// only research a card may cite. Each entry was checked against its source;
+// cards restate the claim, never add to it. The library is built from the
+// shared evidence library, so it holds only what the cards cite.
+type source struct {
+	Title    string `json:"title"`
+	URL      string `json:"url"`
+	Strength string `json:"strength"` // strong | moderate | early
 }
+
+//go:embed content/sources.json
+var sourcesJSON []byte
+
+var sources = func() map[string]source {
+	var m map[string]source
+	if err := decodeStrict(sourcesJSON, &m); err != nil {
+		panic(fmt.Sprintf("citation library: %v", err))
+	}
+	return m
+}()
 
 var traitKeys = map[string]bool{
 	"openness": true, "conscientiousness": true, "extraversion": true, "agreeableness": true,
@@ -152,7 +167,14 @@ var (
 	readerPattern   = regexp.MustCompile(`(?i)\byou(r|rs|rself|'re|'ve|'d|'ll)?\b`)
 	// Research is only ever stated in the research field, with its source.
 	claimPattern = regexp.MustCompile(`(?i)\b(stud(y|ies)|research(ers)?|scientists?|experiments?|proven)\b`)
+	// The card's first sentence is its headline (frontend/src/reveal.ts splits it the same way).
+	headlinePattern = regexp.MustCompile(`(?s)^(.+?[.!?])\s+\S`)
+	// Cards talk like a person, not a report: the old formula openers are gone for good.
+	formulaPattern = regexp.MustCompile(`(?i)^(your (response|answer|choice) (indicates|points|suggests|reflects|shows)|this (answer|choice|response) (indicates|reflects|suggests|shows)|choosing this (suggests|shows))\b|\b(individuals with|this orientation)\b|(^|[.!?]\s+)people like (this|you) tend\b`)
 )
+
+// maxHeadline keeps the headline to one glanceable line on a phone.
+const maxHeadline = 70
 
 // minPerTheme keeps the daily mix varied; a theme thinner than this fails validation.
 const minPerTheme = 5
@@ -189,7 +211,7 @@ func validateBank(b bankFile) []error {
 
 		optIDs := map[string]bool{}
 		reveals := map[string]bool{}
-		prevDepth := 0
+		prevDepth, cited := 0, 0
 		for i, o := range q.Options {
 			ow := fmt.Sprintf("%s/%s", q.ID, o.ID)
 			if !idPattern.MatchString(o.ID) || len(o.ID) > 24 {
@@ -226,6 +248,14 @@ func validateBank(b bankFile) []error {
 			if claimPattern.MatchString(in.Reveal) {
 				fail("%s: reveal makes an uncited research claim; research belongs in the research field", ow)
 			}
+			if m := headlinePattern.FindStringSubmatch(in.Reveal); m == nil {
+				fail("%s: reveal needs a short headline sentence and then more", ow)
+			} else if n := len([]rune(m[1])); n > maxHeadline {
+				fail("%s: headline is %d characters, at most %d", ow, n, maxHeadline)
+			}
+			if formulaPattern.MatchString(in.Reveal) {
+				fail("%s: reveal uses a formula phrase; say it the way a person would", ow)
+			}
 			checkText(fail, ow+" step", in.Step, 20, 160)
 			if reveals[in.Reveal] {
 				fail("%s: reveal repeats another option's", ow)
@@ -243,11 +273,15 @@ func validateBank(b bankFile) []error {
 				switch {
 				case !ok:
 					fail("%s: cites %q, which is not in the citation library", ow, in.Source)
-				case src.strength != in.Strength:
-					fail("%s: strength %q, library says %q", ow, in.Strength, src.strength)
+				case src.Strength != in.Strength:
+					fail("%s: strength %q, library says %q", ow, in.Strength, src.Strength)
 				}
 				checkText(fail, ow+" research", in.Research, 20, 260)
+				cited++
 			}
+		}
+		if cited == 0 {
+			fail("%s: no card cites the evidence library; every question needs at least one", where)
 		}
 		if prevDepth < 3 {
 			fail("%s: the deepest option must reach depth 3 or 4", where)
@@ -259,6 +293,20 @@ func validateBank(b bankFile) []error {
 				fail("%s: follow-up prompt repeats %s's; two could land on the same evening", where, other)
 			}
 			followUpPrompts[p] = q.ID
+		}
+	}
+
+	for key, src := range sources {
+		where := "source " + key
+		if !idPattern.MatchString(strings.ReplaceAll(key, "_", "-")) {
+			fail("%s: key must be lowercase letters, digits and dashes", where)
+		}
+		checkText(fail, where+" title", src.Title, 4, 80)
+		if !strings.HasPrefix(src.URL, "https://") || strings.ContainsAny(src.URL, " \"<>") {
+			fail("%s: url must be a plain https link", where)
+		}
+		if src.Strength != "strong" && src.Strength != "moderate" && src.Strength != "early" {
+			fail("%s: strength %q is not strong, moderate or early", where, src.Strength)
 		}
 	}
 
@@ -346,6 +394,7 @@ func decodeStrict(raw []byte, v any) error {
 // contentBank serves daily sets from the question bank.
 type contentBank struct {
 	byArea   map[string][]bankQuestion // daily-eligible questions per area, sorted by id
+	order    map[string][]int          // each area's fixed draw order, indexes into byArea
 	intimate []bankQuestion            // pool-only questions for adults who opted in, sorted by id
 }
 
@@ -357,7 +406,7 @@ func loadContentBank(raw []byte) (contentBank, error) {
 	if errs := validateBank(f); len(errs) > 0 {
 		return contentBank{}, fmt.Errorf("question bank fails %d checks, first: %w", len(errs), errs[0])
 	}
-	b := contentBank{byArea: map[string][]bankQuestion{}}
+	b := contentBank{byArea: map[string][]bankQuestion{}, order: map[string][]int{}}
 	for _, q := range f.Questions {
 		t := themes[q.Theme]
 		if t.care == careIntimate {
@@ -372,15 +421,33 @@ func loadContentBank(raw []byte) (contentBank, error) {
 		if len(b.byArea[a]) == 0 {
 			return contentBank{}, fmt.Errorf("question bank: area %s has no daily questions", a)
 		}
+		// One fixed order per area, repeated cycle after cycle: a fresh shuffle
+		// per cycle could put a question last in one cycle and first in the next.
+		b.order[a] = spreadThemes(shuffled(len(b.byArea[a]), a, 0), b.byArea[a])
 	}
 	return b, nil
 }
 
-// GetSet picks the day's three questions. The pick is random-looking but
-// deterministic: the same date always gives the same set, so every server
-// instance and every player sees the same edition. Each day draws from three
-// of the four life areas (a different one rests each day), and within an area
-// no question repeats until every question in that area has been used.
+// The week: Monday to Saturday bring three questions in the morning and three
+// in the afternoon; Sunday brings none and is the day for the weekly mirror.
+const halves = 2 // 0 the morning, 1 the afternoon
+
+// questionDay numbers the days that bring questions, counting from
+// 1970-01-01 (unix day 0), so a Sunday never uses up a question. It is -1 for
+// a Sunday.
+func questionDay(d int) int {
+	if d < 0 || (d+4)%7 == 0 { // 1970-01-01 was a Thursday
+		return -1
+	}
+	return d - (d+3)/7 // minus the Sundays before d
+}
+
+// GetSet picks the day's questions: three for the morning and three for the
+// afternoon. The pick is random-looking but deterministic: the same date
+// always gives the same set, so every server instance and every player sees
+// the same edition. Each half draws from three of the four life areas, the
+// two halves resting different areas, so every area comes up every day; within
+// an area no question repeats until every question in that area has been used.
 func (b contentBank) GetSet(date string) (DailySet, bool) {
 	day, err := time.Parse("2006-01-02", date)
 	if err != nil {
@@ -391,70 +458,136 @@ func (b contentBank) GetSet(date string) (DailySet, bool) {
 		return DailySet{}, false
 	}
 	set := DailySet{Date: date}
-	for ai, area := range areas {
-		if i, ok := b.mainPick(ai, d); ok {
-			q := b.dailyQuestion(b.byArea[area][i], date)
-			set.Questions = append(set.Questions, q)
-			set.Pool = append(set.Pool, q)
+	k := questionDay(d)
+	if k < 0 {
+		set.Review, set.Questions = true, []Question{} // an empty list, never null, for the phone
+		return set, true
+	}
+	for h, half := range []*[]Question{&set.Questions, &set.Afternoon} {
+		for ai, area := range areas {
+			if i, ok := b.mainPick(ai, k, h); ok {
+				q := b.dailyQuestion(b.byArea[area][i], date)
+				*half = append(*half, q)
+				set.Pool = append(set.Pool, q)
+			}
 		}
 	}
-	set.Pool = append(set.Pool, b.poolExtras(d, date)...)
+	set.Pool = append(set.Pool, b.poolExtras(k, date)...)
 	return set, true
 }
 
-// mainPick is the index (into byArea) of area ai's question in day d's
-// default three, or false on the day that area rests.
-func (b contentBank) mainPick(ai, d int) (int, bool) {
-	if d < 0 || d%len(areas) == ai {
+// rests reports whether area ai sits out half h of question day k.
+func rests(ai, k, h int) bool { return (k+2*h)%len(areas) == ai }
+
+// mainPick is the index (into byArea) of area ai's default question for half
+// h of question day k, or false when the area rests then.
+func (b contentBank) mainPick(ai, k, h int) (int, bool) {
+	if k < 0 || rests(ai, k, h) {
 		return 0, false
 	}
-	qs := b.byArea[areas[ai]]
-	// Days before d on which this area was drawn.
-	rested := 0
-	if d > ai {
-		rested = (d - ai + len(areas) - 1) / len(areas)
+	n := len(areas)
+	// Question days in [0, k) on which j%n == r.
+	before := func(r int) int { return (k - r + n - 1) / n }
+	// Draws of this area before day k: two halves a day, less the rests.
+	slot := halves*k - before(ai) - before((ai+n-2)%n)
+	if h == 1 && !rests(ai, k, 0) {
+		slot++ // the morning drew first
 	}
-	drawn := d - rested
-	// One fixed order per area, repeated cycle after cycle: a fresh shuffle per
-	// cycle could put a question last in one cycle and first in the next.
-	return shuffled(len(qs), areas[ai], 0)[drawn%len(qs)], true
+	order := b.order[areas[ai]]
+	return order[slot%len(order)], true
 }
 
-// The edition pool: the default three plus extras, so each phone can pick
-// its own three by the player's interests (computed on the phone). Extras
-// come from a second fixed rotation per area, three slots a day; an extra
-// that is any day's default question within poolSpacing days is dropped, so
-// nobody sees a question twice in a week.
+// The edition pool: both halves' defaults plus extras, so each phone can
+// pick its own three for each half by the player's interests (computed on
+// the phone). Extras come from a second fixed rotation per area, poolPerArea
+// slots a day; an extra that is a default question within poolSpacing
+// question days is dropped, so nobody sees a question twice in a week.
 const (
-	poolPerArea = 3
-	poolSpacing = 7
+	poolPerArea = 4
+	poolSpacing = 6
 )
 
-func (b contentBank) poolExtras(d int, date string) []Question {
+func (b contentBank) poolExtras(k int, date string) []Question {
 	var out []Question
 	for ai, area := range areas {
 		qs := b.byArea[area]
-		_, drawn := b.mainPick(ai, d)
 		want := poolPerArea
-		if drawn {
-			want--
-		}
 		near := map[int]bool{}
-		for dd := d - poolSpacing; dd <= d+poolSpacing; dd++ {
-			if i, ok := b.mainPick(ai, dd); ok {
-				near[i] = true
+		for kk := k - poolSpacing; kk <= k+poolSpacing; kk++ {
+			for h := range halves {
+				if i, ok := b.mainPick(ai, kk, h); ok {
+					near[i] = true
+					if kk == k {
+						want--
+					}
+				}
 			}
 		}
 		order := shuffled(len(qs), area+"/pool", 0)
-		for k := range want {
-			if i := order[(poolPerArea*d+k)%len(qs)]; !near[i] {
+		for j := range want {
+			if i := order[(poolPerArea*k+j)%len(qs)]; !near[i] {
 				out = append(out, b.dailyQuestion(qs[i], date))
 			}
 		}
 	}
 	if len(b.intimate) > 0 {
 		order := shuffled(len(b.intimate), "intimate/pool", 0)
-		out = append(out, b.dailyQuestion(b.intimate[order[d%len(b.intimate)]], date))
+		out = append(out, b.dailyQuestion(b.intimate[order[k%len(b.intimate)]], date))
+	}
+	return out
+}
+
+// spreadThemes reorders a shuffled area so that neighbours never share a
+// theme, the last and the first included: an area drawn in both halves of a
+// day takes two neighbouring places, and the order repeats cycle after cycle.
+// It takes the theme with the most questions left, other than the one just
+// used; ties go to whichever comes first in the shuffle.
+func spreadThemes(order []int, qs []bankQuestion) []int {
+	left := map[string][]int{} // each theme's questions still to place, in shuffle order
+	var themeOrder []string
+	for _, i := range order {
+		t := qs[i].Theme
+		if len(left[t]) == 0 {
+			themeOrder = append(themeOrder, t)
+		}
+		left[t] = append(left[t], i)
+	}
+	pos := make([]int, len(qs))
+	for p, i := range order {
+		pos[i] = p
+	}
+	out := make([]int, 0, len(order))
+	prev := ""
+	for len(out) < len(order) {
+		best := ""
+		for _, t := range themeOrder {
+			if len(left[t]) == 0 || t == prev {
+				continue
+			}
+			if best == "" || len(left[t]) > len(left[best]) ||
+				(len(left[t]) == len(left[best]) && pos[left[t][0]] < pos[left[best][0]]) {
+				best = t
+			}
+		}
+		if best == "" { // only the theme just used is left
+			best = prev
+		}
+		out = append(out, left[best][0])
+		left[best] = left[best][1:]
+		prev = best
+	}
+	// Close the circle: if the last shares the first's theme, move it to the
+	// first gap between two other themes.
+	theme := func(j int) string { return qs[out[j]].Theme }
+	if n := len(out); n > 2 && theme(n-1) == theme(0) {
+		t := theme(n - 1)
+		for j := 1; j+1 < n-1; j++ {
+			if theme(j) != t && theme(j+1) != t {
+				last := out[n-1]
+				out = slices.Insert(out[:n-1], j+1, last)
+				break
+			}
+		}
 	}
 	return out
 }
@@ -475,7 +608,7 @@ func (contentBank) dailyQuestion(q bankQuestion, date string) Question {
 	for _, o := range q.Options {
 		in := &Insight{Reveal: o.Insight.Reveal, Step: o.Insight.Step}
 		if src, ok := sources[o.Insight.Source]; ok {
-			in.Research, in.SourceTitle, in.SourceURL, in.Strength = o.Insight.Research, src.title, src.url, o.Insight.Strength
+			in.Research, in.SourceTitle, in.SourceURL, in.Strength = o.Insight.Research, src.Title, src.URL, o.Insight.Strength
 		}
 		out.Options = append(out.Options, Option{ID: o.ID, Label: o.Label, Depth: o.Depth, Traits: o.Traits, Insight: in})
 	}

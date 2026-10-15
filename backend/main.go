@@ -127,6 +127,11 @@ func runWorker(ctx context.Context, srv *Server, retention time.Duration) {
 			} else if n > 0 {
 				log.Printf("retention: deleted %d raw votes", n)
 			}
+			if n, err := srv.mirror.DeleteMirrorBefore(ctx, time.Now().Add(-mirrorRetention).UTC().Format(dateLayout)); err != nil {
+				log.Printf("mirror retention: %v", err)
+			} else if n > 0 {
+				log.Printf("mirror retention: deleted %d rows", n)
+			}
 		}
 	}
 }
