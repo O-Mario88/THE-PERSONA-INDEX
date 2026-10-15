@@ -127,6 +127,18 @@ func runWorker(ctx context.Context, srv *Server, retention time.Duration) {
 			} else if n > 0 {
 				log.Printf("retention: deleted %d raw votes", n)
 			}
+			// Fold finished weeks before their answers can go. Folding is
+			// idempotent, so instances doing it at once only repeat work.
+			if n, err := srv.FoldWeeks(ctx); err != nil {
+				log.Printf("mirror fold: %v", err)
+			} else if n > 0 {
+				log.Printf("mirror fold: folded %d weeks", n)
+			}
+			if n, err := srv.mirror.DeleteWeeksBefore(ctx, time.Now().Add(-weekSummaryRetention).UTC().Format(dateLayout)); err != nil {
+				log.Printf("week summary retention: %v", err)
+			} else if n > 0 {
+				log.Printf("week summary retention: deleted %d rows", n)
+			}
 			if n, err := srv.mirror.DeleteMirrorBefore(ctx, time.Now().Add(-mirrorRetention).UTC().Format(dateLayout)); err != nil {
 				log.Printf("mirror retention: %v", err)
 			} else if n > 0 {

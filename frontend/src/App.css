@@ -579,6 +579,40 @@
   color: var(--m-text);
 }
 
+/* Week, Month, Quarter, Year: a strip on the hero's dark ground. The negative
+   margin cancels the page's gap, so the strip and the hero read as one band. */
+.m-spans {
+  display: flex;
+  gap: 6px;
+  padding: 12px 16px 0;
+  margin-bottom: -16px;
+  background: var(--bg);
+  overflow-x: auto;
+}
+
+.m-span {
+  flex: 1 0 auto;
+  min-height: 40px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.m-span[aria-pressed='true'] {
+  background: var(--text);
+  border-color: var(--text);
+  color: var(--bg);
+}
+
+.m-span:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .m-loading {
   padding: 48px 16px;
   text-align: center;
@@ -594,7 +628,7 @@
   gap: 12px;
 }
 
-.mirror > :not(.m-hero) {
+.mirror > :not(.m-hero, .m-spans) {
   margin-left: 16px;
   margin-right: 16px;
 }
@@ -606,6 +640,10 @@
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--m-muted);
+}
+
+.m-nowrap {
+  white-space: nowrap;
 }
 
 .m-hero .m-eyebrow {
@@ -622,7 +660,7 @@
 
 .m-name {
   display: block;
-  color: var(--sq-private);
+  color: var(--m-gold);
 }
 
 .m-tagline {
@@ -785,7 +823,7 @@
 }
 
 .sq.private {
-  background: var(--sq-private);
+  background: var(--m-gold);
 }
 
 .sq.missed {
@@ -799,7 +837,7 @@
 }
 
 .sq.deep {
-  background: var(--sq-with);
+  background: var(--m-indigo);
 }
 
 .sq.deeper {
@@ -880,7 +918,7 @@
   height: 16px;
   margin: -8px 0 0 -8px;
   border-radius: 50%;
-  background: var(--sq-with);
+  background: var(--m-indigo);
   border: 3px solid #fff;
   box-shadow: 0 1px 4px rgb(0 0 0 / 0.25);
 }
@@ -938,12 +976,100 @@
 .m-mini-track span {
   display: block;
   width: 100%;
-  background: var(--sq-with);
+  background: var(--m-indigo);
 }
 
 .m-mini-week {
   font-size: 0.66rem;
   color: var(--m-muted);
+}
+
+/* Week by week, in the longer mirrors. */
+.m-weeks {
+  --wk: 44px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.m-weeks.quarter {
+  --wk: 20px;
+  gap: 6px;
+}
+
+.m-weeks.year {
+  --wk: 12px;
+  gap: 4px;
+}
+
+.m-week {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.m-week-track {
+  display: flex;
+  align-items: flex-end;
+  width: var(--wk);
+  height: 56px;
+  border-radius: 6px;
+  background: var(--m-line);
+  overflow: hidden;
+}
+
+.m-weeks.year .m-week-track {
+  height: 40px;
+  border-radius: 3px;
+}
+
+.m-week-track span {
+  display: block;
+  width: 100%;
+  background: var(--m-indigo);
+}
+
+.m-week.none .m-week-track {
+  background: transparent;
+  border: 1px dashed var(--m-line);
+}
+
+.m-week-num {
+  font-size: 0.66rem;
+  color: var(--m-muted);
+}
+
+/* The answers that said the most. */
+.m-moments {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.m-moment {
+  border-left: 4px solid var(--t-from, var(--m-indigo));
+}
+
+.m-moment-prompt {
+  color: var(--m-muted);
+}
+
+.m-moment blockquote {
+  font-family: var(--display);
+  font-size: 1.3rem;
+  line-height: 1.2;
+  font-weight: 650;
+}
+
+.m-moment-shows {
+  font-weight: 600;
+}
+
+.m-close {
+  font-family: var(--display);
+  font-size: 1.1rem;
+  padding-top: 8px;
 }
 
 /* All of you. */
@@ -977,8 +1103,8 @@
 }
 
 .m-theme.deep {
-  background: var(--sq-with);
-  border-color: var(--sq-with);
+  background: var(--m-indigo);
+  border-color: var(--m-indigo);
   color: #fff;
 }
 
@@ -995,7 +1121,7 @@
 
 .m-theme.private {
   background: #fdf0c9;
-  border-color: var(--sq-private);
+  border-color: var(--m-gold);
 }
 
 .m-theme.none {
@@ -1041,7 +1167,7 @@
 .m-who-kind {
   font-size: 0.82rem;
   font-weight: 600;
-  color: var(--sq-with);
+  color: var(--m-indigo);
 }
 
 /* Strengths. */
@@ -1055,7 +1181,7 @@
 }
 
 .m-step {
-  border-left: 4px solid var(--t-from, var(--sq-with));
+  border-left: 4px solid var(--t-from, var(--m-indigo));
 }
 
 .m-step-meta {
@@ -1181,5 +1307,13 @@
 
   .m-hero {
     padding: 40px 32px;
+  }
+
+  .m-spans {
+    padding: 16px 32px 0;
+  }
+
+  .m-span {
+    flex: 0 0 auto;
   }
 }

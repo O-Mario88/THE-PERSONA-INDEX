@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -135,7 +136,10 @@ func (p *pgStore) ForgetDevice(ctx context.Context, deviceKey string) error {
 		if _, err := tx.Exec(ctx, `DELETE FROM mirror_answers WHERE device_key = $1`, deviceKey); err != nil {
 			return err
 		}
-		_, err := tx.Exec(ctx, `DELETE FROM mirror_steps WHERE device_key = $1`, deviceKey)
+		if _, err := tx.Exec(ctx, `DELETE FROM mirror_steps WHERE device_key = $1`, deviceKey); err != nil {
+			return err
+		}
+		_, err := tx.Exec(ctx, `DELETE FROM mirror_weeks WHERE device_key = $1`, deviceKey)
 		return err
 	})
 }
@@ -147,4 +151,64 @@ func (p *pgStore) DeleteMirrorBefore(ctx context.Context, date string) (int, err
 	}
 	s, err := p.pool.Exec(ctx, `DELETE FROM mirror_steps WHERE started_on < $1`, date)
 	return int(a.RowsAffected() + s.RowsAffected()), err
+}
+
+func (p *pgStore) SaveWeekSummaries(ctx context.Context, ws []WeekSummary) error {
+	if len(ws) == 0 {
+		return nil
+	}
+	batch := &pgx.Batch{}
+	for _, w := range ws {
+		raw, err := json.Marshal(w)
+		if err != nil {
+			return err
+		}
+		from, to := summarySources(w.Monday)
+		batch.Queue(`INSERT INTO mirror_weeks (device_key, monday, summary)
+			SELECT $1::text, $2::date, $3::jsonb WHERE EXISTS (
+				SELECT 1 FROM mirror_answers WHERE device_key = $1 AND edition_date BETWEEN $4 AND $5)
+			ON CONFLICT (device_key, monday) DO UPDATE SET summary = EXCLUDED.summary`, w.DeviceKey, w.Monday, raw, from, to)
+	}
+	return p.pool.SendBatch(ctx, batch).Close()
+}
+
+func (p *pgStore) WeekSummaries(ctx context.Context, deviceKey, from, to string) ([]WeekSummary, error) {
+	rows, err := p.pool.Query(ctx, `SELECT monday::text, summary FROM mirror_weeks
+		WHERE device_key = $1 AND monday BETWEEN $2 AND $3 ORDER BY monday`, deviceKey, from, to)
+	if err != nil {
+		return nil, err
+	}
+	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (WeekSummary, error) {
+		var w WeekSummary
+		var raw []byte
+		if err := row.Scan(&w.Monday, &raw); err != nil {
+			return w, err
+		}
+		err := json.Unmarshal(raw, &w)
+		w.DeviceKey = deviceKey
+		return w, err
+	})
+}
+
+func (p *pgStore) MarkFolded(ctx context.Context, monday string) error {
+	_, err := p.pool.Exec(ctx, `INSERT INTO mirror_folds (monday, folded_at) VALUES ($1, now())
+		ON CONFLICT (monday) DO NOTHING`, monday)
+	return err
+}
+
+func (p *pgStore) FoldedWeeks(ctx context.Context, from, to string) ([]string, error) {
+	rows, err := p.pool.Query(ctx, `SELECT monday::text FROM mirror_folds WHERE monday BETWEEN $1 AND $2 ORDER BY monday`, from, to)
+	if err != nil {
+		return nil, err
+	}
+	return pgx.CollectRows(rows, pgx.RowTo[string])
+}
+
+func (p *pgStore) DeleteWeeksBefore(ctx context.Context, monday string) (int, error) {
+	w, err := p.pool.Exec(ctx, `DELETE FROM mirror_weeks WHERE monday < $1`, monday)
+	if err != nil {
+		return 0, err
+	}
+	f, err := p.pool.Exec(ctx, `DELETE FROM mirror_folds WHERE monday < $1`, monday)
+	return int(w.RowsAffected() + f.RowsAffected()), err
 }

@@ -554,12 +554,7 @@ func (s *Server) buildMirror(ctx context.Context, key, date string) (Mirror, err
 	for theme, t := range byTheme {
 		m.Themes = append(m.Themes, themeRead(theme, t.n, t.private, t.sum))
 	}
-	slices.SortFunc(m.Themes, func(x, y ThemeRead) int {
-		if c := cmp.Compare(y.Answers, x.Answers); c != 0 {
-			return c
-		}
-		return strings.Compare(x.Theme, y.Theme)
-	})
+	sortThemes(m.Themes)
 
 	// Steps: this week's, older ones still open, and the record so far.
 	byQuestion := map[string]answered{}
@@ -656,6 +651,16 @@ func themeRead(theme string, n, private, depthSum int) ThemeRead {
 		tr.Depth = depthWord(false, float64(depthSum)/float64(open))
 	}
 	return tr
+}
+
+// sortThemes puts the themes answered most first.
+func sortThemes(ts []ThemeRead) {
+	slices.SortFunc(ts, func(x, y ThemeRead) int {
+		if c := cmp.Compare(y.Answers, x.Answers); c != 0 {
+			return c
+		}
+		return strings.Compare(x.Theme, y.Theme)
+	})
 }
 
 // evidence lists this week's answers that leaned furthest the way the read

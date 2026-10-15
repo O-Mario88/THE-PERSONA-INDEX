@@ -20,9 +20,8 @@
   --m-muted: #5b6178;
   --m-line: #e3e6ee;
   --m-dark: #161a2c;
-  --sq-with: #4138c2;
-  --sq-against: #cc7c2e;
-  --sq-private: #f2c14b;
+  --m-indigo: #4138c2;
+  --m-gold: #f2c14b;
 
   --display: 'Bricolage Grotesque Variable', 'Bricolage Grotesque', system-ui, sans-serif;
   --body: 'IBM Plex Sans Variable', 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;

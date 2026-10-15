@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import App from './App'
-import type { DailySet, Mirror, Question } from './api'
+import type { DailySet, Mirror, PeriodMirror, Question } from './api'
 
 const today: DailySet = {
   date: '2026-10-12',
@@ -133,12 +133,14 @@ function stubApi(routes: {
   edition?: Route
   vote?: Route | Route[]
   mirror?: Route | Route[]
+  period?: Route | Route[]
   forget?: Route
   steps?: Route
 }) {
   let devices = 0
   let votes = 0
   let mirrors = 0
+  let periods = 0
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input)
     if (url === '/api/device' && init?.method === 'POST') {
@@ -163,6 +165,9 @@ function stubApi(routes: {
     }
     if (url.startsWith('/api/mirror?date=')) {
       return json(pick(routes.mirror, mirrors++) ?? { status: 200, body: emptyMirror })
+    }
+    if (/^\/api\/mirror\/(month|quarter|year)\?date=/.test(url)) {
+      return json(pick(routes.period, periods++) ?? { status: 404, body: { error: 'not_found' } })
     }
     if (url === '/api/mirror' && init?.method === 'DELETE') {
       return json(routes.forget ?? { status: 204, body: null })
@@ -1106,6 +1111,224 @@ describe('the weekly mirror', () => {
 })
 
 // The week (2026-10-15): three in the morning, three more at 4 pm, Monday to
+// October so far, as GET /api/mirror/month returns it on Sunday 18 October.
+const month: PeriodMirror = {
+  period: 'month',
+  label: '2026-10',
+  date: '2026-10-18',
+  from: '2026-09-28',
+  to: '2026-11-01',
+  weeksTotal: 5,
+  weeks: [
+    { monday: '2026-09-28', week: 40, kept: true, daysActive: 3, daysSoFar: 6, answers: 9, deepest: 2, stepsTried: 1 },
+    { monday: '2026-10-05', week: 41, kept: true, daysActive: 0, daysSoFar: 6, answers: 0, deepest: 0, stepsTried: 0 },
+    { monday: '2026-10-12', week: 42, kept: true, daysActive: 5, daysSoFar: 6, answers: 18, deepest: 5, stepsTried: 2 },
+  ],
+  stats: {
+    weeksActive: 2,
+    weeksSoFar: 3,
+    daysActive: 8,
+    daysSoFar: 18,
+    answers: 27,
+    private: 1,
+    deepest: 7,
+    learned: 15,
+    rated: 20,
+    stepsStarted: 4,
+    stepsTried: 3,
+    stepsHelped: 2,
+  },
+  previous: {
+    weeksActive: 3,
+    weeksSoFar: 4,
+    daysActive: 6,
+    daysSoFar: 24,
+    answers: 20,
+    private: 0,
+    deepest: 3,
+    learned: 9,
+    rated: 12,
+    stepsStarted: 1,
+    stepsTried: 1,
+    stepsHelped: 0,
+  },
+  previousLabel: '2026-09',
+  traits: [
+    {
+      trait: 'conscientiousness',
+      answers: 16,
+      solid: true,
+      score: 72,
+      change: 9,
+      weekly: [
+        { week: 40, score: 65, solid: false },
+        { week: 41, solid: false },
+        { week: 42, score: 74, solid: true },
+      ],
+    },
+    {
+      trait: 'rumination',
+      answers: 5,
+      solid: false,
+      score: 70,
+      weekly: [
+        { week: 40, solid: false },
+        { week: 41, solid: false },
+        { week: 42, score: 70, solid: false },
+      ],
+    },
+  ],
+  themes: mirror.themes,
+  moments: [
+    {
+      prompt: 'Someone cuts in front of you in a queue. You…',
+      label: 'Boil inside for an hour',
+      headline: 'A slight like this can run in your head for hours.',
+      theme: 'anger',
+      lean: 1,
+      depth: 4,
+      date: '2026-10-15',
+      edition: 4,
+    },
+    {
+      prompt: 'Dishes after dinner?',
+      label: 'Right after eating',
+      headline: 'You like a clean slate before you rest.',
+      theme: 'habits',
+      lean: 1,
+      depth: 3,
+      date: '2026-10-12',
+      edition: 1,
+    },
+  ],
+  helped: [{ theme: 'friendship', step: 'This week, call one friend instead of texting.', started: '2026-10-13' }],
+}
+
+// A quiet year: weeks 1 to 39 came before the mirror kept notes of weeks.
+const year: PeriodMirror = {
+  ...month,
+  period: 'year',
+  label: '2026',
+  from: '2025-12-29',
+  to: '2027-01-03',
+  weeksTotal: 53,
+  weeks: Array.from({ length: 42 }, (_, i) => ({
+    monday: new Date(Date.UTC(2025, 11, 29 + 7 * i)).toISOString().slice(0, 10),
+    week: i + 1,
+    kept: i >= 39,
+    daysActive: 0,
+    daysSoFar: 6,
+    answers: 0,
+    deepest: 0,
+    stepsTried: 0,
+  })),
+  stats: { ...month.previous!, weeksActive: 0, weeksSoFar: 3, daysActive: 0, daysSoFar: 18, answers: 0, deepest: 0, stepsStarted: 0, stepsTried: 0 },
+  previous: undefined,
+  previousLabel: undefined,
+  traits: [],
+  themes: [],
+  moments: [],
+  helped: [],
+}
+
+const periodCalls = (f: ReturnType<typeof stubApi>) => f.mock.calls.filter(([u]) => /^\/api\/mirror\/\w+\?/.test(String(u)))
+
+describe('the monthly, quarterly and yearly mirrors', () => {
+  it("adds up this phone's weeks of the month, set only against its own past", async () => {
+    const fetchMock = await openMirror({ period: { status: 200, body: month } })
+    await within(screen.getByRole('region', { name: 'Your weekly mirror' })).findByText('The Steady Noticer.')
+    fireEvent.click(screen.getByRole('button', { name: 'Month' }))
+    const page = screen.getByRole('region', { name: 'Your monthly mirror' })
+    expect(await within(page).findByText('The Steady Thinker.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Month' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'Week' })).toHaveAttribute('aria-pressed', 'false')
+
+    const [url, init] = periodCalls(fetchMock)[0]
+    expect(url).toBe('/api/mirror/month?date=2026-10-18')
+    expect((init!.headers as Record<string, string>).Authorization).toBe('Device v1.device1.sig')
+
+    expect(page).toHaveTextContent('Your monthly mirror · October 2026 · Week 3 of 5')
+    expect(page).toHaveTextContent('This month you were The Steady Thinker.')
+    expect(page).toHaveTextContent('Steady follow-through, with a habit of going over hard moments.')
+    expect(page).toHaveTextContent(
+      "So far this month you've shown up on 8 days in 2 weeks and given 27 answers. What stood out most: you finish what you start.",
+    )
+    const tiles = within(page).getByRole('list', { name: 'This month in numbers' })
+    expect(tiles).toHaveTextContent('Days active8 of 186 of 24 in September')
+    expect(tiles).toHaveTextContent('Weeks you came back2 of 33 of 4 in September')
+    expect(tiles).toHaveTextContent('Answers271 kept private')
+    expect(tiles).toHaveTextContent('Small steps kept3 of 42 helped')
+
+    expect(within(page).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual([
+      '01 Week by week',
+      '02 Your trait read',
+      "03 How you've moved",
+      '04 The answers that said the most',
+      '05 Who you were this month',
+      '06 All of you',
+      '07 Your small steps',
+    ])
+    expect(within(page).getByRole('listitem', { name: /^Week 41:/ })).toHaveAccessibleName('Week 41: 0 of 6 days, 0 answers')
+    expect(page).toHaveTextContent('You came back in 2 of 3 weeks.')
+    expect(page).toHaveTextContent('2 weeks still to come.')
+    expect(within(page).getByRole('list', { name: 'Trait read' })).toHaveTextContent('Organised72 +9 since your first weeks')
+
+    const moments = within(page).getByRole('list', { name: 'The answers that said the most' })
+    expect(moments).toHaveTextContent(
+      'Someone cuts in front of you in a queue. You…“Boil inside for an hour”A slight like this can run in your head for hours.',
+    )
+    expect(moments).toHaveTextContent('Anger · 15 October · Edition #4')
+    expect(within(page).getByRole('list', { name: 'Steps that helped' })).toHaveTextContent(
+      'This week, call one friend instead of texting.',
+    )
+    expect(page).toHaveTextContent('4 steps started, 3 tried, 2 helped.')
+    expect(page).toHaveTextContent('A month is long enough to see a pattern, and short enough to change one.')
+
+    expect(within(page).getByRole('note', { name: 'What leaves my phone' })).toHaveTextContent('stays for 13 months')
+    expect(page).toHaveTextContent('For self-reflection, not a diagnosis.')
+    expect(page).not.toHaveTextContent(crowdOrScore)
+    expect(within(page).queryAllByRole('link')).toEqual([])
+    expect(document.body.textContent).not.toMatch(noClinicianWords)
+  })
+
+  it('marks weeks with nothing on record, and keeps a quiet year quiet', async () => {
+    await openMirror({ period: { status: 200, body: year } })
+    fireEvent.click(await screen.findByRole('button', { name: 'Year' }))
+    const page = screen.getByRole('region', { name: 'Your yearly mirror' })
+    expect(await within(page).findByText('This year is just getting started.')).toBeInTheDocument()
+    expect(page).toHaveTextContent('Your yearly mirror · 2026 · Week 42 of 53')
+    expect(page).toHaveTextContent('Nothing answered this year yet.')
+    expect(within(page).getByRole('listitem', { name: /^Week 1:/ })).toHaveAccessibleName('Week 1: nothing on record')
+    expect(within(page).getByRole('listitem', { name: /^Week 40:/ })).toHaveAccessibleName('Week 40: 0 of 6 days, 0 answers')
+    expect(page).toHaveTextContent('Each bar is a week, from week 1 to week 42. A full bar is all six question days. 11 weeks still to come.')
+    expect(page).toHaveTextContent('No answers yet this year.')
+    expect(within(page).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual([
+      '01 Week by week',
+      '02 Your trait read',
+    ])
+    expect(within(page).getByRole('list', { name: 'This year in numbers' })).toHaveTextContent('Days active0 of 18question days on record')
+  })
+
+  it('goes back to the week, and offers a retry when a period fails to load', async () => {
+    const fetchMock = await openMirror({
+      period: [
+        { status: 503, body: { error: 'unavailable' } },
+        { status: 200, body: month },
+      ],
+    })
+    fireEvent.click(await screen.findByRole('button', { name: 'Quarter' }))
+    expect(await screen.findByText("I couldn't load your mirror just now.")).toBeInTheDocument()
+    expect(periodCalls(fetchMock)[0][0]).toBe('/api/mirror/quarter?date=2026-10-18')
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }))
+    expect(await screen.findByText('The Steady Thinker.')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Week' }))
+    const week = screen.getByRole('region', { name: 'Your weekly mirror' })
+    expect(await within(week).findByText('The Steady Noticer.')).toBeInTheDocument()
+    expect(mirrorCalls(fetchMock)).toHaveLength(2)
+  })
+})
+
 // Saturday; Sunday is for the mirror.
 describe('the week', () => {
   async function morningThree() {

@@ -39,6 +39,15 @@ Edwin asked (2026-10-15) for the weekly mirror to be built from the database, so
 - Rows are deleted after five weeks (the mirror reads three weeks of answers for each of the last three weeks) and at once on `DELETE /api/mirror`, which the app's "Delete everything" calls. Anonymous vote counts stay.
 - `GET /api/mirror?date=` (header `Authorization: Device <token>`, `private, no-store`) builds the week from that phone's rows alone: days (each answer shown by how deep it went), trait reads (scoring version 1 in `backend/mirror.go`), themes and steps, set only against the phone's own earlier weeks. Edwin (2026-10-15): it speaks to people "about who they are and how they can change, not comparing them with other people", so it reads no other phone's answers and no vote tallies, and costs one device's rows per request.
 
+## The monthly, quarterly and yearly mirrors
+
+Answers go after five weeks, so the longer mirrors (`GET /api/mirror/{month|quarter|year}?date=`, same header and `no-store`) are built from a small note of each finished week:
+
+- Every hour the worker folds each week that ended at least a week ago and still has all its answers kept (`FoldWeeks` in `backend/period.go`): one row per phone in `mirror_weeks` (`backend/migrations/003_mirror_weeks.sql`) under the same mirror key, plus a mark in `mirror_folds` that the week is done for everyone. Folding again changes nothing, so several instances may run it.
+- A note holds counts (days, answers, private answers, deepest answers, steps), each theme's answers and depth, each trait's sum of positions, the steps that helped in their own words, and the three answers that said the most: the deepest answers whose option leans clearly on a trait, with their question, answer and the first sentence of their card. Never a private answer's question or option, and nothing about other phones.
+- Notes are deleted after 400 days (a whole ISO year, readable through the January after), and at once on `DELETE /api/mirror`.
+- A week belongs to the month, quarter and year that hold its Thursday. Weeks not folded yet are read from the kept answers the same way, so a week looks the same before and after it folds. A week with neither (before notes began) is shown as "nothing on record", never as a week off. The month or quarter before is shown for comparison only when every one of its weeks is on record.
+
 ## Daily rollover
 
 Each phone plays the edition for its own local date, from `GET /api/editions/{date}`, so the morning three arrive in the person's morning. At 4 pm on the phone's clock the evening opens by itself: a check-in on the morning's answers, then three more questions. The check-in answers stay on the phone and are never sent. The day turns over at the phone's midnight.

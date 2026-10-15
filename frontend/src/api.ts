@@ -138,6 +138,7 @@ export type TraitRead = {
   theme?: string
   edition?: number
 }
+export type ThemeRead = { theme: string; area: string; answers: number; depth: Depth }
 export type Mirror = {
   date: string
   week: number
@@ -160,7 +161,7 @@ export type Mirror = {
   }
   days: { date: string; edition: number; answers: { theme: string; depth: Depth }[] }[]
   traits: TraitRead[]
-  themes: { theme: string; area: string; answers: number; depth: Depth }[]
+  themes: ThemeRead[]
   steps: {
     questionId: string
     optionId: string
@@ -180,6 +181,78 @@ const deviceHeader = (token: string) => ({ Authorization: `Device ${token}` })
 
 export function getMirror(date: string): Promise<Mirror> {
   return withDevice((token) => request<Mirror>(`/api/mirror?date=${date}`, { headers: deviceHeader(token) }))
+}
+
+// The monthly, quarterly and yearly mirrors: this phone's weeks added up,
+// from its kept answers and the small note kept of each finished week. Like
+// the weekly mirror, only ever set against this phone's own past. Shapes
+// mirror backend/period.go.
+export type Period = 'month' | 'quarter' | 'year'
+export type PeriodStats = {
+  weeksActive: number
+  weeksSoFar: number // weeks on record so far
+  daysActive: number
+  daysSoFar: number // question days in them so far
+  answers: number
+  private: number
+  deepest: number
+  learned: number
+  rated: number
+  stepsStarted: number
+  stepsTried: number
+  stepsHelped: number
+}
+export type PeriodWeek = {
+  monday: string
+  week: number // ISO week number
+  kept: boolean // false: nothing on record for this week
+  daysActive: number
+  daysSoFar: number
+  answers: number
+  deepest: number
+  stepsTried: number
+}
+export type PeriodTrait = {
+  trait: string
+  answers: number
+  solid: boolean
+  score: number
+  weekly: WeekScore[]
+  change?: number // the later weeks with a read against the earlier ones
+}
+// One of the answers that said the most: deep, and clearly leaning on a
+// trait, with the first sentence of the card it showed.
+export type Moment = {
+  prompt: string
+  label: string
+  headline: string
+  theme: string
+  lean: number
+  depth: number
+  date: string
+  edition: number
+}
+export type PeriodMirror = {
+  period: Period
+  label: string // 2026-10, 2026-Q4 or 2026
+  date: string
+  from: string
+  to: string
+  weeksTotal: number
+  weeks: PeriodWeek[] // up to this week, oldest first
+  stats: PeriodStats
+  previous?: PeriodStats // the month or quarter before, when every week of it is on record
+  previousLabel?: string
+  traits: PeriodTrait[]
+  themes: ThemeRead[]
+  moments: Moment[]
+  helped: { theme: string; step: string; started: string }[]
+}
+
+export function getPeriodMirror(period: Period, date: string): Promise<PeriodMirror> {
+  return withDevice((token) =>
+    request<PeriodMirror>(`/api/mirror/${period}?date=${date}`, { headers: deviceHeader(token) }),
+  )
 }
 
 // forgetMirror deletes everything the server keeps for this phone.

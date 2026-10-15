@@ -24,7 +24,7 @@ import (
 type mirrorBank struct{}
 
 func mirrorInsight(step string) *Insight {
-	return &Insight{Reveal: "A reveal.", Step: step}
+	return &Insight{Reveal: "A headline about this answer. And a little more.", Step: step}
 }
 
 func (mirrorBank) GetSet(date string) (DailySet, bool) {

@@ -155,6 +155,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("POST /api/ratings", s.RateCard)
 	mux.HandleFunc("GET /api/questions/{questionId}/results", s.Results)
 	mux.HandleFunc("GET /api/mirror", s.MirrorWeek)
+	mux.HandleFunc("GET /api/mirror/{period}", s.MirrorPeriod)
 	mux.HandleFunc("DELETE /api/mirror", s.ForgetMirror)
 	mux.HandleFunc("POST /api/steps", s.SaveStep)
 	return mux
