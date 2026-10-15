@@ -1,7 +1,7 @@
 // The on-phone profile: answer history, interest per theme, the weekly trait
 // read and the low-mood check. None of it is ever sent to the server.
 //
-// Scoring rules, version 1 (change SCORING_VERSION when they change, so old
+// Scoring rules, version 2 (change SCORING_VERSION when they change, so old
 // reads are never silently reinterpreted):
 // - Interest per theme: each answer adds (depth - 2.5) / 1.5, from -1 for the
 //   lightest option to +1 for the deepest; each skip adds -1. Every event
@@ -9,11 +9,13 @@
 // - Trait read: answers from the last 7 days. For each trait, the mean of the
 //   weights of the options chosen; shown only with 2+ answers touching it.
 //   A mean above +0.25 reads "higher", below -0.25 "lower", else "middle".
-//   Under 21 answers (one full week of play) the read is labelled "Early".
+//   Under 21 morning answers (one full week of play) the read is labelled "Early".
+// - Evening follow-up answers (version 2) count towards the trait read only:
+//   they carry trait weights but no depth, so they never move interest.
 
-import type { Question } from './api'
+import type { FollowUpOption, Question } from './api'
 
-export const SCORING_VERSION = 1
+export const SCORING_VERSION = 2
 
 export type AnswerRecord = {
   date: string
@@ -21,6 +23,7 @@ export type AnswerRecord = {
   theme: string
   depth: number
   traits: Record<string, number>
+  evening?: true
 }
 export type History = { answers: AnswerRecord[]; skips: { date: string; theme: string }[] }
 
@@ -58,6 +61,16 @@ export function recordAnswer(q: Question, optionId: string, date: string) {
   saveHistory(h, date)
 }
 
+// recordEvening keeps an evening answer, under the morning question's id plus '#evening'.
+export function recordEvening(q: Question, o: FollowUpOption, date: string) {
+  if (!q.theme) return
+  const h = loadHistory()
+  const questionId = `${q.id}#evening`
+  if (h.answers.some((a) => a.questionId === questionId)) return
+  h.answers.push({ date, questionId, theme: q.theme, depth: 0, traits: o.traits ?? {}, evening: true })
+  saveHistory(h, date)
+}
+
 export function recordSkip(q: Question, date: string) {
   if (!q.theme) return
   const h = loadHistory()
@@ -70,7 +83,7 @@ export function interestScores(h: History, today: string): Record<string, number
   const add = (theme: string, v: number, date: string) => {
     out[theme] = (out[theme] ?? 0) + v * 0.5 ** (Math.max(0, days(date, today)) / 7)
   }
-  for (const a of h.answers) add(a.theme, (a.depth - 2.5) / 1.5, a.date)
+  for (const a of h.answers) if (!a.evening) add(a.theme, (a.depth - 2.5) / 1.5, a.date)
   for (const s of h.skips) add(s.theme, -1, s.date)
   return out
 }
@@ -83,7 +96,7 @@ export function pickThree(pool: Question[], defaults: Question[], h: History, to
   const eligible = pool.filter((q) => q.care !== 'intimate' || adult)
   const interest = interestScores(h, today)
   const seen: Record<string, number> = {}
-  for (const a of h.answers) if (days(a.date, today) <= 14) seen[a.theme] = (seen[a.theme] ?? 0) + 1
+  for (const a of h.answers) if (!a.evening && days(a.date, today) <= 14) seen[a.theme] = (seen[a.theme] ?? 0) + 1
 
   const picked: Question[] = []
   const usedThemes = new Set<string>()
@@ -153,7 +166,7 @@ export function readTraits(h: History, today: string): { label: string; traits: 
       return { trait, answers: s.n, direction: mean > 0.25 ? 'higher' : mean < -0.25 ? 'lower' : 'middle' }
     })
     .sort((a, b) => b.answers - a.answers)
-  const n = week.length
+  const n = week.filter((a) => !a.evening).length
   const label =
     n === 0
       ? 'No answers this week yet'
@@ -165,7 +178,7 @@ export function readTraits(h: History, today: string): { label: string; traits: 
 // note with support contacts. One answer never does.
 export function lowMoodRepeated(h: History, today: string): boolean {
   return (
-    h.answers.filter((a) => a.theme === 'sadness-stress' && a.depth >= 3 && days(a.date, today) >= 0 && days(a.date, today) < 7)
+    h.answers.filter((a) => !a.evening && a.theme === 'sadness-stress' && a.depth >= 3 && days(a.date, today) >= 0 && days(a.date, today) < 7)
       .length >= 3
   )
 }

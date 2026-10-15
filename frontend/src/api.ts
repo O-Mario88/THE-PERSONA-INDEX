@@ -17,12 +17,22 @@ export type Option = {
   traits?: Record<string, number>
   insight?: Insight
 }
+// The evening question that goes back to a morning one. Its answers stay on
+// the phone and are never sent.
+export type FollowUpOption = {
+  id: string
+  label: string
+  traits?: Record<string, number>
+  reflection: string
+}
+export type FollowUp = { prompt: string; options: FollowUpOption[] }
 export type Question = {
   id: string
   theme?: string
   care?: 'everyday' | 'personal' | 'intimate'
   prompt: string
   options: Option[]
+  followUp?: FollowUp
 }
 export type DailySet = {
   date: string
@@ -63,6 +73,18 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export function getToday(): Promise<DailySet> {
   return request('/api/questions/today')
+}
+
+// getDay loads the edition for the phone's own date. When that date is not
+// open (a clock far off, or an older server), it falls back to the shared
+// UTC edition.
+export async function getDay(date: string): Promise<DailySet> {
+  try {
+    return await request<DailySet>(`/api/editions/${date}`)
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 404) return getToday()
+    throw e
+  }
 }
 
 export async function castVote(
@@ -178,6 +200,22 @@ export function voteKey(questionId: string): string {
 export function rememberChoice(questionId: string, optionId: string) {
   remove(`pi.pending.${questionId}`)
   save(`pi.choice.${questionId}`, optionId)
+  save(`pi.at.${questionId}`, String(Date.now()))
+}
+
+// When this phone answered a question, in ms, or null if it was before times were kept.
+export function answeredAt(questionId: string): number | null {
+  const v = Number(load(`pi.at.${questionId}`))
+  return v > 0 ? v : null
+}
+
+// Evening answers: the follow-up option chosen (or SKIPPED). Never sent anywhere.
+export function rememberEvening(questionId: string, optionId: string) {
+  save(`pi.evening.${questionId}`, optionId)
+}
+
+export function recalledEvening(questionId: string): string | null {
+  return load(`pi.evening.${questionId}`)
 }
 
 export function recalledChoice(questionId: string): string | null {

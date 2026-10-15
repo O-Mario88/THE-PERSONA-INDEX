@@ -5,6 +5,8 @@
 export const POINTS_PER_INSIGHT = 10
 export const POINTS_PER_EDITION = 20
 export const POINTS_PER_STEP = 5
+export const POINTS_PER_REFLECTION = 10
+export const POINTS_PER_EVENING = 20
 
 export type GameState = {
   points: number
@@ -56,12 +58,65 @@ export function awardEdition(date: string): number {
   return award(`e:${date}`, POINTS_PER_EDITION, (g) => g.editions.push(date))
 }
 
-export function awardStep(questionId: string): number {
-  return award(`s:${questionId}`, POINTS_PER_STEP)
+// Evening reflections earn points but do not count towards levels, which
+// follow the morning insights.
+export function awardReflection(questionId: string): number {
+  return award(`r:${questionId}`, POINTS_PER_REFLECTION)
 }
 
-export function stepDone(questionId: string): boolean {
-  return loadGame().awarded.includes(`s:${questionId}`)
+export function awardEvening(date: string): number {
+  return award(`n:${date}`, POINTS_PER_EVENING)
+}
+
+// Moves: each morning the person picks one small step to try that day, and
+// the evening check-in asks whether they tried it. Kept on this phone.
+export type Move = { date: string; questionId: string; step: string; tried?: boolean }
+
+const movesKey = 'pi.moves.v1'
+
+export function loadMoves(): Move[] {
+  try {
+    const v = JSON.parse(localStorage.getItem(movesKey) ?? '[]')
+    return Array.isArray(v) ? v.filter((m) => m && typeof m.date === 'string' && typeof m.step === 'string') : []
+  } catch {
+    return []
+  }
+}
+
+function saveMoves(moves: Move[]) {
+  try {
+    localStorage.setItem(movesKey, JSON.stringify(moves.slice(-60)))
+  } catch {
+    // private mode: this visit only
+  }
+}
+
+export function pickMove(date: string, questionId: string, step: string) {
+  saveMoves([...loadMoves().filter((m) => m.date !== date), { date, questionId, step }])
+}
+
+export function todaysMove(date: string): Move | undefined {
+  return loadMoves().find((m) => m.date === date)
+}
+
+// markMove records whether the day's move was tried; trying it earns points once.
+export function markMove(date: string, tried: boolean): number {
+  const moves = loadMoves()
+  const m = moves.find((x) => x.date === date)
+  if (!m) return 0
+  m.tried = tried
+  saveMoves(moves)
+  return tried ? award(`m:${date}`, POINTS_PER_STEP) : 0
+}
+
+// Moves picked and tried in the seven days ending on today.
+export function movesThisWeek(today: string): { picked: number; tried: number } {
+  const end = Date.parse(`${today}T00:00:00Z`)
+  const week = loadMoves().filter((m) => {
+    const t = Date.parse(`${m.date}T00:00:00Z`)
+    return t <= end && t > end - 7 * 86400_000
+  })
+  return { picked: week.length, tried: week.filter((m) => m.tried === true).length }
 }
 
 // Levels by insights collected: about one level a week early on, slower later.

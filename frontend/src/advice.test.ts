@@ -1,5 +1,5 @@
 import { adviceFor, TRAIT_ADVICE } from './advice'
-import { awardEdition, awardInsight, awardStep, levelFor, loadGame } from './game'
+import { awardEdition, awardInsight, levelFor, loadGame } from './game'
 import { TRAIT_WORDS } from './profile'
 
 describe('advice', () => {
@@ -35,14 +35,12 @@ describe('advice', () => {
 describe('points and levels', () => {
   beforeEach(() => localStorage.clear())
 
-  it('counts each insight, edition and move once', () => {
+  it('counts each insight and edition once', () => {
     expect(awardInsight('q1', 'money')).toBe(10)
     expect(awardInsight('q1', 'money')).toBe(0)
     expect(awardEdition('2026-10-12')).toBe(20)
     expect(awardEdition('2026-10-12')).toBe(0)
-    expect(awardStep('q1')).toBe(5)
-    expect(awardStep('q1')).toBe(0)
-    expect(loadGame()).toMatchObject({ points: 35, insights: 1, themes: ['money'], editions: ['2026-10-12'] })
+    expect(loadGame()).toMatchObject({ points: 30, insights: 1, themes: ['money'], editions: ['2026-10-12'] })
   })
 
   it('climbs levels by insights collected', () => {

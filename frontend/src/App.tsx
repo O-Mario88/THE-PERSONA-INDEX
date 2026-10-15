@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { ApiError, getToday, recalledChoice, SKIPPED, type DailySet, type Question } from './api'
+import { ApiError, getDay, recalledChoice, SKIPPED, type DailySet, type Question } from './api'
 import { readCompare } from './compare'
+import { followUpsFor, localDate, useEvening } from './day'
 import { QuestionCard, type Done } from './QuestionCard'
 import { EditionSummary } from './EditionSummary'
+import { EveningSummary } from './EveningSummary'
+import { FollowUpCard } from './FollowUpCard'
 import { MyWeek } from './MyWeek'
 import { levelFor, loadGame } from './game'
 import { themeVars } from './themes'
@@ -27,10 +30,16 @@ function App() {
   const onDone = useCallback((id: string, d: Done) => {
     setDone((prev) => (prev[id] === d ? prev : { ...prev, [id]: d }))
   }, [])
+  const evening = useEvening()
+  const [eveningDone, setEveningDone] = useState<Record<string, Done>>({})
+  const onEveningDone = useCallback((id: string, d: Done) => {
+    setEveningDone((prev) => (prev[id] === d ? prev : { ...prev, [id]: d }))
+  }, [])
+  const [showMorning, setShowMorning] = useState(false)
 
   useEffect(() => {
     let live = true
-    getToday().then(
+    getDay(localDate()).then(
       (set) => live && setState({ kind: 'ready', set }),
       (e) => {
         if (!live) return
@@ -56,6 +65,13 @@ function App() {
     [set, prefs, pickVersion, compareQs],
   )
   const hasIntimate = !!set?.pool?.some((q) => q.care === 'intimate')
+
+  // In the evening the check-in goes back to this morning's answers; the
+  // morning cards stay one tap away. A compare link always opens the morning.
+  const followUps = set && evening && !compareQs ? followUpsFor(questions, set.date) : []
+  const checkingIn = followUps.length > 0
+  const morningShown = !checkingIn || showMorning
+  const openMorning = questions.filter((q) => !recalledChoice(q.id)).length
 
   function changePrefs(next: Prefs) {
     savePrefs(next)
@@ -95,8 +111,6 @@ function App() {
         )}
       </header>
 
-      {set && tab === 'today' && questions.length > 0 && <Progress questions={questions} done={done} />}
-
       {state.kind === 'loading' && <p className="muted">Loading today's questions…</p>}
 
       {state.kind === 'empty' && (
@@ -114,83 +128,119 @@ function App() {
 
       {set && tab === 'week' && <MyWeek today={set.date} />}
 
-      {set && tab === 'today' && compareQs && (
-        <p className="notice">Someone wants to compare answers with you.</p>
-      )}
-      {set && tab === 'today' && staleInvite && (
-        <p className="notice">That compare link is from an earlier edition. Here are today's questions instead.</p>
-      )}
-
-      {set && tab === 'today' && hasIntimate && prefs.adult === null && (
-        <section className="notice gate" aria-labelledby="gate-title">
-          <h2 id="gate-title">Are you 18 or older?</h2>
-          <p className="muted">Some questions are about intimacy and sex. They are frank, never graphic, and your answers stay on this phone.</p>
-          <div className="confirm">
-            <button type="button" className="option" onClick={() => changePrefs({ ...prefs, adult: true })}>
-              Yes, I'm 18 or older
-            </button>
-            <button type="button" className="option" onClick={() => changePrefs({ ...prefs, adult: false })}>
-              No
-            </button>
-          </div>
-        </section>
-      )}
-
-      {set &&
-        tab === 'today' &&
-        questions.map((q, i) => (
-          <QuestionCard
-            key={q.id}
-            question={q}
-            index={i}
-            total={questions.length}
-            date={set.date}
-            onDone={onDone}
+      {set && tab === 'today' && checkingIn && (
+        <>
+          <Progress
+            label="Tonight's progress"
+            questions={followUps.map((f) => f.question)}
+            done={eveningDone}
           />
-        ))}
+          <p className="evening-intro">
+            <span aria-hidden="true">🌙 </span>Evening check-in: how did today go?
+          </p>
+          {followUps.map((f, i) => (
+            <FollowUpCard
+              key={f.question.id}
+              question={f.question}
+              said={f.said}
+              index={i}
+              total={followUps.length}
+              date={set.date}
+              onDone={onEveningDone}
+            />
+          ))}
+          {set.edition !== undefined && followUps.every((f) => eveningDone[f.question.id]) && (
+            <EveningSummary
+              date={set.date}
+              edition={set.edition}
+              items={followUps}
+              tomorrowThemes={set.tomorrowThemes ?? []}
+            />
+          )}
+          <button
+            type="button"
+            className="link-button morning-toggle"
+            aria-expanded={showMorning}
+            onClick={() => setShowMorning((v) => !v)}
+          >
+            <span aria-hidden="true">☀️ </span>This morning's questions
+            {openMorning > 0 && ` (${openMorning} still open)`}
+          </button>
+        </>
+      )}
 
-      {set &&
-        tab === 'today' &&
-        set.edition !== undefined &&
-        questions.every((q) => done[q.id]) && (
-          <EditionSummary
-            date={set.date}
-            edition={set.edition}
-            questions={questions}
-            tomorrowThemes={set.tomorrowThemes ?? []}
-            answers={questions
-              .filter((q) => q.care !== 'intimate')
-              .map((q): [string, string] => [q.id, recalledChoice(q.id) ?? ''])
-              .filter(([, c]) => c !== '' && c !== SKIPPED && c !== '?')}
-          />
-        )}
+      {set && tab === 'today' && morningShown && (
+        <>
+          {!checkingIn && questions.length > 0 && <Progress label="Today's progress" questions={questions} done={done} />}
 
-      {set &&
-        tab === 'today' &&
-        compareQs &&
-        questions.every((q) => done[q.id]) && <CompareResult items={compareQs} />}
+          {evening && !checkingIn && !compareQs && (
+            <p className="notice">
+              <span aria-hidden="true">🌙 </span>The evening check-in follows up on answers from before 5 pm. Today's
+              questions are still here.
+            </p>
+          )}
+          {compareQs && <p className="notice">Someone wants to compare answers with you.</p>}
+          {staleInvite && (
+            <p className="notice">That compare link is from an earlier edition. Here are today's questions instead.</p>
+          )}
 
-      {set && tab === 'today' && prefs.adult === true && (
-        <label className="switch">
-          <input
-            type="checkbox"
-            checked={prefs.mild}
-            onChange={(e) => changePrefs({ ...prefs, mild: e.target.checked })}
-          />
-          Keep it mild (no intimacy questions)
-        </label>
+          {hasIntimate && prefs.adult === null && (
+            <section className="notice gate" aria-labelledby="gate-title">
+              <h2 id="gate-title">Are you 18 or older?</h2>
+              <p className="muted">Some questions are about intimacy and sex. They are frank, never graphic, and your answers stay on this phone.</p>
+              <div className="confirm">
+                <button type="button" className="option" onClick={() => changePrefs({ ...prefs, adult: true })}>
+                  Yes, I'm 18 or older
+                </button>
+                <button type="button" className="option" onClick={() => changePrefs({ ...prefs, adult: false })}>
+                  No
+                </button>
+              </div>
+            </section>
+          )}
+
+          {questions.map((q, i) => (
+            <QuestionCard key={q.id} question={q} index={i} total={questions.length} date={set.date} onDone={onDone} />
+          ))}
+
+          {set.edition !== undefined && questions.every((q) => done[q.id]) && (
+            <EditionSummary
+              date={set.date}
+              edition={set.edition}
+              questions={questions}
+              checkIn={!evening ? 'later' : checkingIn ? 'open' : 'tomorrow'}
+              answers={questions
+                .filter((q) => q.care !== 'intimate')
+                .map((q): [string, string] => [q.id, recalledChoice(q.id) ?? ''])
+                .filter(([, c]) => c !== '' && c !== SKIPPED && c !== '?')}
+            />
+          )}
+
+          {compareQs && questions.every((q) => done[q.id]) && <CompareResult items={compareQs} />}
+
+          {prefs.adult === true && (
+            <label className="switch">
+              <input
+                type="checkbox"
+                checked={prefs.mild}
+                onChange={(e) => changePrefs({ ...prefs, mild: e.target.checked })}
+              />
+              Keep it mild (no intimacy questions)
+            </label>
+          )}
+        </>
       )}
     </main>
   )
 }
 
-// Today's progress and the level, kept on this phone.
-function Progress({ questions, done }: { questions: Question[]; done: Record<string, Done> }) {
+// Progress through today's (or tonight's) cards, and the level, kept on this phone.
+function Progress({ label, questions, done }: { label: string; questions: Question[]; done: Record<string, Done> }) {
   const game = loadGame()
   const level = levelFor(game.insights)
   const finished = questions.filter((q) => done[q.id]).length
   return (
-    <div className="progress" aria-label="Today's progress">
+    <div className="progress" aria-label={label}>
       <div className="progress-steps" aria-hidden="true">
         {questions.map((q) => (
           <span

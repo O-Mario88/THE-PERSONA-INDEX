@@ -2,32 +2,38 @@ import { useEffect, useState, type CSSProperties } from 'react'
 import { playedDays, recalledChoice, type Question } from './api'
 import { adviceFor } from './advice'
 import { encodeCompare } from './compare'
-import { awardEdition, awardStep, levelFor, loadGame, POINTS_PER_STEP, stepDone } from './game'
-import { daysPlayedThisWeek, THEME_COUNT, themeName } from './themes'
+import { awardEdition, levelFor, loadGame, pickMove, todaysMove } from './game'
+import { daysPlayedThisWeek, THEME_COUNT } from './themes'
+
+// When the evening check-in comes, as the morning summary tells it.
+export type CheckIn = 'later' | 'open' | 'tomorrow'
 
 type Props = {
   date: string
   edition: number
   questions: Question[]
-  tomorrowThemes: string[]
+  checkIn: CheckIn
   answers: [string, string][] // what a compare link may carry: no intimate answers
 }
 
-// The end of an edition: advice built from today's insight cards (which stay
-// on screen above), the small steps to try, and progress kept on this phone. Nothing here
-// resets or punishes a missed day.
-export function EditionSummary({ date, edition, questions, tomorrowThemes, answers }: Props) {
+const CHECK_IN_LINE: Record<CheckIn, string> = {
+  later: 'Your evening check-in opens at 5 pm: a quick follow-up on how today went.',
+  open: 'Your evening check-in is open.',
+  tomorrow: 'Answer before 5 pm tomorrow and the evening check-in will follow up on how your day went.',
+}
+
+// The end of the morning: advice built from today's insight cards (which stay
+// on screen above), one move to try today, and progress kept on this phone.
+// Nothing here resets or punishes a missed day.
+export function EditionSummary({ date, edition, questions, checkIn, answers }: Props) {
   const [copied, setCopied] = useState(false)
   const [bonus, setBonus] = useState(0)
-  const [, setVersion] = useState(0)
+  const [move, setMove] = useState(() => todaysMove(date))
   const cards = questions
     .map((q) => ({ q, o: q.options.find((o) => o.id === recalledChoice(q.id)) }))
     .filter((c): c is { q: Question; o: NonNullable<typeof c.o> } => !!c.o?.insight)
   const advice = adviceFor(cards.map((c) => c.o))
-  const game = loadGame()
-  const level = levelFor(game.insights)
-  const played = daysPlayedThisWeek(playedDays(), date)
-  const headingId = `edition-${edition}`
+  const headingId = `morning-${edition}`
 
   useEffect(() => {
     if (cards.length > 0) setBonus(awardEdition(date))
@@ -35,9 +41,9 @@ export function EditionSummary({ date, edition, questions, tomorrowThemes, answe
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date])
 
-  function tick(questionId: string) {
-    awardStep(questionId)
-    setVersion((v) => v + 1)
+  function choose(questionId: string, step: string) {
+    pickMove(date, questionId, step)
+    setMove(todaysMove(date))
   }
 
   async function compare() {
@@ -63,9 +69,9 @@ export function EditionSummary({ date, edition, questions, tomorrowThemes, answe
           🏆
         </span>
         <div>
-          <h2 id={headingId}>Edition #{edition} complete</h2>
+          <h2 id={headingId}>Morning complete</h2>
           <p className="muted">
-            {cards.length} {cards.length === 1 ? 'insight' : 'insights'} today
+            Edition #{edition} · {cards.length} {cards.length === 1 ? 'insight' : 'insights'} today
             {bonus > 0 && <span className="points-pill">+{bonus} pts bonus</span>}
           </p>
         </div>
@@ -89,52 +95,42 @@ export function EditionSummary({ date, edition, questions, tomorrowThemes, answe
             ))}
           </div>
 
-          <div className="steps">
-            <h3>
-              <span aria-hidden="true">🎯 </span>Your moves this week
+          <div className="steps" role="group" aria-labelledby={`${headingId}-move`}>
+            <h3 id={`${headingId}-move`}>
+              <span aria-hidden="true">🎯 </span>Pick your move
             </h3>
             <ul>
               {cards.map(({ q, o }) => {
-                const done = stepDone(q.id)
+                const picked = move?.questionId === q.id
                 return (
                   <li key={q.id}>
                     <button
                       type="button"
-                      className={done ? 'step done' : 'step'}
-                      aria-pressed={done}
-                      onClick={() => !done && tick(q.id)}
+                      className={picked ? 'step done' : 'step'}
+                      aria-pressed={picked}
+                      disabled={move?.tried !== undefined}
+                      onClick={() => choose(q.id, o.insight!.step)}
                     >
                       <span className="step-box" aria-hidden="true">
-                        {done ? '✓' : ''}
+                        {picked ? '✓' : ''}
                       </span>
                       <span>{o.insight!.step}</span>
-                      {!done && <span className="step-points">+{POINTS_PER_STEP}</span>}
                     </button>
                   </li>
                 )
               })}
             </ul>
-            <p className="muted">Tick a move once you have tried it.</p>
+            <p className="muted">{move ? 'The evening check-in will ask how it went.' : 'Pick one to try.'}</p>
           </div>
         </>
       )}
 
-      <div className="level" aria-label="Your level">
-        <p className="level-name">
-          <span aria-hidden="true">{level.icon} </span>
-          {level.name} · {game.points} pts
-        </p>
-        <div className="level-bar" aria-hidden="true">
-          <div className="level-fill" style={{ width: `${Math.round(level.progress * 100)}%` }} />
-        </div>
-        <p className="muted">
-          {level.next
-            ? `${level.toNext} more ${level.toNext === 1 ? 'insight' : 'insights'} to ${level.next.name}`
-            : 'Top level reached'}
-          {' · '}
-          {game.themes.length} of {THEME_COUNT} life areas discovered · played {played} of the last 7 days
-        </p>
-      </div>
+      <p className="tomorrow">
+        <span aria-hidden="true">🌙 </span>
+        {CHECK_IN_LINE[checkIn]}
+      </p>
+
+      <LevelBlock date={date} />
 
       {answers.length > 0 && (
         <button type="button" className="option" onClick={compare}>
@@ -142,17 +138,37 @@ export function EditionSummary({ date, edition, questions, tomorrowThemes, answe
         </button>
       )}
       {copied && <p className="muted">Copied. Paste it anywhere.</p>}
-      {tomorrowThemes.length > 0 && (
-        <p className="tomorrow">
-          <span aria-hidden="true">🌅 </span>Tomorrow: {tomorrowThemes.map(themeName).join(' · ')}
-        </p>
-      )}
       <p className="muted insight-note">For self-reflection, not a diagnosis.</p>
     </section>
   )
 }
 
-function Confetti() {
+// The level, points and the week's play, all kept on this phone.
+export function LevelBlock({ date }: { date: string }) {
+  const game = loadGame()
+  const level = levelFor(game.insights)
+  const played = daysPlayedThisWeek(playedDays(), date)
+  return (
+    <div className="level" aria-label="Your level">
+      <p className="level-name">
+        <span aria-hidden="true">{level.icon} </span>
+        {level.name} · {game.points} pts
+      </p>
+      <div className="level-bar" aria-hidden="true">
+        <div className="level-fill" style={{ width: `${Math.round(level.progress * 100)}%` }} />
+      </div>
+      <p className="muted">
+        {level.next
+          ? `${level.toNext} more ${level.toNext === 1 ? 'insight' : 'insights'} to ${level.next.name}`
+          : 'Top level reached'}
+        {' · '}
+        {game.themes.length} of {THEME_COUNT} life areas discovered · played {played} of the last 7 days
+      </p>
+    </div>
+  )
+}
+
+export function Confetti() {
   return (
     <div className="confetti" aria-hidden="true">
       {Array.from({ length: 24 }, (_, i) => (

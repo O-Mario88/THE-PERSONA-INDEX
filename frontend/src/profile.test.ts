@@ -123,3 +123,29 @@ describe('low mood care', () => {
     expect(lowMoodRepeated(three, '2026-10-12')).toBe(true)
   })
 })
+
+describe('evening answers', () => {
+  const evening = (date: string, traits: Record<string, number>) => ({
+    ...answer(date, 'money', 0, traits),
+    questionId: `${date}#evening`,
+    evening: true as const,
+  })
+
+  it('count towards the trait read, but not the size of the read, interest or low-mood care', () => {
+    const h: History = {
+      answers: [
+        answer('2026-10-11', 'money', 4, { present_bias: 1 }),
+        evening('2026-10-11', { present_bias: 1 }),
+        { ...evening('2026-10-10', {}), theme: 'sadness-stress' },
+        { ...evening('2026-10-09', {}), theme: 'sadness-stress' },
+        { ...evening('2026-10-08', {}), theme: 'sadness-stress' },
+      ],
+      skips: [],
+    }
+    const read = readTraits(h, '2026-10-12')
+    expect(read.traits).toEqual([{ trait: 'present_bias', direction: 'higher', answers: 2 }])
+    expect(read.label).toBe('Early read, 1 answer')
+    expect(interestScores(h, '2026-10-12')).toEqual(interestScores({ answers: [h.answers[0]], skips: [] }, '2026-10-12'))
+    expect(lowMoodRepeated(h, '2026-10-12')).toBe(false)
+  })
+})
