@@ -3,52 +3,93 @@ import {
   forgetLocal,
   forgetMirror,
   getMirror,
+  getPeriodMirror,
   saveStep,
-  type AnswerSplit,
-  type Crowd,
+  type Depth,
   type Mirror as MirrorData,
+  type Period,
+  type PeriodMirror,
   type StepStatus,
+  type ThemeRead,
 } from './api'
-import { setMoveStatus } from './game'
+import { setMoveStatus } from './moves'
 import {
   AREA_NAMES,
   archetype,
   leanings,
-  pct,
-  SOURCES,
+  PERIOD_CLOSE,
+  periodName,
+  periodSummary,
   summary,
   tagline,
   TRAITS,
-  type SourceKey,
 } from './mirrorText'
 import { THEMES, themeName, themeStyle, themeVars } from './themes'
 
-type State = { kind: 'loading' } | { kind: 'ready'; m: MirrorData } | { kind: 'error' }
+type Span = 'week' | Period
+type State =
+  | { kind: 'loading' }
+  | { kind: 'week'; m: MirrorData }
+  | { kind: 'period'; p: PeriodMirror }
+  | { kind: 'error' }
 
-const STRENGTH_LABEL = { strong: 'Strong evidence', moderate: 'Some evidence' } as const
+const SPANS: { span: Span; name: string; adj: string }[] = [
+  { span: 'week', name: 'Week', adj: 'weekly' },
+  { span: 'month', name: 'Month', adj: 'monthly' },
+  { span: 'quarter', name: 'Quarter', adj: 'quarterly' },
+  { span: 'year', name: 'Year', adj: 'yearly' },
+]
+const adjOf = (span: Span) => SPANS.find((s) => s.span === span)!.adj
 
-// The weekly mirror: built by the server from this phone's kept answers, so
-// every number here is real. Sections with nothing real to show stay hidden.
+// The mirror: built by the server from this phone's kept answers, so every
+// number here is real. Sections with nothing real to show stay hidden. It
+// speaks of this person alone and only sets them against their own past;
+// the research behind its words stays in mirrorText.ts, out of sight. The
+// week opens first; the month, quarter and year look further back.
 export function Mirror({ today }: { today: string }) {
+  const [span, setSpan] = useState<Span>('week')
   const [state, setState] = useState<State>({ kind: 'loading' })
   const [attempt, setAttempt] = useState(0)
   const reload = useCallback(() => setAttempt((n) => n + 1), [])
 
   useEffect(() => {
     let live = true
-    getMirror(today).then(
-      (m) => live && setState({ kind: 'ready', m }),
+    const load: Promise<State> =
+      span === 'week'
+        ? getMirror(today).then((m) => ({ kind: 'week', m }))
+        : getPeriodMirror(span, today).then((p) => ({ kind: 'period', p }))
+    load.then(
+      (next) => live && setState(next),
       () => live && setState({ kind: 'error' }),
     )
     return () => {
       live = false
     }
-  }, [today, attempt])
+  }, [today, span, attempt])
+
+  function choose(next: Span) {
+    if (next === span) return
+    setState({ kind: 'loading' })
+    setSpan(next)
+  }
 
   // One region for every state, so the page keeps its place while it loads.
   return (
-    <section className="mirror" aria-label="Your weekly mirror" aria-busy={state.kind === 'loading'}>
-      {state.kind === 'loading' && <p className="m-loading">Putting your week together…</p>}
+    <section className="mirror" aria-label={`Your ${adjOf(span)} mirror`} aria-busy={state.kind === 'loading'}>
+      <div className="m-spans" role="group" aria-label="Look back over">
+        {SPANS.map((s) => (
+          <button
+            key={s.span}
+            type="button"
+            className="m-span"
+            aria-pressed={s.span === span}
+            onClick={() => choose(s.span)}
+          >
+            {s.name}
+          </button>
+        ))}
+      </div>
+      {state.kind === 'loading' && <p className="m-loading">Putting your {span} together…</p>}
       {state.kind === 'error' && (
         <div className="m-card" role="alert">
           <p>I couldn't load your mirror just now.</p>
@@ -64,7 +105,8 @@ export function Mirror({ today }: { today: string }) {
           </button>
         </div>
       )}
-      {state.kind === 'ready' && <MirrorPage m={state.m} today={today} reload={reload} />}
+      {state.kind === 'week' && <MirrorPage m={state.m} today={today} reload={reload} />}
+      {state.kind === 'period' && <PeriodPage p={state.p} reload={reload} />}
     </section>
   )
 }
@@ -76,14 +118,12 @@ function MirrorPage({ m, today, reload }: { m: MirrorData; today: string; reload
   const moved = m.traits.some((t) => t.history.filter((h) => h.score !== undefined).length >= 2)
 
   // Each section shows only when there is something real in it.
-  const parts: { key: string; title: string; body: ReactNode; show: boolean; dark?: boolean }[] = [
+  const parts: Part[] = [
     { key: 'glance', title: 'Your week at a glance', body: <Glance m={m} />, show: true },
-    { key: 'apart', title: 'Where you stand apart', body: <Apart m={m} />, show: m.stats.judged > 0 || !!m.divisive },
     { key: 'traits', title: 'Your trait read', body: <Traits m={m} />, show: true },
     { key: 'moved', title: "How you've moved", body: <Moved m={m} />, show: moved },
-    { key: 'all', title: 'All of you', body: <AllOfYou m={m} />, show: m.themes.length > 0 },
+    { key: 'all', title: 'All of you', body: <AllOfYou themes={m.themes} />, show: m.themes.length > 0 },
     { key: 'who', title: 'Who you were this week', body: <WhoYouWere m={m} />, show: lean.length > 0 },
-    { key: 'strengths', title: 'Strengths you showed', body: <Strengths m={m} />, show: m.strengths.length > 0, dark: true },
     {
       key: 'steps',
       title: 'Your small steps',
@@ -93,28 +133,12 @@ function MirrorPage({ m, today, reload }: { m: MirrorData; today: string; reload
     {
       key: 'next',
       title: 'Next week',
-      body: <NextWeek m={m} today={today} reload={reload} name={name} line={line} />,
+      body: <NextWeek m={m} today={today} reload={reload} />,
       show: true,
     },
     { key: 'road', title: 'The road ahead', body: <RoadAhead />, show: true },
   ]
-  const shown = parts.filter((p) => p.show)
-  const cited = [
-    ...new Set<SourceKey>([
-      ...lean.slice(0, 3).map((l) => l.text.source),
-      'soto2019',
-      ...(moved ? (['roberts2006', 'hudson2015', 'gollwitzer2006'] as const) : []),
-      'vazire2010',
-    ]),
-  ]
-  const sections = shown.map((p, i) => (
-    <section key={p.key} className={p.dark ? 'm-section m-dark' : 'm-section'} aria-labelledby={`m-${p.key}`}>
-      <h3 id={`m-${p.key}`}>
-        <span className="m-num">{String(i + 1).padStart(2, '0')}</span> {p.title}
-      </h3>
-      {p.body}
-    </section>
-  ))
+  const sections = numbered(parts)
 
   return (
     <>
@@ -150,25 +174,29 @@ function MirrorPage({ m, today, reload }: { m: MirrorData; today: string; reload
       <OneLine m={m} />
       <StatTiles m={m} />
       {sections}
-      <Footer cited={cited} reload={reload} />
+      <Footer reload={reload} />
     </>
   )
 }
 
+type Part = { key: string; title: string; body: ReactNode; show: boolean }
+
+// numbered lays out the sections that have something real in them, 01, 02…
+function numbered(parts: Part[]) {
+  return parts
+    .filter((p) => p.show)
+    .map((p, i) => (
+      <section key={p.key} className="m-section" aria-labelledby={`m-${p.key}`}>
+        <h3 id={`m-${p.key}`}>
+          <span className="m-num">{String(i + 1).padStart(2, '0')}</span> {p.title}
+        </h3>
+        {p.body}
+      </section>
+    ))
+}
+
 function OneLine({ m }: { m: MirrorData }) {
-  const yours = m.rarest?.options.find((o) => o.yours)
   const lean = leanings(m.traits)[0]
-  if (m.rarest && yours) {
-    return (
-      <figure className="m-card m-oneline" aria-label="One line from this week">
-        <p className="m-eyebrow">One line from this week</p>
-        <blockquote>“{yours.label}”</blockquote>
-        <figcaption>
-          Your answer to “{m.rarest.prompt}” Only {Math.round(yours.percent)}% of players said the same.
-        </figcaption>
-      </figure>
-    )
-  }
   if (lean?.read.evidence[0]) {
     return (
       <figure className="m-card m-oneline" aria-label="One line from this week">
@@ -199,9 +227,7 @@ function StatTiles({ m }: { m: MirrorData }) {
       `${s.answers}`,
       (s.daysSoFar >= 6 ? 'this week' : 'so far this week') + (s.private > 0 ? `, ${s.private} kept private` : ''),
     ],
-    s.judged > 0
-      ? ['Against the crowd', `${pct(s.minority, s.judged)}%`, `of ${s.judged} answers with 100+ votes`]
-      : ['Against the crowd', '–', 'Shown once questions pass 100 votes'],
+    ['Went deepest', `${s.deepest}`, 'times you chose the most revealing answer'],
     s.rated > 0
       ? ['Learned something', `${s.learned} of ${s.rated}`, 'cards you rated']
       : ['Learned something', '–', 'Tap "I learned something" on a card'],
@@ -225,10 +251,10 @@ function StatTiles({ m }: { m: MirrorData }) {
 // Editions are numbered from launch; anything earlier has no number to show.
 const edition = (n: number) => (n > 0 ? ` · Edition #${n}` : '')
 
-const CROWD_WORDS: Record<Crowd, string> = {
-  with: 'with the crowd',
-  against: 'against the crowd',
-  early: 'too early to compare',
+const DEPTH_ANSWER: Record<Depth, string> = {
+  light: 'a light answer',
+  deeper: 'a deeper answer',
+  deep: 'a deep answer',
   private: 'a private answer',
 }
 
@@ -249,7 +275,7 @@ function Glance({ m }: { m: MirrorData }) {
       ? 'No answers yet this week. Whenever you come back, your week starts filling in.'
       : `You came back on ${shown} of ${Math.min(6, m.stats.daysSoFar)} ${m.stats.daysSoFar >= 6 ? 'days' : 'days so far'}` +
         (best >= 2 ? `, with a run of ${best} in a row.` : '.') +
-        ' Showing up is the whole trick: patterns only appear when there are answers to compare.'
+        ' Showing up is the whole trick: patterns only appear once there are a few answers to look back on.'
   return (
     <>
       <ol className="m-days">
@@ -264,7 +290,7 @@ function Glance({ m }: { m: MirrorData }) {
                 ? 'still to come'
                 : d.answers.length === 0
                   ? 'missed'
-                  : d.answers.map((a) => `${themeName(a.theme)}, ${CROWD_WORDS[a.crowd]}`).join('; ')
+                  : d.answers.map((a) => `${themeName(a.theme)}, ${DEPTH_ANSWER[a.depth]}`).join('; ')
           }`
           return (
             <li key={d.date} className={review ? 'm-day review' : future ? 'm-day later' : 'm-day'} aria-label={label}>
@@ -277,7 +303,7 @@ function Glance({ m }: { m: MirrorData }) {
                 ) : d.answers.length === 0 ? (
                   <span className={future ? 'sq later' : 'sq missed'} />
                 ) : (
-                  d.answers.map((a, j) => <span key={j} className={`sq ${a.crowd}`} />)
+                  d.answers.map((a, j) => <span key={j} className={`sq ${a.depth}`} />)
                 )}
               </span>
               <span className="m-day-ed" aria-hidden="true">
@@ -289,13 +315,13 @@ function Glance({ m }: { m: MirrorData }) {
       </ol>
       <ul className="m-legend" aria-hidden="true">
         <li>
-          <span className="sq with" /> With the crowd
+          <span className="sq deep" /> Deep
         </li>
         <li>
-          <span className="sq against" /> Against the crowd
+          <span className="sq deeper" /> Deeper
         </li>
         <li>
-          <span className="sq early" /> Under 100 votes
+          <span className="sq light" /> Light
         </li>
         <li>
           <span className="sq private" /> Private answer
@@ -309,103 +335,8 @@ function Glance({ m }: { m: MirrorData }) {
   )
 }
 
-function Apart({ m }: { m: MirrorData }) {
-  const rows = m.areas.filter((a) => a.judged > 0)
-  return (
-    <>
-      {m.stats.judged > 0 ? (
-        <ul className="m-bars" aria-label="Against the crowd, by area">
-          {rows.map((a) => (
-            <li key={a.area}>
-              <Bar
-                label={AREA_NAMES[a.area] ?? a.area}
-                value={pct(a.minority, a.judged)}
-                note={
-                  a.lastJudged > 0
-                    ? `${pct(a.minority, a.judged)}% · ${pct(a.lastMinority, a.lastJudged)}% last week`
-                    : `${pct(a.minority, a.judged)}% of ${a.judged}`
-                }
-              />
-            </li>
-          ))}
-          <li className="m-bar-total">
-            <Bar label="All answers" value={pct(m.stats.minority, m.stats.judged)} note={`${pct(m.stats.minority, m.stats.judged)}%`} />
-          </li>
-        </ul>
-      ) : null}
-      {m.stats.judged > 0 ? (
-        <p className="m-note">
-          An answer counts as against the crowd when fewer players picked it than an even split would give: under a
-          third, on a question with three answers.
-        </p>
-      ) : (
-        <p className="m-text">
-          Once a question passes 100 votes, I'll show where you go with the crowd and where you stand apart.
-        </p>
-      )}
-      {m.rarest && (
-        <Split
-          title="Your most unusual answer"
-          split={m.rarest}
-          note="Going against the crowd isn't right or wrong. It's where you're most yourself."
-        />
-      )}
-      {m.divisive && (
-        <Split
-          title="Most divisive this week, worldwide"
-          split={m.divisive}
-          note="The question players split on most evenly. Neither side is the normal one."
-        />
-      )}
-    </>
-  )
-}
-
-function Bar({ label, value, note }: { label: string; value: number; note: string }) {
-  return (
-    <div className="m-bar">
-      <span className="m-bar-label">{label}</span>
-      <span className="m-bar-track" aria-hidden="true">
-        <span className="m-bar-fill" style={{ width: `${Math.max(2, Math.min(100, value))}%` }} />
-      </span>
-      <span className="m-bar-note">{note}</span>
-    </div>
-  )
-}
-
-function Split({ title, split, note }: { title: string; split: AnswerSplit; note: string }) {
-  return (
-    <div className="m-card m-split" role="group" aria-label={title}>
-      <p className="m-eyebrow">{title}</p>
-      <p className="m-split-q">
-        <span aria-hidden="true">{themeStyle(split.theme).icon} </span>
-        {split.prompt}
-      </p>
-      <ul>
-        {split.options.map((o) => (
-          <li key={o.label} className={o.yours ? 'yours' : undefined}>
-            <span className="m-split-label">
-              {o.label}
-              {o.yours && <span className="m-you"> · you</span>}
-            </span>
-            <span className="m-split-pct">{Math.round(o.percent)}%</span>
-            <span className="m-split-track" aria-hidden="true">
-              <span style={{ width: `${o.percent}%` }} />
-            </span>
-          </li>
-        ))}
-      </ul>
-      <p className="m-note">
-        {split.total} votes{edition(split.edition)}
-        {split.final ? '' : ' · still counting'}. {note}
-      </p>
-    </div>
-  )
-}
-
 function Traits({ m }: { m: MirrorData }) {
   const unread = Object.keys(TRAITS).filter((t) => !m.traits.some((r) => r.trait === t))
-  const mid = m.ranked ? 'typical player' : 'middle'
   return (
     <>
       {m.traits.length === 0 ? (
@@ -435,9 +366,7 @@ function Traits({ m }: { m: MirrorData }) {
                   <span className="m-scale-dot" style={{ left: `${t.score}%` }} />
                 </span>
                 <p className="m-trait-meta">
-                  {t.solid ? 'Solid read' : 'Early read'} · {t.answers} {t.answers === 1 ? 'answer' : 'answers'} ·{' '}
-                  {text.science}
-                  {t.ranked ? ' · ranked against players' : ''}
+                  {t.solid ? 'Solid read' : 'Early read'} · {t.answers} {t.answers === 1 ? 'answer' : 'answers'}
                 </p>
               </li>
             )
@@ -445,10 +374,8 @@ function Traits({ m }: { m: MirrorData }) {
         </ul>
       )}
       <p className="m-note">
-        0 to 100, with 50 the {mid}
-        {m.ranked
-          ? '. Ranked reads compare you with everyone who answered on that trait in the same three weeks.'
-          : '. Once enough people play, reads become a rank among players.'}
+        0 to 100: where your answers sit between each question's two ends, with 50 in the middle. It compares you only
+        with yourself, week to week.
       </p>
       <div className="m-side">
         {unread.length > 0 && (
@@ -466,7 +393,6 @@ function Traits({ m }: { m: MirrorData }) {
             A week of everyday answers gives a rough read, not a verdict. Traits like these do predict real outcomes, but
             each by a modest amount, and you are always more than a number.
           </p>
-          <Cite k="soto2019" />
         </div>
       </div>
     </>
@@ -502,17 +428,14 @@ function Moved({ m }: { m: MirrorData }) {
           Traits shift across a lifetime, people who set out to change a trait often do move it a little, and small
           if-then plans make new habits stick.
         </p>
-        <Cite k="roberts2006" />
-        <Cite k="hudson2015" />
-        <Cite k="gollwitzer2006" />
       </div>
     </>
   )
 }
 
-function AllOfYou({ m }: { m: MirrorData }) {
-  const answered = new Map(m.themes.map((t) => [t.theme, t]))
-  const deepest = m.themes.filter((t) => t.depth === 'deep').slice(0, 3)
+function AllOfYou({ themes: read }: { themes: ThemeRead[] }) {
+  const answered = new Map(read.map((t) => [t.theme, t]))
+  const deepest = read.filter((t) => t.depth === 'deep').slice(0, 3)
   const unknown = Object.keys(THEMES).filter((t) => !answered.has(t))
   return (
     <>
@@ -589,11 +512,9 @@ function WhoYouWere({ m }: { m: MirrorData }) {
       {leanings(m.traits)
         .slice(0, 3)
         .map((l) => {
-          const src = SOURCES[l.text.source]
           return (
             <li key={l.read.trait} className="m-card m-who-card">
               <div className="m-who-top">
-                <span className="m-badge">{STRENGTH_LABEL[src.strength]}</span>
                 <span className="m-who-trait">{l.text.name}</span>
               </div>
               <p className="m-who-headline">{l.side.headline}</p>
@@ -603,9 +524,6 @@ function WhoYouWere({ m }: { m: MirrorData }) {
                   You said: {l.read.evidence.map((e) => `“${e}”`).join(', ')}
                 </p>
               )}
-              <p className="m-who-research">
-                {l.text.research} <Cite k={l.text.source} inline />
-              </p>
               <p className="m-who-kind">
                 {l.read.solid
                   ? 'Prediction: a solid read, from enough answers to be worth testing in real life.'
@@ -618,34 +536,7 @@ function WhoYouWere({ m }: { m: MirrorData }) {
   )
 }
 
-const fmt = (x: number) => (Number.isInteger(x) ? String(x) : x.toFixed(1))
-
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
-
-const STRENGTH_WORDS: Record<MirrorData['strengths'][number]['kind'], (you: number, med: string) => string> = {
-  days: (you, med) => `You came back on ${plural(you, 'day', 'days')}. The typical player came back on ${med}.`,
-  deepest: (you, med) =>
-    `You chose the most revealing answer ${plural(you, 'time', 'times')}. The typical player did ${med}.`,
-  minority: (you, med) => `You went against the crowd ${plural(you, 'time', 'times')}. The typical player did ${med}.`,
-  learned: (you, med) => `You learned something from ${plural(you, 'card', 'cards')}. The typical player did from ${med}.`,
-  steps: (you, med) => `You tried ${plural(you, 'small step', 'small steps')}. The typical player tried ${med}.`,
-}
-
-function Strengths({ m }: { m: MirrorData }) {
-  return (
-    <>
-      <ul className="m-strengths">
-        {m.strengths.map((s) => (
-          <li key={s.kind}>
-            <span className="m-strength-n">{s.you}</span>
-            <span>{STRENGTH_WORDS[s.kind](s.you, fmt(s.median))}</span>
-          </li>
-        ))}
-      </ul>
-      <p className="m-note">Compared with {m.strengths[0].players} players this week.</p>
-    </>
-  )
-}
 
 const STATUS_WORDS: Record<StepStatus, string> = {
   started: 'In progress',
@@ -722,21 +613,8 @@ function Steps({ m, today, reload }: { m: MirrorData; today: string; reload: () 
   )
 }
 
-function NextWeek({
-  m,
-  today,
-  reload,
-  name,
-  line,
-}: {
-  m: MirrorData
-  today: string
-  reload: () => void
-  name: string | null
-  line: string | null
-}) {
+function NextWeek({ m, today, reload }: { m: MirrorData; today: string; reload: () => void }) {
   const [error, setError] = useState(false)
-  const [shared, setShared] = useState(false)
   const early = m.traits.filter((t) => !t.solid && TRAITS[t.trait]).slice(0, 2)
   async function start(questionId: string, optionId: string) {
     setError(false)
@@ -745,19 +623,6 @@ function NextWeek({
       reload()
     } catch {
       setError(true)
-    }
-  }
-  async function shareCard() {
-    const text = `This week I was ${name}. ${line ?? ''} Find yours on The Persona Index: ${window.location.origin}`
-    try {
-      if (navigator.share) {
-        await navigator.share({ text })
-        return
-      }
-      await navigator.clipboard.writeText(text)
-      setShared(true)
-    } catch {
-      // the share sheet was closed
     }
   }
   return (
@@ -802,20 +667,6 @@ function NextWeek({
             </p>
           </div>
         )}
-        <div className="m-card">
-          <p className="m-eyebrow">See yourself from outside</p>
-          <p>
-            People who know you well often see things you can't, especially how you come across. Show someone your card
-            and ask: does this sound like me?
-          </p>
-          <Cite k="vazire2010" />
-          {name && (
-            <button type="button" className="m-button" onClick={shareCard}>
-              Share my identity card
-            </button>
-          )}
-          {shared && <p className="m-note">Copied. Paste it anywhere.</p>}
-        </div>
       </div>
     </>
   )
@@ -842,27 +693,7 @@ function RoadAhead() {
   )
 }
 
-function Cite({ k, inline = false }: { k: SourceKey; inline?: boolean }) {
-  const s: { title: string; url?: string; strength: 'strong' | 'moderate' } = SOURCES[k]
-  const body = s.url ? (
-    <a href={s.url} target="_blank" rel="noreferrer">
-      {s.title}
-    </a>
-  ) : (
-    s.title
-  )
-  return inline ? (
-    <span className="m-cite">
-      {STRENGTH_LABEL[s.strength]} · {body}
-    </span>
-  ) : (
-    <p className="m-cite">
-      {STRENGTH_LABEL[s.strength]} · {body}
-    </p>
-  )
-}
-
-function Footer({ cited, reload }: { cited: SourceKey[]; reload: () => void }) {
+function Footer({ reload }: { reload: () => void }) {
   const [step, setStep] = useState<'idle' | 'confirm' | 'deleting' | 'done' | 'failed'>('idle')
   async function deleteAll() {
     setStep('deleting')
@@ -883,8 +714,12 @@ function Footer({ cited, reload }: { cited: SourceKey[]; reload: () => void }) {
         <p>
           Your answers are kept on our server under an anonymous key made from this phone's code: no name, no email, no
           account. That's how this mirror is built. Intimate answers are kept only as "a private answer", never what you
-          chose. Evening answers stay on this phone. Everything kept is deleted after five weeks, or right now with the
-          button below.
+          chose. Check-in answers stay on this phone.
+        </p>
+        <p>
+          Your answers and steps are deleted after five weeks. For your month, quarter and year, a small note of each
+          week stays for 13 months: how many answers, how deep they went, your three clearest answers and the steps that
+          helped. You can delete it all right now with the button below.
         </p>
       </div>
       {step === 'idle' && (
@@ -894,7 +729,7 @@ function Footer({ cited, reload }: { cited: SourceKey[]; reload: () => void }) {
       )}
       {step === 'confirm' && (
         <div className="m-confirm">
-          <p>This deletes your answers, steps and points, here and on our server.</p>
+          <p>This deletes your answers, steps and weekly notes, here and on our server.</p>
           <button type="button" className="m-button danger" onClick={deleteAll}>
             Yes, delete it all
           </button>
@@ -913,20 +748,301 @@ function Footer({ cited, reload }: { cited: SourceKey[]; reload: () => void }) {
           </button>
         </p>
       )}
-      {cited.length > 0 && (
-        <div className="m-sources">
-          <p className="m-eyebrow" id="m-sources">
-            Sources
-          </p>
-          <ul aria-labelledby="m-sources">
-            {cited.map((k) => (
-              <li key={k}>
-                <Cite k={k} inline />
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
     </footer>
+  )
+}
+
+// "15 October": the day first, whatever the phone's locale.
+const longDate = (iso: string) => {
+  const d = new Date(`${iso}T00:00:00Z`)
+  return `${d.getUTCDate()} ${d.toLocaleDateString('en', { month: 'long', timeZone: 'UTC' })}`
+}
+
+// The month, quarter or year: this phone's weeks added up, set only against
+// its own earlier weeks and the period before.
+function PeriodPage({ p, reload }: { p: PeriodMirror; reload: () => void }) {
+  const noun = p.period
+  const name = archetype(p.traits)
+  const line = tagline(p.traits)
+  const lean = leanings(p.traits)
+  const moved = noun !== 'year' && p.traits.some((t) => t.weekly.filter((w) => w.score !== undefined).length >= 2)
+  const parts: Part[] = [
+    { key: 'weeks', title: 'Week by week', body: <WeekByWeek p={p} />, show: true },
+    { key: 'traits', title: 'Your trait read', body: <PeriodTraits p={p} />, show: true },
+    { key: 'moved', title: "How you've moved", body: <PeriodMoved p={p} />, show: moved },
+    { key: 'moments', title: 'The answers that said the most', body: <Moments p={p} />, show: p.moments.length > 0 },
+    { key: 'who', title: `Who you were this ${noun}`, body: <PeriodWho p={p} />, show: lean.length > 0 },
+    { key: 'all', title: 'All of you', body: <AllOfYou themes={p.themes} />, show: p.themes.length > 0 },
+    { key: 'steps', title: 'Your small steps', body: <PeriodSteps p={p} />, show: p.stats.stepsStarted > 0 },
+  ]
+  return (
+    <>
+      <header className="m-hero">
+        <p className="m-eyebrow">
+          Your {adjOf(noun)} mirror · {periodName(noun, p.label)} ·{' '}
+          <span className="m-nowrap">
+            Week {p.weeks.length} of {p.weeksTotal}
+          </span>
+        </p>
+        <h2>
+          {name ? (
+            <>
+              This {noun} you were <span className="m-name">{name}.</span>
+            </>
+          ) : (
+            `This ${noun} is just getting started.`
+          )}
+        </h2>
+        {line && <p className="m-tagline">{line}</p>}
+        <p className="m-summary">{periodSummary(p)}</p>
+      </header>
+      <PeriodTiles p={p} />
+      {numbered(parts)}
+      <p className="m-text m-close">{PERIOD_CLOSE[noun]}</p>
+      <Footer reload={reload} />
+    </>
+  )
+}
+
+function PeriodTiles({ p }: { p: PeriodMirror }) {
+  const s = p.stats
+  const prev = p.previous
+  const before = prev && p.previousLabel ? periodName(p.period, p.previousLabel, false) : null
+  // Weeks with nothing on record are left out of both counts, and the notes say so.
+  const all = s.weeksSoFar === p.weeks.length
+  const tiles: [string, string, string][] = [
+    [
+      'Days active',
+      `${s.daysActive} of ${s.daysSoFar}`,
+      prev && before
+        ? `${prev.daysActive} of ${prev.daysSoFar} in ${before}`
+        : all
+          ? 'question days so far'
+          : 'question days on record',
+    ],
+    [
+      'Weeks you came back',
+      `${s.weeksActive} of ${s.weeksSoFar}`,
+      prev && before
+        ? `${prev.weeksActive} of ${prev.weeksSoFar} in ${before}`
+        : all
+          ? 'weeks with an answer'
+          : 'weeks on record',
+    ],
+    ['Answers', `${s.answers}`, s.private > 0 ? `${s.private} kept private` : `this ${p.period}`],
+    ['Went deepest', `${s.deepest}`, 'times you chose the most revealing answer'],
+    s.stepsStarted > 0
+      ? ['Small steps kept', `${s.stepsTried} of ${s.stepsStarted}`, `${s.stepsHelped} helped`]
+      : ['Small steps kept', '–', 'Pick one with "I\'ll try it"'],
+  ]
+  return (
+    <ul className="m-tiles" aria-label={`This ${p.period} in numbers`}>
+      {tiles.map(([label, value, note]) => (
+        <li key={label} className="m-tile">
+          <span className="m-tile-label">{label}</span>
+          <span className="m-tile-value">{value}</span>
+          <span className="m-tile-note">{note}</span>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+// One bar per week so far, as tall as the days answered in it. A week with
+// nothing on record (before the mirror kept notes) is drawn empty and says so.
+function WeekByWeek({ p }: { p: PeriodMirror }) {
+  const kept = p.weeks.filter((w) => w.kept)
+  let run = 0
+  let best = 0
+  for (const w of kept) {
+    run = w.answers > 0 ? run + 1 : 0
+    best = Math.max(best, run)
+  }
+  const active = kept.filter((w) => w.answers > 0).length
+  const toCome = p.weeksTotal - p.weeks.length
+  const rhythm =
+    active === 0
+      ? `No answers yet this ${p.period}. Whenever you come back, it starts filling in.`
+      : `You came back in ${active} of ${plural(kept.length, 'week', 'weeks')}` +
+        (best >= 2 ? `, ${best} in a row at best.` : '.') +
+        " A week off is fine; the mirror picks up wherever you left off."
+  return (
+    <>
+      <ol className={`m-weeks ${p.period}`} aria-label="Week by week">
+        {p.weeks.map((w) => (
+          <li
+            key={w.monday}
+            className={w.kept ? 'm-week' : 'm-week none'}
+            aria-label={
+              w.kept
+                ? `Week ${w.week}: ${w.daysActive} of ${w.daysSoFar} days, ${plural(w.answers, 'answer', 'answers')}`
+                : `Week ${w.week}: nothing on record`
+            }
+          >
+            <span className="m-week-track" aria-hidden="true">
+              <span style={{ height: `${Math.min(100, (w.daysActive / 6) * 100)}%` }} />
+            </span>
+            {p.period !== 'year' && (
+              <span className="m-week-num" aria-hidden="true">
+                W{w.week}
+              </span>
+            )}
+          </li>
+        ))}
+      </ol>
+      <p className="m-note">
+        {p.period === 'year' && p.weeks.length > 0 ? `Each bar is a week, from week ${p.weeks[0].week} to week ${p.weeks[p.weeks.length - 1].week}. ` : ''}
+        A full bar is all six question days.
+        {toCome > 0 ? ` ${plural(toCome, 'week', 'weeks')} still to come.` : ''}
+      </p>
+      <p className="m-text">{rhythm}</p>
+    </>
+  )
+}
+
+function PeriodTraits({ p }: { p: PeriodMirror }) {
+  if (p.traits.length === 0) {
+    return <p className="m-text">Your trait read starts once two answers touch the same trait. A few more days will do it.</p>
+  }
+  return (
+    <>
+      <ul className="m-traits" aria-label="Trait read">
+        {p.traits.map((t) => {
+          const text = TRAITS[t.trait]
+          if (!text) return null
+          return (
+            <li key={t.trait}>
+              <div className="m-trait-head">
+                <span className="m-trait-name">{text.name}</span>
+                <span className="m-trait-score">
+                  {t.score}
+                  {t.change !== undefined && t.change !== 0 && (
+                    <span className="m-change">
+                      {' '}
+                      {t.change > 0 ? '+' : '−'}
+                      {Math.abs(t.change)} since your first weeks
+                    </span>
+                  )}
+                </span>
+              </div>
+              <span className="m-scale" aria-hidden="true">
+                <span className="m-scale-mid" />
+                <span className="m-scale-dot" style={{ left: `${t.score}%` }} />
+              </span>
+              <p className="m-trait-meta">
+                {t.solid ? 'Solid read' : 'Early read'} · {plural(t.answers, 'answer', 'answers')}
+              </p>
+            </li>
+          )
+        })}
+      </ul>
+      <p className="m-note">
+        0 to 100: where your answers this {p.period} sit between each question's two ends, with 50 in the middle. The
+        change sets your latest weeks against your first ones; it compares you only with yourself.
+      </p>
+    </>
+  )
+}
+
+function PeriodMoved({ p }: { p: PeriodMirror }) {
+  const rows = p.traits.filter((t) => TRAITS[t.trait] && t.weekly.filter((w) => w.score !== undefined).length >= 2)
+  return (
+    <ul className="m-moved" aria-label="Your reads week by week">
+      {rows.map((t) => (
+        <li key={t.trait}>
+          <span className="m-trait-name">{TRAITS[t.trait].name}</span>
+          <span className="m-minis">
+            {t.weekly.map((h) => (
+              <span key={h.week} className="m-mini" aria-label={`Week ${h.week}: ${h.score ?? 'no read'}`}>
+                <span className={h.score === undefined ? 'm-mini-track none' : 'm-mini-track'} aria-hidden="true">
+                  <span style={{ height: `${h.score ?? 0}%` }} />
+                </span>
+                <span className="m-mini-week" aria-hidden="true">
+                  W{h.week}
+                </span>
+              </span>
+            ))}
+          </span>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+// The deepest answers that leaned clearly one way, in the person's own words,
+// with the first line of the card each one showed.
+function Moments({ p }: { p: PeriodMirror }) {
+  return (
+    <>
+      <ul className="m-moments" aria-label="The answers that said the most">
+        {p.moments.map((mo) => (
+          <li key={`${mo.date}-${mo.prompt}`} className="m-card m-moment" style={themeVars(mo.theme)}>
+            <p className="m-step-meta">
+              <span aria-hidden="true">{themeStyle(mo.theme).icon} </span>
+              {themeName(mo.theme)} · {longDate(mo.date)}
+              {edition(mo.edition)}
+            </p>
+            <p className="m-moment-prompt">{mo.prompt}</p>
+            <blockquote>“{mo.label}”</blockquote>
+            {mo.headline && <p className="m-moment-shows">{mo.headline}</p>}
+          </li>
+        ))}
+      </ul>
+      <p className="m-note">Your deepest answers this {p.period} that leaned clearly one way. Private answers are never shown.</p>
+    </>
+  )
+}
+
+function PeriodWho({ p }: { p: PeriodMirror }) {
+  return (
+    <ul className="m-who">
+      {leanings(p.traits)
+        .slice(0, 3)
+        .map((l) => (
+          <li key={l.read.trait} className="m-card m-who-card">
+            <div className="m-who-top">
+              <span className="m-who-trait">{l.text.name}</span>
+            </div>
+            <p className="m-who-headline">{l.side.headline}</p>
+            <p>{l.side.prediction}</p>
+            <p className="m-who-kind">
+              {l.read.solid
+                ? `A solid read, from ${l.read.answers} answers this ${p.period}.`
+                : `Early read: from ${l.read.answers} answers. Treat it as a hunch to check.`}
+            </p>
+          </li>
+        ))}
+    </ul>
+  )
+}
+
+function PeriodSteps({ p }: { p: PeriodMirror }) {
+  const s = p.stats
+  return (
+    <>
+      {p.helped.length > 0 && (
+        <ul className="m-steps" aria-label="Steps that helped">
+          {p.helped.map((h) => (
+            <li key={`${h.started}-${h.step}`} className="m-card m-step" style={themeVars(h.theme)}>
+              <p className="m-step-meta">
+                <span aria-hidden="true">{themeStyle(h.theme).icon} </span>
+                {themeName(h.theme)} · started {longDate(h.started)} ·{' '}
+                <span className="m-status helped">Helped</span>
+              </p>
+              <p>{h.step}</p>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="m-card">
+        <p className="m-eyebrow">This {p.period}</p>
+        <p>
+          {plural(s.stepsStarted, 'step', 'steps')} started, {s.stepsTried} tried, {s.stepsHelped} helped.{' '}
+          {s.stepsHelped > 0
+            ? 'The ones that helped are worth keeping.'
+            : 'Every try teaches you something, including the ones that change nothing.'}
+        </p>
+      </div>
+    </>
   )
 }

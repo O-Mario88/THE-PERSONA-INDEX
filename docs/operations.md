@@ -37,12 +37,20 @@ Edwin asked (2026-10-15) for the weekly mirror to be built from the database, so
 - `mirror_answers` and `mirror_steps` (`backend/migrations/002_mirror.sql`) hold one row per answer and per small step, keyed by an HMAC of the device id under its own label (`mirror:`). It is the same for all of one phone's rows, so its week can be read back, and differs from every per-question vote key, so the `votes` table on its own still cannot be joined into a profile.
 - An intimate answer is stored only as "a private answer": no option, and an HMAC in place of its question id. Private answers never shape a trait read.
 - Rows are deleted after five weeks (the mirror reads three weeks of answers for each of the last three weeks) and at once on `DELETE /api/mirror`, which the app's "Delete everything" calls. Anonymous vote counts stay.
-- `GET /api/mirror?date=` (header `Authorization: Device <token>`, `private, no-store`) builds the week: days, crowd verdicts from the real tallies (none below 100 votes on a question), trait reads (scoring version 1 in `backend/mirror.go`, ranked among players only once 30 have a read), themes, steps and strengths against the median player.
-- Crowd figures are recomputed at most every 10 minutes per instance by reading three weeks of every phone's answers. That is fine at the 50k gate; before 1M daily players it becomes a table of weekly figures updated as votes arrive.
+- `GET /api/mirror?date=` (header `Authorization: Device <token>`, `private, no-store`) builds the week from that phone's rows alone: days (each answer shown by how deep it went), trait reads (scoring version 1 in `backend/mirror.go`), themes and steps, set only against the phone's own earlier weeks. Edwin (2026-10-15): it speaks to people "about who they are and how they can change, not comparing them with other people", so it reads no other phone's answers and no vote tallies, and costs one device's rows per request.
+
+## The monthly, quarterly and yearly mirrors
+
+Answers go after five weeks, so the longer mirrors (`GET /api/mirror/{month|quarter|year}?date=`, same header and `no-store`) are built from a small note of each finished week:
+
+- Every hour the worker folds each week that ended at least a week ago and still has all its answers kept (`FoldWeeks` in `backend/period.go`): one row per phone in `mirror_weeks` (`backend/migrations/003_mirror_weeks.sql`) under the same mirror key, plus a mark in `mirror_folds` that the week is done for everyone. Folding again changes nothing, so several instances may run it.
+- A note holds counts (days, answers, private answers, deepest answers, steps), each theme's answers and depth, each trait's sum of positions, the steps that helped in their own words, and the three answers that said the most: the deepest answers whose option leans clearly on a trait, with their question, answer and the first sentence of their card. Never a private answer's question or option, and nothing about other phones.
+- Notes are deleted after 400 days (a whole ISO year, readable through the January after), and at once on `DELETE /api/mirror`.
+- A week belongs to the month, quarter and year that hold its Thursday. Weeks not folded yet are read from the kept answers the same way, so a week looks the same before and after it folds. A week with neither (before notes began) is shown as "nothing on record", never as a week off. The month or quarter before is shown for comparison only when every one of its weeks is on record.
 
 ## Daily rollover
 
-Each phone plays the edition for its own local date, from `GET /api/editions/{date}`, so the morning questions arrive in the person's morning. The evening check-in opens at 5 pm on the phone's clock; its follow-up answers stay on the phone and are never sent.
+Each phone plays the edition for its own local date, from `GET /api/editions/{date}`, so the morning three arrive in the person's morning. At 4 pm on the phone's clock the evening opens by itself: a check-in on the morning's answers, then three more questions. The check-in answers stay on the phone and are never sent. The day turns over at the phone's midnight.
 
 Time zones run from UTC-12 to UTC+14, so a date is today somewhere for about 50 hours: from 10:00 UTC the day before until 12:00 UTC the day after. The server serves a date, and accepts votes on its questions, only in that window, plus 10 minutes of grace for votes. A set is cached at most 5 minutes at the edge and 1 minute in the browser, shorter than the grace. Results stay readable for a day after the window closes. Edition numbers and question ids are the same everywhere for a date.
 
@@ -71,7 +79,3 @@ GROUP BY 1, 2 HAVING sum(count) >= 100 ORDER BY learned_rate;
 ```
 
 Cards at the bottom with enough ratings are the ones to rewrite. (Automatic retirement from these numbers is the next step.)
-
-## Compare with someone
-
-Handled entirely on the phones: the link carries the edition number and the sender's chosen answers (never intimate ones) in the URL fragment, which browsers do not send to the server.

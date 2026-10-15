@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { recalledEvening, rememberEvening, SKIPPED, type Option, type Question } from './api'
-import { awardReflection } from './game'
 import { recordEvening } from './profile'
 import type { Done } from './QuestionCard'
 import { splitReveal } from './reveal'
@@ -14,13 +13,12 @@ type Props = {
   onNext: () => void
 }
 
-// One evening follow-up on its own screen: a quiet line with this morning's
-// answer, the question, tap-only options, then a short reflection. Lighter
-// than the morning, and nothing here is sent to the server.
+// One check-in on its own screen, at the start of the evening: a quiet line
+// with this morning's answer, the question, tap-only options, then a short
+// reflection. Lighter than a question, and nothing here is sent to the server.
 export function FollowUpCard({ question, said, date, onDone, onNext }: Props) {
   const followUp = question.followUp!
   const [choice, setChoice] = useState<string | null>(() => recalledEvening(question.id))
-  const [earned, setEarned] = useState(0)
   const theme = themeStyle(question.theme)
 
   useEffect(() => {
@@ -32,7 +30,6 @@ export function FollowUpCard({ question, said, date, onDone, onNext }: Props) {
     if (!o) return
     rememberEvening(question.id, optionId)
     recordEvening(question, o, date)
-    setEarned(awardReflection(question.id))
     setChoice(optionId)
   }
 
@@ -87,16 +84,15 @@ export function FollowUpCard({ question, said, date, onDone, onNext }: Props) {
       {chosen && (
         <div className="answer">
           <p className="you-chose">
-            <span className="eyebrow">Tonight</span>
+            <span className="eyebrow">This evening</span>
             <span className="chosen">{chosen.label}</span>
-            {earned > 0 && <span className="points-pill">+{earned}</span>}
           </p>
-          <div className="insight reflection" role="note" aria-label="Tonight's reflection">
+          <div className="insight reflection" role="note" aria-label="Your reflection">
             <p className="insight-headline">{splitReveal(chosen.reflection).headline}</p>
             {splitReveal(chosen.reflection).body && (
               <p className="insight-body">{splitReveal(chosen.reflection).body}</p>
             )}
-            <p className="insight-note">For self-reflection, not a diagnosis. Evening answers stay on this phone.</p>
+            <p className="insight-note">For self-reflection, not a diagnosis. Check-in answers stay on this phone.</p>
           </div>
           <button type="button" className="next" onClick={onNext}>
             Next

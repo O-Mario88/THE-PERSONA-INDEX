@@ -66,7 +66,8 @@ type memoryStore struct {
 func newMemoryStore() *memoryStore {
 	return &memoryStore{
 		byIdemKey: map[string]int{}, byDedupe: map[string]int{}, counts: map[string]map[string]int{},
-		mirror: memoryMirror{answers: map[string]map[string]MirrorAnswer{}, steps: map[string]map[string]MirrorStep{}},
+		mirror: memoryMirror{answers: map[string]map[string]MirrorAnswer{}, steps: map[string]map[string]MirrorStep{},
+			weeks: map[string]map[string]WeekSummary{}, folds: map[string]bool{}},
 	}
 }
 

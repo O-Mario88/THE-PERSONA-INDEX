@@ -127,13 +127,13 @@ export function pickThree(
   return picked.length === 3 ? picked : fallback
 }
 
-export type Half = 'morning' | 'afternoon'
+export type Half = 'morning' | 'evening'
 
 const pickKey = (today: string, half: Half) => (half === 'morning' ? `pi.pick.${today}` : `pi.pick.${today}.pm`)
 
 // Each half's pick is fixed at first sight, so the three don't change while
-// someone is answering them. The afternoon is picked when it opens, after the
-// morning's answers, and never repeats the morning's questions or themes.
+// someone is answering them. The evening is picked when it opens at 4 pm,
+// after the morning's answers, and never repeats the morning's questions or themes.
 export function todaysPick(
   pool: Question[],
   defaults: Question[],
@@ -164,7 +164,7 @@ export function todaysPick(
 export function forgetPick(today: string) {
   try {
     localStorage.removeItem(pickKey(today, 'morning'))
-    localStorage.removeItem(pickKey(today, 'afternoon'))
+    localStorage.removeItem(pickKey(today, 'evening'))
   } catch {
     // nothing to do
   }

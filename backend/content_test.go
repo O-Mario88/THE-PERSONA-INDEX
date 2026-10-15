@@ -229,7 +229,7 @@ func TestDailyPick(t *testing.T) {
 			if !ok || set.Date != date || (len(set.Questions) == 0) != set.Review {
 				t.Fatalf("%s: expected questions or a review day, got %+v", date, set)
 			}
-			for _, q := range append(append([]Question{}, set.Questions...), set.Afternoon...) {
+			for _, q := range append(append([]Question{}, set.Questions...), set.Evening...) {
 				if !strings.HasPrefix(q.ID, date+"-") {
 					t.Fatalf("%s: id %s does not carry the date", date, q.ID)
 				}

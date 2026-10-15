@@ -429,8 +429,9 @@ func loadContentBank(raw []byte) (contentBank, error) {
 }
 
 // The week: Monday to Saturday bring three questions in the morning and three
-// in the afternoon; Sunday brings none and is the day for the weekly mirror.
-const halves = 2 // 0 the morning, 1 the afternoon
+// more at 4 pm, for the evening; Sunday brings none and is the day for the
+// weekly mirror.
+const halves = 2 // 0 the morning, 1 the evening
 
 // questionDay numbers the days that bring questions, counting from
 // 1970-01-01 (unix day 0), so a Sunday never uses up a question. It is -1 for
@@ -443,8 +444,8 @@ func questionDay(d int) int {
 }
 
 // GetSet picks the day's questions: three for the morning and three for the
-// afternoon. The pick is random-looking but deterministic: the same date
-// always gives the same set, so every server instance and every player sees
+// evening. The pick is random-looking but deterministic: the same date
+// always gives the same set, so every server instance and every person sees
 // the same edition. Each half draws from three of the four life areas, the
 // two halves resting different areas, so every area comes up every day; within
 // an area no question repeats until every question in that area has been used.
@@ -463,7 +464,7 @@ func (b contentBank) GetSet(date string) (DailySet, bool) {
 		set.Review, set.Questions = true, []Question{} // an empty list, never null, for the phone
 		return set, true
 	}
-	for h, half := range []*[]Question{&set.Questions, &set.Afternoon} {
+	for h, half := range []*[]Question{&set.Questions, &set.Evening} {
 		for ai, area := range areas {
 			if i, ok := b.mainPick(ai, k, h); ok {
 				q := b.dailyQuestion(b.byArea[area][i], date)
@@ -498,7 +499,7 @@ func (b contentBank) mainPick(ai, k, h int) (int, bool) {
 }
 
 // The edition pool: both halves' defaults plus extras, so each phone can
-// pick its own three for each half by the player's interests (computed on
+// pick its own three for each half by the person's interests (computed on
 // the phone). Extras come from a second fixed rotation per area, poolPerArea
 // slots a day; an extra that is a default question within poolSpacing
 // question days is dropped, so nobody sees a question twice in a week.

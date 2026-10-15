@@ -76,6 +76,63 @@ type MirrorStore interface {
 	// DeleteMirrorBefore deletes answers dated, and steps started, before date,
 	// and reports how many rows went.
 	DeleteMirrorBefore(ctx context.Context, date string) (int, error)
+
+	// SaveWeekSummaries writes week summaries; writing one again replaces it.
+	// A summary is written only while its device still has an answer dated in
+	// that week or the week before, the answers it is made from, so a fold
+	// that races a phone's "Delete everything" cannot bring its week back.
+	SaveWeekSummaries(ctx context.Context, ws []WeekSummary) error
+	// WeekSummaries returns one device's summaries of weeks starting in
+	// [from, to], oldest first.
+	WeekSummaries(ctx context.Context, deviceKey, from, to string) ([]WeekSummary, error)
+	// MarkFolded notes that the week starting monday is folded for every device.
+	MarkFolded(ctx context.Context, monday string) error
+	// FoldedWeeks returns the folded Mondays in [from, to], oldest first.
+	FoldedWeeks(ctx context.Context, from, to string) ([]string, error)
+	// DeleteWeeksBefore deletes the summaries and fold marks of weeks starting
+	// before monday, and reports how many rows went.
+	DeleteWeeksBefore(ctx context.Context, monday string) (int, error)
+}
+
+// WeekSummary is one phone's finished week, folded so the monthly, quarterly
+// and yearly mirrors outlive the answers (period.go). It keeps counts, sums
+// and the words worth keeping; a private answer only adds to the counts.
+type WeekSummary struct {
+	DeviceKey    string                `json:"-"`
+	Monday       string                `json:"-"`
+	DaysActive   int                   `json:"daysActive,omitempty"`
+	Answers      int                   `json:"answers,omitempty"`
+	Private      int                   `json:"private,omitempty"`
+	Deepest      int                   `json:"deepest,omitempty"`
+	Learned      int                   `json:"learned,omitempty"`
+	Rated        int                   `json:"rated,omitempty"`
+	StepsStarted int                   `json:"stepsStarted,omitempty"`
+	StepsTried   int                   `json:"stepsTried,omitempty"`
+	StepsHelped  int                   `json:"stepsHelped,omitempty"`
+	Themes       map[string]ThemeTally `json:"themes,omitempty"`
+	Traits       map[string]TraitTally `json:"traits,omitempty"`
+	Moments      []Moment              `json:"moments,omitempty"` // the week's top moments (topMoments)
+	Helped       []HelpedStep          `json:"helped,omitempty"`
+}
+
+type ThemeTally struct {
+	N        int `json:"n"`
+	Private  int `json:"private,omitempty"`
+	DepthSum int `json:"depthSum,omitempty"`
+}
+
+// TraitTally is the sum of an answer's positions on a trait (traitPosition).
+type TraitTally struct {
+	N   int     `json:"n"`
+	Sum float64 `json:"sum"`
+}
+
+// summarySources is the range of answer dates a week's summary is made
+// from: the week before (for the words of steps started from its cards) and
+// the week itself.
+func summarySources(monday string) (from, to string) {
+	m := mustDate(monday)
+	return m.AddDate(0, 0, -7).Format(dateLayout), m.AddDate(0, 0, 6).Format(dateLayout)
 }
 
 // mirrorRetention is how long answers and steps are kept. The mirror reads
@@ -85,6 +142,8 @@ const mirrorRetention = 35 * 24 * time.Hour
 type memoryMirror struct {
 	answers map[string]map[string]MirrorAnswer // device key -> question id -> answer
 	steps   map[string]map[string]MirrorStep
+	weeks   map[string]map[string]WeekSummary // device key -> Monday -> summary
+	folds   map[string]bool                   // folded Mondays
 }
 
 func (m *memoryStore) SaveAnswer(_ context.Context, a MirrorAnswer) error {
@@ -186,6 +245,7 @@ func (m *memoryStore) ForgetDevice(_ context.Context, deviceKey string) error {
 	defer m.mu.Unlock()
 	delete(m.mirror.answers, deviceKey)
 	delete(m.mirror.steps, deviceKey)
+	delete(m.mirror.weeks, deviceKey)
 	return nil
 }
 
@@ -207,6 +267,82 @@ func (m *memoryStore) DeleteMirrorBefore(_ context.Context, date string) (int, e
 				delete(byQ, q)
 				n++
 			}
+		}
+	}
+	return n, nil
+}
+
+func (m *memoryStore) SaveWeekSummaries(_ context.Context, ws []WeekSummary) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	for _, w := range ws {
+		from, to := summarySources(w.Monday)
+		sourced := false
+		for _, a := range m.mirror.answers[w.DeviceKey] {
+			sourced = sourced || (a.Date >= from && a.Date <= to)
+		}
+		if !sourced {
+			continue
+		}
+		byMonday := m.mirror.weeks[w.DeviceKey]
+		if byMonday == nil {
+			byMonday = map[string]WeekSummary{}
+			m.mirror.weeks[w.DeviceKey] = byMonday
+		}
+		byMonday[w.Monday] = w
+	}
+	return nil
+}
+
+func (m *memoryStore) WeekSummaries(_ context.Context, deviceKey, from, to string) ([]WeekSummary, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var out []WeekSummary
+	for monday, w := range m.mirror.weeks[deviceKey] {
+		if monday >= from && monday <= to {
+			out = append(out, w)
+		}
+	}
+	slices.SortFunc(out, func(x, y WeekSummary) int { return strings.Compare(x.Monday, y.Monday) })
+	return out, nil
+}
+
+func (m *memoryStore) MarkFolded(_ context.Context, monday string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.mirror.folds[monday] = true
+	return nil
+}
+
+func (m *memoryStore) FoldedWeeks(_ context.Context, from, to string) ([]string, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var out []string
+	for monday := range m.mirror.folds {
+		if monday >= from && monday <= to {
+			out = append(out, monday)
+		}
+	}
+	slices.Sort(out)
+	return out, nil
+}
+
+func (m *memoryStore) DeleteWeeksBefore(_ context.Context, monday string) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	n := 0
+	for _, byMonday := range m.mirror.weeks {
+		for d := range byMonday {
+			if d < monday {
+				delete(byMonday, d)
+				n++
+			}
+		}
+	}
+	for d := range m.mirror.folds {
+		if d < monday {
+			delete(m.mirror.folds, d)
+			n++
 		}
 	}
 	return n, nil

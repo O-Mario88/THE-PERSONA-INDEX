@@ -56,13 +56,3 @@ export function themeVars(slug: string | undefined): Record<string, string> {
   const t = themeStyle(slug)
   return { '--t-from': t.from, '--t-to': t.to }
 }
-
-// Days played among the seven ending on today (inclusive), from dates YYYY-MM-DD.
-export function daysPlayedThisWeek(days: string[], today: string): number {
-  const end = Date.parse(`${today}T00:00:00Z`)
-  const start = end - 6 * 86400_000
-  return new Set(days.filter((d) => {
-    const t = Date.parse(`${d}T00:00:00Z`)
-    return t >= start && t <= end
-  })).size
-}

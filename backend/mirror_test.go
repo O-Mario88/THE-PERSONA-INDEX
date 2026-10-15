@@ -15,8 +15,8 @@ import (
 // Acceptance tests for the weekly mirror (2026-10-15): Edwin asked for the
 // mirror to be "fetched direct from the database", so each phone's answers
 // are kept on the server under an anonymous device key, and GET /api/mirror
-// builds the week from them next to the real crowd. Never fabricated: a
-// comparison the stored data cannot support is left out.
+// builds the week from them alone. Never fabricated: a read the stored
+// answers cannot support yet is left out.
 
 // mirrorBank publishes the same small edition every day: three questions
 // with themes and trait weights, plus a deep sadness question and a private
@@ -24,7 +24,7 @@ import (
 type mirrorBank struct{}
 
 func mirrorInsight(step string) *Insight {
-	return &Insight{Reveal: "A reveal.", Step: step}
+	return &Insight{Reveal: "A headline about this answer. And a little more.", Step: step}
 }
 
 func (mirrorBank) GetSet(date string) (DailySet, bool) {
@@ -161,11 +161,11 @@ func TestMirrorFromDatabase(t *testing.T) {
 			t.Fatalf("expected seven days, got %d", len(m.Days))
 		}
 		got := dayOf(m, mon).Answers
-		if len(got) != 3 || got[0].Theme != "habits" || got[1].Theme != "friendship" || got[2].Crowd != "private" {
+		if len(got) != 3 || got[0].Theme != "habits" || got[1].Theme != "friendship" || got[2].Depth != "private" {
 			t.Fatalf("expected habits, friendship and a private answer on Monday, got %+v", got)
 		}
-		if got[0].Crowd != "early" {
-			t.Fatalf("one vote is too few to say anything about the crowd, got %q", got[0].Crowd)
+		if got[0].Depth != "light" || got[1].Depth != "deep" {
+			t.Fatalf("expected each answer shown by how deep it went, got %+v", got)
 		}
 	})
 
@@ -253,8 +253,8 @@ func TestMirrorAcrossTheWeek(t *testing.T) {
 	if m.Stats.DaysActive != 3 || m.Stats.DaysActiveLastWeek != 1 || m.Stats.DaysSoFar != 4 {
 		t.Fatalf("expected 3 days this week, 1 last week, 4 days so far; got %+v", m.Stats)
 	}
-	if m.WeeksPlayed != 2 {
-		t.Fatalf("expected 2 weeks played, got %d", m.WeeksPlayed)
+	if m.WeeksActive != 2 {
+		t.Fatalf("expected 2 weeks with answers, got %d", m.WeeksActive)
 	}
 	if m.Stats.Answers != 3 || len(dayOf(m, wed).Answers) != 0 || m.Stats.Deepest != 1 {
 		t.Fatalf("expected 3 answers this week, none on Wednesday, one deepest option; got %+v", m.Stats)
@@ -274,117 +274,73 @@ func TestMirrorAcrossTheWeek(t *testing.T) {
 	}
 }
 
-func TestMirrorCrowd(t *testing.T) {
-	t.Run("with or against the crowd, once a question has enough votes", func(t *testing.T) {
-		s := mirrorServer(mon)
-		for i := range crowdMinVotes {
-			answer(t, s, fmt.Sprintf("p%d", i), mon, "tidy", "now")
-		}
+// Edwin, 2026-10-15: speak to people "about who they are and how they can
+// change, not comparing them with other people". Nothing another phone
+// answers changes what this phone's mirror says.
+func TestMirrorIsYoursAlone(t *testing.T) {
+	alone, crowded := mirrorServer(mon), mirrorServer(mon)
+	for i := range 120 {
+		answer(t, crowded, fmt.Sprintf("p%d", i), mon, "tidy", []string{"now", "later"}[i%2])
+		answer(t, crowded, fmt.Sprintf("p%d", i), tue, "call", "call")
+	}
+	for _, s := range []*Server{alone, crowded} {
 		answer(t, s, "a", mon, "tidy", "pile")
+		answer(t, s, "a", tue, "call", "wait")
+		answer(t, s, "a", tue, "night", "b")
 		aggregate(t, s)
+	}
+	mine, theirs := getMirror(t, alone, "a", tue), getMirror(t, crowded, "a", tue)
+	if a, b := asJSON(t, mine), asJSON(t, theirs); a != b {
+		t.Fatalf("other players changed this phone's mirror:\nalone   %s\ncrowded %s", a, b)
+	}
+	raw := strings.ToLower(mirrorRequest(t, crowded, "a", tue).Body.String())
+	for _, word := range []string{"crowd", "player", "percent", "divisive", "strength", "ranked", "median", "minority"} {
+		if strings.Contains(raw, word) {
+			t.Fatalf("the mirror speaks of %q: %s", word, raw)
+		}
+	}
+	if d := dayOf(mine, mon).Answers; len(d) != 1 || d[0].Depth != "deep" {
+		t.Fatalf("expected Monday's answer shown by how deep it went, got %+v", d)
+	}
+}
 
-		m := getMirror(t, s, "a", mon)
-		if c := dayOf(m, mon).Answers[0].Crowd; c != "against" {
-			t.Fatalf("expected 'against' for a minority answer, got %q", c)
-		}
-		if m.Stats.Minority != 1 || m.Stats.Judged != 1 {
-			t.Fatalf("expected 1 minority answer of 1 judged, got %+v", m.Stats)
-		}
-		r := m.Rarest
-		if r == nil || r.QuestionID != mon+"-tidy" || r.Total != crowdMinVotes+1 || r.Prompt != "Dishes after dinner?" || r.Edition != 1 {
-			t.Fatalf("expected the dishes answer as the rarest, with its real total, got %+v", r)
-		}
-		var yours SplitOption
-		for _, o := range r.Options {
-			if o.Yours {
-				yours = o
-			}
-		}
-		if yours.Label != "When the pile is high" || yours.Count != 1 || yours.Percent != percent(1, crowdMinVotes+1) {
-			t.Fatalf("expected your option with its real count, got %+v", r.Options)
-		}
-		if len(m.Minority) != 1 || m.Areas[0].Area != "everyday" || m.Areas[0].Minority != 1 || m.Areas[0].Judged != 1 {
-			t.Fatalf("expected the minority answer counted under everyday life, got %+v / %+v", m.Minority, m.Areas)
-		}
-		if p := getMirror(t, s, "p0", mon); dayOf(p, mon).Answers[0].Crowd != "with" || p.Rarest != nil {
-			t.Fatalf("a majority answer is 'with' the crowd and not rare, got %+v", p)
-		}
-		if m.Divisive == nil || m.Divisive.QuestionID != mon+"-tidy" {
-			t.Fatalf("expected the week's most divided question with enough votes, got %+v", m.Divisive)
-		}
-	})
-
-	t.Run("an answer at least an even share of players picked is with the crowd", func(t *testing.T) {
-		// Three options, so an even share is a third. With "fewer than half"
-		// nearly every answer to a three- or four-option question would read
-		// as against the crowd, the most common one included.
-		s := mirrorServer(mon)
-		for i := range 40 {
-			answer(t, s, fmt.Sprintf("now%d", i), mon, "tidy", "now")
-		}
-		for i := range 35 {
-			answer(t, s, fmt.Sprintf("later%d", i), mon, "tidy", "later")
-		}
-		for i := range 25 {
-			answer(t, s, fmt.Sprintf("pile%d", i), mon, "tidy", "pile")
-		}
-		aggregate(t, s)
-		for device, want := range map[string]string{"now0": "with", "later0": "with", "pile0": "against"} {
-			if c := dayOf(getMirror(t, s, device, mon), mon).Answers[0].Crowd; c != want {
-				t.Fatalf("%s: expected %q (40/35/25 split), got %q", device, want, c)
-			}
-		}
-	})
-
-	t.Run("too few votes says so instead of guessing", func(t *testing.T) {
-		s := mirrorServer(mon)
-		for i := range 5 {
-			answer(t, s, fmt.Sprintf("p%d", i), mon, "tidy", "now")
-		}
-		answer(t, s, "a", mon, "tidy", "pile")
-		aggregate(t, s)
-		m := getMirror(t, s, "a", mon)
-		if dayOf(m, mon).Answers[0].Crowd != "early" || m.Stats.Judged != 0 || m.Rarest != nil || m.Divisive != nil {
-			t.Fatalf("expected no verdict below %d votes, got %+v", crowdMinVotes, m)
-		}
-	})
+func asJSON(t *testing.T, v any) string {
+	t.Helper()
+	raw, err := json.Marshal(v)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(raw)
 }
 
 func TestMirrorTraitReads(t *testing.T) {
-	t.Run("with few players a read is placed among the options, not ranked", func(t *testing.T) {
+	t.Run("a read places the answers among the question's own options", func(t *testing.T) {
 		s := mirrorServer(mon)
 		for _, d := range []string{mon, tue, wed} {
 			answer(t, s, "a", d, "tidy", "now")
 		}
 		m := getMirror(t, s, "a", wed)
 		r, ok := traitOf(m, "conscientiousness")
-		if !ok || r.Answers != 3 || r.Ranked || r.Solid || r.Score != 100 {
-			t.Fatalf("expected an early, unranked read of 100 from 3 answers, got %+v (ok=%v)", r, ok)
-		}
-		if m.Ranked {
-			t.Fatal("one player cannot be ranked")
+		if !ok || r.Answers != 3 || r.Solid || r.Score != 100 {
+			t.Fatalf("expected an early read of 100 from 3 answers, got %+v (ok=%v)", r, ok)
 		}
 		if len(r.Evidence) == 0 || r.Evidence[0] != "Right away" {
 			t.Fatalf("expected the answers behind the read, got %v", r.Evidence)
 		}
 	})
 
-	t.Run("ranks among players once enough of them have a read", func(t *testing.T) {
+	t.Run("however many play, a read is never a rank among them", func(t *testing.T) {
 		s := mirrorServer(mon)
-		choices := []string{"now", "later", "pile"}
-		for i := range minPlayersToRank + 6 {
+		for i := range 40 {
 			for j, d := range []string{mon, tue, wed} {
-				answer(t, s, fmt.Sprintf("p%d", i), d, "tidy", choices[(i+j)%3])
+				answer(t, s, fmt.Sprintf("p%d", i), d, "tidy", []string{"now", "later", "pile"}[(i+j)%3])
 			}
 		}
 		for _, d := range []string{mon, tue, wed} {
-			answer(t, s, "high", d, "tidy", "now")
-			answer(t, s, "low", d, "tidy", "pile")
+			answer(t, s, "a", d, "tidy", "later")
 		}
-		hi, _ := traitOf(getMirror(t, s, "high", wed), "conscientiousness")
-		lo, _ := traitOf(getMirror(t, s, "low", wed), "conscientiousness")
-		if !hi.Ranked || !lo.Ranked || hi.Score < 90 || lo.Score > 10 {
-			t.Fatalf("expected ranks near the top and bottom, got high=%+v low=%+v", hi, lo)
+		if r, _ := traitOf(getMirror(t, s, "a", wed), "conscientiousness"); r.Score != 50 {
+			t.Fatalf("expected the middle option's place, 50, whoever else plays; got %+v", r)
 		}
 	})
 
@@ -413,88 +369,6 @@ func TestMirrorTraitReads(t *testing.T) {
 		if _, ok := traitOf(getMirror(t, s, "a", wed), "openness"); ok {
 			t.Fatal("an intimate answer shaped a trait read")
 		}
-	})
-}
-
-func TestMirrorStrengths(t *testing.T) {
-	s := mirrorServer(mon)
-	for i := range minPlayersToRank {
-		answer(t, s, fmt.Sprintf("p%d", i), mon, "tidy", "later")
-	}
-	for _, d := range []string{mon, tue, wed} {
-		answer(t, s, "a", d, "queue", "boil")
-	}
-	m := getMirror(t, s, "a", wed)
-	found := map[string]Strength{}
-	for _, st := range m.Strengths {
-		found[st.Kind] = st
-	}
-	if d := found["days"]; d.You != 3 || d.Median != 1 || d.Players != minPlayersToRank+1 {
-		t.Fatalf("expected 3 days against a median of 1, got %+v", m.Strengths)
-	}
-	if d := found["deepest"]; d.You != 3 || d.Median != 0 {
-		t.Fatalf("expected 3 deepest answers against a median of 0, got %+v", m.Strengths)
-	}
-	if few := getMirror(t, mirrorServer(mon), "a", mon); len(few.Strengths) != 0 {
-		t.Fatalf("no comparison without enough players, got %+v", few.Strengths)
-	}
-}
-
-func TestMirrorSteps(t *testing.T) {
-	t.Run("a step starts from an answered card and its outcome comes back", func(t *testing.T) {
-		s := mirrorServer(mon)
-		answer(t, s, "a", mon, "tidy", "now")
-		answer(t, s, "a", mon, "call", "text")
-		if m := getMirror(t, s, "a", mon); len(m.NextSteps) != 2 {
-			t.Fatalf("expected both cards' steps on offer, got %+v", m.NextSteps)
-		}
-
-		expectStatus(t, postStep(t, s, "a", StepRequest{QuestionID: mon + "-tidy", OptionID: "now", Status: "started", Date: mon}), http.StatusOK)
-		m := getMirror(t, s, "a", mon)
-		if len(m.Steps) != 1 || m.Steps[0].Step != "Wash one plate the moment you finish." || m.Steps[0].Status != "started" || m.Steps[0].Started != mon {
-			t.Fatalf("expected the started step, got %+v", m.Steps)
-		}
-		if len(m.NextSteps) != 1 || m.NextSteps[0].QuestionID != mon+"-call" {
-			t.Fatalf("a started step is no longer on offer, got %+v", m.NextSteps)
-		}
-
-		onDay(s, tue)
-		expectStatus(t, postStep(t, s, "a", StepRequest{QuestionID: mon + "-tidy", OptionID: "now", Status: "helped", Date: tue}), http.StatusOK)
-		m = getMirror(t, s, "a", tue)
-		if m.Steps[0].Status != "helped" || m.Steps[0].Started != mon || m.Stats.StepsStarted != 1 || m.Stats.StepsTried != 1 || m.Stats.StepsHelped != 1 {
-			t.Fatalf("expected one step started Monday that helped, got %+v / %+v", m.Steps, m.Stats)
-		}
-		if m.StepRecord.Started != 1 || m.StepRecord.Helped != 1 {
-			t.Fatalf("expected the record so far to count it, got %+v", m.StepRecord)
-		}
-	})
-
-	t.Run("only for a card this phone answered, and never a private one", func(t *testing.T) {
-		s := mirrorServer(mon)
-		answer(t, s, "a", mon, "tidy", "now")
-		answer(t, s, "a", mon, "night", "a")
-		expectError(t, postStep(t, s, "a", StepRequest{QuestionID: mon + "-call", OptionID: "call", Status: "started", Date: mon}), http.StatusNotFound, "unknown_answer")
-		expectError(t, postStep(t, s, "a", StepRequest{QuestionID: mon + "-tidy", OptionID: "pile", Status: "started", Date: mon}), http.StatusNotFound, "unknown_answer")
-		expectError(t, postStep(t, s, "b", StepRequest{QuestionID: mon + "-tidy", OptionID: "now", Status: "started", Date: mon}), http.StatusNotFound, "unknown_answer")
-		expectError(t, postStep(t, s, "a", StepRequest{QuestionID: mon + "-night", OptionID: "a", Status: "started", Date: mon}), http.StatusNotFound, "unknown_answer")
-	})
-
-	t.Run("rejects what it cannot read", func(t *testing.T) {
-		s := mirrorServer(mon)
-		answer(t, s, "a", mon, "tidy", "now")
-		ok := StepRequest{QuestionID: mon + "-tidy", OptionID: "now", Status: "started", Date: mon}
-		bad := ok
-		bad.Status = "maybe"
-		expectError(t, postStep(t, s, "a", bad), http.StatusBadRequest, "invalid_request")
-		bad = ok
-		bad.Date = "2026-11-30"
-		expectError(t, postStep(t, s, "a", bad), http.StatusBadRequest, "invalid_request")
-		expectError(t, postStep(t, s, "", ok), http.StatusBadRequest, "invalid_request")
-		bad = ok
-		bad.VoterID = "v1.forged.token"
-		raw, _ := json.Marshal(bad)
-		req := httptest.NewRequest(http.MethodPost, "/api/steps", bytes.NewReader(raw))
-		expectError(t, do(t, s, req), http.StatusUnauthorized, "invalid_device")
 	})
 }
 

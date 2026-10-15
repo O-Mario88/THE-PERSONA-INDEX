@@ -1,5 +1,5 @@
-import { AFTERNOON_HOUR, EVENING_HOUR, eveningStart, isAfternoon, isEvening, isSaturday, localDate } from './day'
-import { awardEvening, awardReflection, loadGame, loadMoves, moveFor, movesOn, setMoveStatus, startMove } from './game'
+import { dayAt, EVENING_HOUR, eveningStart, isEvening, isSaturday, localDate, nextTurn } from './day'
+import { loadMoves, moveFor, movesOn, setMoveStatus, startMove, startedInEvening } from './moves'
 
 describe('the local day', () => {
   it("uses the phone's own date, not UTC", () => {
@@ -7,41 +7,52 @@ describe('the local day', () => {
     expect(localDate(new Date(2026, 0, 5, 0, 1))).toBe('2026-01-05')
   })
 
-  it('opens the afternoon three at noon local time', () => {
-    expect(AFTERNOON_HOUR).toBe(12)
-    expect(isAfternoon(new Date(2026, 9, 12, 11, 59))).toBe(false)
-    expect(isAfternoon(new Date(2026, 9, 12, 12, 0))).toBe(true)
-  })
-
   it('knows Saturday, the day before the review day', () => {
     expect(isSaturday('2026-10-17')).toBe(true)
     expect(isSaturday('2026-10-18')).toBe(false)
   })
 
-  it('turns to evening at 5 pm local time', () => {
-    expect(EVENING_HOUR).toBe(17)
-    expect(isEvening(new Date(2026, 9, 12, 16, 59))).toBe(false)
-    expect(isEvening(new Date(2026, 9, 12, 17, 0))).toBe(true)
-    expect(eveningStart('2026-10-12')).toBe(new Date(2026, 9, 12, 17, 0).getTime())
+  it('turns to evening at 4 pm local time', () => {
+    expect(EVENING_HOUR).toBe(16)
+    expect(isEvening(new Date(2026, 9, 12, 15, 59))).toBe(false)
+    expect(isEvening(new Date(2026, 9, 12, 16, 0))).toBe(true)
+    expect(eveningStart('2026-10-12')).toBe(new Date(2026, 9, 12, 16, 0).getTime())
+  })
+
+  it('turns by itself: to evening at 4 pm, then to the next day at midnight', () => {
+    expect(dayAt(new Date(2026, 9, 12, 9))).toEqual({ date: '2026-10-12', evening: false })
+    expect(dayAt(new Date(2026, 9, 12, 23, 59))).toEqual({ date: '2026-10-12', evening: true })
+    expect(dayAt(new Date(2026, 9, 13, 0, 0))).toEqual({ date: '2026-10-13', evening: false })
+    expect(nextTurn(new Date(2026, 9, 12, 9))).toBe(new Date(2026, 9, 12, 16).getTime())
+    expect(nextTurn(new Date(2026, 9, 12, 16))).toBe(new Date(2026, 9, 13, 0).getTime())
+    expect(nextTurn(new Date(2026, 9, 31, 20))).toBe(new Date(2026, 10, 1, 0).getTime())
   })
 })
 
 describe('moves', () => {
   beforeEach(() => localStorage.clear())
 
-  it('keeps a move per card, and trying it earns points once', () => {
-    startMove('2026-10-12', 'q1', 'a', 'Step one')
-    startMove('2026-10-12', 'q2', 'b', 'Step two')
+  it('keeps a move per card, with how it went', () => {
+    startMove('2026-10-12', 'q1', 'a', 'Step one', new Date(2026, 9, 12, 9).getTime())
+    startMove('2026-10-12', 'q2', 'b', 'Step two', new Date(2026, 9, 12, 17).getTime())
     startMove('2026-10-12', 'q2', 'c', 'Step two again') // already started: kept as it was
-    expect(movesOn('2026-10-12')).toEqual([
-      { date: '2026-10-12', questionId: 'q1', optionId: 'a', step: 'Step one', status: 'started' },
-      { date: '2026-10-12', questionId: 'q2', optionId: 'b', step: 'Step two', status: 'started' },
+    expect(movesOn('2026-10-12').map((m) => [m.questionId, m.optionId, m.step, m.status])).toEqual([
+      ['q1', 'a', 'Step one', 'started'],
+      ['q2', 'b', 'Step two', 'started'],
     ])
-    expect(setMoveStatus('q1', 'helped')).toBe(5)
-    expect(setMoveStatus('q1', 'no_change')).toBe(0)
-    expect(setMoveStatus('q2', 'not_tried')).toBe(0)
+    setMoveStatus('q1', 'helped')
+    setMoveStatus('q1', 'no_change')
     expect(moveFor('q1')?.status).toBe('no_change')
-    expect(setMoveStatus('q9', 'helped')).toBe(0) // no such move
+    setMoveStatus('q9', 'helped') // no such move: nothing happens
+    expect(loadMoves()).toHaveLength(2)
+  })
+
+  it('knows a move started in the evening sitting, which the check-in leaves for later', () => {
+    startMove('2026-10-12', 'q1', 'a', 'Step one', new Date(2026, 9, 12, 9).getTime())
+    startMove('2026-10-12', 'q2', 'b', 'Step two', new Date(2026, 9, 12, 16, 5).getTime())
+    const [morning, evening] = movesOn('2026-10-12')
+    expect(startedInEvening(morning)).toBe(false)
+    expect(startedInEvening(evening)).toBe(true)
   })
 
   it('reads moves saved before several a day, counting a tried one as tried but never as helped', () => {
@@ -58,13 +69,7 @@ describe('moves', () => {
       ['b', '', 'not_tried'],
       ['c', '', 'started'],
     ])
-  })
-
-  it('awards evening reflections and the finished day once each, without counting them as insights', () => {
-    expect(awardReflection('q1')).toBe(10)
-    expect(awardReflection('q1')).toBe(0)
-    expect(awardEvening('2026-10-12')).toBe(20)
-    expect(awardEvening('2026-10-12')).toBe(0)
-    expect(loadGame()).toMatchObject({ points: 30, insights: 0 })
+    // A move saved before start times were kept counts as a morning one.
+    expect(startedInEvening(loadMoves()[2])).toBe(false)
   })
 })

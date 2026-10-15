@@ -1,5 +1,4 @@
 import { adviceFor, TRAIT_ADVICE } from './advice'
-import { awardEdition, awardInsight, levelFor, loadGame } from './game'
 import { TRAIT_WORDS } from './profile'
 
 describe('advice', () => {
@@ -29,24 +28,5 @@ describe('advice', () => {
     for (const t of Object.keys(TRAIT_WORDS)) {
       expect(TRAIT_ADVICE[t], t).toBeDefined()
     }
-  })
-})
-
-describe('points and levels', () => {
-  beforeEach(() => localStorage.clear())
-
-  it('counts each insight and edition once', () => {
-    expect(awardInsight('q1', 'money')).toBe(10)
-    expect(awardInsight('q1', 'money')).toBe(0)
-    expect(awardEdition('2026-10-12')).toBe(20)
-    expect(awardEdition('2026-10-12')).toBe(0)
-    expect(loadGame()).toMatchObject({ points: 30, insights: 1, themes: ['money'], editions: ['2026-10-12'] })
-  })
-
-  it('climbs levels by insights collected', () => {
-    expect(levelFor(0)).toMatchObject({ name: 'Curious', toNext: 9 })
-    expect(levelFor(9).name).toBe('Explorer')
-    expect(levelFor(20).progress).toBeCloseTo(11 / 21)
-    expect(levelFor(1000)).toMatchObject({ name: 'Luminary', next: undefined, progress: 1 })
   })
 })

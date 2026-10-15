@@ -1,13 +1,19 @@
 // The words of the weekly mirror: what each trait reading means, the
 // archetype name it gives the week, and the research behind each claim.
 // Every number on the mirror comes from the server; this file only turns
-// those numbers into plain, human sentences.
+// those numbers into plain, human sentences. The research and sources are not
+// shown in the app (Edwin, 2026-10-15); they stay here so every claim can be
+// traced and kept accurate (mirrorText.test.ts).
 
-import type { Mirror, TraitRead } from './api'
+import type { Mirror, Period, PeriodMirror, TraitRead } from './api'
 
 export type Source = { title: string; url: string; strength: 'strong' | 'moderate' }
 
-// Research cited on the mirror, each linked to the paper or a summary of it.
+// The research behind the mirror's words, each linked to the paper or a
+// summary of it. soto2019 backs "Reading this honestly", and roberts2006,
+// hudson2015 and gollwitzer2006 back "Why movement is possible" (Mirror.tsx).
+// lally2010 backs the quarter's closing line and roberts2006 the year's
+// (PERIOD_CLOSE below).
 export const SOURCES = {
   roberts2007: {
     title: 'Roberts et al., 2007',
@@ -60,6 +66,11 @@ export const SOURCES = {
   hudson2015: {
     title: 'Hudson & Fraley, 2015',
     url: 'https://bps.org.uk/research-digest/you-can-change-your-personality-will',
+    strength: 'moderate',
+  },
+  lally2010: {
+    title: 'Lally et al., 2010',
+    url: 'https://www.ucl.ac.uk/news/2009/aug/how-long-does-it-take-form-habit',
     strength: 'moderate',
   },
   gollwitzer2006: {
@@ -365,11 +376,14 @@ export const TRAITS: Record<string, TraitText> = {
 export const HIGH = 60
 export const LOW = 40
 
-export type Lean = { read: TraitRead; text: TraitText; side: Side; high: boolean }
+// A trait read of any length: a week's, or a month's, quarter's or year's.
+type Read = { trait: string; score: number }
 
-// leanings lists the week's traits that clearly lean one way, in the server's
-// order (solid reads first, then the clearest).
-export function leanings(traits: TraitRead[]): Lean[] {
+export type Lean<R extends Read = TraitRead> = { read: R; text: TraitText; side: Side; high: boolean }
+
+// leanings lists the traits that clearly lean one way, in the server's order
+// (solid reads first, then the clearest).
+export function leanings<R extends Read>(traits: R[]): Lean<R>[] {
   return traits.flatMap((read) => {
     const text = TRAITS[read.trait]
     if (!text || (read.score > LOW && read.score < HIGH)) return []
@@ -380,7 +394,7 @@ export function leanings(traits: TraitRead[]): Lean[] {
 
 // archetype names the week from its two clearest leanings: the first gives
 // the adjective, the second the noun.
-export function archetype(traits: TraitRead[]): string | null {
+export function archetype(traits: Read[]): string | null {
   const l = leanings(traits)
   if (l.length === 0) return null
   return `The ${l[0].side.adj} ${(l[1] ?? l[0]).side.noun}`
@@ -390,7 +404,7 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
 // tagline: one leaning gives "{Q1}, with {w1}."; two "{Q1}, with {w2}.";
 // three "{Q1} and {q2}, with {w3}."; four or more "{Q1} and {q2}, with {w3} and {w4}."
-export function tagline(traits: TraitRead[]): string | null {
+export function tagline(traits: Read[]): string | null {
   const s = leanings(traits).map((l) => l.side)
   switch (s.length) {
     case 0:
@@ -413,13 +427,11 @@ export const AREA_NAMES: Record<string, string> = {
   desire: 'Desire & lifestyle',
 }
 
-export const pct = (n: number, of: number) => (of > 0 ? Math.round((100 * n) / of) : 0)
-
 // summary is the hero's opening paragraph, spoken to the person.
 export function summary(m: Mirror): string {
   const { daysActive, answers, daysSoFar } = m.stats
   if (answers === 0) {
-    return m.weeksPlayed > 0
+    return m.weeksActive > 0
       ? "This week is quiet so far. That's fine; your read below still draws on the last three weeks, and it will sharpen as soon as you answer again."
       : 'Your mirror fills in as you answer. A few days of questions is enough for the first patterns to show.'
   }
@@ -431,4 +443,60 @@ export function summary(m: Mirror): string {
       : `So far this week you've shown up on ${days} and given ${answers} ${answers === 1 ? 'answer' : 'answers'}.`
   if (l.length === 0) return `${lead} Your answers sit close to the middle on everything so far, which is its own kind of balance.`
   return `${lead} What stood out most: ${l[0].side.headline.charAt(0).toLowerCase()}${l[0].side.headline.slice(1, -1)}. Here is what I noticed, and one thing to try next.`
+}
+
+const MONTHS = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+]
+
+// periodName spells a period's label: "October 2026", "October to December
+// 2026" or "2026". With year false it leaves the year off.
+export function periodName(period: Period, label: string, year = true): string {
+  const [y, rest] = label.split('-')
+  const tail = year ? ` ${y}` : ''
+  if (period === 'month') return `${MONTHS[Number(rest) - 1]}${tail}`
+  if (period === 'quarter') {
+    const first = (Number(rest.slice(1)) - 1) * 3
+    return `${MONTHS[first]} to ${MONTHS[first + 2]}${tail}`
+  }
+  return y
+}
+
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
+
+// periodSummary is the period's opening paragraph, spoken to the person.
+export function periodSummary(p: PeriodMirror): string {
+  const { answers, daysActive, weeksActive } = p.stats
+  const noun = p.period
+  if (answers === 0) {
+    return `Nothing answered this ${noun} yet. It fills in week by week as you answer, and every week you come back adds to it.`
+  }
+  const last = p.weeks[p.weeks.length - 1]
+  const over = p.weeks.length === p.weeksTotal && last?.daysSoFar >= 6
+  const spread = `${plural(daysActive, 'day', 'days')} in ${plural(weeksActive, 'week', 'weeks')}`
+  const lead = over
+    ? `This ${noun} you showed up on ${spread} and gave ${plural(answers, 'answer', 'answers')}.`
+    : `So far this ${noun} you've shown up on ${spread} and given ${plural(answers, 'answer', 'answers')}.`
+  const l = leanings(p.traits)
+  if (l.length === 0) return `${lead} Your answers sit close to the middle on everything so far, which is its own kind of balance.`
+  const h = l[0].side.headline
+  return `${lead} What stood out most: ${h.charAt(0).toLowerCase()}${h.slice(1, -1)}.`
+}
+
+// The closing line of each longer mirror (sources above).
+export const PERIOD_CLOSE: Record<Period, string> = {
+  month: 'A month is long enough to see a pattern, and short enough to change one.',
+  quarter: 'Many new habits take around two months to feel automatic, so a quarter is where small steps start to show.',
+  year: 'Traits do shift over the years. A year is where the slow changes show, the ones you only notice looking back.',
 }
