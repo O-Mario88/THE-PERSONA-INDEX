@@ -456,7 +456,7 @@ func (b contentBank) GetSet(date string) (DailySet, bool) {
 	set := DailySet{Date: date}
 	k := questionDay(d)
 	if k < 0 {
-		set.Review = true
+		set.Review, set.Questions = true, []Question{} // an empty list, never null, for the phone
 		return set, true
 	}
 	for h, half := range []*[]Question{&set.Questions, &set.Afternoon} {

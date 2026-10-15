@@ -975,7 +975,7 @@ const emptyMirror: Mirror = {
 }
 
 // Sunday, as the server sends it: no questions, the day for the mirror.
-const sunday: DailySet = { date: '2026-10-18', questions: [], review: true }
+const sunday: DailySet = { date: '2026-10-18', questions: [], review: true, tomorrowThemes: ['money', 'anger'] }
 
 async function openMirror(routes: Parameters<typeof stubApi>[0] = {}) {
   vi.setSystemTime(at(9, 18))
@@ -1278,6 +1278,7 @@ describe('the week', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Today' }))
     const review = screen.getByRole('region', { name: 'Sunday is for looking back.' })
     expect(review).toHaveTextContent('Fresh questions arrive tomorrow morning.')
+    expect(review).toHaveTextContent('Tomorrow Money · Anger')
     expect(screen.getByText('Review day · Sunday')).toBeInTheDocument()
     expect(screen.queryByRole('region', { name: 'Done for today.' })).not.toBeInTheDocument()
     fireEvent.click(within(review).getByRole('button', { name: 'Open your mirror' }))

@@ -74,7 +74,11 @@ func TestTheWeek(t *testing.T) {
 		}
 		at := time.Date(2026, 10, 18, 9, 0, 0, 0, time.UTC)
 		s := NewServer(func() time.Time { return at }, b, newMemoryStore(), newDeviceSigner(testSecret))
-		got := decode[DailySet](t, get(t, s, "/api/editions/"+sunday))
+		w := get(t, s, "/api/editions/"+sunday)
+		if !strings.Contains(w.Body.String(), `"questions":[]`) {
+			t.Fatalf("expected an empty question list, got %s", w.Body)
+		}
+		got := decode[DailySet](t, w)
 		if !got.Review || got.Edition != 0 || len(got.Questions) != 0 {
 			t.Fatalf("expected Sunday's review day, got %+v", got)
 		}

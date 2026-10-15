@@ -7,7 +7,7 @@ import { EditionSummary } from './EditionSummary'
 import { EveningSummary } from './EveningSummary'
 import { FollowUpCard } from './FollowUpCard'
 import { Mirror } from './Mirror'
-import { themeVars } from './themes'
+import { themeName, themeVars } from './themes'
 import { forgetPick, todaysPick } from './profile'
 import { intimacyOn, loadPrefs, savePrefs, type Prefs } from './prefs'
 import './App.css'
@@ -60,7 +60,7 @@ function App() {
   const morningQs = useMemo(
     () =>
       compareQs?.map((c) => c.question) ??
-      (set ? todaysPick(set.pool ?? [], set.questions, set.date, intimacyOn(prefs)) : []),
+      (set ? todaysPick(set.pool ?? [], set.questions ?? [], set.date, intimacyOn(prefs)) : []),
     // pickVersion forces a fresh pick after a preference change
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [set, prefs, pickVersion, compareQs],
@@ -216,6 +216,11 @@ function App() {
                 No new questions today. Your week is waiting in your mirror: what you noticed, where you stood apart and
                 what to try next. Fresh questions arrive tomorrow morning.
               </p>
+              {(set.tomorrowThemes ?? []).length > 0 && (
+                <p className="tomorrow">
+                  <span className="eyebrow">Tomorrow</span> {set.tomorrowThemes!.map(themeName).join(' · ')}
+                </p>
+              )}
               <button type="button" className="option" onClick={() => setTab('mirror')}>
                 Open your mirror
               </button>
@@ -341,7 +346,7 @@ type CompareItem = { question: Question; theirs: string }
 
 function compareQuestions(set: DailySet, edition: number, answers: [string, string][]): CompareItem[] | null {
   if (edition !== set.edition) return null
-  const all = [...(set.pool ?? []), ...set.questions]
+  const all = [...(set.pool ?? []), ...(set.questions ?? [])]
   const items: CompareItem[] = []
   for (const [id, theirs] of answers) {
     const question = all.find((q) => q.id === id)
