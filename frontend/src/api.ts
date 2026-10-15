@@ -31,12 +31,6 @@ export type DailySet = {
   pool?: Question[]
   tomorrowThemes?: string[]
 }
-export type OptionResult = { optionId: string; count: number; percent: number }
-export type QuestionResults = {
-  questionId: string
-  totalVotes: number
-  options: OptionResult[]
-}
 
 export class ApiError extends Error {
   readonly status: number
@@ -69,10 +63,6 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export function getToday(): Promise<DailySet> {
   return request('/api/questions/today')
-}
-
-export function getResults(questionId: string): Promise<QuestionResults> {
-  return request(`/api/questions/${encodeURIComponent(questionId)}/results`)
 }
 
 export async function castVote(
@@ -198,14 +188,6 @@ export function rememberSkip(questionId: string) {
   save(`pi.choice.${questionId}`, SKIPPED)
 }
 export const SKIPPED = '-'
-
-export function rememberGuess(questionId: string, guess: string) {
-  save(`pi.guess.${questionId}`, guess)
-}
-
-export function recalledGuess(questionId: string): string | null {
-  return load(`pi.guess.${questionId}`)
-}
 
 // Days this phone answered at least one question, newest last. Kept on the
 // phone only; the server never learns who plays when.

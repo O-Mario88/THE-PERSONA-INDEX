@@ -131,6 +131,9 @@ var (
 	// Cards may not state statistics of their own: numbers with % only appear in cited research.
 	statPattern     = regexp.MustCompile(`\d\s*%|\bpercent\b`)
 	currencyPattern = regexp.MustCompile(`[$€£¥₹₦]`)
+	readerPattern   = regexp.MustCompile(`(?i)\byou(r|rs|rself|'re|'ve|'d|'ll)?\b`)
+	// Research is only ever stated in the research field, with its source.
+	claimPattern = regexp.MustCompile(`(?i)\b(stud(y|ies)|research(ers)?|scientists?|experiments?|proven)\b`)
 )
 
 // minPerTheme keeps the daily mix varied; a theme thinner than this fails validation.
@@ -195,7 +198,15 @@ func validateBank(b bankFile) []error {
 			}
 
 			in := o.Insight
-			checkText(fail, ow+" reveal", in.Reveal, 40, 260)
+			// A reveal reads the person's own answer back to them, then says how
+			// people with that leaning tend to act, in two or three sentences.
+			checkText(fail, ow+" reveal", in.Reveal, 120, 360)
+			if !readerPattern.MatchString(in.Reveal) {
+				fail("%s: reveal must speak to the reader (you, your)", ow)
+			}
+			if claimPattern.MatchString(in.Reveal) {
+				fail("%s: reveal makes an uncited research claim; research belongs in the research field", ow)
+			}
 			checkText(fail, ow+" step", in.Step, 20, 160)
 			if reveals[in.Reveal] {
 				fail("%s: reveal repeats another option's", ow)

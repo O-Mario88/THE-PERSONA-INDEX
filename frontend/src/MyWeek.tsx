@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { playedDays } from './api'
-import { daysPlayedThisWeek, themeName } from './crowd'
+import { daysPlayedThisWeek, themeName } from './themes'
 import { loadHistory, lowMoodRepeated, readTraits, TRAIT_WORDS } from './profile'
 
 // The weekly mirror: built from answers stored on this phone, never sent anywhere.

@@ -35,9 +35,9 @@ func TestValidateBankCatchesBrokenCards(t *testing.T) {
 			return bankInsight{Reveal: reveal, Strength: "none", Step: "Next time it happens, notice what you do first."}
 		}
 		return bankQuestion{ID: "money-test", Theme: "money", Prompt: "Payday arrives. What goes first?", Options: []bankOption{
-			{ID: "bills", Label: "Bills", Depth: 1, Insight: card("People who pay bills first often like to clear worries before they can enjoy anything.")},
-			{ID: "savings", Label: "Savings", Depth: 2, Insight: card("Saving first suggests you trust your future self more than most people do.")},
-			{ID: "treat", Label: "Something for me", Depth: 3, Insight: card("Treating yourself first often means the week took more out of you than you admit.")},
+			{ID: "bills", Label: "Bills", Depth: 1, Insight: card("Your answer suggests you like to clear worries before you enjoy anything. People like this tend to tidy before guests arrive and answer the hard email first.")},
+			{ID: "savings", Label: "Savings", Depth: 2, Insight: card("Saving first suggests you trust your future self more than most. People like this tend to plan trips early and are often the calm one when a bill surprises everyone.")},
+			{ID: "treat", Label: "Something for me", Depth: 3, Insight: card("Choosing this suggests the week took more out of you than you admit. People like you tend to give a lot at work and are often the last to notice they need a break.")},
 		}}
 	}
 	cases := []struct {
@@ -64,6 +64,15 @@ func TestValidateBankCatchesBrokenCards(t *testing.T) {
 		{"currency", func(q *bankQuestion) { q.Options[2].Label = "Spend $50 on me" }, "currency"},
 		{"too few options", func(q *bankQuestion) { q.Options = q.Options[:2] }, "3 or 4 options"},
 		{"unknown trait", func(q *bankQuestion) { q.Options[0].Traits = map[string]int{"zodiac": 1} }, "trait"},
+		{"thin reveal", func(q *bankQuestion) {
+			q.Options[0].Insight.Reveal = "You like to pay your bills before anything else."
+		}, "characters"},
+		{"reveal about other people only", func(q *bankQuestion) {
+			q.Options[1].Insight.Reveal = "Savers tend to plan holidays early, keep spare batteries in a drawer and are often the calm ones when a surprise bill lands on everyone at once."
+		}, "speak to the reader"},
+		{"uncited research claim in a reveal", func(q *bankQuestion) {
+			q.Options[2].Insight.Reveal = "Your answer suggests you are tired. Studies show people like you tend to give a lot at work and are often the last to notice they need a break."
+		}, "uncited research"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
