@@ -3,7 +3,7 @@ import { playedDays, recalledChoice, type Question } from './api'
 import { adviceFor } from './advice'
 import { encodeCompare } from './compare'
 import { awardEdition, awardStep, levelFor, loadGame, POINTS_PER_STEP, stepDone } from './game'
-import { daysPlayedThisWeek, THEME_COUNT, themeName, themeStyle, themeVars } from './themes'
+import { daysPlayedThisWeek, THEME_COUNT, themeName } from './themes'
 
 type Props = {
   date: string
@@ -13,8 +13,8 @@ type Props = {
   answers: [string, string][] // what a compare link may carry: no intimate answers
 }
 
-// The end of an edition: today's insight cards again, advice built from them,
-// the small steps to try, and progress kept on this phone. Nothing here
+// The end of an edition: advice built from today's insight cards (which stay
+// on screen above), the small steps to try, and progress kept on this phone. Nothing here
 // resets or punishes a missed day.
 export function EditionSummary({ date, edition, questions, tomorrowThemes, answers }: Props) {
   const [copied, setCopied] = useState(false)
@@ -73,20 +73,6 @@ export function EditionSummary({ date, edition, questions, tomorrowThemes, answe
 
       {cards.length > 0 && (
         <>
-          <h3>Your insight cards</h3>
-          <ul className="recap">
-            {cards.map(({ q, o }) => (
-              <li key={q.id} className="recap-card" style={themeVars(q.theme)}>
-                <p className="recap-theme">
-                  <span aria-hidden="true">{themeStyle(q.theme).icon}</span>{' '}
-                  {q.theme ? themeName(q.theme) : 'Today'}
-                </p>
-                <p className="recap-prompt">{q.prompt}</p>
-                <p>{o.insight!.reveal}</p>
-              </li>
-            ))}
-          </ul>
-
           <div className="advice" role="note" aria-label="Advice for you">
             <h3>
               <span aria-hidden="true">💡 </span>Advice for you

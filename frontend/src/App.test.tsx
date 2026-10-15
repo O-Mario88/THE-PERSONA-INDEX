@@ -299,7 +299,7 @@ describe('App', () => {
     expect(fetchMock.mock.calls.filter(([u]) => u === '/api/votes')).toHaveLength(0)
   })
 
-  it('ends the edition with every insight card again, advice built from them and moves to try', async () => {
+  it('ends the edition with advice built from the insights and moves to try, without repeating the cards', async () => {
     stubApi({})
     render(<App />)
     await answer('Right after eating')
@@ -309,8 +309,9 @@ describe('App', () => {
 
     const summary = await screen.findByRole('region', { name: 'Edition #3 complete' })
     expect(summary).toHaveTextContent('2 insights today')
-    expect(summary).toHaveTextContent('unfinished tasks noisier than most')
-    expect(summary).toHaveTextContent('Several alarms suggest')
+    // The cards stay above; the recap does not repeat them.
+    expect(summary).not.toHaveTextContent('unfinished tasks noisier than most')
+    expect(summary).not.toHaveTextContent('Several alarms suggest')
     const advice = within(summary).getByRole('note', { name: 'Advice for you' })
     expect(advice).toHaveTextContent('Getting things done')
     expect(advice).toHaveTextContent('Worry and tension')
