@@ -315,6 +315,7 @@ func validateBank(b bankFile) []error {
 			fail("theme %s has %d questions, needs at least %d", name, perTheme[name], minPerTheme)
 		}
 	}
+	errs = append(errs, checkVoice(b)...)
 	return errs
 }
 

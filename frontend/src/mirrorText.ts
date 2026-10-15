@@ -190,14 +190,14 @@ export const TRAITS: Record<string, TraitText> = {
       headline: 'You keep the peace.',
       prediction:
         "People probably feel safe bringing their problems to you. Notice the days you give way when you'd rather not; kindness counts for you too.",
-      cost: 'Keeping the peace can cost you. People who lean this way tend to earn less, partly because they ask for less. Before a pay talk, decide your number and say it first.',
+      cost: 'Keeping the peace can cost you. This leaning tends to go with earning less, partly from asking for less. Before a pay talk, decide your number and say it first.',
       costSource: 'judge2012',
     },
     low: {
       adj: 'Candid',
       noun: 'Straight Talker',
       quality: 'a candid, direct voice',
-      with: 'a habit of saying what others only think',
+      with: 'a habit of saying what you mean',
       headline: 'You say what you think.',
       prediction:
         'People tend to know exactly where they stand with you. Your directness lands best when the other person feels heard first.',
@@ -229,7 +229,7 @@ export const TRAITS: Record<string, TraitText> = {
       headline: 'You trust what works.',
       prediction:
         "You're the steady one when everything around you changes. One small new thing a week keeps that steadiness from turning into a rut.",
-      cost: "When the old way stops working, you may be slow to reach for another. Fewer new ideas tend to come when you stay with what's known.",
+      cost: "When the old way stops working, you can be slow to reach for another. Fewer new ideas tend to come when you stay with what's known.",
       costSource: 'mccrae1987',
     },
     research: 'Openness goes with divergent thinking: coming up with more ideas, and more unusual ones.',
@@ -242,11 +242,11 @@ export const TRAITS: Record<string, TraitText> = {
       adj: 'Lively',
       noun: 'Connector',
       quality: 'a lively, social energy',
-      with: 'a pull toward people',
+      with: 'a pull towards people',
       headline: 'People charge you up.',
       prediction:
         "A good conversation can lift your whole day. Protect a little quiet too; it's where your ideas get a chance to settle.",
-      cost: 'The pull toward people and excitement can come with a little more risk of getting hurt. Enjoy the rush, and keep the careful habits.',
+      cost: 'The pull towards people and excitement can come with a little more risk of getting hurt. Enjoy the rush, and keep the careful habits.',
       costSource: 'nettle2005',
     },
     low: {
@@ -284,7 +284,7 @@ export const TRAITS: Record<string, TraitText> = {
       with: 'a long fuse',
       headline: 'Setbacks roll off you.',
       prediction:
-        "Others likely lean on your calm when things go wrong. Check in on them afterwards; they may still be carrying what you've set down.",
+        "When things go wrong, your calm gives others something to lean on. Check in on them afterwards; they may still be carrying what you've set down.",
       cost: "Honestly, there is no proven downside to a calm temper. Just don't let calm turn into not noticing when someone else is still shaken.",
       costSource: 'lahey2009',
     },
@@ -397,7 +397,7 @@ export const TRAITS: Record<string, TraitText> = {
       headline: "You'll wait for better.",
       prediction:
         'Your patience is likely to pay off over years. Plan one small treat with no purpose at all, so the present feels good too.',
-      cost: 'Always choosing the sensible thing can turn into regret. Looking back, people tend to regret the pleasures they skipped more than the ones they had.',
+      cost: 'Always choosing the sensible thing can turn into regret. Looking back, the pleasures you skipped tend to weigh on you more than the ones you had.',
       costSource: 'kivetz2006',
     },
     research: 'People who favour now over later tend to carry more credit card debt.',

@@ -51,9 +51,9 @@ func TestValidateBankCatchesBrokenCards(t *testing.T) {
 			return in
 		}
 		return bankQuestion{ID: "money-test", Theme: "money", Prompt: "Payday arrives. What goes first?", Options: []bankOption{
-			{ID: "bills", Label: "Bills", Depth: 1, Insight: card("Worries go first, then the fun. You probably tidy before guests arrive and answer the hard email first, and a treat tastes better once nothing is hanging over you.")},
-			{ID: "savings", Label: "Savings", Depth: 2, Insight: cited(card("You trust your future self more than most. You likely plan trips early, and you're often the calm one when a surprise bill lands on everyone at once."))},
-			{ID: "treat", Label: "Something for me", Depth: 3, Insight: card("The week took more out of you than you let on. You give a lot at work, and you're often the last to notice you need a break, so payday becomes the break.")},
+			{ID: "bills", Label: "Bills", Depth: 1, Insight: card("Your worries go first, then the fun. You probably tidy before guests arrive and answer the hard email first, and a treat tastes better once nothing is hanging over you.")},
+			{ID: "savings", Label: "Savings", Depth: 2, Insight: cited(card("You trust your future self. You likely plan trips early, and you're often the calm one when a surprise bill lands on everyone at once."))},
+			{ID: "treat", Label: "Something for me", Depth: 3, Insight: card("The week took more out of you than you let on. You give a lot at work, and you rarely notice you need a break, so payday becomes the break.")},
 		}, FollowUp: FollowUp{Prompt: "Did money come in or go out today? What did you do first?", Options: []FollowUpOption{
 			{ID: "paid-bills", Label: "I paid what was due", Traits: map[string]int{"conscientiousness": 1}, Reflection: "Paying what was due first suggests you like a clear head before anything else. Tomorrow, you might notice how that calm feels, and give yourself one small treat for it."},
 			{ID: "treated-myself", Label: "I bought something for me", Reflection: "A treat on a money day may mean you needed a lift. That is allowed. Tomorrow, you could check whether it still feels good, which tends to show what was really worth it."},
