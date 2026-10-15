@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import App from './App'
 import type { DailySet, Mirror, PeriodMirror, Question } from './api'
+import { TRAITS } from './mirrorText'
 
 const today: DailySet = {
   date: '2026-10-12',
@@ -178,6 +179,8 @@ function stubApi(routes: {
   return fetchMock
 }
 
+// An element's text with every kind of space as a plain one.
+const plainText = (el: Element) => el.textContent!.replace(/\s+/g, ' ')
 const calls = (f: ReturnType<typeof stubApi>, url: string) => f.mock.calls.filter(([u]) => String(u) === url)
 const bodyOf = (call: unknown[]) => JSON.parse(String((call[1] as RequestInit).body))
 
@@ -233,6 +236,104 @@ describe('the daily questions', () => {
     expect(screen.getByText('Edition #3 · Monday')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Question 1 of 3' })).toHaveAttribute('aria-current', 'step')
     expect(screen.getByRole('button', { name: 'Question 3 of 3' })).toBeDisabled()
+    // Edwin, 2026-10-15: "Everything should feel private".
+    expect(screen.getByText(/Private to you: no name, no email, no account\./)).toBeInTheDocument()
+  })
+
+  // Edwin, 2026-10-15: "Some answers need typing ... so they are not limited
+  // to the options on the app."
+  it('lets someone answer in their own words, keeps the words on the phone, and takes the insight from the closest option', async () => {
+    const fetchMock = stubApi({})
+    render(<App />)
+    const card = await screen.findByRole('region', { name: 'When do you wash the dishes?' })
+    expect(within(card).queryByRole('textbox')).not.toBeInTheDocument()
+    fireEvent.click(within(card).getByRole('button', { name: 'In my own words' }))
+    const box = within(card).getByRole('textbox', { name: 'In your own words' })
+    expect(card).toHaveTextContent('Kept on this phone. The app never sends it.')
+    expect(within(card).getByRole('button', { name: 'Keep my words' })).toBeDisabled()
+    fireEvent.change(box, { target: { value: 'Depends who cooked. If it was me, straight away.' } })
+    fireEvent.click(within(card).getByRole('button', { name: 'Keep my words' }))
+
+    expect(card).toHaveTextContent('“Depends who cooked. If it was me, straight away.”')
+    const closest = within(card).getByRole('group', { name: 'Which of these comes closest? Your insight comes from that one.' })
+    fireEvent.click(within(closest).getByRole('button', { name: 'Right after eating' }))
+    expect(await within(card).findByRole('note', { name: 'What your answer may say' })).toHaveTextContent('clear sink')
+    expect(card).toHaveTextContent('In your words')
+    expect(card).toHaveTextContent('Closest to: Right after eating')
+    expect(card).not.toHaveTextContent('You chose')
+
+    // The vote is the option tapped; the words never leave the phone.
+    expect(bodyOf(calls(fetchMock, '/api/votes')[0])).toMatchObject({ questionId: 'q-dishes', optionId: 'right-away' })
+    for (const [, init] of fetchMock.mock.calls) expect(String(init?.body ?? '')).not.toContain('Depends who cooked')
+    expect(JSON.parse(localStorage.getItem('pi.words.q-dishes')!)).toEqual({
+      questionId: 'q-dishes',
+      date: '2026-10-12',
+      prompt: 'When do you wash the dishes?',
+      theme: 'habits',
+      words: 'Depends who cooked. If it was me, straight away.',
+      closest: 'Right after eating',
+    })
+  })
+
+  it('after a failed vote on own words, only offers that answer again, since the server may have counted it', async () => {
+    stubApi({
+      vote: [
+        { status: 503, body: { error: 'unavailable' } },
+        { status: 202, body: { status: 'accepted', eventId: 'evt_1' } },
+      ],
+    })
+    render(<App />)
+    const card = await screen.findByRole('region', { name: 'When do you wash the dishes?' })
+    fireEvent.click(within(card).getByRole('button', { name: 'In my own words' }))
+    fireEvent.change(within(card).getByRole('textbox'), { target: { value: 'Straight after, mostly.' } })
+    fireEvent.click(within(card).getByRole('button', { name: 'Keep my words' }))
+    fireEvent.click(within(card).getByRole('button', { name: 'Right after eating' }))
+    expect(await within(card).findByRole('alert')).toHaveTextContent('did not go through')
+    expect(within(card).queryByRole('button', { name: 'None of these' })).not.toBeInTheDocument()
+    expect(localStorage.getItem('pi.words.q-dishes')).toBeNull()
+    fireEvent.click(within(card).getByRole('button', { name: 'Right after eating' }))
+    expect(await within(card).findByRole('note', { name: 'What your answer may say' })).toBeInTheDocument()
+    expect(JSON.parse(localStorage.getItem('pi.words.q-dishes')!).words).toBe('Straight after, mostly.')
+  })
+
+  it('keeps own words five weeks, like answers on the server', async () => {
+    const keep = (id: string, date: string) =>
+      localStorage.setItem(`pi.words.${id}`, JSON.stringify({ questionId: id, date, prompt: 'P', words: 'W' }))
+    keep('q-old', '2026-09-06') // 36 days before
+    keep('q-recent', '2026-09-08') // 34 days before
+    stubApi({})
+    render(<App />)
+    const card = await screen.findByRole('region', { name: 'When do you wash the dishes?' })
+    fireEvent.click(within(card).getByRole('button', { name: 'In my own words' }))
+    fireEvent.change(within(card).getByRole('textbox'), { target: { value: 'Paper plates.' } })
+    fireEvent.click(within(card).getByRole('button', { name: 'Keep my words' }))
+    fireEvent.click(within(card).getByRole('button', { name: 'None of these' }))
+    expect(localStorage.getItem('pi.words.q-old')).toBeNull()
+    expect(localStorage.getItem('pi.words.q-recent')).not.toBeNull()
+    expect(localStorage.getItem('pi.words.q-dishes')).not.toBeNull()
+  })
+
+  it('keeps own words that no option comes close to, sending nothing and guessing nothing', async () => {
+    const fetchMock = stubApi({})
+    render(<App />)
+    const card = await screen.findByRole('region', { name: 'When do you wash the dishes?' })
+    fireEvent.click(within(card).getByRole('button', { name: 'In my own words' }))
+    fireEvent.click(within(card).getByRole('button', { name: 'Back to the options' }))
+    fireEvent.click(within(card).getByRole('button', { name: 'In my own words' }))
+    fireEvent.change(within(card).getByRole('textbox'), { target: { value: 'We eat off paper plates.' } })
+    fireEvent.click(within(card).getByRole('button', { name: 'Keep my words' }))
+    fireEvent.click(within(card).getByRole('button', { name: 'Change my words' }))
+    expect(within(card).getByRole('textbox')).toHaveValue('We eat off paper plates.')
+    fireEvent.click(within(card).getByRole('button', { name: 'Keep my words' }))
+    fireEvent.click(within(card).getByRole('button', { name: 'None of these' }))
+
+    expect(card).toHaveTextContent('“We eat off paper plates.”')
+    expect(card).toHaveTextContent("I'd rather say nothing than guess about you.")
+    expect(within(card).queryByRole('note', { name: 'What your answer may say' })).not.toBeInTheDocument()
+    expect(calls(fetchMock, '/api/votes')).toHaveLength(0)
+    expect(screen.getByRole('button', { name: 'Question 1 of 3' })).toHaveClass('answered')
+    next()
+    expect(await screen.findByText('How do you split the bill?')).toBeInTheDocument()
   })
 
   it('casts a vote with an idempotency key and a server-issued device token, then shows what it says', async () => {
@@ -386,7 +487,7 @@ describe('the daily questions', () => {
     await answer('Right after eating')
     fireEvent.click(screen.getByRole('button', { name: "I'll try it" }))
     expect(screen.getByRole('group', { name: 'Try this' })).toHaveTextContent(
-      "Added to today's moves. I'll ask how it went at 4 pm.",
+      "Added to today's moves. I'll ask how it went this evening.",
     )
     await waitFor(() => expect(calls(fetchMock, '/api/steps')).toHaveLength(1))
     expect(bodyOf(calls(fetchMock, '/api/steps')[0])).toEqual({
@@ -433,8 +534,8 @@ describe('the daily questions', () => {
     })
   })
 
-  it('ends the morning with "Morning done.", the thread and the moves, without repeating the cards or keeping score', async () => {
-    stubApi({})
+  it('ends the morning with "Morning done.", the thread, the moves and what opens at 5 pm, without repeating the cards or keeping score', async () => {
+    stubApi({ today: { status: 200, body: sixADay } })
     render(<App />)
     await answer('Right after eating')
     next()
@@ -455,9 +556,17 @@ describe('the daily questions', () => {
     expect(thread).toHaveTextContent('Getting things done')
     expect(thread).toHaveTextContent('Worry and tension')
     expect(thread).toHaveTextContent('For the rest of today:')
+    // Edwin, 2026-10-15: "not afraid of telling them the negative things ... in a polite human language".
+    expect(thread).toHaveTextContent(`The honest part: ${TRAITS.conscientiousness.high.cost}`)
+    expect(thread).toHaveTextContent(`The honest part: ${TRAITS.neuroticism.high.cost}`)
     const moves = within(done).getByRole('group', { name: "Moves you'll try" })
     expect(moves).toHaveTextContent('Tonight, set one alarm fewer')
-    expect(done).toHaveTextContent("At 4 pm I'll ask how this morning went.")
+    // Something to look forward to: the evening's three themes, and when.
+    const later = within(done).getByRole('group', { name: 'Your evening three · 5 pm' })
+    expect(later).toHaveTextContent('Food and eating')
+    expect(later).toHaveTextContent('Anger')
+    expect(later).toHaveTextContent('Friendship')
+    expect(later).toHaveTextContent("Go about your day. They'll be waiting for you at 5 pm.")
     expect(done).not.toHaveTextContent('Tomorrow')
     expect(done).toHaveTextContent('For self-reflection, not a diagnosis.')
     // A quiet close: nothing to share, no score.
@@ -606,44 +715,31 @@ const ring: Question = {
 }
 const sixADay: DailySet = { ...today, evening: [lunch, queue, ring], pool: [...today.questions, lunch, queue, ring] }
 
-describe('the evening, from 4 pm', () => {
-  it('opens on its own at 4 pm: a check-in on the morning answers, then three more questions', async () => {
+describe('the evening, from 5 pm', () => {
+  it('opens on its own at 5 pm with three new questions, and only three', async () => {
     answeredThisMorning()
-    vi.setSystemTime(at(16))
+    vi.setSystemTime(at(17))
     const fetchMock = stubApi({ today: { status: 200, body: sixADay } })
     render(<App />)
 
-    const card = await screen.findByRole('region', { name: 'Did any dishes pile up today?' })
-    expect(card).toHaveTextContent('This morning you said Right after eating')
+    expect(await screen.findByRole('region', { name: 'Lunch time. What usually happens?' })).toBeInTheDocument()
     expect(screen.getByText('Edition #3 · Monday evening')).toBeInTheDocument()
-    expect(screen.getByText('Welcome back. Before anything new, how did this morning go?')).toBeInTheDocument()
-    // The morning three, two check-ins and three new questions, in one line.
-    expect(screen.getByRole('button', { name: 'Question 4 of 8' })).toHaveAttribute('aria-current', 'step')
-    expect(screen.getByRole('button', { name: 'Question 6 of 8' })).toBeDisabled()
-    // No switch between parts of the day: the clock decides.
+    // Edwin, 2026-10-15: "questions seems more than 3". Each sitting is three.
+    const dashes = within(screen.getByRole('navigation', { name: "Today's questions" })).getAllByRole('button')
+    expect(dashes).toHaveLength(3)
+    expect(screen.getByRole('button', { name: 'Question 1 of 3' })).toHaveAttribute('aria-current', 'step')
+    // No check-in on the morning's answers, and no switch between parts of the day: the clock decides.
+    expect(screen.queryByText('Did any dishes pile up today?')).not.toBeInTheDocument()
+    expect(screen.queryByText('When do you wash the dishes?')).not.toBeInTheDocument()
     expect(
-      screen.queryByRole('button', { name: /morning|afternoon|evening|check-in|Today's questions/i }),
+      screen.queryByRole('button', { name: /^(morning|afternoon|evening|check-in)/i }),
     ).not.toBeInTheDocument()
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+    expect(within(screen.getByRole('group', { name: 'Your day' })).getAllByRole('listitem').map(plainText)).toEqual([
+      'Morning three5 am to 4:30 pmDone',
+      'Evening three5 pm to midnightOpen now',
+    ])
 
-    fireEvent.click(within(card).getByRole('button', { name: 'They piled up a bit' }))
-    const reflection = await within(card).findByRole('note', { name: 'Your reflection' })
-    expect(reflection).toHaveTextContent('A pile on a full day is normal.')
-    expect(reflection).toHaveTextContent('For self-reflection, not a diagnosis.')
-    expect(card).not.toHaveTextContent(crowdOrScore)
-    expect(within(card).queryByRole('button', { name: 'I washed them straight away' })).not.toBeInTheDocument()
-    next()
-    const second = await screen.findByRole('region', { name: 'How did getting up go this morning?' })
-    expect(second).toHaveTextContent('This morning you said Several')
-    await answer('I snoozed a few times')
-    next()
-
-    expect(await screen.findByRole('region', { name: 'Lunch time. What usually happens?' })).toBeInTheDocument()
-    expect(calls(fetchMock, '/api/votes')).toHaveLength(0) // check-in answers stay on the phone
-    const h = JSON.parse(localStorage.getItem('pi.history.v1')!)
-    expect(h.answers).toContainEqual(
-      expect.objectContaining({ questionId: 'q-dishes#evening', evening: true, traits: { conscientiousness: -1 } }),
-    )
     await answer('I get out for a walk')
     next()
     await answer('Say something calmly')
@@ -652,31 +748,77 @@ describe('the evening, from 4 pm', () => {
     next()
     const day = await screen.findByRole('region', { name: 'Day complete' })
     expect(within(day).getByRole('list', { name: "This evening's answers" }).children).toHaveLength(3)
-    expect(day).toHaveTextContent('Tomorrow Money · Friendship')
+    const tomorrow = within(day).getByRole('group', { name: 'Tomorrow' })
+    expect(tomorrow).toHaveTextContent('Money')
+    expect(tomorrow).toHaveTextContent('Friendship')
+    expect(day).toHaveTextContent('Sleep well. Your next three open at 5 am.')
     expect(day).not.toHaveTextContent(crowdOrScore)
     expect(calls(fetchMock, '/api/votes')).toHaveLength(3)
 
-    // The morning's cards are still one tap away on the dashes.
-    fireEvent.click(screen.getByRole('button', { name: 'Question 1 of 8' }))
-    expect(await screen.findByRole('note', { name: 'What your answer may say' })).toHaveTextContent('clear sink')
+    // This evening's cards are still one tap away on the dashes.
+    fireEvent.click(screen.getByRole('button', { name: 'Question 1 of 3' }))
+    expect(await screen.findByRole('region', { name: 'Lunch time. What usually happens?' })).toHaveTextContent('You chose')
   })
 
-  it('turns to the evening at 4 pm, and to a new day at midnight, while the app stays open', async () => {
+  it('turns at 4:30 pm, 5 pm and midnight while the app stays open', async () => {
     answeredThisMorning()
     vi.setSystemTime(at(15))
     const fetchMock = stubApi({ today: { status: 200, body: sixADay } })
     render(<App />)
-    expect(await screen.findByRole('region', { name: 'Morning done.' })).toHaveTextContent(
-      "Three more questions open at 4 pm, and I'll ask how this morning went.",
-    )
+    expect(await screen.findByRole('region', { name: 'Morning done.' })).toBeInTheDocument()
 
-    vi.setSystemTime(at(16))
+    vi.setSystemTime(new Date(2026, 9, 12, 16, 30))
     fireEvent(window, new Event('focus'))
-    expect(await screen.findByRole('region', { name: 'Did any dishes pile up today?' })).toBeInTheDocument()
+    const pause = await screen.findByRole('region', { name: 'Your evening three open at 5 pm.' })
+    expect(pause).toHaveTextContent('Your morning is done. This half hour is yours.')
+    expect(within(pause).getByRole('group', { name: 'This evening' })).toHaveTextContent('Food and eating')
+    expect(screen.queryByRole('navigation', { name: "Today's questions" })).not.toBeInTheDocument()
+
+    vi.setSystemTime(at(17))
+    fireEvent(document, new Event('visibilitychange'))
+    expect(await screen.findByRole('region', { name: 'Lunch time. What usually happens?' })).toBeInTheDocument()
 
     vi.setSystemTime(at(0, 13))
     fireEvent(document, new Event('visibilitychange'))
     await waitFor(() => expect(calls(fetchMock, '/api/editions/2026-10-13')).toHaveLength(1))
+    expect(await screen.findByRole('region', { name: 'The night is yours.' })).toHaveTextContent(
+      'Your morning three open at 5 am.',
+    )
+  })
+
+  it("closes the morning's questions at 4:30 pm, answered or not, without a word of blame", async () => {
+    vi.setSystemTime(new Date(2026, 9, 12, 16, 45))
+    stubApi({ today: { status: 200, body: sixADay } })
+    const first = render(<App />)
+    const pause = await screen.findByRole('region', { name: 'Your evening three open at 5 pm.' })
+    expect(pause).toHaveTextContent("This morning's questions have closed. That's fine: the evening is a fresh start.")
+    expect(screen.queryByText('When do you wash the dishes?')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Skip this one' })).not.toBeInTheDocument()
+    expect(within(screen.getByRole('group', { name: 'Your day' })).getAllByRole('listitem').map(plainText)).toEqual([
+      'Morning three5 am to 4:30 pmClosed',
+      'Evening three5 pm to midnightOpens at 5 pm',
+    ])
+    first.unmount()
+
+    vi.setSystemTime(at(19))
+    render(<App />)
+    expect(await screen.findByRole('region', { name: 'Lunch time. What usually happens?' })).toBeInTheDocument()
+    expect(screen.queryByText('When do you wash the dishes?')).not.toBeInTheDocument()
+  })
+
+  it('rests at night: nothing to answer before 5 am, just what the morning holds', async () => {
+    vi.setSystemTime(at(3))
+    stubApi({ today: { status: 200, body: sixADay } })
+    render(<App />)
+    const night = await screen.findByRole('region', { name: 'The night is yours.' })
+    expect(night).toHaveTextContent('Your morning three open at 5 am. Nothing to do until then but rest.')
+    expect(within(night).getByRole('group', { name: 'Your morning three · 5 am' })).toHaveTextContent('Daily habits')
+    expect(screen.queryByRole('navigation', { name: "Today's questions" })).not.toBeInTheDocument()
+    expect(screen.queryByText('When do you wash the dishes?')).not.toBeInTheDocument()
+    expect(within(screen.getByRole('group', { name: 'Your day' })).getAllByRole('listitem').map(plainText)).toEqual([
+      'Morning three5 am to 4:30 pmOpens at 5 am',
+      'Evening three5 pm to midnightOpens at 5 pm',
+    ])
   })
 
   it('ends the day asking how each morning move went, with a thought for tomorrow', async () => {
@@ -703,12 +845,12 @@ describe('the evening, from 4 pm', () => {
       ]),
     )
     vi.setSystemTime(at(19))
-    const fetchMock = stubApi({})
+    const fetchMock = stubApi({ today: { status: 200, body: sixADay } })
     render(<App />)
-    await answer('I washed them straight away')
+    await answer('I get out for a walk')
     next()
-    await answer('I snoozed a few times')
-    next()
+    await skip()
+    await skip()
 
     const day = await screen.findByRole('region', { name: 'Day complete' })
     expect(day).not.toHaveTextContent(crowdOrScore)
@@ -734,26 +876,36 @@ describe('the evening, from 4 pm', () => {
       date: '2026-10-12',
     })
 
-    expect(within(day).getByRole('note', { name: 'For tomorrow' })).toBeInTheDocument()
-    expect(day).toHaveTextContent('Tomorrow Money · Friendship')
-    expect(day).toHaveTextContent('See you tomorrow morning.')
+    // The thought for tomorrow draws on the whole day, this morning included.
+    const forTomorrow = within(day).getByRole('note', { name: 'For tomorrow' })
+    expect(forTomorrow).toHaveTextContent('Getting things done')
+    expect(within(day).getByRole('group', { name: 'Tomorrow' })).toHaveTextContent('Money')
     expect(day).toHaveTextContent('For self-reflection, not a diagnosis.')
     expect(document.body.textContent).not.toMatch(noClinicianWords)
   })
 
-  it('gives no check-in the same evening to a question first answered in the evening', async () => {
+  it('never changes a sitting someone has started when the 18+ answer comes in', async () => {
+    vi.setSystemTime(at(18))
+    stubApi({ today: { status: 200, body: { ...sixADay, pool: [...sixADay.pool!, closeness] } } })
+    render(<App />)
+    await answer('I get out for a walk')
+    const before = within(screen.getByRole('navigation', { name: "Today's questions" })).getAllByRole('button')
+    expect(before).toHaveLength(3)
+    fireEvent.click(screen.getByRole('button', { name: "Yes, I'm 18 or older" }))
+    // Still the same card, answered, and still three.
+    expect(await screen.findByRole('region', { name: 'Lunch time. What usually happens?' })).toHaveTextContent('You chose')
+    expect(within(screen.getByRole('navigation', { name: "Today's questions" })).getAllByRole('button')).toHaveLength(3)
+    expect(JSON.parse(localStorage.getItem('pi.pick.2026-10-12.pm')!)).toEqual(['q-lunch', 'q-queue', 'q-ring'])
+  })
+
+  it('ends the day quietly when an edition has no evening questions', async () => {
     vi.setSystemTime(at(19))
     stubApi({})
     render(<App />)
-    expect(await screen.findByText('When do you wash the dishes?')).toBeInTheDocument()
-    expect(screen.getByText('Edition #3 · Monday evening')).toBeInTheDocument()
-    await answer('Right after eating')
-    next()
-    await skip()
-    await skip()
-    expect(await screen.findByRole('region', { name: 'Day complete' })).toBeInTheDocument()
-    expect(screen.queryByText('Did any dishes pile up today?')).not.toBeInTheDocument()
-    expect(screen.getAllByRole('button', { name: /^Question \d of \d$/ })).toHaveLength(3)
+    const day = await screen.findByRole('region', { name: 'Day complete' })
+    expect(screen.queryByRole('navigation', { name: "Today's questions" })).not.toBeInTheDocument()
+    expect(within(day).queryByRole('list', { name: "This evening's answers" })).not.toBeInTheDocument()
+    expect(within(screen.getByRole('group', { name: 'Your day' })).getAllByRole('listitem')).toHaveLength(1)
   })
 })
 
@@ -982,6 +1134,8 @@ describe('the weekly mirror', () => {
     expect(who).toHaveTextContent('You said: “Right after eating”, “Before bed”')
     expect(who).toHaveTextContent('Prediction: a solid read')
     expect(who).toHaveTextContent('Early read: from 9 answers')
+    expect(who).toHaveTextContent(`The honest part: ${TRAITS.conscientiousness.high.cost}`)
+    expect(who).toHaveTextContent(`The honest part: ${TRAITS.attachment_anxiety.high.cost}`)
     expect(who).not.toHaveTextContent('Energy from people') // 52 sits in the middle
 
     expect(page).toHaveTextContent('4 steps started, 2 tried, 1 helped.')
@@ -1015,6 +1169,22 @@ describe('the weekly mirror', () => {
     expect(within(page).queryByRole('figure', { name: 'One line from this week' })).not.toBeInTheDocument()
     expect(within(page).getByRole('list', { name: 'This week in numbers' })).toHaveTextContent('Went deepest0')
     expect(page).not.toHaveTextContent('%')
+  })
+
+  it('shows what was written in their own words that week, from this phone only, keeping intimacy answers private', async () => {
+    const keep = (id: string, w: object) => localStorage.setItem(`pi.words.${id}`, JSON.stringify({ questionId: id, ...w }))
+    keep('q-a', { date: '2026-10-13', prompt: 'Payday arrives. What goes first?', theme: 'money', words: 'Rent, then my mum.', closest: 'Bills' })
+    keep('q-b', { date: '2026-10-14', prompt: 'How do you show a partner affection?', theme: 'intimacy', private: true, words: 'Only for me' })
+    keep('q-c', { date: '2026-10-05', prompt: 'Last week', words: 'Old words' })
+    const fetchMock = await openMirror()
+    const section = await screen.findByRole('region', { name: /In your own words/ })
+    expect(section).toHaveTextContent('“Rent, then my mum.”')
+    expect(section).toHaveTextContent('Closest to: Bills')
+    expect(section).toHaveTextContent('A private answer, in your own words.')
+    expect(section).not.toHaveTextContent('Only for me')
+    expect(section).not.toHaveTextContent('Old words')
+    expect(section).toHaveTextContent('These words were never sent anywhere.')
+    for (const [u] of fetchMock.mock.calls) expect(String(u)).not.toContain('Rent')
   })
 
   it('records how a small step went, then shows the updated mirror', async () => {
@@ -1054,6 +1224,7 @@ describe('the weekly mirror', () => {
 
   it('deletes everything, on the server and on this phone, except the device token', async () => {
     localStorage.setItem('pi.history.v1', JSON.stringify({ answers: [], skips: [] }))
+    localStorage.setItem('pi.words.q-x', JSON.stringify({ questionId: 'q-x', date: '2026-10-13', prompt: 'P', words: 'Mine' }))
     localStorage.setItem('pi.device.v1', 'v1.mine.sig')
     const fetchMock = await openMirror()
     fireEvent.click(await screen.findByRole('button', { name: 'Delete everything' }))
@@ -1063,6 +1234,7 @@ describe('the weekly mirror', () => {
     const del = fetchMock.mock.calls.find(([u, init]) => u === '/api/mirror' && init?.method === 'DELETE')!
     expect((del[1]!.headers as Record<string, string>).Authorization).toBe('Device v1.mine.sig')
     expect(localStorage.getItem('pi.history.v1')).toBeNull()
+    expect(localStorage.getItem('pi.words.q-x')).toBeNull()
     expect(localStorage.getItem('pi.device.v1')).toBe('v1.mine.sig')
   })
 
@@ -1110,7 +1282,6 @@ describe('the weekly mirror', () => {
   })
 })
 
-// The week (2026-10-15): three in the morning, three more at 4 pm, Monday to
 // October so far, as GET /api/mirror/month returns it on Sunday 18 October.
 const month: PeriodMirror = {
   period: 'month',
@@ -1281,6 +1452,8 @@ describe('the monthly, quarterly and yearly mirrors', () => {
     expect(within(page).getByRole('list', { name: 'Steps that helped' })).toHaveTextContent(
       'This week, call one friend instead of texting.',
     )
+    const who = within(page).getByRole('heading', { name: '05 Who you were this month' }).parentElement!
+    expect(who).toHaveTextContent(`The honest part: ${TRAITS.rumination.high.cost}`)
     expect(page).toHaveTextContent('4 steps started, 3 tried, 2 helped.')
     expect(page).toHaveTextContent('A month is long enough to see a pattern, and short enough to change one.')
 
@@ -1329,7 +1502,8 @@ describe('the monthly, quarterly and yearly mirrors', () => {
   })
 })
 
-// Saturday; Sunday is for the mirror.
+// The week (2026-10-15): three in the morning, three more from 5 pm, Monday
+// to Saturday; Sunday is for the mirror.
 describe('the week', () => {
   async function morningThree() {
     await answer('Right after eating')
@@ -1339,28 +1513,32 @@ describe('the week', () => {
     next()
   }
 
-  it('opens three more questions at 4 pm, not before', async () => {
+  it('opens three more questions at 5 pm, not before', async () => {
     stubApi({ today: { status: 200, body: sixADay } })
     const first = render(<App />)
     await morningThree()
     const morning = await screen.findByRole('region', { name: 'Morning done.' })
-    expect(morning).toHaveTextContent("Three more questions open at 4 pm, and I'll ask how this morning went.")
+    expect(within(morning).getByRole('group', { name: 'Your evening three · 5 pm' })).toBeInTheDocument()
     expect(screen.queryByText('Lunch time. What usually happens?')).not.toBeInTheDocument()
     first.unmount()
 
-    vi.setSystemTime(new Date(2026, 9, 12, 15, 59))
+    vi.setSystemTime(new Date(2026, 9, 12, 16, 29))
     const second = render(<App />)
     expect(await screen.findByRole('region', { name: 'Morning done.' })).toBeInTheDocument()
     expect(screen.getByText('Edition #3 · Monday')).toBeInTheDocument()
     second.unmount()
 
-    vi.setSystemTime(new Date(2026, 9, 12, 16, 30))
+    vi.setSystemTime(new Date(2026, 9, 12, 16, 59))
+    const third = render(<App />)
+    expect(await screen.findByRole('region', { name: 'Your evening three open at 5 pm.' })).toBeInTheDocument()
+    expect(screen.queryByText('Lunch time. What usually happens?')).not.toBeInTheDocument()
+    third.unmount()
+
+    vi.setSystemTime(at(17))
     render(<App />)
-    expect(await screen.findByText('Did any dishes pile up today?')).toBeInTheDocument()
-    await skip()
-    await skip()
     expect(await screen.findByRole('region', { name: 'Lunch time. What usually happens?' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Question 6 of 8' })).toHaveAttribute('aria-current', 'step')
+    expect(screen.getByRole('button', { name: 'Question 1 of 3' })).toHaveAttribute('aria-current', 'step')
+    expect(screen.queryByRole('button', { name: 'Question 4 of 6' })).not.toBeInTheDocument()
   })
 
   it('opens on the mirror on Sunday, with no questions to answer', async () => {
@@ -1372,8 +1550,11 @@ describe('the week', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Today' }))
     const review = screen.getByRole('region', { name: 'Sunday is for looking back.' })
-    expect(review).toHaveTextContent('Fresh questions arrive tomorrow morning.')
-    expect(review).toHaveTextContent('Tomorrow Money · Anger')
+    expect(review).toHaveTextContent('Fresh questions arrive tomorrow at 5 am.')
+    const tomorrow = within(review).getByRole('group', { name: 'Tomorrow' })
+    expect(tomorrow).toHaveTextContent('Money')
+    expect(tomorrow).toHaveTextContent('Anger')
+    expect(screen.queryByRole('group', { name: 'Your day' })).not.toBeInTheDocument()
     expect(review).not.toHaveTextContent(crowdOrScore)
     expect(screen.getByText('Review day · Sunday')).toBeInTheDocument()
     expect(screen.queryByRole('region', { name: 'Morning done.' })).not.toBeInTheDocument()
@@ -1383,7 +1564,7 @@ describe('the week', () => {
 
   it('looks ahead to the review day on Saturday evening', async () => {
     vi.setSystemTime(at(19, 17))
-    stubApi({ today: { status: 200, body: { ...today, date: '2026-10-17', tomorrowThemes: [] } } })
+    stubApi({ today: { status: 200, body: { ...sixADay, date: '2026-10-17', tomorrowThemes: [] } } })
     render(<App />)
     await skip()
     await skip()

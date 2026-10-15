@@ -36,7 +36,7 @@ type DailySet struct {
 	Date      string     `json:"date"`              // YYYY-MM-DD
 	Edition   int        `json:"edition,omitempty"` // shared worldwide: "Persona Index #142"
 	Questions []Question `json:"questions"`         // the morning's default three, for a phone with no history
-	// Evening is the second sitting's three; the phone opens them at 4 pm.
+	// Evening is the second sitting's three; the phone opens them at 5 pm.
 	Evening []Question `json:"evening,omitempty"`
 	// Pool holds every question of the edition, both halves' defaults included.
 	// Each phone picks its own three for each half from it; intimate ones only

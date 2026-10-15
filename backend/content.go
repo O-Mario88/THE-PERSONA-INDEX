@@ -428,9 +428,9 @@ func loadContentBank(raw []byte) (contentBank, error) {
 	return b, nil
 }
 
-// The week: Monday to Saturday bring three questions in the morning and three
-// more at 4 pm, for the evening; Sunday brings none and is the day for the
-// weekly mirror.
+// The week: Monday to Saturday bring three questions for the morning (5 am to
+// 4:30 pm on the phone) and three more for the evening (5 pm to midnight);
+// Sunday brings none and is the day for the weekly mirror.
 const halves = 2 // 0 the morning, 1 the evening
 
 // questionDay numbers the days that bring questions, counting from

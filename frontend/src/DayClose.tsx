@@ -1,23 +1,25 @@
 import { useState } from 'react'
-import { recalledChoice, recalledEvening, saveStep, SKIPPED, type Question, type StepStatus } from './api'
+import { recalledChoice, saveStep, SKIPPED, type Question, type StepStatus } from './api'
 import { adviceFor } from './advice'
-import { isSaturday, type FollowUpItem } from './day'
+import { isSaturday, opensAt } from './day'
 import { movesOn, setMoveStatus, startedInEvening, type Move } from './moves'
+import { Upcoming } from './Sittings'
 import { themeName, themeStyle, themeVars } from './themes'
 
-// The close of each sitting. The morning's: what the answers add up to, the
-// moves picked and what comes at 4 pm. The evening's: how the morning's moves
-// went, one thought for tomorrow and tomorrow's themes. The insight cards are
-// not repeated; they were just shown. Nothing here is scored, shared or set
-// against anyone else, and nothing resets or punishes a missed day.
+// The close of each sitting. The morning's: what the answers add up to,
+// honestly, the moves picked and what opens at 5 pm. The evening's: how the
+// morning's moves went, one thought for tomorrow and what opens at 5 am. The
+// insight cards are not repeated; they were just shown. Nothing here is
+// scored, shared or set against anyone else, and nothing resets or punishes
+// a missed day.
 
 type Props = {
   date: string
   questions: Question[] // this sitting's questions
   tomorrowThemes: string[]
 } & (
-  | { sitting: 'morning'; later: { questions: boolean; checkIn: boolean } } // what opens at 4 pm
-  | { sitting: 'evening'; followUps: FollowUpItem[] }
+  | { sitting: 'morning'; eveningThemes: string[] | null } // null: no evening sitting today
+  | { sitting: 'evening'; morning: Question[] }
 )
 
 // Saturday looks ahead to Sunday, the review day.
@@ -31,23 +33,19 @@ const REPLIES: Record<Exclude<StepStatus, 'started'>, string> = {
   not_tried: "That's okay. The day had other plans. It'll still be there tomorrow.",
 }
 
-function laterLine({ questions, checkIn }: { questions: boolean; checkIn: boolean }): string {
-  if (questions && checkIn) return "Three more questions open at 4 pm, and I'll ask how this morning went."
-  if (questions) return 'Three more questions open at 4 pm.'
-  return "At 4 pm I'll ask how this morning went."
-}
+const chosenIn = (questions: Question[]) => questions.flatMap((q) => q.options.filter((o) => o.id === recalledChoice(q.id)))
 
 export function DayClose(props: Props) {
   const { date, questions, tomorrowThemes, sitting } = props
   const headingId = `close-${sitting}-${date}`
-  const chosen = questions.flatMap((q) => q.options.filter((o) => o.id === recalledChoice(q.id)))
-  const comesLater = props.sitting === 'morning' && (props.later.questions || props.later.checkIn)
-  const endsDay = !comesLater
+  const chosen = chosenIn(questions)
+  const eveningThemes = props.sitting === 'morning' ? props.eveningThemes : null
+  const endsDay = !eveningThemes
 
   let title = 'Day complete'
   let lead = "That's your day, in your own answers."
   if (props.sitting === 'morning') {
-    title = comesLater ? 'Morning done.' : 'Done for today.'
+    title = eveningThemes ? 'Morning done.' : 'Done for today.'
     lead = "Here's what your answers add up to this morning."
   }
 
@@ -66,35 +64,32 @@ export function DayClose(props: Props) {
         <>
           <Thread chosen={chosen.filter((o) => o.insight)} />
           <MorningMoves date={date} />
-          {comesLater && <p className="tomorrow">{laterLine(props.later)}</p>}
+          {eveningThemes && (
+            <Upcoming
+              label={`Your evening three · ${opensAt('evening')}`}
+              themes={eveningThemes}
+              note={`Go about your day. They'll be waiting for you at ${opensAt('evening')}.`}
+            />
+          )}
         </>
       ) : (
         <>
           <MoveCheck date={date} />
-          <ForTomorrow
-            chosen={[
-              ...props.followUps.map((f) => f.said),
-              ...props.followUps.flatMap(({ question }) =>
-                question.followUp!.options.filter((o) => o.id === recalledEvening(question.id)),
-              ),
-              ...chosen,
-            ]}
-          />
+          <ForTomorrow chosen={[...chosenIn(props.morning), ...chosen]} />
         </>
       )}
 
       {endsDay && (
         <>
-          {isSaturday(date) && <p className="tomorrow">{SUNDAY_LINE}</p>}
-          {tomorrowThemes.length > 0 && (
-            <p className="tomorrow">
-              <span className="eyebrow">Tomorrow</span> {tomorrowThemes.map(themeName).join(' · ')}
-            </p>
+          {isSaturday(date) ? (
+            <p className="tomorrow">{SUNDAY_LINE}</p>
+          ) : (
+            <Upcoming label="Tomorrow" themes={tomorrowThemes} />
           )}
-          <p className="check-in">
+          <p className="sign-off">
             {isSaturday(date)
               ? 'Sleep well. Tomorrow is for looking back: your week will be waiting in your mirror.'
-              : 'Sleep well. See you tomorrow morning.'}
+              : `Sleep well. Your next three open at ${opensAt('morning')}.`}
           </p>
         </>
       )}
@@ -136,6 +131,9 @@ function Thread({ chosen }: { chosen: { traits?: Record<string, number> }[] }) {
         <div key={p.trait} className="thread-point">
           <p className="thread-name">{p.name}</p>
           <p>{p.strength}</p>
+          <p className="honest">
+            <strong>The honest part:</strong> {p.honest}
+          </p>
           <p>
             <strong>For the rest of today:</strong> {p.grow}
           </p>
@@ -216,14 +214,19 @@ function MoveCheck({ date }: { date: string }) {
   )
 }
 
-// The day's clearest leaning, from the morning answers checked in on, the
-// check-ins and the evening's answers: one thing to carry into tomorrow.
+// The day's clearest leaning, from the morning's and the evening's answers:
+// one thing to carry into tomorrow.
 function ForTomorrow({ chosen }: { chosen: { traits?: Record<string, number> }[] }) {
   const top = adviceFor(chosen).points[0]
   return (
     <div className="thread" role="note" aria-label="For tomorrow">
       <p className="eyebrow">For tomorrow</p>
       {top && <p className="thread-name">{top.name}</p>}
+      {top && (
+        <p className="honest">
+          <strong>The honest part:</strong> {top.honest}
+        </p>
+      )}
       <p>{top ? top.grow : QUIET_DAY}</p>
     </div>
   )

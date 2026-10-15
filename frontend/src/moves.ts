@@ -1,5 +1,5 @@
 import type { StepStatus } from './api'
-import { eveningStart } from './day'
+import { morningEnd } from './day'
 
 // Moves: the small steps a person chooses to try, one per insight card at
 // most ("I'll try it"). The evening asks how each morning move went; one
@@ -75,7 +75,7 @@ export function movesOn(date: string): Move[] {
 // startedInEvening says whether a move was picked in the evening sitting, so
 // it has had no day to try yet.
 export function startedInEvening(m: Move): boolean {
-  return m.at !== undefined && m.at >= eveningStart(m.date)
+  return m.at !== undefined && m.at >= morningEnd(m.date)
 }
 
 export function setMoveStatus(questionId: string, status: StepStatus) {

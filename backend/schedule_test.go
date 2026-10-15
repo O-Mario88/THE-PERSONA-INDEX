@@ -9,8 +9,9 @@ import (
 )
 
 // Acceptance tests for the week (Edwin, 2026-10-15): Monday to Saturday bring
-// three questions in the morning and three more that open at 4 pm; Sunday is
-// for review, with no new questions, and opens on the weekly mirror.
+// three questions in the morning and three more that open at 5 pm on the
+// phone; Sunday is for review, with no new questions, and opens on the weekly
+// mirror.
 
 func TestTheWeek(t *testing.T) {
 	b := shippedBank(t)

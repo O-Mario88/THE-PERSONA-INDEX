@@ -13,7 +13,8 @@ export type Source = { title: string; url: string; strength: 'strong' | 'moderat
 // summary of it. soto2019 backs "Reading this honestly", and roberts2006,
 // hudson2015 and gollwitzer2006 back "Why movement is possible" (Mirror.tsx).
 // lally2010 backs the quarter's closing line and roberts2006 the year's
-// (PERIOD_CLOSE below).
+// (PERIOD_CLOSE below). Each leaning's honest part has its own source
+// (Side.costSource).
 export const SOURCES = {
   roberts2007: {
     title: 'Roberts et al., 2007',
@@ -78,6 +79,44 @@ export const SOURCES = {
     url: 'https://kops.uni-konstanz.de/entities/publication/2e749bfb-8533-437c-8203-7e788c910c5f',
     strength: 'strong',
   },
+  // Behind "the honest part" of each leaning (Side.cost below).
+  boyce2010: { title: 'Boyce, Wood & Brown, 2010', url: 'https://wrap.warwick.ac.uk/5298/', strength: 'moderate' },
+  judge2012: {
+    title: 'Judge, Livingston & Hurst, 2012',
+    url: 'https://bps.org.uk/research-digest/truth-about-nice-guys-mean-girls-and-pay',
+    strength: 'strong',
+  },
+  blain2020: {
+    title: 'Blain et al., 2020',
+    url: 'https://experts.umn.edu/en/publications/apophenia-as-the-disposition-to-false-positives-a-unifying-framew/',
+    strength: 'moderate',
+  },
+  nettle2005: { title: 'Nettle, 2005', url: 'https://danielnettle.org.uk/wp-content/uploads/2024/06/029.pdf', strength: 'moderate' },
+  lichan2012: {
+    title: 'Li & Chan, 2012',
+    url: 'https://academia.edu/13297419/How_anxious_and_avoidant_attachment_affect_romantic_relationship_quality_differently_A_meta-analytic_review',
+    strength: 'strong',
+  },
+  kivetz2006: {
+    title: 'Kivetz & Keinan, 2006',
+    url: 'https://ideas.repec.org/a/oup/jconrs/v33y2006i2p273-282.html',
+    strength: 'moderate',
+  },
+  distefano2014: {
+    title: 'Di Stefano, Gino, Pisano & Staats, 2014',
+    url: 'https://www.hec.edu/en/knowledge/instants/power-reflection-work-insight-hec-professor-giada-di-stefano',
+    strength: 'moderate',
+  },
+  dittmar2014: {
+    title: 'Dittmar, Bond, Hurst & Kasser, 2014',
+    url: 'https://research.brighton.ac.uk/en/publications/the-relationship-between-materialism-and-personal-well-being-a-me/',
+    strength: 'strong',
+  },
+  nicolao2009: {
+    title: 'Nicolao, Irwin & Goodman, 2009',
+    url: 'https://news.utexas.edu/2009/02/10/new-happiness-research-demonstrates-when-material-items-are-the-best-option',
+    strength: 'moderate',
+  },
   vazire2010: {
     title: 'Vazire, 2010',
     url: 'https://source.washu.edu/2010/03/others-may-know-us-better-than-we-know-ourselves-study-finds/',
@@ -94,6 +133,12 @@ type Side = {
   with: string // the tagline's closing: "a soft spot for a finished list"
   headline: string
   prediction: string
+  // The honest part (Edwin, 2026-10-15: "not afraid of telling them the
+  // negative things ... in a polite human language"): what this leaning can
+  // cost, from costSource. Where the research finds no real cost, it says so
+  // rather than invent one, and costSource is the trait's own.
+  cost: string
+  costSource: SourceKey
 }
 
 export type TraitText = {
@@ -117,6 +162,8 @@ export const TRAITS: Record<string, TraitText> = {
       headline: 'You finish what you start.',
       prediction:
         "When a day gets crowded, you're likely the one who still closes the loop. Just watch that rest doesn't wait until everything is done.",
+      cost: "When something you've worked hard for is taken away, like a job, it can hit you harder and for longer. Your worth was never only in what you get done.",
+      costSource: 'boyce2010',
     },
     low: {
       adj: 'Easygoing',
@@ -126,6 +173,8 @@ export const TRAITS: Record<string, TraitText> = {
       headline: 'You keep your plans loose.',
       prediction:
         "You adapt fast when plans change. The cost tends to show up in the small jobs that quietly pile up while you're busy with bigger things.",
+      cost: 'The small things you mean to do add up. Over years, this leaning goes with poorer health and shakier work, so a few steady habits are worth more than they look.',
+      costSource: 'roberts2007',
     },
     research: 'Across many studies, organised people tend to live longer, do better at work and keep steadier relationships.',
     source: 'roberts2007',
@@ -141,6 +190,8 @@ export const TRAITS: Record<string, TraitText> = {
       headline: 'You keep the peace.',
       prediction:
         "People probably feel safe bringing their problems to you. Notice the days you give way when you'd rather not; kindness counts for you too.",
+      cost: 'Keeping the peace can cost you. People who lean this way tend to earn less, partly because they ask for less. Before a pay talk, decide your number and say it first.',
+      costSource: 'judge2012',
     },
     low: {
       adj: 'Candid',
@@ -150,6 +201,8 @@ export const TRAITS: Record<string, TraitText> = {
       headline: 'You say what you think.',
       prediction:
         'People tend to know exactly where they stand with you. Your directness lands best when the other person feels heard first.',
+      cost: 'Directness can cost you closeness. This leaning tends to go with a smaller circle of support and more stress, even when it pays at work.',
+      costSource: 'judge2012',
     },
     research: 'Warmer, more agreeable people are more likely to help others, strangers included, across many situations.',
     source: 'graziano2007',
@@ -164,7 +217,9 @@ export const TRAITS: Record<string, TraitText> = {
       with: 'an eye for the unfamiliar',
       headline: 'You reach for the new.',
       prediction:
-        "You're likely to spot another way of doing things before anyone else. Depth comes from staying with one new thing long enough to get good at it.",
+        "You're quick to spot another way of doing things. Depth comes from staying with one new thing long enough to get good at it.",
+      cost: "The mind that finds new connections can also see patterns that aren't there. Test a bright idea before you bet on it.",
+      costSource: 'blain2020',
     },
     low: {
       adj: 'Grounded',
@@ -174,6 +229,8 @@ export const TRAITS: Record<string, TraitText> = {
       headline: 'You trust what works.',
       prediction:
         "You're the steady one when everything around you changes. One small new thing a week keeps that steadiness from turning into a rut.",
+      cost: "When the old way stops working, you may be slow to reach for another. Fewer new ideas tend to come when you stay with what's known.",
+      costSource: 'mccrae1987',
     },
     research: 'Openness goes with divergent thinking: coming up with more ideas, and more unusual ones.',
     source: 'mccrae1987',
@@ -189,6 +246,8 @@ export const TRAITS: Record<string, TraitText> = {
       headline: 'People charge you up.',
       prediction:
         "A good conversation can lift your whole day. Protect a little quiet too; it's where your ideas get a chance to settle.",
+      cost: 'The pull toward people and excitement can come with a little more risk of getting hurt. Enjoy the rush, and keep the careful habits.',
+      costSource: 'nettle2005',
     },
     low: {
       adj: 'Quiet',
@@ -198,6 +257,8 @@ export const TRAITS: Record<string, TraitText> = {
       headline: 'You recharge on your own.',
       prediction:
         'Your friendships likely run deep rather than wide. A short, low-key yes to company can refresh you more than you expect.',
+      cost: "Staying in is easy to choose, even on days when company would have lifted you. Your mood tends to rise in the moments you act outgoing, even when it isn't your habit.",
+      costSource: 'fleeson2002',
     },
     research: 'In daily life, people feel more upbeat in the moments they act outgoing, quieter people included.',
     source: 'fleeson2002',
@@ -212,7 +273,9 @@ export const TRAITS: Record<string, TraitText> = {
       with: 'feelings that run close to the surface',
       headline: 'Things stay with you.',
       prediction:
-        'You often notice trouble early, before others do. Giving worries a set time each day, written down, tends to make them smaller.',
+        'You often notice trouble early. Giving worries a set time each day, written down, tends to make them smaller.',
+      cost: 'Worry costs more than it seems. Over years, a mind that is often on alert wears on the body too, so calming habits are worth building now.',
+      costSource: 'lahey2009',
     },
     low: {
       adj: 'Calm',
@@ -222,6 +285,8 @@ export const TRAITS: Record<string, TraitText> = {
       headline: 'Setbacks roll off you.',
       prediction:
         "Others likely lean on your calm when things go wrong. Check in on them afterwards; they may still be carrying what you've set down.",
+      cost: "Honestly, there is no proven downside to a calm temper. Just don't let calm turn into not noticing when someone else is still shaken.",
+      costSource: 'lahey2009',
     },
     research: 'People who feel stress more easily tend to have more health problems over a lifetime, which makes calming habits worth building.',
     source: 'lahey2009',
@@ -237,6 +302,8 @@ export const TRAITS: Record<string, TraitText> = {
       headline: 'You play fair, even unseen.',
       prediction:
         "People are likely to trust you with things that matter. Fairness includes asking for the credit you've earned.",
+      cost: "Honestly, there is no proven downside to playing fair. Just don't let it keep you quiet when a deal is unfair to you.",
+      costSource: 'hexaco2005',
     },
     low: {
       adj: 'Pragmatic',
@@ -246,6 +313,8 @@ export const TRAITS: Record<string, TraitText> = {
       headline: 'You treat rules as flexible.',
       prediction:
         "You're resourceful under pressure. Before bending a rule, picture the person who pays for it; the shortcut can look different with a face on it.",
+      cost: 'This leaning goes with more rule-bending at work. Even small shortcuts can cost you trust that takes a long time to rebuild.',
+      costSource: 'hexaco2005',
     },
     research: 'Fair-mindedness predicts honest, rule-keeping behaviour at work better than the classic five traits do.',
     source: 'hexaco2005',
@@ -261,6 +330,8 @@ export const TRAITS: Record<string, TraitText> = {
       headline: 'You notice distance fast.',
       prediction:
         "You likely pick up a change in someone's mood before they say a word. When a silence worries you, one direct question usually beats an hour of guessing.",
+      cost: 'The worry can cost you the closeness you want. This leaning goes with more arguments and less satisfaction in relationships, so ask for reassurance directly instead of testing for it.',
+      costSource: 'lichan2012',
     },
     low: {
       adj: 'Secure',
@@ -270,6 +341,8 @@ export const TRAITS: Record<string, TraitText> = {
       headline: "Silence doesn't rattle you.",
       prediction:
         "You probably make the people close to you feel relaxed. Reaching out first now and then gives them the reassurance you don't need yourself.",
+      cost: "Honestly, there is no proven downside to feeling secure. Just remember that someone close to you may need reassurance you'd never think to ask for.",
+      costSource: 'fraley',
     },
     research: 'Worry about closeness and keeping distance are two separate leanings, and most adults sit somewhere on both.',
     source: 'fraley',
@@ -285,6 +358,8 @@ export const TRAITS: Record<string, TraitText> = {
       headline: 'You keep a little space.',
       prediction:
         'You stand well on your own. Letting someone help with one small thing is a skill worth practising, and it tends to bring people closer.',
+      cost: 'The space you keep has a price. This leaning goes with feeling less close, less supported and less satisfied in relationships, even when nothing is wrong.',
+      costSource: 'lichan2012',
     },
     low: {
       adj: 'Open-Hearted',
@@ -294,6 +369,8 @@ export const TRAITS: Record<string, TraitText> = {
       headline: 'You let people in.',
       prediction:
         'People likely feel at home around you quickly. Keep a little time just for you, so closeness stays a choice rather than a habit.',
+      cost: 'Honestly, there is no proven downside to letting people in. Just keep some time that is yours alone.',
+      costSource: 'fraley',
     },
     research: 'Worry about closeness and keeping distance are two separate leanings, and most adults sit somewhere on both.',
     source: 'fraley',
@@ -308,7 +385,9 @@ export const TRAITS: Record<string, TraitText> = {
       with: "a yes for what's in front of you",
       headline: 'Now tends to win.',
       prediction:
-        'You probably enjoy the moment more than most. A ten-minute pause before a purchase lets the bigger reward catch up.',
+        'You know how to enjoy a moment. A ten-minute pause before a purchase lets the bigger reward catch up.',
+      cost: 'Now can be expensive. This leaning goes with carrying more credit card debt, so give a big buy one night to wait.',
+      costSource: 'meier2010',
     },
     low: {
       adj: 'Patient',
@@ -318,6 +397,8 @@ export const TRAITS: Record<string, TraitText> = {
       headline: "You'll wait for better.",
       prediction:
         'Your patience is likely to pay off over years. Plan one small treat with no purpose at all, so the present feels good too.',
+      cost: 'Always choosing the sensible thing can turn into regret. Looking back, people tend to regret the pleasures they skipped more than the ones they had.',
+      costSource: 'kivetz2006',
     },
     research: 'People who favour now over later tend to carry more credit card debt.',
     source: 'meier2010',
@@ -333,6 +414,8 @@ export const TRAITS: Record<string, TraitText> = {
       headline: 'You replay hard moments.',
       prediction:
         'You care about getting things right. When a replay starts, moving your body tends to quiet the loop faster than thinking harder.',
+      cost: 'Replaying a problem rarely solves it, and it tends to deepen a low mood. Step away first, then take one small action.',
+      costSource: 'nolen2008',
     },
     low: {
       adj: 'Fresh',
@@ -342,6 +425,8 @@ export const TRAITS: Record<string, TraitText> = {
       headline: 'You let things go.',
       prediction:
         'Your days probably feel light. A one-minute look back after big moments turns them into lessons without weighing you down.',
+      cost: 'Letting go fast can mean skipping the lesson. A few minutes spent writing down what you learned tends to sharpen what you take from a day.',
+      costSource: 'distefano2014',
     },
     research: 'Going over problems without acting on them tends to deepen a low mood; a short distraction or one next step helps break the loop.',
     source: 'nolen2008',
@@ -357,6 +442,8 @@ export const TRAITS: Record<string, TraitText> = {
       headline: 'Owning things matters to you.',
       prediction:
         'You care about comfort and quality. Asking what experience a purchase will give you tends to make the good feeling last longer.',
+      cost: 'Putting a lot of weight on owning things tends to go with feeling less satisfied, not more. When a buy feels urgent, ask what you are really hungry for.',
+      costSource: 'dittmar2014',
     },
     low: {
       adj: 'Adventurous',
@@ -366,6 +453,8 @@ export const TRAITS: Record<string, TraitText> = {
       headline: "You'd rather do than own.",
       prediction:
         'Your best memories probably come from places and people, not purchases. Experiences feel better still when the basics are covered.',
+      cost: 'Experiences are a bigger gamble. When one goes badly, it tends to sting for longer than a disappointing purchase, so choose them with care.',
+      costSource: 'nicolao2009',
     },
     research: 'Spending on experiences tends to bring more lasting happiness than spending on possessions.',
     source: 'vanboven2003',

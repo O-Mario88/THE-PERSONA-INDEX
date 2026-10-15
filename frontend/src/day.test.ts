@@ -1,4 +1,4 @@
-import { dayAt, EVENING_HOUR, eveningStart, isEvening, isSaturday, localDate, nextTurn } from './day'
+import { dayAt, isEvening, isSaturday, localDate, MORNING_CLOSES, morningEnd, nextTurn, sittingAt, opensAt } from './day'
 import { loadMoves, moveFor, movesOn, setMoveStatus, startMove, startedInEvening } from './moves'
 
 describe('the local day', () => {
@@ -12,19 +12,41 @@ describe('the local day', () => {
     expect(isSaturday('2026-10-18')).toBe(false)
   })
 
-  it('turns to evening at 4 pm local time', () => {
-    expect(EVENING_HOUR).toBe(16)
-    expect(isEvening(new Date(2026, 9, 12, 15, 59))).toBe(false)
-    expect(isEvening(new Date(2026, 9, 12, 16, 0))).toBe(true)
-    expect(eveningStart('2026-10-12')).toBe(new Date(2026, 9, 12, 16, 0).getTime())
+  // Edwin, 2026-10-15: "from 5:00 AM to 4:30 PM first 3 questions and from
+  // 5:00 PM and disappear at 12:00AM".
+  it('has two sittings: the morning from 5 am to 4:30 pm, the evening from 5 pm to midnight', () => {
+    const at = (h: number, m = 0) => sittingAt(new Date(2026, 9, 12, h, m))
+    expect(at(0)).toBe('night')
+    expect(at(4, 59)).toBe('night')
+    expect(at(5)).toBe('morning')
+    expect(at(16, 29)).toBe('morning')
+    expect(at(16, 30)).toBe('pause')
+    expect(at(16, 59)).toBe('pause')
+    expect(at(17)).toBe('evening')
+    expect(at(23, 59)).toBe('evening')
+    expect(MORNING_CLOSES).toBe(16 * 60 + 30)
   })
 
-  it('turns by itself: to evening at 4 pm, then to the next day at midnight', () => {
-    expect(dayAt(new Date(2026, 9, 12, 9))).toEqual({ date: '2026-10-12', evening: false })
-    expect(dayAt(new Date(2026, 9, 12, 23, 59))).toEqual({ date: '2026-10-12', evening: true })
-    expect(dayAt(new Date(2026, 9, 13, 0, 0))).toEqual({ date: '2026-10-13', evening: false })
-    expect(nextTurn(new Date(2026, 9, 12, 9))).toBe(new Date(2026, 9, 12, 16).getTime())
-    expect(nextTurn(new Date(2026, 9, 12, 16))).toBe(new Date(2026, 9, 13, 0).getTime())
+  it('counts everything after the morning closes as the evening', () => {
+    expect(isEvening(new Date(2026, 9, 12, 16, 29))).toBe(false)
+    expect(isEvening(new Date(2026, 9, 12, 16, 30))).toBe(true)
+    expect(isEvening(new Date(2026, 9, 12, 2))).toBe(false)
+    expect(morningEnd('2026-10-12')).toBe(new Date(2026, 9, 12, 16, 30).getTime())
+  })
+
+  it('names when each sitting opens', () => {
+    expect(opensAt('morning')).toBe('5 am')
+    expect(opensAt('evening')).toBe('5 pm')
+  })
+
+  it('turns by itself at 5 am, 4:30 pm, 5 pm and midnight', () => {
+    expect(dayAt(new Date(2026, 9, 12, 9))).toEqual({ date: '2026-10-12', sitting: 'morning' })
+    expect(dayAt(new Date(2026, 9, 12, 23, 59))).toEqual({ date: '2026-10-12', sitting: 'evening' })
+    expect(dayAt(new Date(2026, 9, 13, 0, 0))).toEqual({ date: '2026-10-13', sitting: 'night' })
+    expect(nextTurn(new Date(2026, 9, 12, 1))).toBe(new Date(2026, 9, 12, 5).getTime())
+    expect(nextTurn(new Date(2026, 9, 12, 9))).toBe(new Date(2026, 9, 12, 16, 30).getTime())
+    expect(nextTurn(new Date(2026, 9, 12, 16, 40))).toBe(new Date(2026, 9, 12, 17).getTime())
+    expect(nextTurn(new Date(2026, 9, 12, 17))).toBe(new Date(2026, 9, 13, 0).getTime())
     expect(nextTurn(new Date(2026, 9, 31, 20))).toBe(new Date(2026, 10, 1, 0).getTime())
   })
 })
@@ -47,9 +69,9 @@ describe('moves', () => {
     expect(loadMoves()).toHaveLength(2)
   })
 
-  it('knows a move started in the evening sitting, which the check-in leaves for later', () => {
+  it('knows a move started in the evening sitting, which the evening leaves for the mirror', () => {
     startMove('2026-10-12', 'q1', 'a', 'Step one', new Date(2026, 9, 12, 9).getTime())
-    startMove('2026-10-12', 'q2', 'b', 'Step two', new Date(2026, 9, 12, 16, 5).getTime())
+    startMove('2026-10-12', 'q2', 'b', 'Step two', new Date(2026, 9, 12, 17, 5).getTime())
     const [morning, evening] = movesOn('2026-10-12')
     expect(startedInEvening(morning)).toBe(false)
     expect(startedInEvening(evening)).toBe(true)

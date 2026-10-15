@@ -10,10 +10,11 @@
 //   weights of the options chosen; shown only with 2+ answers touching it.
 //   A mean above +0.25 reads "higher", below -0.25 "lower", else "middle".
 //   Under 21 answers (about a week of play) the read is labelled "Early".
-// - Evening follow-up answers (version 2) count towards the trait read only:
-//   they carry trait weights but no depth, so they never move interest.
+// - Evening follow-up answers (version 2; asked until 2026-10-15, still read
+//   while they are kept) count towards the trait read only: they carry trait
+//   weights but no depth, so they never move interest.
 
-import type { FollowUpOption, Question } from './api'
+import type { Question } from './api'
 
 export const SCORING_VERSION = 2
 
@@ -58,16 +59,6 @@ export function recordAnswer(q: Question, optionId: string, date: string) {
   const h = loadHistory()
   if (h.answers.some((a) => a.questionId === q.id)) return
   h.answers.push({ date, questionId: q.id, theme: q.theme, depth: o.depth ?? 1, traits: o.traits ?? {} })
-  saveHistory(h, date)
-}
-
-// recordEvening keeps an evening answer, under the morning question's id plus '#evening'.
-export function recordEvening(q: Question, o: FollowUpOption, date: string) {
-  if (!q.theme) return
-  const h = loadHistory()
-  const questionId = `${q.id}#evening`
-  if (h.answers.some((a) => a.questionId === questionId)) return
-  h.answers.push({ date, questionId, theme: q.theme, depth: 0, traits: o.traits ?? {}, evening: true })
   saveHistory(h, date)
 }
 
@@ -132,8 +123,8 @@ export type Half = 'morning' | 'evening'
 const pickKey = (today: string, half: Half) => (half === 'morning' ? `pi.pick.${today}` : `pi.pick.${today}.pm`)
 
 // Each half's pick is fixed at first sight, so the three don't change while
-// someone is answering them. The evening is picked when it opens at 4 pm,
-// after the morning's answers, and never repeats the morning's questions or themes.
+// someone is answering them. The evening is picked once the morning is
+// answered or closed, and never repeats the morning's questions or themes.
 export function todaysPick(
   pool: Question[],
   defaults: Question[],
@@ -161,10 +152,10 @@ export function todaysPick(
   return qs
 }
 
-export function forgetPick(today: string) {
+// forgetPick drops the given halves' picks for today, so they are picked again.
+export function forgetPick(today: string, halves: Half[] = ['morning', 'evening']) {
   try {
-    localStorage.removeItem(pickKey(today, 'morning'))
-    localStorage.removeItem(pickKey(today, 'evening'))
+    for (const half of halves) localStorage.removeItem(pickKey(today, half))
   } catch {
     // nothing to do
   }

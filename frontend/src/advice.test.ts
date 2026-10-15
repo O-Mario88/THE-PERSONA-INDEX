@@ -1,4 +1,5 @@
 import { adviceFor, TRAIT_ADVICE } from './advice'
+import { TRAITS } from './mirrorText'
 import { TRAIT_WORDS } from './profile'
 
 describe('advice', () => {
@@ -10,12 +11,17 @@ describe('advice', () => {
     ])
     expect(a.points.map((p) => p.trait)).toEqual(['conscientiousness', 'rumination'])
     expect(a.points[0].grow).toBe(TRAIT_ADVICE.conscientiousness.higher.grow)
+    // The honest part: what the leaning can cost, said kindly.
+    expect(a.points[0].honest).toBe(TRAITS.conscientiousness.high.cost)
+    expect(a.points[1].honest).toBe(TRAITS.rumination.high.cost)
     expect(a.headline).toContain('getting things done and replaying')
     expect(a.headline).toContain('a hint, not a verdict')
   })
 
   it('uses the lower side when the weights point down', () => {
-    expect(adviceFor([{ traits: { extraversion: -2 } }]).points[0].strength).toBe(TRAIT_ADVICE.extraversion.lower.strength)
+    const [p] = adviceFor([{ traits: { extraversion: -2 } }]).points
+    expect(p.strength).toBe(TRAIT_ADVICE.extraversion.lower.strength)
+    expect(p.honest).toBe(TRAITS.extraversion.low.cost)
   })
 
   it('says the day was balanced rather than inventing a pattern', () => {
@@ -24,9 +30,10 @@ describe('advice', () => {
     expect(a.headline).toContain('balanced')
   })
 
-  it('has advice for every trait the app reads', () => {
+  it('has advice, and an honest part, for every trait the app reads', () => {
     for (const t of Object.keys(TRAIT_WORDS)) {
       expect(TRAIT_ADVICE[t], t).toBeDefined()
+      expect(TRAITS[t], t).toBeDefined()
     }
   })
 })
