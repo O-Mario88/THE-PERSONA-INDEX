@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -44,6 +45,38 @@ func TestTheWeek(t *testing.T) {
 					if q.Care == careIntimate {
 						t.Fatalf("%s: intimate question %s among the defaults", date, q.ID)
 					}
+				}
+			}
+		}
+	})
+
+	t.Run("no theme comes up twice in one day", func(t *testing.T) {
+		for d := range 730 {
+			day := fixedNow.AddDate(0, 0, d)
+			set, _ := b.GetSet(day.Format(dateLayout))
+			seen := map[string]bool{}
+			for _, q := range append(append([]Question{}, set.Questions...), set.Afternoon...) {
+				if seen[q.Theme] {
+					t.Fatalf("%s: two %s questions", day.Format(dateLayout), q.Theme)
+				}
+				seen[q.Theme] = true
+			}
+		}
+	})
+
+	t.Run("an area's order keeps one theme's questions apart, around the circle too", func(t *testing.T) {
+		var qs []bankQuestion
+		for _, th := range []string{"a", "a", "a", "b", "b", "c"} {
+			qs = append(qs, bankQuestion{ID: th + strconv.Itoa(len(qs)), Theme: th})
+		}
+		for seed := range 50 {
+			order := spreadThemes(shuffled(len(qs), "test", seed), qs)
+			if len(order) != len(qs) {
+				t.Fatalf("order %v drops questions", order)
+			}
+			for j := range order {
+				if next := order[(j+1)%len(order)]; qs[order[j]].Theme == qs[next].Theme {
+					t.Fatalf("seed %d: %v puts two %s side by side", seed, order, qs[next].Theme)
 				}
 			}
 		}

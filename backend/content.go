@@ -394,6 +394,7 @@ func decodeStrict(raw []byte, v any) error {
 // contentBank serves daily sets from the question bank.
 type contentBank struct {
 	byArea   map[string][]bankQuestion // daily-eligible questions per area, sorted by id
+	order    map[string][]int          // each area's fixed draw order, indexes into byArea
 	intimate []bankQuestion            // pool-only questions for adults who opted in, sorted by id
 }
 
@@ -405,7 +406,7 @@ func loadContentBank(raw []byte) (contentBank, error) {
 	if errs := validateBank(f); len(errs) > 0 {
 		return contentBank{}, fmt.Errorf("question bank fails %d checks, first: %w", len(errs), errs[0])
 	}
-	b := contentBank{byArea: map[string][]bankQuestion{}}
+	b := contentBank{byArea: map[string][]bankQuestion{}, order: map[string][]int{}}
 	for _, q := range f.Questions {
 		t := themes[q.Theme]
 		if t.care == careIntimate {
@@ -420,6 +421,9 @@ func loadContentBank(raw []byte) (contentBank, error) {
 		if len(b.byArea[a]) == 0 {
 			return contentBank{}, fmt.Errorf("question bank: area %s has no daily questions", a)
 		}
+		// One fixed order per area, repeated cycle after cycle: a fresh shuffle
+		// per cycle could put a question last in one cycle and first in the next.
+		b.order[a] = spreadThemes(shuffled(len(b.byArea[a]), a, 0), b.byArea[a])
 	}
 	return b, nil
 }
@@ -489,10 +493,8 @@ func (b contentBank) mainPick(ai, k, h int) (int, bool) {
 	if h == 1 && !rests(ai, k, 0) {
 		slot++ // the morning drew first
 	}
-	qs := b.byArea[areas[ai]]
-	// One fixed order per area, repeated cycle after cycle: a fresh shuffle per
-	// cycle could put a question last in one cycle and first in the next.
-	return shuffled(len(qs), areas[ai], 0)[slot%len(qs)], true
+	order := b.order[areas[ai]]
+	return order[slot%len(order)], true
 }
 
 // The edition pool: both halves' defaults plus extras, so each phone can
@@ -531,6 +533,61 @@ func (b contentBank) poolExtras(k int, date string) []Question {
 	if len(b.intimate) > 0 {
 		order := shuffled(len(b.intimate), "intimate/pool", 0)
 		out = append(out, b.dailyQuestion(b.intimate[order[k%len(b.intimate)]], date))
+	}
+	return out
+}
+
+// spreadThemes reorders a shuffled area so that neighbours never share a
+// theme, the last and the first included: an area drawn in both halves of a
+// day takes two neighbouring places, and the order repeats cycle after cycle.
+// It takes the theme with the most questions left, other than the one just
+// used; ties go to whichever comes first in the shuffle.
+func spreadThemes(order []int, qs []bankQuestion) []int {
+	left := map[string][]int{} // each theme's questions still to place, in shuffle order
+	var themeOrder []string
+	for _, i := range order {
+		t := qs[i].Theme
+		if len(left[t]) == 0 {
+			themeOrder = append(themeOrder, t)
+		}
+		left[t] = append(left[t], i)
+	}
+	pos := make([]int, len(qs))
+	for p, i := range order {
+		pos[i] = p
+	}
+	out := make([]int, 0, len(order))
+	prev := ""
+	for len(out) < len(order) {
+		best := ""
+		for _, t := range themeOrder {
+			if len(left[t]) == 0 || t == prev {
+				continue
+			}
+			if best == "" || len(left[t]) > len(left[best]) ||
+				(len(left[t]) == len(left[best]) && pos[left[t][0]] < pos[left[best][0]]) {
+				best = t
+			}
+		}
+		if best == "" { // only the theme just used is left
+			best = prev
+		}
+		out = append(out, left[best][0])
+		left[best] = left[best][1:]
+		prev = best
+	}
+	// Close the circle: if the last shares the first's theme, move it to the
+	// first gap between two other themes.
+	theme := func(j int) string { return qs[out[j]].Theme }
+	if n := len(out); n > 2 && theme(n-1) == theme(0) {
+		t := theme(n - 1)
+		for j := 1; j+1 < n-1; j++ {
+			if theme(j) != t && theme(j+1) != t {
+				last := out[n-1]
+				out = slices.Insert(out[:n-1], j+1, last)
+				break
+			}
+		}
 	}
 	return out
 }
