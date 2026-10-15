@@ -82,3 +82,20 @@ func (d *deviceSigner) voterHash(id, questionID string) string {
 	m.Write([]byte("voter:" + id + "\x00" + questionID))
 	return hex.EncodeToString(m.Sum(nil)[:16])
 }
+
+// mirrorKey is the key one phone's mirror rows are stored under: the same for
+// all of its answers, so its week can be read back, but different from every
+// per-question voterHash, so the vote table still cannot be joined on it.
+func (d *deviceSigner) mirrorKey(id string) string {
+	m := hmac.New(sha256.New, d.key)
+	m.Write([]byte("mirror:" + id))
+	return hex.EncodeToString(m.Sum(nil)[:16])
+}
+
+// privateQuestionID stands in for a private question's id in the mirror, so
+// a stored row says only that a private answer was given.
+func (d *deviceSigner) privateQuestionID(questionID string) string {
+	m := hmac.New(sha256.New, d.key)
+	m.Write([]byte("private:" + questionID))
+	return "private-" + hex.EncodeToString(m.Sum(nil)[:12])
+}

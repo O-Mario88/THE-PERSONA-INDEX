@@ -28,7 +28,17 @@ Migrations in `backend/migrations/` run at start under an advisory lock and are 
 
 ## Privacy in the vote table
 
-Stored per vote: question, option, an HMAC of the device id keyed by the server secret, the idempotency key and the time. No IP address, no token, no raw device id. Addresses are held only in memory for the device-issue limit, for at most an hour.
+Stored per vote: question, option, an HMAC of the device id keyed by the server secret, the idempotency key and the time. No IP address, no token, no raw device id. Addresses are held only in memory for the device-issue limit, for at most an hour. Each phone's own answers are also kept for its mirror; see the next section.
+
+## The weekly mirror
+
+Edwin asked (2026-10-15) for the weekly mirror to be built from the database, so each phone's answers are kept on the server as well as counted anonymously:
+
+- `mirror_answers` and `mirror_steps` (`backend/migrations/002_mirror.sql`) hold one row per answer and per small step, keyed by an HMAC of the device id under its own label (`mirror:`). It is the same for all of one phone's rows, so its week can be read back, and differs from every per-question vote key, so the `votes` table on its own still cannot be joined into a profile.
+- An intimate answer is stored only as "a private answer": no option, and an HMAC in place of its question id. Private answers never shape a trait read.
+- Rows are deleted after five weeks (the mirror reads three weeks of answers for each of the last three weeks) and at once on `DELETE /api/mirror`, which the app's "Delete everything" calls. Anonymous vote counts stay.
+- `GET /api/mirror?date=` (header `Authorization: Device <token>`, `private, no-store`) builds the week: days, crowd verdicts from the real tallies (none below 100 votes on a question), trait reads (scoring version 1 in `backend/mirror.go`, ranked among players only once 30 have a read), themes, steps and strengths against the median player.
+- Crowd figures are recomputed at most every 10 minutes per instance by reading three weeks of every phone's answers. That is fine at the 50k gate; before 1M daily players it becomes a table of weekly figures updated as votes arrive.
 
 ## Daily rollover
 
@@ -44,7 +54,7 @@ The API has its own per-instance limits (30 votes per device per minute, 20 new 
 
 - Rate limit `POST /api/device`: 20 requests per IP per hour, block for 1 hour.
 - Rate limit `POST /api/votes`: 60 requests per IP per minute, managed challenge.
-- Cache `GET /api/editions/*`, `GET /api/questions/today` and `GET /api/questions/*/results` by respecting origin `Cache-Control` (`s-maxage`). Never cache `POST` routes; they send `no-store`.
+- Cache `GET /api/editions/*`, `GET /api/questions/today` and `GET /api/questions/*/results` by respecting origin `Cache-Control` (`s-maxage`). Never cache `POST` routes or `/api/mirror`; they send `no-store`.
 - Bot Fight Mode on for `/api/*`.
 
 ## Insight card ratings

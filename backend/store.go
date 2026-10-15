@@ -60,10 +60,14 @@ type memoryStore struct {
 	byIdemKey map[string]int // scoped idempotency key -> index into events
 	byDedupe  map[string]int // voteDedupeKey -> index into events
 	counts    map[string]map[string]int
+	mirror    memoryMirror // see mirrorstore.go
 }
 
 func newMemoryStore() *memoryStore {
-	return &memoryStore{byIdemKey: map[string]int{}, byDedupe: map[string]int{}, counts: map[string]map[string]int{}}
+	return &memoryStore{
+		byIdemKey: map[string]int{}, byDedupe: map[string]int{}, counts: map[string]map[string]int{},
+		mirror: memoryMirror{answers: map[string]map[string]MirrorAnswer{}, steps: map[string]map[string]MirrorStep{}},
+	}
 }
 
 func (m *memoryStore) Accept(_ context.Context, idempotencyKey string, v Vote, at time.Time) (VoteEvent, error) {

@@ -87,7 +87,7 @@ type QuestionResults struct {
 }
 
 // APIError codes: no_questions_today, no_edition, invalid_request, missing_idempotency_key, unknown_question,
-// unknown_option, duplicate_vote, idempotency_key_reused, invalid_device, rate_limited, unavailable.
+// unknown_option, unknown_answer, duplicate_vote, idempotency_key_reused, invalid_device, rate_limited, unavailable.
 type APIError struct {
 	Error string `json:"error"`
 }
@@ -107,19 +107,28 @@ type Server struct {
 	clock   func() time.Time
 	bank    QuestionBank
 	votes   VoteStore
+	mirror  MirrorStore // each phone's kept answers and steps (mirrorstore.go)
 	devices *deviceSigner
 
 	resultCache resultCache
+	questions   questionCache
+	crowdCache  crowdCache
 	voteLimit   *windowLimiter // per device
 	deviceLimit *windowLimiter // per network address
 	trustCF     bool           // read the client address from CF-Connecting-IP
 }
 
 func NewServer(clock func() time.Time, bank QuestionBank, votes VoteStore, devices *deviceSigner) *Server {
+	// Both stores keep the mirror next to the votes, in the same database.
+	mirror, ok := votes.(MirrorStore)
+	if !ok {
+		mirror = newMemoryStore()
+	}
 	return &Server{
 		clock:       clock,
 		bank:        bank,
 		votes:       votes,
+		mirror:      mirror,
 		devices:     devices,
 		voteLimit:   newWindowLimiter(votesPerDevicePerMinute, time.Minute),
 		deviceLimit: newWindowLimiter(devicesPerAddressPerHour, time.Hour),
@@ -135,6 +144,9 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("POST /api/votes", s.CastVote)
 	mux.HandleFunc("POST /api/ratings", s.RateCard)
 	mux.HandleFunc("GET /api/questions/{questionId}/results", s.Results)
+	mux.HandleFunc("GET /api/mirror", s.MirrorWeek)
+	mux.HandleFunc("DELETE /api/mirror", s.ForgetMirror)
+	mux.HandleFunc("POST /api/steps", s.SaveStep)
 	return mux
 }
 
@@ -258,8 +270,9 @@ func (s *Server) untilRollover() time.Duration {
 	return midnight.Sub(now)
 }
 
-// findQuestion looks a question up in the sets the window allows.
-func (s *Server) findQuestion(id string, window questionWindow) (Question, bool) {
+// findQuestion looks a question up in the sets the window allows, and says
+// which date's edition it belongs to.
+func (s *Server) findQuestion(id string, window questionWindow) (Question, string, bool) {
 	for _, day := range s.openDates(window) {
 		set, ok := s.bank.GetSet(day)
 		if !ok {
@@ -271,11 +284,11 @@ func (s *Server) findQuestion(id string, window questionWindow) (Question, bool)
 		}
 		for _, q := range qs {
 			if q.ID == id {
-				return q, true
+				return q, day, true
 			}
 		}
 	}
-	return Question{}, false
+	return Question{}, "", false
 }
 
 // IssueDevice mints a device token. It is the only way to get a vote-capable
@@ -300,13 +313,17 @@ var tokenPattern = regexp.MustCompile(`^[A-Za-z0-9_-]{1,128}$`)
 
 func (s *Server) CastVote(w http.ResponseWriter, r *http.Request) {
 	var v VoteRequest
-	q, deviceID, key, ok := s.readBallot(w, r, &v, func() (string, string, string) { return v.QuestionID, v.OptionID, v.VoterID })
+	q, date, deviceID, key, ok := s.readBallot(w, r, &v, func() (string, string, string) { return v.QuestionID, v.OptionID, v.VoterID })
 	if !ok {
 		return
 	}
-	// The stored key is per device and question, so the server can enforce one
-	// vote per question but cannot join one device's answers into a profile.
-	s.accept(w, r, key, Vote{QuestionID: q.ID, OptionID: v.OptionID, VoterHash: s.devices.voterHash(deviceID, q.ID)})
+	// The vote's key is per device and question, so the vote table alone
+	// cannot be joined into a profile. The phone's own mirror keeps the answer
+	// separately; if that fails the vote is not acknowledged, and the phone's
+	// retry (same key) saves it.
+	s.accept(w, r, key, Vote{QuestionID: q.ID, OptionID: v.OptionID, VoterHash: s.devices.voterHash(deviceID, q.ID)}, func() error {
+		return s.rememberAnswer(r.Context(), deviceID, q, date, v.OptionID)
+	})
 }
 
 // RatingRequest is the body of POST /api/ratings: the one-tap "I learned
@@ -327,7 +344,7 @@ func ratingKey(questionID, optionID string) string {
 
 func (s *Server) RateCard(w http.ResponseWriter, r *http.Request) {
 	var v RatingRequest
-	q, deviceID, key, ok := s.readBallot(w, r, &v, func() (string, string, string) { return v.QuestionID, v.OptionID, v.VoterID })
+	q, _, deviceID, key, ok := s.readBallot(w, r, &v, func() (string, string, string) { return v.QuestionID, v.OptionID, v.VoterID })
 	if !ok {
 		return
 	}
@@ -337,23 +354,29 @@ func (s *Server) RateCard(w http.ResponseWriter, r *http.Request) {
 	}
 	// One rating per device per question, kept apart from the vote itself.
 	scope := "rating/" + q.ID
-	s.accept(w, r, key, Vote{QuestionID: ratingKey(q.ID, v.OptionID), OptionID: answer, VoterHash: s.devices.voterHash(deviceID, scope)})
+	s.accept(w, r, key, Vote{QuestionID: ratingKey(q.ID, v.OptionID), OptionID: answer, VoterHash: s.devices.voterHash(deviceID, scope)}, func() error {
+		// The mirror counts the tap; losing that is not worth failing the rating.
+		if err := s.mirror.SaveRating(r.Context(), s.devices.mirrorKey(deviceID), q.ID, v.Learned); err != nil {
+			log.Printf("rating: %v", err)
+		}
+		return nil
+	})
 }
 
 // readBallot does the checks votes and ratings share: idempotency key, body,
 // device token, rate limit, and that the option belongs to a question open
 // for votes. It writes the error response itself when a check fails.
-func (s *Server) readBallot(w http.ResponseWriter, r *http.Request, body any, fields func() (string, string, string)) (Question, string, string, bool) {
+func (s *Server) readBallot(w http.ResponseWriter, r *http.Request, body any, fields func() (string, string, string)) (q Question, date, deviceID, key string, ok bool) {
 	w.Header().Set("Cache-Control", "no-store")
 
-	key := r.Header.Get("Idempotency-Key")
+	key = r.Header.Get("Idempotency-Key")
 	if key == "" {
 		writeError(w, http.StatusBadRequest, "missing_idempotency_key")
-		return Question{}, "", "", false
+		return Question{}, "", "", "", false
 	}
 	if !tokenPattern.MatchString(key) {
 		writeError(w, http.StatusBadRequest, "invalid_request")
-		return Question{}, "", "", false
+		return Question{}, "", "", "", false
 	}
 
 	dec := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxVoteBodyBytes))
@@ -361,32 +384,37 @@ func (s *Server) readBallot(w http.ResponseWriter, r *http.Request, body any, fi
 	questionID, optionID, voterID := fields()
 	if err != nil || questionID == "" || optionID == "" || voterID == "" {
 		writeError(w, http.StatusBadRequest, "invalid_request")
-		return Question{}, "", "", false
+		return Question{}, "", "", "", false
 	}
-	deviceID, ok := s.devices.Verify(voterID)
+	deviceID, ok = s.devices.Verify(voterID)
 	if !ok {
 		writeError(w, http.StatusUnauthorized, "invalid_device")
-		return Question{}, "", "", false
+		return Question{}, "", "", "", false
 	}
 	if ok, retry := s.voteLimit.Allow(deviceID, s.clock()); !ok {
 		rateLimited(w, retry)
-		return Question{}, "", "", false
+		return Question{}, "", "", "", false
 	}
 
-	q, ok := s.findQuestion(questionID, voteWindow)
+	q, date, ok = s.findQuestion(questionID, voteWindow)
 	if !ok {
 		writeError(w, http.StatusNotFound, "unknown_question")
-		return Question{}, "", "", false
+		return Question{}, "", "", "", false
 	}
 	if !hasOption(q, optionID) {
 		writeError(w, http.StatusBadRequest, "unknown_option")
-		return Question{}, "", "", false
+		return Question{}, "", "", "", false
 	}
-	return q, deviceID, key, true
+	return q, date, deviceID, key, true
 }
 
-func (s *Server) accept(w http.ResponseWriter, r *http.Request, key string, ballot Vote) {
+// accept stores the ballot, then runs after (when the ballot is new or a
+// retry of the same one) before acknowledging it.
+func (s *Server) accept(w http.ResponseWriter, r *http.Request, key string, ballot Vote, after func() error) {
 	e, err := s.votes.Accept(r.Context(), key, ballot, s.clock())
+	if err == nil && after != nil {
+		err = after()
+	}
 	switch {
 	case errors.Is(err, ErrDuplicateVote):
 		writeError(w, http.StatusConflict, "duplicate_vote")
