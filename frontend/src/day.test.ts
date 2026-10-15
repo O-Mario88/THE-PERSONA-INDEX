@@ -1,10 +1,21 @@
-import { EVENING_HOUR, eveningStart, isEvening, localDate } from './day'
+import { AFTERNOON_HOUR, EVENING_HOUR, eveningStart, isAfternoon, isEvening, isSaturday, localDate } from './day'
 import { awardEvening, awardReflection, loadGame, loadMoves, moveFor, movesOn, setMoveStatus, startMove } from './game'
 
 describe('the local day', () => {
   it("uses the phone's own date, not UTC", () => {
     expect(localDate(new Date(2026, 9, 12, 23, 30))).toBe('2026-10-12')
     expect(localDate(new Date(2026, 0, 5, 0, 1))).toBe('2026-01-05')
+  })
+
+  it('opens the afternoon three at noon local time', () => {
+    expect(AFTERNOON_HOUR).toBe(12)
+    expect(isAfternoon(new Date(2026, 9, 12, 11, 59))).toBe(false)
+    expect(isAfternoon(new Date(2026, 9, 12, 12, 0))).toBe(true)
+  })
+
+  it('knows Saturday, the day before the review day', () => {
+    expect(isSaturday('2026-10-17')).toBe(true)
+    expect(isSaturday('2026-10-18')).toBe(false)
   })
 
   it('turns to evening at 5 pm local time', () => {

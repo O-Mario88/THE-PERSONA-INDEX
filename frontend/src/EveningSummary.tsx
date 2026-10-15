@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { recalledEvening, saveStep, type StepStatus } from './api'
 import { adviceFor } from './advice'
-import type { FollowUpItem } from './day'
+import { isSaturday, type FollowUpItem } from './day'
 import { Confetti, LevelLine } from './EditionSummary'
 import { awardEvening, movesOn, POINTS_PER_STEP, setMoveStatus, type Move } from './game'
 import { themeName } from './themes'
@@ -104,7 +104,11 @@ export function EveningSummary({ date, edition, items, tomorrowThemes }: Props) 
           <span className="eyebrow">Tomorrow</span> {tomorrowThemes.map(themeName).join(' · ')}
         </p>
       )}
-      <p className="check-in">Sleep well. See you tomorrow morning.</p>
+      <p className="check-in">
+        {isSaturday(date)
+          ? 'Sleep well. Tomorrow is for looking back: your week will be waiting in your mirror.'
+          : 'Sleep well. See you tomorrow morning.'}
+      </p>
       <LevelLine date={date} />
       <p className="insight-note">For self-reflection, not a diagnosis.</p>
     </section>

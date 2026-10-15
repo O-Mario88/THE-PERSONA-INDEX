@@ -220,24 +220,16 @@ func TestThemesMatchTheFrontend(t *testing.T) {
 
 func TestDailyPick(t *testing.T) {
 	b := shippedBank(t)
-	themeArea := func(q Question) string { return themes[q.Theme].area }
 
-	t.Run("every day for two years: 3 questions from 3 different areas, never intimate", func(t *testing.T) {
+	t.Run("every question day for two years: dated ids and an insight card on every option", func(t *testing.T) {
+		// How many a day, and from which areas: see TestTheWeek.
 		for d := range 730 {
 			date := fixedNow.AddDate(0, 0, d).Format("2006-01-02")
 			set, ok := b.GetSet(date)
-			if !ok || set.Date != date || len(set.Questions) != 3 {
-				t.Fatalf("%s: expected 3 questions, got %+v", date, set)
+			if !ok || set.Date != date || (len(set.Questions) == 0) != set.Review {
+				t.Fatalf("%s: expected questions or a review day, got %+v", date, set)
 			}
-			seen := map[string]bool{}
-			for _, q := range set.Questions {
-				if themes[q.Theme].care == careIntimate {
-					t.Fatalf("%s: intimate question %s in the daily set", date, q.ID)
-				}
-				if seen[themeArea(q)] {
-					t.Fatalf("%s: two questions from area %s", date, themeArea(q))
-				}
-				seen[themeArea(q)] = true
+			for _, q := range append(append([]Question{}, set.Questions...), set.Afternoon...) {
 				if !strings.HasPrefix(q.ID, date+"-") {
 					t.Fatalf("%s: id %s does not carry the date", date, q.ID)
 				}
@@ -255,29 +247,6 @@ func TestDailyPick(t *testing.T) {
 		again, _ := shippedBank(t).GetSet("2027-03-09")
 		if !reflect.DeepEqual(a, again) {
 			t.Fatal("expected a deterministic pick")
-		}
-	})
-
-	t.Run("no question repeats in an area until the area is used up", func(t *testing.T) {
-		draws := map[string][]string{}
-		for d := range 1500 {
-			set, _ := b.GetSet(time.Unix(0, 0).UTC().AddDate(0, 0, d).Format("2006-01-02"))
-			for _, q := range set.Questions {
-				a := themeArea(q)
-				draws[a] = append(draws[a], strings.TrimPrefix(q.ID, set.Date+"-"))
-			}
-		}
-		for a, ids := range draws {
-			n := len(b.byArea[a])
-			for start := 0; start+n <= len(ids); start += n {
-				seen := map[string]bool{}
-				for _, id := range ids[start : start+n] {
-					if seen[id] {
-						t.Fatalf("area %s repeats %s within one cycle", a, id)
-					}
-					seen[id] = true
-				}
-			}
 		}
 	})
 

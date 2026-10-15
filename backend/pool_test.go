@@ -9,9 +9,9 @@ import (
 	"time"
 )
 
-// Acceptance tests for the edition pool: each day publishes about a dozen
-// questions; the phone picks its own three from them by the player's
-// interests, which never leave the phone.
+// Acceptance tests for the edition pool: each day publishes about sixteen
+// questions; the phone picks its own three for the morning and three for the
+// afternoon from them by the player's interests, which never leave the phone.
 
 var poolBank *contentBank
 
@@ -29,7 +29,7 @@ func poolDay(t *testing.T, date string) DailySet {
 }
 
 func TestEditionPool(t *testing.T) {
-	t.Run("publishes two or three questions per life area plus one intimacy question", func(t *testing.T) {
+	t.Run("publishes two to four questions per life area plus one intimacy question", func(t *testing.T) {
 		set := poolDay(t, "2026-10-14")
 		perArea, intimate := map[string]int{}, 0
 		for _, q := range set.Pool {
@@ -50,7 +50,7 @@ func TestEditionPool(t *testing.T) {
 		}
 	})
 
-	t.Run("contains the default three, with no question twice", func(t *testing.T) {
+	t.Run("contains both halves' default three, with no question twice", func(t *testing.T) {
 		set := poolDay(t, "2026-10-14")
 		seen := map[string]bool{}
 		for _, q := range set.Pool {
@@ -59,7 +59,7 @@ func TestEditionPool(t *testing.T) {
 			}
 			seen[q.ID] = true
 		}
-		for _, q := range set.Questions {
+		for _, q := range append(append([]Question{}, set.Questions...), set.Afternoon...) {
 			if !seen[q.ID] {
 				t.Fatalf("default question %s is missing from the pool", q.ID)
 			}
@@ -89,8 +89,7 @@ func TestEditionPool(t *testing.T) {
 			date := day.AddDate(0, 0, i).Format("2006-01-02")
 			for _, q := range poolDay(t, date).Pool {
 				id := strings.TrimPrefix(q.ID, date+"-")
-				window := poolSpacing
-				if prev, ok := last[id]; ok && i-prev < window {
+				if prev, ok := last[id]; ok && i-prev < 7 {
 					t.Fatalf("%s repeats after %d days", id, i-prev)
 				}
 				last[id] = i

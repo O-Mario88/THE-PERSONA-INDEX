@@ -151,8 +151,8 @@ func TestMirrorFromDatabase(t *testing.T) {
 
 		m := getMirror(t, s, "a", mon)
 		_, week := mirrorDay(mon).ISOWeek()
-		if m.Date != mon || m.From != mon || m.To != sun || m.Week != week || m.Editions != [2]int{1, 7} {
-			t.Fatalf("expected the week of %s (week %d, editions #1-#7), got %+v", mon, week, m)
+		if m.Date != mon || m.From != mon || m.To != sun || m.Week != week || m.Editions != [2]int{1, 6} {
+			t.Fatalf("expected the week of %s (week %d, editions #1-#6), got %+v", mon, week, m)
 		}
 		if m.Stats.Answers != 3 || m.Stats.Private != 1 || m.Stats.DaysActive != 1 || m.Stats.DaysSoFar != 1 {
 			t.Fatalf("expected 3 answers (1 private) on 1 day, got %+v", m.Stats)
@@ -260,8 +260,9 @@ func TestMirrorAcrossTheWeek(t *testing.T) {
 		t.Fatalf("expected 3 answers this week, none on Wednesday, one deepest option; got %+v", m.Stats)
 	}
 	for i, d := range m.Days {
-		if want := mirrorDay(mon).AddDate(0, 0, i).Format("2006-01-02"); d.Date != want || d.Edition != i+1 {
-			t.Fatalf("day %d: expected %s (#%d), got %s (#%d)", i, want, i+1, d.Date, d.Edition)
+		edition := (i + 1) % 7 // Sunday, the review day, has no edition
+		if want := mirrorDay(mon).AddDate(0, 0, i).Format("2006-01-02"); d.Date != want || d.Edition != edition {
+			t.Fatalf("day %d: expected %s (#%d), got %s (#%d)", i, want, edition, d.Date, d.Edition)
 		}
 	}
 	themes := map[string]ThemeRead{}

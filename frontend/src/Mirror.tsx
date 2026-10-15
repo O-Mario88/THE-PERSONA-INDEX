@@ -192,12 +192,12 @@ function StatTiles({ m }: { m: MirrorData }) {
           ? 'Same as last week'
           : `${s.daysActiveLastWeek} last week`
   const tiles: [string, string, string][] = [
-    ['Days active', `${s.daysActive} of 7`, daysNote],
+    ['Days active', `${s.daysActive} of 6`, daysNote], // Monday to Saturday; Sunday is for this mirror
     // A day can hold more than three answers (evening and pool questions), so no "of".
     [
       'Answers',
       `${s.answers}`,
-      (s.daysSoFar >= 7 ? 'this week' : 'so far this week') + (s.private > 0 ? `, ${s.private} kept private` : ''),
+      (s.daysSoFar >= 6 ? 'this week' : 'so far this week') + (s.private > 0 ? `, ${s.private} kept private` : ''),
     ],
     s.judged > 0
       ? ['Against the crowd', `${pct(s.minority, s.judged)}%`, `of ${s.judged} answers with 100+ votes`]
@@ -247,35 +247,41 @@ function Glance({ m }: { m: MirrorData }) {
   const rhythm =
     shown === 0
       ? 'No answers yet this week. Whenever you come back, your week starts filling in.'
-      : `You came back on ${shown} of ${Math.min(7, m.stats.daysSoFar)} ${m.stats.daysSoFar >= 7 ? 'days' : 'days so far'}` +
+      : `You came back on ${shown} of ${Math.min(6, m.stats.daysSoFar)} ${m.stats.daysSoFar >= 6 ? 'days' : 'days so far'}` +
         (best >= 2 ? `, with a run of ${best} in a row.` : '.') +
         ' Showing up is the whole trick: patterns only appear when there are answers to compare.'
   return (
     <>
       <ol className="m-days">
         {m.days.map((d, i) => {
-          const future = i >= m.stats.daysSoFar
+          // Sunday has no edition: it is the day for this mirror.
+          const review = d.edition === 0 && d.answers.length === 0
+          const future = !review && i >= m.stats.daysSoFar
           const label = `${weekday(d.date, 'long')}: ${
-            future
-              ? 'still to come'
-              : d.answers.length === 0
-                ? 'missed'
-                : d.answers.map((a) => `${themeName(a.theme)}, ${CROWD_WORDS[a.crowd]}`).join('; ')
+            review
+              ? 'review day'
+              : future
+                ? 'still to come'
+                : d.answers.length === 0
+                  ? 'missed'
+                  : d.answers.map((a) => `${themeName(a.theme)}, ${CROWD_WORDS[a.crowd]}`).join('; ')
           }`
           return (
-            <li key={d.date} className={future ? 'm-day later' : 'm-day'} aria-label={label}>
+            <li key={d.date} className={review ? 'm-day review' : future ? 'm-day later' : 'm-day'} aria-label={label}>
               <span className="m-day-name" aria-hidden="true">
                 {weekday(d.date)}
               </span>
               <span className="m-day-squares" aria-hidden="true">
-                {d.answers.length === 0 ? (
+                {review ? (
+                  <span className="m-day-review">🪞</span>
+                ) : d.answers.length === 0 ? (
                   <span className={future ? 'sq later' : 'sq missed'} />
                 ) : (
                   d.answers.map((a, j) => <span key={j} className={`sq ${a.crowd}`} />)
                 )}
               </span>
               <span className="m-day-ed" aria-hidden="true">
-                #{d.edition}
+                {review ? 'Review' : `#${d.edition}`}
               </span>
             </li>
           )

@@ -37,8 +37,10 @@ export type Question = {
 export type DailySet = {
   date: string
   edition?: number
-  questions: Question[]
+  questions: Question[] // the morning's default three
+  afternoon?: Question[] // the afternoon's default three, opened at noon on the phone
   pool?: Question[]
+  review?: boolean // Sunday: no new questions, the day for the weekly mirror
   tomorrowThemes?: string[]
 }
 
@@ -175,7 +177,7 @@ export type Mirror = {
   stats: {
     daysActive: number
     daysActiveLastWeek: number
-    daysSoFar: number
+    daysSoFar: number // question days so far, 1 to 6
     answers: number
     private: number
     deepest: number

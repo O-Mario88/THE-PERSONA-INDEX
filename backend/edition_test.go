@@ -36,7 +36,7 @@ func TestEdition(t *testing.T) {
 		}
 	})
 
-	t.Run("edition numbers go up by one a day", func(t *testing.T) {
+	t.Run("edition numbers go up by one a question day", func(t *testing.T) {
 		if a, b := editionNumber("2026-10-12"), editionNumber("2026-10-13"); b != a+1 {
 			t.Fatalf("expected consecutive editions, got %d then %d", a, b)
 		}

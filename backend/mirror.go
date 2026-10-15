@@ -45,10 +45,10 @@ const (
 // Mirror is the response of GET /api/mirror?date=YYYY-MM-DD.
 type Mirror struct {
 	Date        string `json:"date"`
-	Week        int    `json:"week"` // ISO week number
-	From        string `json:"from"` // Monday
-	To          string `json:"to"`   // Sunday
-	Editions    [2]int `json:"editions"`
+	Week        int    `json:"week"`        // ISO week number
+	From        string `json:"from"`        // Monday
+	To          string `json:"to"`          // Sunday
+	Editions    [2]int `json:"editions"`    // Monday's and Saturday's; Sunday has none
 	WeeksPlayed int    `json:"weeksPlayed"` // weeks with an answer, among the five kept
 
 	Stats      MirrorStats   `json:"stats"`
@@ -71,7 +71,7 @@ type Mirror struct {
 type MirrorStats struct {
 	DaysActive         int `json:"daysActive"`
 	DaysActiveLastWeek int `json:"daysActiveLastWeek"`
-	DaysSoFar          int `json:"daysSoFar"` // days of this week up to the phone's date
+	DaysSoFar          int `json:"daysSoFar"` // question days of this week up to the phone's date: 1 to 6
 	Answers            int `json:"answers"`   // private ones included
 	Private            int `json:"private"`
 	Deepest            int `json:"deepest"`  // answers that took the question's deepest option
@@ -736,7 +736,8 @@ func (s *Server) buildMirror(ctx context.Context, key, date string) (Mirror, err
 	lastMon := monday.AddDate(0, 0, -7).Format(dateLayout)
 	kept := monday.AddDate(0, 0, -28).Format(dateLayout)
 	_, isoWeek := monday.ISOWeek()
-	m := Mirror{Date: date, Week: isoWeek, From: mon, To: sun, Editions: [2]int{editionNumber(mon), editionNumber(sun)},
+	sat := sunday.AddDate(0, 0, -1).Format(dateLayout)
+	m := Mirror{Date: date, Week: isoWeek, From: mon, To: sun, Editions: [2]int{editionNumber(mon), editionNumber(sat)},
 		Minority: []AnswerSplit{}, Traits: []TraitRead{}, Themes: []ThemeRead{}, Steps: []StepRead{}, Strengths: []Strength{},
 		NextSteps: []StepOffer{}, ComingUp: []string{}}
 
@@ -767,7 +768,7 @@ func (s *Server) buildMirror(ctx context.Context, key, date string) (Mirror, err
 
 	// Stats, days and areas.
 	d, _ := time.Parse(dateLayout, date)
-	m.Stats.DaysSoFar = int(d.Sub(monday).Hours()/24) + 1
+	m.Stats.DaysSoFar = min(int(d.Sub(monday).Hours()/24)+1, 6) // Sunday brings no questions
 	mine, err := s.metrics(v, week, steps, mon, sun)
 	if err != nil {
 		return m, err
@@ -1044,7 +1045,7 @@ func (s *Server) buildMirror(ctx context.Context, key, date string) (Mirror, err
 		if !ok {
 			continue
 		}
-		for _, q := range set.Questions {
+		for _, q := range append(append([]Question{}, set.Questions...), set.Afternoon...) {
 			if q.Theme != "" && q.Care != careIntimate && !slices.Contains(m.ComingUp, q.Theme) && len(m.ComingUp) < 4 {
 				m.ComingUp = append(m.ComingUp, q.Theme)
 			}

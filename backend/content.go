@@ -424,11 +424,26 @@ func loadContentBank(raw []byte) (contentBank, error) {
 	return b, nil
 }
 
-// GetSet picks the day's three questions. The pick is random-looking but
-// deterministic: the same date always gives the same set, so every server
-// instance and every player sees the same edition. Each day draws from three
-// of the four life areas (a different one rests each day), and within an area
-// no question repeats until every question in that area has been used.
+// The week: Monday to Saturday bring three questions in the morning and three
+// in the afternoon; Sunday brings none and is the day for the weekly mirror.
+const halves = 2 // 0 the morning, 1 the afternoon
+
+// questionDay numbers the days that bring questions, counting from
+// 1970-01-01 (unix day 0), so a Sunday never uses up a question. It is -1 for
+// a Sunday.
+func questionDay(d int) int {
+	if d < 0 || (d+4)%7 == 0 { // 1970-01-01 was a Thursday
+		return -1
+	}
+	return d - (d+3)/7 // minus the Sundays before d
+}
+
+// GetSet picks the day's questions: three for the morning and three for the
+// afternoon. The pick is random-looking but deterministic: the same date
+// always gives the same set, so every server instance and every player sees
+// the same edition. Each half draws from three of the four life areas, the
+// two halves resting different areas, so every area comes up every day; within
+// an area no question repeats until every question in that area has been used.
 func (b contentBank) GetSet(date string) (DailySet, bool) {
 	day, err := time.Parse("2006-01-02", date)
 	if err != nil {
@@ -439,70 +454,83 @@ func (b contentBank) GetSet(date string) (DailySet, bool) {
 		return DailySet{}, false
 	}
 	set := DailySet{Date: date}
-	for ai, area := range areas {
-		if i, ok := b.mainPick(ai, d); ok {
-			q := b.dailyQuestion(b.byArea[area][i], date)
-			set.Questions = append(set.Questions, q)
-			set.Pool = append(set.Pool, q)
+	k := questionDay(d)
+	if k < 0 {
+		set.Review = true
+		return set, true
+	}
+	for h, half := range []*[]Question{&set.Questions, &set.Afternoon} {
+		for ai, area := range areas {
+			if i, ok := b.mainPick(ai, k, h); ok {
+				q := b.dailyQuestion(b.byArea[area][i], date)
+				*half = append(*half, q)
+				set.Pool = append(set.Pool, q)
+			}
 		}
 	}
-	set.Pool = append(set.Pool, b.poolExtras(d, date)...)
+	set.Pool = append(set.Pool, b.poolExtras(k, date)...)
 	return set, true
 }
 
-// mainPick is the index (into byArea) of area ai's question in day d's
-// default three, or false on the day that area rests.
-func (b contentBank) mainPick(ai, d int) (int, bool) {
-	if d < 0 || d%len(areas) == ai {
+// rests reports whether area ai sits out half h of question day k.
+func rests(ai, k, h int) bool { return (k+2*h)%len(areas) == ai }
+
+// mainPick is the index (into byArea) of area ai's default question for half
+// h of question day k, or false when the area rests then.
+func (b contentBank) mainPick(ai, k, h int) (int, bool) {
+	if k < 0 || rests(ai, k, h) {
 		return 0, false
 	}
-	qs := b.byArea[areas[ai]]
-	// Days before d on which this area was drawn.
-	rested := 0
-	if d > ai {
-		rested = (d - ai + len(areas) - 1) / len(areas)
+	n := len(areas)
+	// Question days in [0, k) on which j%n == r.
+	before := func(r int) int { return (k - r + n - 1) / n }
+	// Draws of this area before day k: two halves a day, less the rests.
+	slot := halves*k - before(ai) - before((ai+n-2)%n)
+	if h == 1 && !rests(ai, k, 0) {
+		slot++ // the morning drew first
 	}
-	drawn := d - rested
+	qs := b.byArea[areas[ai]]
 	// One fixed order per area, repeated cycle after cycle: a fresh shuffle per
 	// cycle could put a question last in one cycle and first in the next.
-	return shuffled(len(qs), areas[ai], 0)[drawn%len(qs)], true
+	return shuffled(len(qs), areas[ai], 0)[slot%len(qs)], true
 }
 
-// The edition pool: the default three plus extras, so each phone can pick
-// its own three by the player's interests (computed on the phone). Extras
-// come from a second fixed rotation per area, three slots a day; an extra
-// that is any day's default question within poolSpacing days is dropped, so
-// nobody sees a question twice in a week.
+// The edition pool: both halves' defaults plus extras, so each phone can
+// pick its own three for each half by the player's interests (computed on
+// the phone). Extras come from a second fixed rotation per area, poolPerArea
+// slots a day; an extra that is a default question within poolSpacing
+// question days is dropped, so nobody sees a question twice in a week.
 const (
-	poolPerArea = 3
-	poolSpacing = 7
+	poolPerArea = 4
+	poolSpacing = 6
 )
 
-func (b contentBank) poolExtras(d int, date string) []Question {
+func (b contentBank) poolExtras(k int, date string) []Question {
 	var out []Question
 	for ai, area := range areas {
 		qs := b.byArea[area]
-		_, drawn := b.mainPick(ai, d)
 		want := poolPerArea
-		if drawn {
-			want--
-		}
 		near := map[int]bool{}
-		for dd := d - poolSpacing; dd <= d+poolSpacing; dd++ {
-			if i, ok := b.mainPick(ai, dd); ok {
-				near[i] = true
+		for kk := k - poolSpacing; kk <= k+poolSpacing; kk++ {
+			for h := range halves {
+				if i, ok := b.mainPick(ai, kk, h); ok {
+					near[i] = true
+					if kk == k {
+						want--
+					}
+				}
 			}
 		}
 		order := shuffled(len(qs), area+"/pool", 0)
-		for k := range want {
-			if i := order[(poolPerArea*d+k)%len(qs)]; !near[i] {
+		for j := range want {
+			if i := order[(poolPerArea*k+j)%len(qs)]; !near[i] {
 				out = append(out, b.dailyQuestion(qs[i], date))
 			}
 		}
 	}
 	if len(b.intimate) > 0 {
 		order := shuffled(len(b.intimate), "intimate/pool", 0)
-		out = append(out, b.dailyQuestion(b.intimate[order[d%len(b.intimate)]], date))
+		out = append(out, b.dailyQuestion(b.intimate[order[k%len(b.intimate)]], date))
 	}
 	return out
 }

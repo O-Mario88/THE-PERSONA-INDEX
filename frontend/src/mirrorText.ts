@@ -426,7 +426,7 @@ export function summary(m: Mirror): string {
   const days = daysActive === 1 ? 'one day' : `${daysActive} days`
   const l = leanings(m.traits)
   const lead =
-    daysSoFar >= 7
+    daysSoFar >= 6
       ? `You showed up on ${days} this week and gave ${answers} ${answers === 1 ? 'answer' : 'answers'}.`
       : `So far this week you've shown up on ${days} and given ${answers} ${answers === 1 ? 'answer' : 'answers'}.`
   if (l.length === 0) return `${lead} Your answers sit close to the middle on everything so far, which is its own kind of balance.`

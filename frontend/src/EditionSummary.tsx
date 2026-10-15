@@ -2,17 +2,22 @@ import { useEffect, useState, type CSSProperties } from 'react'
 import { CROWD_MIN_VOTES, getResults, playedDays, recalledChoice, SKIPPED, withCrowd, type Question } from './api'
 import { adviceFor } from './advice'
 import { encodeCompare } from './compare'
+import { isSaturday } from './day'
 import { awardEdition, levelFor, loadGame, movesOn } from './game'
 import { daysPlayedThisWeek, themeName, themeStyle, themeVars } from './themes'
 
 // When the evening check-in comes, as the morning summary tells it.
 export type CheckIn = 'later' | 'open' | 'tomorrow'
+// Whether the afternoon three are still to come (before noon), answered with
+// the rest of the day, or not part of this edition.
+export type Afternoon = 'later' | 'done' | 'none'
 
 type Props = {
   date: string
   edition: number
   questions: Question[]
   checkIn: CheckIn
+  afternoon?: Afternoon
   answers: [string, string][] // what a compare link may carry: no intimate answers
   tomorrowThemes: string[]
 }
@@ -22,6 +27,9 @@ const CHECK_IN_LINE: Record<CheckIn, string> = {
   open: 'Your evening check-in is open.',
   tomorrow: 'Answer before 5 pm tomorrow and the evening check-in will ask how your day went.',
 }
+
+// Saturday's summary looks ahead to Sunday, the review day.
+const SUNDAY_LINE = 'Tomorrow is Sunday: no new questions, just your week in the mirror.'
 
 // Your share of the crowd on each answered question, once it has enough votes.
 type Share = { percent: number; with: boolean }
@@ -56,7 +64,7 @@ function useCrowdShares(questions: Question[]): Record<string, Share> {
 // "Done for today.": what the day's answers add up to, the moves chosen, and
 // what's next. The insight cards are not repeated here; they were just shown.
 // Nothing here resets or punishes a missed day.
-export function EditionSummary({ date, edition, questions, checkIn, answers, tomorrowThemes }: Props) {
+export function EditionSummary({ date, edition, questions, checkIn, afternoon = 'none', answers, tomorrowThemes }: Props) {
   const [copied, setCopied] = useState<'compare' | 'share' | null>(null)
   const [bonus, setBonus] = useState(0)
   const shares = useCrowdShares(questions)
@@ -107,7 +115,7 @@ export function EditionSummary({ date, edition, questions, checkIn, answers, tom
     <section className="screen done" aria-labelledby={headingId}>
       {bonus > 0 && <Confetti />}
       <h2 id={headingId} className="done-title">
-        Done for today.
+        {afternoon === 'later' ? 'Morning done.' : 'Done for today.'}
       </h2>
       <p className="muted">
         Edition #{edition} · {cards.length} {cards.length === 1 ? 'insight' : 'insights'} today
@@ -181,12 +189,18 @@ export function EditionSummary({ date, edition, questions, checkIn, answers, tom
       </div>
       {copied && <p className="muted">Copied. Paste it anywhere.</p>}
 
-      {tomorrowThemes.length > 0 && (
+      {afternoon === 'later' && <p className="tomorrow">Three more questions open at noon.</p>}
+      {afternoon !== 'later' && isSaturday(date) && <p className="tomorrow">{SUNDAY_LINE}</p>}
+      {afternoon !== 'later' && tomorrowThemes.length > 0 && (
         <p className="tomorrow">
           <span className="eyebrow">Tomorrow</span> {tomorrowThemes.map(themeName).join(' · ')}
         </p>
       )}
-      <p className="check-in">{CHECK_IN_LINE[checkIn]}</p>
+      <p className="check-in">
+        {checkIn === 'tomorrow' && isSaturday(date)
+          ? 'On Monday, answer before 5 pm and the evening check-in will ask how your day went.'
+          : CHECK_IN_LINE[checkIn]}
+      </p>
       <LevelLine date={date} />
       <p className="insight-note">For self-reflection, not a diagnosis.</p>
     </section>

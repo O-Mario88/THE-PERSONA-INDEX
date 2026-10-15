@@ -35,26 +35,37 @@ type Question struct {
 type DailySet struct {
 	Date      string     `json:"date"`              // YYYY-MM-DD
 	Edition   int        `json:"edition,omitempty"` // shared worldwide: "Persona Index #142"
-	Questions []Question `json:"questions"`         // the default three, for a phone with no history
-	// Pool holds every question of the edition, the default three included.
-	// Each phone picks its own three from it; intimate ones only after the 18+ tap.
+	Questions []Question `json:"questions"`         // the morning's default three, for a phone with no history
+	// Afternoon is the afternoon's default three; the phone opens them at noon.
+	Afternoon []Question `json:"afternoon,omitempty"`
+	// Pool holds every question of the edition, both halves' defaults included.
+	// Each phone picks its own three for each half from it; intimate ones only
+	// after the 18+ tap.
 	Pool []Question `json:"pool,omitempty"`
+	// Review marks Sunday: no new questions, the day for the weekly mirror.
+	Review bool `json:"review,omitempty"`
 	// TomorrowThemes names the themes of the next edition, each once, so the
 	// session can end on anticipation. Tomorrow's questions are never sent.
 	TomorrowThemes []string `json:"tomorrowThemes,omitempty"`
 }
 
-// editionEpoch is the date of edition #1. Move it to the public launch date
-// before launch so the first public edition is #1.
+// editionEpoch is the date of edition #1, a Monday. Move it to the public
+// launch date before launch so the first public edition is #1.
 const editionEpoch = "2026-10-12"
 
+// editionNumber counts the question days from the epoch: Monday to Saturday.
+// Sunday, the review day, has no edition and gets 0.
 func editionNumber(date string) int {
 	d, err1 := time.Parse("2006-01-02", date)
 	e, err2 := time.Parse("2006-01-02", editionEpoch)
 	if err1 != nil || err2 != nil {
 		return 0
 	}
-	return int(d.Sub(e).Hours()/24) + 1
+	k := questionDay(int(d.Unix() / 86400))
+	if k < 0 {
+		return 0
+	}
+	return k - questionDay(int(e.Unix()/86400)) + 1
 }
 
 // VoteRequest is the body of POST /api/votes. The Idempotency-Key header is required.
@@ -231,7 +242,8 @@ func (s *Server) Edition(w http.ResponseWriter, r *http.Request) {
 }
 
 // completeSet adds the edition number and the next day's themes (never its
-// questions), so a session can end on anticipation.
+// questions), so a session can end on anticipation. Saturday gets none:
+// tomorrow is the review day.
 func (s *Server) completeSet(set *DailySet) {
 	set.Edition = editionNumber(set.Date)
 	d, err := time.Parse("2006-01-02", set.Date)
@@ -239,7 +251,7 @@ func (s *Server) completeSet(set *DailySet) {
 		return
 	}
 	if next, ok := s.bank.GetSet(d.AddDate(0, 0, 1).Format("2006-01-02")); ok {
-		for _, q := range next.Questions {
+		for _, q := range append(append([]Question{}, next.Questions...), next.Afternoon...) {
 			if q.Theme != "" && q.Care != careIntimate && !slices.Contains(set.TomorrowThemes, q.Theme) {
 				set.TomorrowThemes = append(set.TomorrowThemes, q.Theme)
 			}

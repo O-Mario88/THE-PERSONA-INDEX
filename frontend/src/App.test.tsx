@@ -705,8 +705,8 @@ describe('the evening', () => {
       expect.objectContaining({ questionId: 'q-dishes#evening', evening: true, traits: { conscientiousness: -1 } }),
     )
 
-    // This morning's questions are one tap away.
-    fireEvent.click(screen.getByRole('button', { name: /This morning's questions/ }))
+    // Today's questions are one tap away.
+    fireEvent.click(screen.getByRole('button', { name: /Today's questions/ }))
     expect(await screen.findByRole('region', { name: 'Done for today.' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Question 1 of 3' }))
     expect(await screen.findByRole('note', { name: 'What your answer may say' })).toHaveTextContent('clear sink')
@@ -766,7 +766,7 @@ describe('the evening', () => {
     stubApi({})
     render(<App />)
     expect(await screen.findByText('When do you wash the dishes?')).toBeInTheDocument()
-    expect(screen.getByText(/The evening check-in follows up on answers from before 5 pm/)).toBeInTheDocument()
+    expect(screen.getByText(/The evening check-in follows up on morning answers from before 5 pm/)).toBeInTheDocument()
     await answer('Right after eating')
     expect(screen.queryByText('Did any dishes pile up today?')).not.toBeInTheDocument()
   })
@@ -778,12 +778,12 @@ const mirror: Mirror = {
   week: 42,
   from: '2026-10-12',
   to: '2026-10-18',
-  editions: [1, 7],
+  editions: [1, 6],
   weeksPlayed: 3,
   stats: {
-    daysActive: 6,
+    daysActive: 5,
     daysActiveLastWeek: 4,
-    daysSoFar: 7,
+    daysSoFar: 6,
     answers: 18,
     private: 1,
     deepest: 5,
@@ -809,8 +809,15 @@ const mirror: Mirror = {
     { date: '2026-10-14', edition: 3, answers: [] },
     { date: '2026-10-15', edition: 4, answers: [{ theme: 'anger', crowd: 'against' }] },
     { date: '2026-10-16', edition: 5, answers: [{ theme: 'habits', crowd: 'with' }] },
-    { date: '2026-10-17', edition: 6, answers: [{ theme: 'friendship', crowd: 'with' }] },
-    { date: '2026-10-18', edition: 7, answers: [{ theme: 'money', crowd: 'with' }] },
+    {
+      date: '2026-10-17',
+      edition: 6,
+      answers: [
+        { theme: 'friendship', crowd: 'with' },
+        { theme: 'money', crowd: 'with' },
+      ],
+    },
+    { date: '2026-10-18', edition: 0, answers: [] },
   ],
   areas: [
     { area: 'everyday', minority: 2, judged: 6, lastMinority: 1, lastJudged: 5 },
@@ -920,7 +927,7 @@ const mirror: Mirror = {
   ],
   stepRecord: { started: 4, tried: 2, helped: 1 },
   strengths: [
-    { kind: 'days', you: 6, median: 4, players: 212 },
+    { kind: 'days', you: 5, median: 4, players: 212 },
     { kind: 'learned', you: 12, median: 7.5, players: 212 },
   ],
   nextSteps: [
@@ -942,7 +949,7 @@ const emptyMirror: Mirror = {
   stats: {
     daysActive: 0,
     daysActiveLastWeek: 0,
-    daysSoFar: 7,
+    daysSoFar: 6,
     answers: 0,
     private: 0,
     deepest: 0,
@@ -967,7 +974,8 @@ const emptyMirror: Mirror = {
   nextSteps: [],
 }
 
-const sunday: DailySet = { ...today, date: '2026-10-18', edition: 7 }
+// Sunday, as the server sends it: no questions, the day for the mirror.
+const sunday: DailySet = { date: '2026-10-18', questions: [], review: true }
 
 async function openMirror(routes: Parameters<typeof stubApi>[0] = {}) {
   vi.setSystemTime(at(9, 18))
@@ -989,13 +997,13 @@ describe('the weekly mirror', () => {
     expect(url).toBe('/api/mirror?date=2026-10-18')
     expect((init!.headers as Record<string, string>).Authorization).toBe('Device v1.device1.sig')
 
-    expect(page).toHaveTextContent('Your weekly mirror · Week 42 · Editions #1–#7')
+    expect(page).toHaveTextContent('Your weekly mirror · Week 42 · Editions #1–#6')
     expect(page).toHaveTextContent('This week you were The Steady Noticer.')
     expect(page).toHaveTextContent('Steady follow-through, with a radar tuned for silence.')
-    expect(page).toHaveTextContent('You showed up on 6 days this week and gave 18 answers.')
+    expect(page).toHaveTextContent('You showed up on 5 days this week and gave 18 answers.')
 
     const tiles = within(page).getByRole('list', { name: 'This week in numbers' })
-    expect(tiles).toHaveTextContent('Days active6 of 7Up from 4 last week')
+    expect(tiles).toHaveTextContent('Days active5 of 6Up from 4 last week')
     expect(tiles).toHaveTextContent('Answers18this week, 1 kept private')
     expect(tiles).toHaveTextContent('Against the crowd39%')
     expect(tiles).toHaveTextContent('Learned something12 of 15')
@@ -1027,6 +1035,7 @@ describe('the weekly mirror', () => {
       'Monday: Daily habits, with the crowd; Friendship, against the crowd; Intimacy, a private answer',
     )
     expect(within(page).getByRole('listitem', { name: /^Wednesday:/ })).toHaveAccessibleName('Wednesday: missed')
+    expect(within(page).getByRole('listitem', { name: /^Sunday:/ })).toHaveAccessibleName('Sunday: review day')
 
     const apart = within(page).getByRole('list', { name: 'Against the crowd, by area' })
     expect(apart).toHaveTextContent('People60% of 5')
@@ -1050,7 +1059,7 @@ describe('the weekly mirror', () => {
     expect(who).toHaveTextContent('Early read: from 9 answers')
     expect(who).not.toHaveTextContent('Energy from people') // 52 sits in the middle
 
-    expect(page).toHaveTextContent('You came back on 6 days. The typical player came back on 4.')
+    expect(page).toHaveTextContent('You came back on 5 days. The typical player came back on 4.')
     expect(page).toHaveTextContent('You learned something from 12 cards. The typical player did from 7.5.')
     expect(page).toHaveTextContent('Compared with 212 players this week.')
     expect(page).toHaveTextContent('4 steps started, 2 tried, 1 helped.')
@@ -1176,5 +1185,111 @@ describe('the weekly mirror', () => {
     await openMirror({ mirror: { status: 200, body: { ...mirror, lowMood: true } } })
     const note = await screen.findByRole('note', { name: 'Support' })
     expect(within(note).getByRole('link', { name: /Find a helpline/ })).toHaveAttribute('href', 'https://findahelpline.com')
+  })
+})
+
+// The week (2026-10-15): three in the morning, three more at noon, Monday to
+// Saturday; Sunday is for the mirror.
+const lunch: Question = {
+  id: 'q-lunch',
+  theme: 'food',
+  care: 'everyday',
+  prompt: 'Lunch time. What usually happens?',
+  options: [
+    { id: 'desk', label: 'I eat at my desk', depth: 1 },
+    { id: 'out', label: 'I get out for a walk', depth: 2 },
+  ],
+}
+const queue: Question = {
+  id: 'q-queue',
+  theme: 'anger',
+  care: 'personal',
+  prompt: 'Someone cuts in front of you in a queue. What do you do?',
+  options: [
+    { id: 'let-go', label: 'Let it go', depth: 1 },
+    { id: 'say', label: 'Say something calmly', depth: 2 },
+  ],
+}
+const ring: Question = {
+  id: 'q-ring',
+  theme: 'friendship',
+  care: 'personal',
+  prompt: 'A friend calls when you are busy. You…',
+  options: [
+    { id: 'pick-up', label: 'Pick up anyway', depth: 1 },
+    { id: 'later', label: 'Text that I will call later', depth: 2 },
+  ],
+}
+const sixADay: DailySet = { ...today, afternoon: [lunch, queue, ring], pool: [...today.questions, lunch, queue, ring] }
+
+describe('the week', () => {
+  async function morningThree() {
+    await answer('Right after eating')
+    next()
+    await skip()
+    await answer('One')
+    next()
+  }
+
+  it('opens three more questions at noon, after the morning three', async () => {
+    stubApi({ today: { status: 200, body: sixADay } })
+    const { unmount } = render(<App />)
+    await morningThree()
+    const morning = await screen.findByRole('region', { name: 'Morning done.' })
+    expect(morning).toHaveTextContent('Three more questions open at noon.')
+    expect(morning).not.toHaveTextContent('Tomorrow')
+    expect(screen.queryByText('Lunch time. What usually happens?')).not.toBeInTheDocument()
+    unmount()
+
+    vi.setSystemTime(new Date(2026, 9, 12, 12, 30))
+    render(<App />)
+    expect(await screen.findByRole('region', { name: 'Lunch time. What usually happens?' })).toBeInTheDocument()
+    expect(screen.getByText('Edition #3 · Monday afternoon')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Question 4 of 6' })).toHaveAttribute('aria-current', 'step')
+    await answer('I get out for a walk')
+    next()
+    await answer('Say something calmly')
+    next()
+    await answer('Text that I will call later')
+    next()
+    const done = await screen.findByRole('region', { name: 'Done for today.' })
+    expect(done).toHaveTextContent('Tomorrow Money · Friendship')
+    expect(within(done).getByRole('list', { name: "Today's answers" }).children).toHaveLength(6)
+  })
+
+  it('follows up on the morning three only in the evening', async () => {
+    answeredThisMorning()
+    localStorage.setItem('pi.choice.q-lunch', 'out')
+    localStorage.setItem('pi.at.q-lunch', String(new Date(2026, 9, 12, 12, 30).getTime()))
+    vi.setSystemTime(at(19))
+    stubApi({ today: { status: 200, body: sixADay } })
+    render(<App />)
+    expect(await screen.findByText('Did any dishes pile up today?')).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: /^Question \d of 2$/ })).toHaveLength(2)
+  })
+
+  it('opens on the mirror on Sunday, with no questions to answer', async () => {
+    vi.setSystemTime(at(9, 18))
+    stubApi({ edition: { status: 200, body: sunday }, mirror: { status: 200, body: mirror } })
+    render(<App />)
+    expect(await screen.findByText('The Steady Noticer.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Your mirror' })).toHaveAttribute('aria-pressed', 'true')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Today' }))
+    const review = screen.getByRole('region', { name: 'Sunday is for looking back.' })
+    expect(review).toHaveTextContent('Fresh questions arrive tomorrow morning.')
+    expect(screen.getByText('Review day · Sunday')).toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Done for today.' })).not.toBeInTheDocument()
+    fireEvent.click(within(review).getByRole('button', { name: 'Open your mirror' }))
+    expect(screen.getByRole('button', { name: 'Your mirror' })).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('looks ahead to the review day on Saturday', async () => {
+    vi.setSystemTime(at(9, 17))
+    stubApi({ today: { status: 200, body: { ...today, date: '2026-10-17', tomorrowThemes: [] } } })
+    render(<App />)
+    await morningThree()
+    const done = await screen.findByRole('region', { name: 'Done for today.' })
+    expect(done).toHaveTextContent('Tomorrow is Sunday: no new questions, just your week in the mirror.')
   })
 })
