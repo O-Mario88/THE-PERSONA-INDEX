@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
 	"net/http"
 	"strings"
 	"testing"
@@ -114,13 +115,53 @@ func TestEditionPool(t *testing.T) {
 		at := time.Date(2026, 10, 14, 9, 0, 0, 0, time.UTC)
 		s := NewServer(func() time.Time { return at }, shippedBank(t), newMemoryStore(), newDeviceSigner(testSecret))
 		set := poolDay(t, "2026-10-14")
-		extra := set.Pool[len(set.Pool)-1]
+		extra := extraOf(t, set)
 		v := VoteRequest{QuestionID: extra.ID, OptionID: extra.Options[0].ID, VoterID: "a"}
 		expectStatus(t, postVote(t, s, v, "k1"), http.StatusAccepted)
 		if n := totalVotes(t, s, extra.ID); n != 1 {
 			t.Fatalf("expected 1 vote on the pool question, got %d", n)
 		}
 	})
+
+	t.Run("an intimacy answer is counted without its option, and its totals are never published", func(t *testing.T) {
+		at := time.Date(2026, 10, 14, 9, 0, 0, 0, time.UTC)
+		mem := newMemoryStore()
+		s := NewServer(func() time.Time { return at }, shippedBank(t), mem, newDeviceSigner(testSecret))
+		set := poolDay(t, "2026-10-14")
+		q := set.Pool[len(set.Pool)-1]
+		if q.Care != careIntimate {
+			t.Fatalf("expected the intimacy question last, got %s", q.Care)
+		}
+		// An older phone may still send the option: the server drops it.
+		expectStatus(t, postVote(t, s, VoteRequest{QuestionID: q.ID, OptionID: q.Options[1].ID, VoterID: "a"}, "k1"), http.StatusAccepted)
+		// A current phone sends only that it answered.
+		expectStatus(t, postVote(t, s, VoteRequest{QuestionID: q.ID, OptionID: privateOption, VoterID: "b"}, "k2"), http.StatusAccepted)
+		aggregate(t, s)
+		for _, e := range mem.events {
+			if e.QuestionID == q.ID && e.OptionID != privateOption {
+				t.Fatalf("an intimate option was stored: %+v", e)
+			}
+		}
+		if counts, _ := mem.Counts(context.Background(), q.ID); len(counts) != 1 || counts[privateOption] != 2 {
+			t.Fatalf("expected two answers counted with no option, got %v", counts)
+		}
+		w := get(t, s, "/api/questions/"+q.ID+"/results")
+		expectError(t, w, http.StatusForbidden, "private_question")
+		expectPublicCache(t, w)
+		// The private stand-in is never accepted for an ordinary question.
+		expectError(t, postVote(t, s, VoteRequest{QuestionID: extraOf(t, set).ID, OptionID: privateOption, VoterID: "c"}, "k3"), http.StatusBadRequest, "unknown_option")
+	})
+}
+
+func extraOf(t *testing.T, set DailySet) Question {
+	t.Helper()
+	for _, q := range set.Pool[len(set.Questions)+len(set.Evening):] {
+		if q.Care != careIntimate {
+			return q
+		}
+	}
+	t.Fatal("no extra in the pool")
+	return Question{}
 }
 
 func TestVotesCannotBeLinkedAcrossQuestions(t *testing.T) {

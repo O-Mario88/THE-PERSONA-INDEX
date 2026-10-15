@@ -60,7 +60,7 @@ func newTestServer() *Server {
 
 var testPG *pgStore
 
-func testStore() VoteStore {
+func testStore() Store {
 	url := os.Getenv("PERSONA_TEST_DATABASE_URL")
 	if url == "" {
 		return newMemoryStore()

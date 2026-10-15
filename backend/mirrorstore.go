@@ -13,8 +13,10 @@ import (
 // and not the per-question key the votes table uses, so the vote table on its
 // own still cannot be joined into a profile. A private (intimate) answer keeps
 // only that it was given: no option, and a keyed hash in place of its
-// question id. Rows are deleted after mirrorRetention, and at once when the
-// phone asks for everything to be deleted.
+// question id. An answer keeps its date and sitting, never the moment it was
+// given, so it cannot be matched to a vote by time. Rows are deleted after
+// mirrorRetention, and at once when the phone asks for everything to be
+// deleted; the phone's old pass then takes no more writes.
 
 // MirrorAnswer is one answer as the mirror keeps it.
 type MirrorAnswer struct {
@@ -24,8 +26,8 @@ type MirrorAnswer struct {
 	Theme      string
 	OptionID   string // empty for a private answer
 	Depth      int    // 0 for a private answer
-	AnsweredAt time.Time
-	Learned    *bool // the "I learned something" tap, once given
+	Evening    bool   // answered in the evening sitting; never the time itself
+	Learned    *bool  // the "I learned something" tap, once given
 }
 
 // Private reports whether the answer was kept without its option.
@@ -55,15 +57,34 @@ type MirrorStep struct {
 
 func (s MirrorStep) Tried() bool { return s.Status == stepHelped || s.Status == stepNoChange }
 
+// Forgotten counts what one "Delete everything" removed from the server.
+type Forgotten struct {
+	Answers int `json:"answers"`
+	Steps   int `json:"steps"`
+	Weeks   int `json:"weeklyNotes"`
+	Votes   int `json:"votes"` // raw votes and ratings; anonymous totals already counted stay
+}
+
+// Kept counts what the server holds for one device.
+type Kept struct {
+	Answers     int    `json:"answers"` // private ones included
+	Private     int    `json:"privateAnswers"`
+	Steps       int    `json:"steps"`
+	Weeks       int    `json:"weeklyNotes"`
+	Votes       int    `json:"votes"`
+	FirstAnswer string `json:"firstAnswer,omitempty"` // the oldest answer's date
+}
+
 // MirrorStore is the durable side of the mirror. Both the in-memory store and
-// Postgres implement it alongside VoteStore.
+// Postgres implement it alongside VoteStore; a vote's answer and a rating's
+// tap are stored by VoteStore.Accept, together with the ballot.
 type MirrorStore interface {
-	// SaveAnswer keeps one answer. Saving it again changes nothing, so a
-	// retried vote is safe; the first answer to a question wins.
+	// SaveAnswer keeps one answer without a vote, for restoring and tests.
+	// Saving it again changes nothing; the first answer to a question wins.
+	// A device that deleted everything gets ErrDeviceForgotten.
 	SaveAnswer(ctx context.Context, a MirrorAnswer) error
-	// SaveRating notes the "I learned something" tap on an answer already kept.
-	SaveRating(ctx context.Context, deviceKey, questionID string, learned bool) error
 	// SaveStep starts a step or records how it went; its start date is kept.
+	// A device that deleted everything gets ErrDeviceForgotten.
 	SaveStep(ctx context.Context, s MirrorStep) error
 	// DeviceHistory returns one device's answers dated in [from, to] and its
 	// steps started in [from, to], oldest first.
@@ -71,16 +92,23 @@ type MirrorStore interface {
 	// EachDevice calls fn once per device with an answer dated in [from, to],
 	// with that device's answers in the range and its steps started in it.
 	EachDevice(ctx context.Context, from, to string, fn func(deviceKey string, answers []MirrorAnswer, steps []MirrorStep) error) error
-	// ForgetDevice deletes everything kept for one device.
-	ForgetDevice(ctx context.Context, deviceKey string) error
-	// DeleteMirrorBefore deletes answers dated, and steps started, before date,
-	// and reports how many rows went.
+	// ForgetDevice deletes everything kept for one device, in one step: its
+	// answers, steps and weekly notes, and the raw votes and ratings stored
+	// under any of voterHashes (the device's per-question keys). From then on
+	// the device's old pass takes no more writes. today is the date the
+	// marker for that is kept from.
+	ForgetDevice(ctx context.Context, deviceKey string, voterHashes []string, today string) (Forgotten, error)
+	// DeviceData counts what is kept for one device, for its "What I keep" screen.
+	DeviceData(ctx context.Context, deviceKey string, voterHashes []string) (Kept, error)
+	// DeleteMirrorBefore deletes answers dated, steps started and markers of
+	// deleted devices kept from before date, and reports how many rows went.
 	DeleteMirrorBefore(ctx context.Context, date string) (int, error)
 
 	// SaveWeekSummaries writes week summaries; writing one again replaces it.
 	// A summary is written only while its device still has an answer dated in
-	// that week or the week before, the answers it is made from, so a fold
-	// that races a phone's "Delete everything" cannot bring its week back.
+	// that week or the week before, the answers it is made from, and each is
+	// written under the device's lock, so a fold that races a phone's "Delete
+	// everything" cannot bring its week back.
 	SaveWeekSummaries(ctx context.Context, ws []WeekSummary) error
 	// WeekSummaries returns one device's summaries of weeks starting in
 	// [from, to], oldest first.
@@ -140,39 +168,29 @@ func summarySources(monday string) (from, to string) {
 const mirrorRetention = 35 * 24 * time.Hour
 
 type memoryMirror struct {
-	answers map[string]map[string]MirrorAnswer // device key -> question id -> answer
-	steps   map[string]map[string]MirrorStep
-	weeks   map[string]map[string]WeekSummary // device key -> Monday -> summary
-	folds   map[string]bool                   // folded Mondays
+	answers   map[string]map[string]MirrorAnswer // device key -> question id -> answer
+	steps     map[string]map[string]MirrorStep
+	weeks     map[string]map[string]WeekSummary // device key -> Monday -> summary
+	folds     map[string]bool                   // folded Mondays
+	forgotten map[string]string                 // device key -> date it deleted everything
 }
 
 func (m *memoryStore) SaveAnswer(_ context.Context, a MirrorAnswer) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	byQ := m.mirror.answers[a.DeviceKey]
-	if byQ == nil {
-		byQ = map[string]MirrorAnswer{}
-		m.mirror.answers[a.DeviceKey] = byQ
+	if m.mirror.forgotten[a.DeviceKey] != "" {
+		return ErrDeviceForgotten
 	}
-	if _, ok := byQ[a.QuestionID]; !ok {
-		byQ[a.QuestionID] = a
-	}
-	return nil
-}
-
-func (m *memoryStore) SaveRating(_ context.Context, deviceKey, questionID string, learned bool) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	if a, ok := m.mirror.answers[deviceKey][questionID]; ok && a.Learned == nil {
-		a.Learned = &learned
-		m.mirror.answers[deviceKey][questionID] = a
-	}
+	m.keepLocked(Ballot{DeviceKey: a.DeviceKey, Answer: &a})
 	return nil
 }
 
 func (m *memoryStore) SaveStep(_ context.Context, s MirrorStep) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	if m.mirror.forgotten[s.DeviceKey] != "" {
+		return ErrDeviceForgotten
+	}
 	byQ := m.mirror.steps[s.DeviceKey]
 	if byQ == nil {
 		byQ = map[string]MirrorStep{}
@@ -209,7 +227,10 @@ func (m *memoryStore) historyLocked(deviceKey, from, to string) ([]MirrorAnswer,
 		if c := strings.Compare(x.Date, y.Date); c != 0 {
 			return c
 		}
-		return x.AnsweredAt.Compare(y.AnsweredAt)
+		if x.Evening != y.Evening {
+			return boolCompare(x.Evening, y.Evening)
+		}
+		return strings.Compare(x.QuestionID, y.QuestionID)
 	})
 	slices.SortFunc(steps, func(x, y MirrorStep) int { return strings.Compare(x.Started, y.Started) })
 	return answers, steps
@@ -240,13 +261,47 @@ func (m *memoryStore) EachDevice(_ context.Context, from, to string, fn func(str
 	return nil
 }
 
-func (m *memoryStore) ForgetDevice(_ context.Context, deviceKey string) error {
+func (m *memoryStore) ForgetDevice(_ context.Context, deviceKey string, voterHashes []string, today string) (Forgotten, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	f := Forgotten{Answers: len(m.mirror.answers[deviceKey]), Steps: len(m.mirror.steps[deviceKey]), Weeks: len(m.mirror.weeks[deviceKey])}
 	delete(m.mirror.answers, deviceKey)
 	delete(m.mirror.steps, deviceKey)
 	delete(m.mirror.weeks, deviceKey)
-	return nil
+	hashes := map[string]bool{}
+	for _, h := range voterHashes {
+		hashes[h] = true
+	}
+	f.Votes = m.dropEventsLocked(func(e VoteEvent) bool { return hashes[e.VoterHash] })
+	if m.mirror.forgotten[deviceKey] == "" {
+		m.mirror.forgotten[deviceKey] = today
+	}
+	return f, nil
+}
+
+func (m *memoryStore) DeviceData(_ context.Context, deviceKey string, voterHashes []string) (Kept, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	k := Kept{Steps: len(m.mirror.steps[deviceKey]), Weeks: len(m.mirror.weeks[deviceKey])}
+	for _, a := range m.mirror.answers[deviceKey] {
+		k.Answers++
+		if a.Private() {
+			k.Private++
+		}
+		if k.FirstAnswer == "" || a.Date < k.FirstAnswer {
+			k.FirstAnswer = a.Date
+		}
+	}
+	hashes := map[string]bool{}
+	for _, h := range voterHashes {
+		hashes[h] = true
+	}
+	for _, e := range m.events {
+		if hashes[e.VoterHash] {
+			k.Votes++
+		}
+	}
+	return k, nil
 }
 
 func (m *memoryStore) DeleteMirrorBefore(_ context.Context, date string) (int, error) {
@@ -269,6 +324,12 @@ func (m *memoryStore) DeleteMirrorBefore(_ context.Context, date string) (int, e
 			}
 		}
 	}
+	for k, on := range m.mirror.forgotten {
+		if on < date {
+			delete(m.mirror.forgotten, k)
+			n++
+		}
+	}
 	return n, nil
 }
 
@@ -276,6 +337,9 @@ func (m *memoryStore) SaveWeekSummaries(_ context.Context, ws []WeekSummary) err
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	for _, w := range ws {
+		if m.mirror.forgotten[w.DeviceKey] != "" {
+			continue
+		}
 		from, to := summarySources(w.Monday)
 		sourced := false
 		for _, a := range m.mirror.answers[w.DeviceKey] {
@@ -346,4 +410,16 @@ func (m *memoryStore) DeleteWeeksBefore(_ context.Context, monday string) (int, 
 		}
 	}
 	return n, nil
+}
+
+// boolCompare orders false before true.
+func boolCompare(x, y bool) int {
+	switch {
+	case x == y:
+		return 0
+	case !x:
+		return -1
+	default:
+		return 1
+	}
 }

@@ -1681,3 +1681,65 @@
     font-size: 2.6rem;
   }
 }
+
+/* What I keep and Settings: plain lists and choices, no ads, nothing to win. */
+.privacy-line p + p {
+  margin-top: 4px;
+}
+
+.privacy-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+
+.privacy-links .text-button {
+  padding: 4px 0;
+  font-size: 0.82rem;
+}
+
+.back {
+  align-self: flex-start;
+  padding-left: 0;
+}
+
+.kept-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-left: 18px;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+.kept-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.option.danger {
+  border-color: color-mix(in srgb, var(--error) 55%, var(--line));
+  color: var(--error);
+}
+
+.option.danger:hover:not(:disabled),
+.option.danger:focus-visible {
+  border-color: var(--error);
+}
+
+fieldset.notice {
+  margin: 0;
+  min-width: 0;
+}
+
+fieldset.notice legend {
+  float: left;
+  width: 100%;
+  margin-bottom: 4px;
+}
+
+.offline {
+  color: var(--amber);
+  font-size: 0.9rem;
+}

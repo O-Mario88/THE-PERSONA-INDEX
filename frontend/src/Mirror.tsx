@@ -1,10 +1,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import {
-  forgetLocal,
-  forgetMirror,
   getMirror,
   getPeriodMirror,
-  saveStep,
   type Depth,
   type Mirror as MirrorData,
   type OwnWords,
@@ -14,7 +11,7 @@ import {
   type ThemeRead,
   wordsBetween,
 } from './api'
-import { setMoveStatus } from './moves'
+import { setMoveStatus, startMove } from './moves'
 import {
   AREA_NAMES,
   archetype,
@@ -48,7 +45,7 @@ const adjOf = (span: Span) => SPANS.find((s) => s.span === span)!.adj
 // speaks of this person alone and only sets them against their own past;
 // the research behind its words stays in mirrorText.ts, out of sight. The
 // week opens first; the month, quarter and year look further back.
-export function Mirror({ today }: { today: string }) {
+export function Mirror({ today, onOpenKept }: { today: string; onOpenKept: () => void }) {
   const [span, setSpan] = useState<Span>('week')
   const [state, setState] = useState<State>({ kind: 'loading' })
   const [attempt, setAttempt] = useState(0)
@@ -107,13 +104,23 @@ export function Mirror({ today }: { today: string }) {
           </button>
         </div>
       )}
-      {state.kind === 'week' && <MirrorPage m={state.m} today={today} reload={reload} />}
-      {state.kind === 'period' && <PeriodPage p={state.p} reload={reload} />}
+      {state.kind === 'week' && <MirrorPage m={state.m} today={today} reload={reload} onOpenKept={onOpenKept} />}
+      {state.kind === 'period' && <PeriodPage p={state.p} onOpenKept={onOpenKept} />}
     </section>
   )
 }
 
-function MirrorPage({ m, today, reload }: { m: MirrorData; today: string; reload: () => void }) {
+function MirrorPage({
+  m,
+  today,
+  reload,
+  onOpenKept,
+}: {
+  m: MirrorData
+  today: string
+  reload: () => void
+  onOpenKept: () => void
+}) {
   const name = archetype(m.traits)
   const line = tagline(m.traits)
   const lean = leanings(m.traits)
@@ -179,7 +186,7 @@ function MirrorPage({ m, today, reload }: { m: MirrorData; today: string; reload
       <OneLine m={m} />
       <StatTiles m={m} />
       {sections}
-      <Footer reload={reload} />
+      <Footer onOpenKept={onOpenKept} />
     </>
   )
 }
@@ -587,11 +594,10 @@ function Steps({ m, today, reload }: { m: MirrorData; today: string; reload: () 
   const [error, setError] = useState(false)
   const [all, setAll] = useState(false)
   const shown = all ? m.steps : m.steps.slice(0, STEPS_SHOWN)
-  async function mark(questionId: string, optionId: string, status: StepStatus) {
+  async function mark(s: MirrorData['steps'][number], status: StepStatus) {
     setError(false)
     try {
-      await saveStep(questionId, optionId, status, today)
-      setMoveStatus(questionId, status)
+      await setMoveStatus(s.questionId, status, today, { optionId: s.optionId, step: s.step, date: s.started })
       reload()
     } catch {
       setError(true)
@@ -611,13 +617,13 @@ function Steps({ m, today, reload }: { m: MirrorData; today: string; reload: () 
             <p>{s.step}</p>
             {s.status === 'started' && (
               <div className="m-step-buttons" role="group" aria-label="How did it go?">
-                <button type="button" className="m-chip" onClick={() => mark(s.questionId, s.optionId, 'helped')}>
+                <button type="button" className="m-chip" onClick={() => mark(s, 'helped')}>
                   It helped
                 </button>
-                <button type="button" className="m-chip" onClick={() => mark(s.questionId, s.optionId, 'no_change')}>
+                <button type="button" className="m-chip" onClick={() => mark(s, 'no_change')}>
                   No change yet
                 </button>
-                <button type="button" className="m-chip" onClick={() => mark(s.questionId, s.optionId, 'not_tried')}>
+                <button type="button" className="m-chip" onClick={() => mark(s, 'not_tried')}>
                   Didn't get to it
                 </button>
               </div>
@@ -651,10 +657,10 @@ function Steps({ m, today, reload }: { m: MirrorData; today: string; reload: () 
 function NextWeek({ m, today, reload }: { m: MirrorData; today: string; reload: () => void }) {
   const [error, setError] = useState(false)
   const early = m.traits.filter((t) => !t.solid && TRAITS[t.trait]).slice(0, 2)
-  async function start(questionId: string, optionId: string) {
+  async function start(s: MirrorData['nextSteps'][number]) {
     setError(false)
     try {
-      await saveStep(questionId, optionId, 'started', today)
+      await startMove(today, s.questionId, s.optionId, s.step)
       reload()
     } catch {
       setError(true)
@@ -672,7 +678,7 @@ function NextWeek({ m, today, reload }: { m: MirrorData; today: string; reload: 
                 {s.edition > 0 && ` · from Edition #${s.edition}`}
               </p>
               <p>{s.step}</p>
-              <button type="button" className="m-button" onClick={() => start(s.questionId, s.optionId)}>
+              <button type="button" className="m-button" onClick={() => start(s)}>
                 Start this step
               </button>
             </li>
@@ -728,61 +734,25 @@ function RoadAhead() {
   )
 }
 
-function Footer({ reload }: { reload: () => void }) {
-  const [step, setStep] = useState<'idle' | 'confirm' | 'deleting' | 'done' | 'failed'>('idle')
-  async function deleteAll() {
-    setStep('deleting')
-    try {
-      await forgetMirror()
-      forgetLocal()
-      setStep('done')
-      reload()
-    } catch {
-      setStep('failed')
-    }
-  }
+function Footer({ onOpenKept }: { onOpenKept: () => void }) {
   return (
     <footer className="m-footer">
       <p className="m-strong">For self-reflection, not a diagnosis.</p>
       <div className="m-privacy" role="note" aria-label="What leaves my phone">
         <p className="m-eyebrow">What leaves my phone</p>
         <p>
-          Your answers are kept on our server under an anonymous key made from this phone's code: no name, no email, no
-          account. That's how this mirror is built. Intimate answers are kept only as "a private answer", never what you
-          chose. Anything you write in your own words stays on this phone, is never sent, and is cleared after five weeks.
+          I keep your answers on the server under an anonymous key made from this phone's pass: no name, no email, no
+          account. That's how I build this mirror. For an intimate question I keep only that you answered, never what you
+          chose. Anything you write in your own words stays on this phone and is never sent.
         </p>
         <p>
-          Your answers and steps are deleted after five weeks. For your month, quarter and year, a small note of each
-          week stays for 13 months: how many answers, how deep they went, your three clearest answers and the steps that
-          helped. You can delete it all right now with the button below.
+          Your answers and small steps go after five weeks. For your month, quarter and year, I keep a small note of each
+          week for 13 months: how many answers, how deep they went, your three clearest answers and the steps that helped.
         </p>
       </div>
-      {step === 'idle' && (
-        <button type="button" className="m-link" onClick={() => setStep('confirm')}>
-          Delete everything
-        </button>
-      )}
-      {step === 'confirm' && (
-        <div className="m-confirm">
-          <p>This deletes your answers, your own words, your steps and weekly notes, here and on our server.</p>
-          <button type="button" className="m-button danger" onClick={deleteAll}>
-            Yes, delete it all
-          </button>
-          <button type="button" className="m-link" onClick={() => setStep('idle')}>
-            Keep it
-          </button>
-        </div>
-      )}
-      {step === 'deleting' && <p>Deleting…</p>}
-      {step === 'done' && <p role="status">Everything is deleted, here and on our server.</p>}
-      {step === 'failed' && (
-        <p role="alert">
-          I couldn't reach the server, so nothing was deleted.{' '}
-          <button type="button" className="m-link" onClick={deleteAll}>
-            Try again
-          </button>
-        </p>
-      )}
+      <button type="button" className="m-link" onClick={onOpenKept}>
+        What I keep, and how to delete it
+      </button>
     </footer>
   )
 }
@@ -795,7 +765,7 @@ const longDate = (iso: string) => {
 
 // The month, quarter or year: this phone's weeks added up, set only against
 // its own earlier weeks and the period before.
-function PeriodPage({ p, reload }: { p: PeriodMirror; reload: () => void }) {
+function PeriodPage({ p, onOpenKept }: { p: PeriodMirror; onOpenKept: () => void }) {
   const noun = p.period
   const name = archetype(p.traits)
   const line = tagline(p.traits)
@@ -834,7 +804,7 @@ function PeriodPage({ p, reload }: { p: PeriodMirror; reload: () => void }) {
       <PeriodTiles p={p} />
       {numbered(parts)}
       <p className="m-text m-close">{PERIOD_CLOSE[noun]}</p>
-      <Footer reload={reload} />
+      <Footer onOpenKept={onOpenKept} />
     </>
   )
 }

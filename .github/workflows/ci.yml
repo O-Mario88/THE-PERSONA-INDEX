@@ -27,6 +27,19 @@ jobs:
           go-version-file: backend/go.mod
       - run: test -z "$(gofmt -l .)"
       - run: go vet ./...
+      # Dates already published keep their questions (docs/operations.md,
+      # "The frozen schedule"): compare with the schedule on the base branch.
+      - name: schedule release check
+        env:
+          BASE: ${{ github.base_ref || 'main' }}
+        run: |
+          git fetch --no-tags --depth=1 origin "$BASE"
+          if git cat-file -e FETCH_HEAD:backend/content/schedule.json 2>/dev/null; then
+            git show FETCH_HEAD:backend/content/schedule.json > "$RUNNER_TEMP/base-schedule.json"
+            go run . schedule -check "$RUNNER_TEMP/base-schedule.json"
+          else
+            echo "$BASE has no frozen schedule yet; nothing published to protect"
+          fi
       - run: go test -race ./...
       # The same suite again against a real Postgres vote store.
       - run: go test -race -count=1 ./...

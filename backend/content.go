@@ -391,14 +391,38 @@ func decodeStrict(raw []byte, v any) error {
 	return dec.Decode(v)
 }
 
-// contentBank serves daily sets from the question bank.
+// contentBank serves daily sets from the question bank, dealt by the frozen
+// schedule (schedule.go).
 type contentBank struct {
 	byArea   map[string][]bankQuestion // daily-eligible questions per area, sorted by id
 	order    map[string][]int          // each area's fixed draw order, indexes into byArea
 	intimate []bankQuestion            // pool-only questions for adults who opted in, sorted by id
+	byID     map[string]*bankQuestion  // every question, pointing into byArea and intimate
+
+	plan      []planDay      // consecutive question days from the epoch
+	planIndex map[string]int // date -> index into plan
+	fileEnd   time.Time      // the last date the committed schedule freezes
 }
 
-func loadContentBank(raw []byte) (contentBank, error) {
+// loadContentBank loads the bank and its schedule (nil: deal every date
+// afresh, for test banks). The server refuses to start on any error.
+func loadContentBank(raw, schedule []byte) (contentBank, error) {
+	b, err := parseContentBank(raw)
+	if err != nil {
+		return contentBank{}, err
+	}
+	if err := b.applySchedule(schedule); err != nil {
+		return contentBank{}, err
+	}
+	return b, nil
+}
+
+// loadShippedBank is the bank and schedule built into the binary.
+func loadShippedBank() (contentBank, error) { return loadContentBank(questionsJSON, scheduleJSON) }
+
+// parseContentBank checks the bank against the quality gate and indexes it,
+// without dealing any dates.
+func parseContentBank(raw []byte) (contentBank, error) {
 	var f bankFile
 	if err := decodeStrict(raw, &f); err != nil {
 		return contentBank{}, fmt.Errorf("question bank: %w", err)
@@ -406,7 +430,7 @@ func loadContentBank(raw []byte) (contentBank, error) {
 	if errs := validateBank(f); len(errs) > 0 {
 		return contentBank{}, fmt.Errorf("question bank fails %d checks, first: %w", len(errs), errs[0])
 	}
-	b := contentBank{byArea: map[string][]bankQuestion{}, order: map[string][]int{}}
+	b := contentBank{byArea: map[string][]bankQuestion{}, order: map[string][]int{}, byID: map[string]*bankQuestion{}}
 	for _, q := range f.Questions {
 		t := themes[q.Theme]
 		if t.care == careIntimate {
@@ -416,14 +440,21 @@ func loadContentBank(raw []byte) (contentBank, error) {
 		b.byArea[t.area] = append(b.byArea[t.area], q)
 	}
 	slices.SortFunc(b.intimate, func(x, y bankQuestion) int { return strings.Compare(x.ID, y.ID) })
+	for i := range b.intimate {
+		b.byID[b.intimate[i].ID] = &b.intimate[i]
+	}
 	for _, a := range areas {
-		slices.SortFunc(b.byArea[a], func(x, y bankQuestion) int { return strings.Compare(x.ID, y.ID) })
-		if len(b.byArea[a]) == 0 {
+		qs := b.byArea[a]
+		slices.SortFunc(qs, func(x, y bankQuestion) int { return strings.Compare(x.ID, y.ID) })
+		if len(qs) == 0 {
 			return contentBank{}, fmt.Errorf("question bank: area %s has no daily questions", a)
+		}
+		for i := range qs {
+			b.byID[qs[i].ID] = &qs[i]
 		}
 		// One fixed order per area, repeated cycle after cycle: a fresh shuffle
 		// per cycle could put a question last in one cycle and first in the next.
-		b.order[a] = spreadThemes(shuffled(len(b.byArea[a]), a, 0), b.byArea[a])
+		b.order[a] = spreadThemes(shuffled(len(qs), a, 0), qs)
 	}
 	return b, nil
 }
@@ -443,99 +474,62 @@ func questionDay(d int) int {
 	return d - (d+3)/7 // minus the Sundays before d
 }
 
-// GetSet picks the day's questions: three for the morning and three for the
-// evening. The pick is random-looking but deterministic: the same date
-// always gives the same set, so every server instance and every person sees
-// the same edition. Each half draws from three of the four life areas, the
-// two halves resting different areas, so every area comes up every day; within
-// an area no question repeats until every question in that area has been used.
+// rests reports whether area ai sits out half h of question day k. Each half
+// draws from three of the four life areas, the two halves resting different
+// areas, so every area comes up every day.
+func rests(ai, k, h int) bool { return (k+2*h)%len(areas) == ai }
+
+// GetSet is the date's questions as the schedule froze them: three for the
+// morning, three for the evening, and the pool the phone picks its own from.
+// Every server instance and every person sees the same edition. There is no
+// set before edition 1.
 func (b contentBank) GetSet(date string) (DailySet, bool) {
-	day, err := time.Parse("2006-01-02", date)
-	if err != nil {
-		return DailySet{}, false
-	}
-	d := int(day.Unix() / 86400)
-	if d < 0 {
+	day, err := time.Parse(dateLayout, date)
+	if err != nil || day.Format(dateLayout) != date || date < editionEpoch {
 		return DailySet{}, false
 	}
 	set := DailySet{Date: date}
-	k := questionDay(d)
-	if k < 0 {
+	if day.Weekday() == time.Sunday {
 		set.Review, set.Questions = true, []Question{} // an empty list, never null, for the phone
 		return set, true
 	}
-	for h, half := range []*[]Question{&set.Questions, &set.Evening} {
-		for ai, area := range areas {
-			if i, ok := b.mainPick(ai, k, h); ok {
-				q := b.dailyQuestion(b.byArea[area][i], date)
-				*half = append(*half, q)
-				set.Pool = append(set.Pool, q)
-			}
-		}
+	i, ok := b.planIndex[date]
+	if !ok {
+		return DailySet{}, false
 	}
-	set.Pool = append(set.Pool, b.poolExtras(k, date)...)
+	p := b.plan[i]
+	for _, q := range p.morning {
+		set.Questions = append(set.Questions, b.dailyQuestion(*q, date))
+	}
+	for _, q := range p.evening {
+		set.Evening = append(set.Evening, b.dailyQuestion(*q, date))
+	}
+	set.Pool = append(append(set.Pool, set.Questions...), set.Evening...)
+	for _, q := range p.extras {
+		set.Pool = append(set.Pool, b.dailyQuestion(*q, date))
+	}
+	if p.intimate != nil {
+		set.Pool = append(set.Pool, b.dailyQuestion(*p.intimate, date))
+	}
 	return set, true
 }
 
-// rests reports whether area ai sits out half h of question day k.
-func rests(ai, k, h int) bool { return (k+2*h)%len(areas) == ai }
-
-// mainPick is the index (into byArea) of area ai's default question for half
-// h of question day k, or false when the area rests then.
-func (b contentBank) mainPick(ai, k, h int) (int, bool) {
-	if k < 0 || rests(ai, k, h) {
-		return 0, false
+// Question finds a question by its dated id, whichever date's pool it came
+// from, so a person's stored answers always find their question while the
+// bank keeps it.
+func (b contentBank) Question(id string) (Question, bool) {
+	if len(id) < len(dateLayout)+2 || id[len(dateLayout)] != '-' {
+		return Question{}, false
 	}
-	n := len(areas)
-	// Question days in [0, k) on which j%n == r.
-	before := func(r int) int { return (k - r + n - 1) / n }
-	// Draws of this area before day k: two halves a day, less the rests.
-	slot := halves*k - before(ai) - before((ai+n-2)%n)
-	if h == 1 && !rests(ai, k, 0) {
-		slot++ // the morning drew first
+	date, bankID := id[:len(dateLayout)], id[len(dateLayout)+1:]
+	if d, err := time.Parse(dateLayout, date); err != nil || d.Format(dateLayout) != date {
+		return Question{}, false
 	}
-	order := b.order[areas[ai]]
-	return order[slot%len(order)], true
-}
-
-// The edition pool: both halves' defaults plus extras, so each phone can
-// pick its own three for each half by the person's interests (computed on
-// the phone). Extras come from a second fixed rotation per area, poolPerArea
-// slots a day; an extra that is a default question within poolSpacing
-// question days is dropped, so nobody sees a question twice in a week.
-const (
-	poolPerArea = 4
-	poolSpacing = 6
-)
-
-func (b contentBank) poolExtras(k int, date string) []Question {
-	var out []Question
-	for ai, area := range areas {
-		qs := b.byArea[area]
-		want := poolPerArea
-		near := map[int]bool{}
-		for kk := k - poolSpacing; kk <= k+poolSpacing; kk++ {
-			for h := range halves {
-				if i, ok := b.mainPick(ai, kk, h); ok {
-					near[i] = true
-					if kk == k {
-						want--
-					}
-				}
-			}
-		}
-		order := shuffled(len(qs), area+"/pool", 0)
-		for j := range want {
-			if i := order[(poolPerArea*k+j)%len(qs)]; !near[i] {
-				out = append(out, b.dailyQuestion(qs[i], date))
-			}
-		}
+	q := b.byID[bankID]
+	if q == nil {
+		return Question{}, false
 	}
-	if len(b.intimate) > 0 {
-		order := shuffled(len(b.intimate), "intimate/pool", 0)
-		out = append(out, b.dailyQuestion(b.intimate[order[k%len(b.intimate)]], date))
-	}
-	return out
+	return b.dailyQuestion(*q, date), true
 }
 
 // spreadThemes reorders a shuffled area so that neighbours never share a

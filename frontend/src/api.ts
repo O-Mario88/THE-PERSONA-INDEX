@@ -1,5 +1,7 @@
 // Client for the backend API. Shapes mirror backend/api.go.
 
+import { addDays, dateOf, daysBetween, keys, load, loadJSON, remove, save, saveJSON } from './storage'
+
 // The card shown right after an option is chosen. The server also sends the
 // research behind a card and its source; the app keeps them out of sight
 // (Edwin, 2026-10-15: citing is not needed "as long as the source is accurate").
@@ -91,10 +93,17 @@ export async function getDay(date: string): Promise<DailySet> {
   }
 }
 
+// Option id sent for an intimacy question: the server learns that one was
+// answered, never which option (review of 2026-10-15). The choice stays here.
+export const PRIVATE_OPTION = '~private'
+
+export type Sitting = 'morning' | 'evening'
+
 export async function castVote(
   questionId: string,
   optionId: string,
   idempotencyKey: string,
+  sitting?: Sitting,
 ): Promise<{ status: string; eventId: string }> {
   return withDevice((voterId) =>
     request<{ status: string; eventId: string }>('/api/votes', {
@@ -103,19 +112,20 @@ export async function castVote(
         'Content-Type': 'application/json',
         'Idempotency-Key': idempotencyKey,
       },
-      body: JSON.stringify({ questionId, optionId, voterId }),
+      body: JSON.stringify({ questionId, optionId, voterId, ...(sitting ? { sitting } : {}) }),
     }),
   )
 }
 
-// withDevice runs a request with this phone's token. When the server stops
-// accepting the token (its secret was rotated), it gets a new one and sends
-// the same request, with the same idempotency key, once more.
+// withDevice runs a request with this phone's pass. When the server stops
+// accepting the pass (its key was rotated away, or another tab deleted
+// everything), it gets a new one and sends the same request, with the same
+// idempotency key, once more.
 async function withDevice<T>(send: (token: string) => Promise<T>): Promise<T> {
   try {
     return await send(await deviceToken())
   } catch (e) {
-    if (e instanceof ApiError && e.code === 'invalid_device') {
+    if (e instanceof ApiError && (e.code === 'invalid_device' || e.code === 'device_forgotten')) {
       remove(deviceKey)
       return send(await deviceToken())
     }
@@ -256,15 +266,37 @@ export function getPeriodMirror(period: Period, date: string): Promise<PeriodMir
   )
 }
 
-// forgetMirror deletes everything the server keeps for this phone.
-export async function forgetMirror(): Promise<void> {
-  await withDevice(async (token) => {
-    const res = await fetch('/api/mirror', { method: 'DELETE', headers: deviceHeader(token) })
-    if (!res.ok) {
-      const body = await res.json().catch(() => null)
-      throw new ApiError(res.status, body?.error ?? 'unavailable')
-    }
-  })
+// What the server keeps for this phone, for the "What I keep" screen.
+// Shapes mirror backend/mirror.go.
+export type Kept = {
+  kept: { answers: number; privateAnswers: number; steps: number; weeklyNotes: number; votes: number; firstAnswer?: string }
+  keptFor: { answersDays: number; weeklyNotesDays: number; votesDays: number }
+}
+export type Deleted = { answers: number; steps: number; weeklyNotes: number; votes: number }
+
+// getKept asks the server what it holds for this phone. A phone with no pass
+// yet has nothing there, so it asks nothing.
+export async function getKept(): Promise<Kept | null> {
+  if (!load(deviceKey)) return null
+  return withDevice((token) => request<Kept>('/api/device/data', { headers: deviceHeader(token) }))
+}
+
+// deleteEverywhere deletes everything the server keeps for this phone, then
+// everything on the phone, its pass included, so nothing new joins what was
+// deleted. It never retries with a new pass: that would delete nothing and
+// say it had. Today's answered questions stay closed (see forgetLocal).
+export async function deleteEverywhere(today: string): Promise<Deleted> {
+  const token = load(deviceKey)
+  let deleted: Deleted = { answers: 0, steps: 0, weeklyNotes: 0, votes: 0 }
+  if (token) {
+    const res = await request<{ deleted?: Deleted } | null>('/api/device/data', {
+      method: 'DELETE',
+      headers: deviceHeader(token),
+    })
+    if (res?.deleted) deleted = res.deleted
+  }
+  forgetLocal(today, true)
+  return deleted
 }
 
 // saveStep starts the small step on an answered card, or says how it went.
@@ -279,7 +311,8 @@ export function saveStep(questionId: string, optionId: string, status: StepStatu
 }
 
 // The one-tap "I learned something" on an insight card. Kept with the
-// phone's answers for its mirror, and counted to retire weak cards.
+// phone's answers for its mirror, and counted to retire weak cards. For an
+// intimacy question optionId is PRIVATE_OPTION.
 export function rateCard(questionId: string, optionId: string, learned: boolean): Promise<unknown> {
   return withDevice((voterId) =>
     request('/api/ratings', {
@@ -298,45 +331,54 @@ export function wasRated(questionId: string): boolean {
   return load(`pi.rated.${questionId}`) === '1'
 }
 
-// Local storage can be missing or blocked (private mode); fall back to memory.
-const memory = new Map<string, string>()
-function load(key: string): string | null {
-  try {
-    return localStorage.getItem(key)
-  } catch {
-    return memory.get(key) ?? null
-  }
-}
-function save(key: string, value: string) {
-  memory.set(key, value)
-  try {
-    localStorage.setItem(key, value)
-  } catch {
-    // memory copy is enough for this visit
-  }
-}
-function remove(key: string) {
-  memory.delete(key)
-  try {
-    localStorage.removeItem(key)
-  } catch {
-    // nothing to do
+// forgetLocal deletes everything this app keeps on the phone. The pass goes
+// too when everywhere is set, after the server deleted its copy. Today's and
+// yesterday's answered questions stay closed, with nothing kept of the
+// answer, so a question answered before the delete is not asked and counted
+// a second time.
+export function forgetLocal(today: string, everywhere = false) {
+  const open = addDays(today, -1)
+  for (const k of keys()) {
+    if (k === deviceKey && !everywhere) continue
+    if (k.startsWith(choicePrefix) && load(k) !== SKIPPED) {
+      const d = dateOf(k.slice(choicePrefix.length))
+      if (d && d >= open) {
+        save(k, CLOSED)
+        continue
+      }
+    }
+    remove(k)
   }
 }
 
-// forgetLocal deletes everything this app keeps on the phone except the
-// device token: it holds nothing personal, and dropping it would let this
-// phone vote twice on today's questions.
-export function forgetLocal() {
-  for (const k of [...memory.keys()]) if (k.startsWith('pi.') && k !== deviceKey) memory.delete(k)
-  try {
-    for (const k of Object.keys(localStorage)) {
-      if (k.startsWith('pi.') && k !== deviceKey) localStorage.removeItem(k)
+// pruneLocal clears what has outlived its use, each time the app opens: own
+// words past the chosen time, drafts and per-question notes past their
+// questions' days, and editions kept for offline starts other than the
+// latest two days.
+export function pruneLocal(today: string, wordsDays: number) {
+  pruneWords(today, wordsDays)
+  for (const k of keys()) {
+    const qid = perQuestion.map((p) => (k.startsWith(p) ? k.slice(p.length) : '')).find(Boolean)
+    const d = qid ? dateOf(qid) : null
+    if (d && daysBetween(d, today) > (k.startsWith(draftPrefix) ? 1 : NOTES_KEPT_DAYS)) remove(k)
+    if (k.startsWith(editionPrefix)) {
+      const date = k.slice(editionPrefix.length)
+      if (date < addDays(today, -1) || date > addDays(today, 1)) remove(k)
     }
-  } catch {
-    // nothing stored
+    // Which three questions each sitting showed (profile.ts), only needed on their day.
+    if (k.startsWith(pickPrefix) && k.slice(pickPrefix.length, pickPrefix.length + 10) < addDays(today, -1)) remove(k)
   }
 }
+
+// Per-question notes are kept a week past their day, longer than any
+// question takes votes, so nothing can be answered twice.
+const NOTES_KEPT_DAYS = 8
+const choicePrefix = 'pi.choice.'
+const pendingPrefix = 'pi.pending.'
+const draftPrefix = 'pi.draft.'
+const editionPrefix = 'pi.edition.'
+const pickPrefix = 'pi.pick.'
+const perQuestion = [choicePrefix, pendingPrefix, draftPrefix, 'pi.at.', 'pi.rated.']
 
 function randomId(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
@@ -365,21 +407,61 @@ export function deviceToken(): Promise<string> {
 }
 
 // A vote keeps the same idempotency key until it is accepted, so a retry after
-// a dropped connection can never count twice.
-export function voteKey(questionId: string): string {
-  const k = `pi.pending.${questionId}`
-  let key = load(k)
-  if (!key) {
-    key = randomId()
-    save(k, key)
+// a dropped connection can never count twice. The key belongs to one answer:
+// tapping a different one after a failure takes a new key (the server refuses
+// one key for two answers), and the earlier answer is noted, since it may
+// have been counted before the connection dropped.
+type Pending = { key: string; option: string; earlier?: string[] }
+
+function loadPending(questionId: string): Pending | null {
+  const raw = load(pendingPrefix + questionId)
+  if (!raw) return null
+  try {
+    const p = JSON.parse(raw)
+    if (p && typeof p.key === 'string' && typeof p.option === 'string') return p
+  } catch {
+    // an older plain key: its answer is unknown
   }
-  return key
+  return { key: raw, option: '' }
+}
+
+export function voteKey(questionId: string, optionId: string): string {
+  const p = loadPending(questionId)
+  if (p && p.option === optionId) return p.key
+  const earlier = [...(p?.earlier ?? []), ...(p?.option ? [p.option] : [])].filter((o) => o !== optionId)
+  const next: Pending = { key: randomId(), option: optionId, ...(earlier.length ? { earlier } : {}) }
+  save(pendingPrefix + questionId, JSON.stringify(next))
+  return next.key
+}
+
+// dropVoteKey forgets the key, so the next try of this answer takes a new one.
+export function dropVoteKey(questionId: string) {
+  const p = loadPending(questionId)
+  if (p) save(pendingPrefix + questionId, JSON.stringify({ ...p, key: randomId() }))
+}
+
+// earlierAnswer is the one other answer this phone tried to send for the
+// question, when there was exactly one: the answer the server already
+// counted when it says this phone answered.
+export function earlierAnswer(questionId: string): string | null {
+  const earlier = loadPending(questionId)?.earlier ?? []
+  return earlier.length === 1 ? earlier[0] : null
 }
 
 export function rememberChoice(questionId: string, optionId: string) {
-  remove(`pi.pending.${questionId}`)
-  save(`pi.choice.${questionId}`, optionId)
+  remove(pendingPrefix + questionId)
+  remove(draftPrefix + questionId)
+  save(choicePrefix + questionId, optionId)
   save(`pi.at.${questionId}`, String(Date.now()))
+}
+
+// rememberAnswered notes that the server already has an answer from this
+// phone, without knowing which. It never replaces an answer this phone knows,
+// say one another tab just saved.
+export function rememberAnswered(questionId: string) {
+  const known = recalledChoice(questionId)
+  if (known && known !== UNKNOWN && known !== SKIPPED) return
+  rememberChoice(questionId, UNKNOWN)
 }
 
 // When this phone answered a question, in ms, or null if it was before times were kept.
@@ -389,13 +471,38 @@ export function answeredAt(questionId: string): number | null {
 }
 
 export function recalledChoice(questionId: string): string | null {
-  return load(`pi.choice.${questionId}`)
+  return load(choicePrefix + questionId)
 }
 
 export function rememberSkip(questionId: string) {
-  save(`pi.choice.${questionId}`, SKIPPED)
+  save(choicePrefix + questionId, SKIPPED)
 }
 export const SKIPPED = '-'
+// The server has an answer from this phone, but not which.
+export const UNKNOWN = '?'
+// Answered before "Delete everything": closed for the day, nothing kept of it.
+export const CLOSED = 'x'
+
+// A half-written answer in one's own words, kept so a closed app or a
+// dropped call does not lose it. Cleared once the answer is kept.
+export function saveDraft(questionId: string, text: string) {
+  if (text) save(draftPrefix + questionId, text)
+  else remove(draftPrefix + questionId)
+}
+
+export function recalledDraft(questionId: string): string {
+  return load(draftPrefix + questionId) ?? ''
+}
+
+// The day's edition, kept so the app can open without a connection.
+export function cacheEdition(set: DailySet, date: string) {
+  saveJSON(editionPrefix + date, set)
+}
+
+export function cachedEdition(date: string): DailySet | null {
+  const set = loadJSON(editionPrefix + date) as DailySet | null
+  return set && typeof set.date === 'string' && Array.isArray(set.questions) ? set : null
+}
 
 // Own words: an answer typed instead of tapped (Edwin, 2026-10-15: "room for
 // the users to type their own answers"). The words stay on this phone and
@@ -417,27 +524,19 @@ export const MAX_WORDS = 280
 
 const wordsPrefix = 'pi.words.'
 
-// Own words are kept five weeks, like answers on the server, so they last
-// for the weekly mirror and no longer.
-export const WORDS_KEPT_DAYS = 35
-
-export function rememberWords(w: OwnWords) {
+// Own words are kept as long as the phone's setting says: five weeks unless
+// changed (prefs.ts).
+export function rememberWords(w: OwnWords, keepDays: number) {
   save(wordsPrefix + w.questionId, JSON.stringify(w))
-  const cutoff = new Date(Date.parse(`${w.date}T00:00:00Z`) - WORDS_KEPT_DAYS * 86400_000).toISOString().slice(0, 10)
-  for (const k of wordKeys()) {
+  pruneWords(w.date, keepDays)
+}
+
+export function pruneWords(today: string, keepDays: number) {
+  const cutoff = addDays(today, -keepDays)
+  for (const k of keys(wordsPrefix)) {
     const old = parseWords(load(k))
     if (!old || old.date < cutoff) remove(k)
   }
-}
-
-function wordKeys(): string[] {
-  const keys = new Set([...memory.keys()])
-  try {
-    for (const k of Object.keys(localStorage)) keys.add(k)
-  } catch {
-    // memory only
-  }
-  return [...keys].filter((k) => k.startsWith(wordsPrefix))
 }
 
 function parseWords(v: string | null): OwnWords | null {
@@ -455,7 +554,7 @@ export function recalledWords(questionId: string): OwnWords | null {
 
 // wordsBetween lists the own words kept for dates from..to (YYYY-MM-DD), oldest first.
 export function wordsBetween(from: string, to: string): OwnWords[] {
-  return wordKeys()
+  return keys(wordsPrefix)
     .flatMap((k) => {
       const w = parseWords(load(k))
       return w && w.date >= from && w.date <= to ? [w] : []

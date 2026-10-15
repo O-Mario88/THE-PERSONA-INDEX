@@ -1,20 +1,39 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { ApiError, getDay, recalledChoice, SKIPPED, type DailySet, type Question } from './api'
+import {
+  ApiError,
+  cacheEdition,
+  cachedEdition,
+  getDay,
+  pruneLocal,
+  pruneWords,
+  recalledChoice,
+  SKIPPED,
+  type DailySet,
+  type Question,
+} from './api'
 import { useDay } from './day'
 import { QuestionCard, type Done } from './QuestionCard'
-import { DayClose } from './DayClose'
+import { DayClose, StepCheck } from './DayClose'
 import { DayPlan, NightScreen, PauseScreen, PrivacyLine, Upcoming, type Progress } from './Sittings'
 import { Mirror } from './Mirror'
+import { KeptScreen } from './Kept'
+import { SettingsScreen } from './Settings'
 import { themeVars } from './themes'
+import { openThisWeek, sendUnsent } from './moves'
 import { forgetPick, todaysPick, type Half } from './profile'
 import { intimacyOn, loadPrefs, savePrefs, type Prefs } from './prefs'
+import { onOtherTab } from './storage'
 import './App.css'
 
 type State =
   | { kind: 'loading' }
-  | { kind: 'ready'; set: DailySet; day: string } // day: the phone's date it was loaded for
+  // day: the phone's date it was loaded for; offline: opened from what the
+  // phone kept, because the server could not be reached
+  | { kind: 'ready'; set: DailySet; day: string; offline?: true }
   | { kind: 'empty' }
   | { kind: 'error' }
+
+type View = 'today' | 'mirror' | 'kept' | 'settings'
 
 const themesOf = (qs: Question[]) => qs.map((q) => q.theme).filter((t): t is string => !!t)
 
@@ -26,7 +45,9 @@ function progressOf(qs: Question[]): Progress {
 function App() {
   const [state, setState] = useState<State>({ kind: 'loading' })
   const [attempt, setAttempt] = useState(0)
-  const [tab, setTab] = useState<'today' | 'mirror'>('today')
+  const [tab, setTab] = useState<View>('today')
+  // Where Back goes from What I keep and Settings.
+  const [back, setBack] = useState<View>('today')
   const [prefs, setPrefs] = useState<Prefs>(loadPrefs)
   const [pickVersion, setPickVersion] = useState(0)
   // What is answered lives on the phone; a finished card only asks for a
@@ -43,20 +64,52 @@ function App() {
     getDay(date).then(
       (set) => {
         if (!live) return
-        setState({ kind: 'ready', set, day: date })
-        // Sunday has no new questions: it opens on the week in the mirror.
-        if (set.review) setTab('mirror')
+        cacheEdition(set, date)
+        setState((s) => {
+          // Sunday has no new questions: it opens on the week in the mirror.
+          if (set.review && !(s.kind === 'ready' && s.day === date)) setTab('mirror')
+          return { kind: 'ready', set, day: date }
+        })
       },
       (e) => {
         if (!live) return
         const empty = e instanceof ApiError && e.code === 'no_questions_today'
-        setState({ kind: empty ? 'empty' : 'error' })
+        // Without a connection the app opens on the day it already holds.
+        const kept = empty ? null : cachedEdition(date)
+        setState(kept ? { kind: 'ready', set: kept, day: date, offline: true } : { kind: empty ? 'empty' : 'error' })
       },
     )
     return () => {
       live = false
     }
   }, [date, attempt])
+
+  // Offline, try again as soon as the phone is back online.
+  const offline = state.kind === 'ready' && state.offline
+  useEffect(() => {
+    if (!offline) return
+    const again = () => setAttempt((n) => n + 1)
+    window.addEventListener('online', again)
+    return () => window.removeEventListener('online', again)
+  }, [offline])
+
+  // Each day the app opens: clear what has outlived its use and send any
+  // small step the server did not get.
+  useEffect(() => {
+    pruneLocal(date, loadPrefs().wordsDays)
+    sendUnsent(date)
+  }, [date])
+
+  // Another tab on this phone answered, changed a setting or deleted
+  // everything: catch up.
+  useEffect(
+    () =>
+      onOtherTab(() => {
+        setPrefs(loadPrefs())
+        setFinished((n) => n + 1)
+      }),
+    [],
+  )
 
   // Just after midnight the set on hand is yesterday's until the new one
   // arrives; it is not shown as today's.
@@ -92,6 +145,7 @@ function App() {
   function changePrefs(next: Prefs) {
     savePrefs(next)
     setPrefs(next)
+    if (next.wordsDays !== prefs.wordsDays) pruneWords(date, next.wordsDays)
     // Re-pick only a sitting nobody has started, so questions never change
     // under someone mid-sitting.
     if (!set) return
@@ -106,6 +160,12 @@ function App() {
   function retry() {
     setState({ kind: 'loading' })
     setAttempt((n) => n + 1)
+  }
+
+  function open(view: 'kept' | 'settings') {
+    if (tab === 'today' || tab === 'mirror') setBack(tab)
+    setTab(view)
+    window.scrollTo?.({ top: 0 })
   }
 
   return (
@@ -124,11 +184,25 @@ function App() {
         )}
       </header>
 
-      {loading && <p className="muted center">Getting today's questions ready…</p>}
+      {offline && tab === 'today' && (
+        <p className="notice offline" role="status">
+          You're offline, so I opened what this phone already had. Answers go through once you're back.
+        </p>
+      )}
 
-      {state.kind === 'empty' && <p className="notice">No questions today yet. Check back soon.</p>}
+      {tab === 'kept' && <KeptScreen today={date} onBack={() => setTab(back)} />}
 
-      {state.kind === 'error' && (
+      {tab === 'settings' && (
+        <SettingsScreen prefs={prefs} onChange={changePrefs} onOpenKept={() => open('kept')} onBack={() => setTab(back)} />
+      )}
+
+      {loading && (tab === 'today' || tab === 'mirror') && (
+        <p className="muted center">Getting today's questions ready…</p>
+      )}
+
+      {state.kind === 'empty' && tab === 'today' && <p className="notice">No questions today yet. Check back soon.</p>}
+
+      {state.kind === 'error' && tab === 'today' && (
         <div className="notice" role="alert">
           <p>I couldn't load today's questions.</p>
           <button type="button" className="option" onClick={retry}>
@@ -137,7 +211,7 @@ function App() {
         </div>
       )}
 
-      {set && tab === 'mirror' && <Mirror today={set.date} />}
+      {set && tab === 'mirror' && <Mirror today={set.date} onOpenKept={() => open('kept')} />}
 
       {set && tab === 'today' && (
         <div className="today">
@@ -179,6 +253,7 @@ function App() {
                 <button type="button" className="option" onClick={() => setTab('mirror')}>
                   Open your mirror
                 </button>
+                <StepCheck date={set.date} label="This week's small steps" pick={() => openThisWeek(set.date)} />
               </section>
             )}
 
@@ -213,6 +288,8 @@ function App() {
                     key={current.id}
                     question={current}
                     date={set.date}
+                    sitting={sitting === 'evening' ? 'evening' : 'morning'}
+                    wordsDays={prefs.wordsDays}
                     onDone={onDone}
                     onNext={() => flow.go(flow.at + 1)}
                   />
@@ -245,7 +322,7 @@ function App() {
               wide screen. */}
           <div className="today-side">
             {!set.review && <DayPlan sitting={sitting} morning={morning} evening={evening} />}
-            <PrivacyLine />
+            <PrivacyLine onOpenKept={() => open('kept')} onOpenSettings={() => open('settings')} />
             {prefs.adult === true && (
               <label className="switch">
                 <input

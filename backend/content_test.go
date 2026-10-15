@@ -6,17 +6,26 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
 
+var shipped struct {
+	once sync.Once
+	bank contentBank
+	err  error
+}
+
+// shippedBank is the bank and schedule the server ships, loaded once: banks
+// are never changed after loading.
 func shippedBank(t *testing.T) contentBank {
 	t.Helper()
-	b, err := loadContentBank(questionsJSON)
-	if err != nil {
-		t.Fatal(err)
+	shipped.once.Do(func() { shipped.bank, shipped.err = loadShippedBank() })
+	if shipped.err != nil {
+		t.Fatal(shipped.err)
 	}
-	return b
+	return shipped.bank
 }
 
 func TestShippedBankPassesTheQualityGate(t *testing.T) {

@@ -125,7 +125,7 @@ func TestTheWeek(t *testing.T) {
 	t.Run("no question repeats in an area until the area is used up", func(t *testing.T) {
 		draws := map[string][]string{}
 		for d := range 1500 {
-			date := time.Unix(0, 0).UTC().AddDate(0, 0, d).Format(dateLayout)
+			date := mustDate(editionEpoch).AddDate(0, 0, d).Format(dateLayout)
 			set, _ := b.GetSet(date)
 			for _, q := range append(append([]Question{}, set.Questions...), set.Evening...) {
 				draws[area(q)] = append(draws[area(q)], strings.TrimPrefix(q.ID, date+"-"))

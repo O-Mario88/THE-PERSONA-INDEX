@@ -114,11 +114,21 @@ export function DayPlan({
 }
 
 // The quiet promise under every screen of the day.
-export function PrivacyLine() {
+export function PrivacyLine({ onOpenKept, onOpenSettings }: { onOpenKept: () => void; onOpenSettings: () => void }) {
   return (
-    <p className="privacy-line">
-      <span aria-hidden="true">🔒</span> Private to you: no name, no email, no account. Your answers are never shown to
-      anyone else, and the app keeps the words you type on this phone only.
-    </p>
+    <div className="privacy-line">
+      <p>
+        <span aria-hidden="true">🔒</span> Private to you: no name, no email, no account. I never show your answers to
+        anyone, and the words you type stay on this phone.
+      </p>
+      <p className="privacy-links">
+        <button type="button" className="text-button" onClick={onOpenKept}>
+          What I keep
+        </button>
+        <button type="button" className="text-button" onClick={onOpenSettings}>
+          Settings
+        </button>
+      </p>
+    </div>
   )
 }

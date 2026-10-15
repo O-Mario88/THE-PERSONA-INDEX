@@ -309,7 +309,7 @@ func TestPeriodMirror(t *testing.T) {
 		s := mirrorServer("2026-10-06")
 		answer(t, s, "a", "2026-10-06", "tidy", "now")
 		fold(t, s, "2026-10-20")
-		expectStatus(t, do(t, s, withDevice(s, httptest.NewRequest(http.MethodDelete, "/api/mirror", nil), "a")), http.StatusNoContent)
+		expectStatus(t, do(t, s, withDevice(s, httptest.NewRequest(http.MethodDelete, "/api/mirror", nil), "a")), http.StatusOK)
 		if ws, err := s.mirror.WeekSummaries(context.Background(), mirrorKeyOf(s, "a"), "2026-01-01", "2026-12-31"); err != nil || len(ws) != 0 {
 			t.Fatalf("expected no summaries left, got %+v (%v)", ws, err)
 		}
@@ -328,7 +328,7 @@ func TestPeriodMirror(t *testing.T) {
 			t.Fatal(err)
 		}
 		w := s.summarizeWeek(key, mustDate("2026-10-05"), answers, steps) // read just before the delete
-		expectStatus(t, do(t, s, withDevice(s, httptest.NewRequest(http.MethodDelete, "/api/mirror", nil), "a")), http.StatusNoContent)
+		expectStatus(t, do(t, s, withDevice(s, httptest.NewRequest(http.MethodDelete, "/api/mirror", nil), "a")), http.StatusOK)
 		if err := s.mirror.SaveWeekSummaries(ctx, []WeekSummary{w}); err != nil {
 			t.Fatal(err)
 		}
@@ -355,7 +355,7 @@ func TestWeekSummaryRetention(t *testing.T) {
 	ctx := context.Background()
 	st := testStore().(MirrorStore)
 	for _, monday := range []string{"2025-09-01", "2026-10-05"} {
-		a := MirrorAnswer{DeviceKey: "k", QuestionID: monday + "-tidy", Date: monday, Theme: "habits", OptionID: "now", AnsweredAt: mustDate(monday)}
+		a := MirrorAnswer{DeviceKey: "k", QuestionID: monday + "-tidy", Date: monday, Theme: "habits", OptionID: "now"}
 		if err := st.SaveAnswer(ctx, a); err != nil {
 			t.Fatal(err)
 		}

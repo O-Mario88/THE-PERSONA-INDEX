@@ -15,6 +15,7 @@
 //   weights but no depth, so they never move interest.
 
 import type { Question } from './api'
+import { loadJSON, remove, saveJSON } from './storage'
 
 export const SCORING_VERSION = 2
 
@@ -35,22 +36,14 @@ const historyKey = 'pi.history.v1'
 const KEEP_DAYS = 60
 
 export function loadHistory(): History {
-  try {
-    const raw = JSON.parse(localStorage.getItem(historyKey) ?? 'null')
-    if (raw && Array.isArray(raw.answers) && Array.isArray(raw.skips)) return raw
-  } catch {
-    // unreadable or blocked storage: start fresh
-  }
+  const raw = loadJSON(historyKey) as History | null
+  if (raw && Array.isArray(raw.answers) && Array.isArray(raw.skips)) return raw
   return { answers: [], skips: [] }
 }
 
 function saveHistory(h: History, today: string) {
   const keep = <T extends { date: string }>(xs: T[]) => xs.filter((x) => days(x.date, today) <= KEEP_DAYS)
-  try {
-    localStorage.setItem(historyKey, JSON.stringify({ answers: keep(h.answers), skips: keep(h.skips) }))
-  } catch {
-    // private mode: the profile lasts for this visit only
-  }
+  saveJSON(historyKey, { answers: keep(h.answers), skips: keep(h.skips) })
 }
 
 export function recordAnswer(q: Question, optionId: string, date: string) {
@@ -134,31 +127,19 @@ export function todaysPick(
   taken: Question[] = [],
 ): Question[] {
   const key = pickKey(today, half)
-  try {
-    const ids: unknown = JSON.parse(localStorage.getItem(key) ?? 'null')
-    if (Array.isArray(ids)) {
-      const qs = ids.map((id) => pool.find((q) => q.id === id) ?? defaults.find((q) => q.id === id))
-      if (qs.every(Boolean)) return qs as Question[]
-    }
-  } catch {
-    // fall through and pick again
+  const ids = loadJSON(key)
+  if (Array.isArray(ids)) {
+    const qs = ids.map((id) => pool.find((q) => q.id === id) ?? defaults.find((q) => q.id === id))
+    if (qs.every(Boolean)) return qs as Question[]
   }
   const qs = pickThree(pool.length ? pool : defaults, defaults, loadHistory(), today, adult, taken)
-  try {
-    localStorage.setItem(key, JSON.stringify(qs.map((q) => q.id)))
-  } catch {
-    // memory only
-  }
+  saveJSON(key, qs.map((q) => q.id))
   return qs
 }
 
 // forgetPick drops the given halves' picks for today, so they are picked again.
 export function forgetPick(today: string, halves: Half[] = ['morning', 'evening']) {
-  try {
-    for (const half of halves) localStorage.removeItem(pickKey(today, half))
-  } catch {
-    // nothing to do
-  }
+  for (const half of halves) remove(pickKey(today, half))
 }
 
 export type TraitRead = { trait: string; direction: 'higher' | 'lower' | 'middle'; answers: number }
