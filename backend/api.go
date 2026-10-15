@@ -23,12 +23,11 @@ type Option struct {
 }
 
 type Question struct {
-	ID       string    `json:"id"`
-	Theme    string    `json:"theme,omitempty"`
-	Care     string    `json:"care,omitempty"` // everyday | personal | intimate
-	Prompt   string    `json:"prompt"`
-	Options  []Option  `json:"options"`
-	FollowUp *FollowUp `json:"followUp,omitempty"` // the evening question on this one; see content.go
+	ID      string   `json:"id"`
+	Theme   string   `json:"theme,omitempty"`
+	Care    string   `json:"care,omitempty"` // everyday | personal | intimate
+	Prompt  string   `json:"prompt"`
+	Options []Option `json:"options"`
 }
 
 // DailySet is the response of GET /api/questions/today and GET /api/editions/{date}.

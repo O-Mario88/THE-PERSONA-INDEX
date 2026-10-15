@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
 	"os"
 	"strings"
 	"testing"
@@ -61,11 +60,7 @@ func bankWithout(t *testing.T, area string, n int) (contentBank, []string) {
 		}
 		kept = append(kept, q)
 	}
-	raw, err := json.Marshal(bankFile{Questions: kept})
-	if err != nil {
-		t.Fatal(err)
-	}
-	b, err := parseContentBank(raw)
+	b, err := indexBank(bankFile{Questions: kept}) // a part of the shipped bank, which passes the gate
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -269,8 +264,16 @@ func TestFrozenSchedule(t *testing.T) {
 				f.Questions[i].Prompt = strings.TrimSuffix(f.Questions[i].Prompt, "?") + " today?"
 			}
 		}
-		reworded, _ := json.Marshal(f)
-		if _, err := loadContentBank(reworded, scheduleJSON); err != nil {
+		// The schedule is what is under test here, not the cards, so the
+		// bank is indexed without running the quality gate again.
+		withSchedule := func(f bankFile) error {
+			b, err := indexBank(f)
+			if err != nil {
+				return err
+			}
+			return b.applySchedule(scheduleJSON)
+		}
+		if err := withSchedule(f); err != nil {
 			t.Fatalf("a reworded question should load: %v", err)
 		}
 		for _, q := range f.Questions {
@@ -278,8 +281,7 @@ func TestFrozenSchedule(t *testing.T) {
 				kept = append(kept, q)
 			}
 		}
-		removed, _ := json.Marshal(bankFile{Questions: kept})
-		if _, err := loadContentBank(removed, scheduleJSON); err == nil || !strings.Contains(err.Error(), "never removed") {
+		if err := withSchedule(bankFile{Questions: kept}); err == nil || !strings.Contains(err.Error(), "never removed") {
 			t.Fatalf("expected the server to refuse a bank missing %s, got %v", first, err)
 		}
 	})

@@ -29,7 +29,6 @@ import (
 //
 // frontend/src/voice.test.ts runs the comparison, hedge, tag-question and
 // spelling rules over the mirror and day-close wording; keep the two in step.
-// The evening follow-ups are not checked here: they are being removed.
 
 // comparisonPattern finds the ways a card had of measuring the reader against
 // other people, or of talking about people at large instead of the reader.

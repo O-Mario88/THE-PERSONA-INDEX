@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha256"
 	_ "embed"
 	"encoding/json"
 	"fmt"
@@ -10,6 +11,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -32,31 +34,15 @@ type Insight struct {
 	Step        string `json:"step"`
 }
 
-// FollowUp is the evening question that goes back to a morning one: how did
-// today actually go? Its answers stay on the phone and are never sent, so a
-// person's morning and evening answers are never joined anywhere but there.
-type FollowUp struct {
-	Prompt  string           `json:"prompt"`
-	Options []FollowUpOption `json:"options"`
-}
-
-type FollowUpOption struct {
-	ID         string         `json:"id"`
-	Label      string         `json:"label"`
-	Traits     map[string]int `json:"traits,omitempty"`
-	Reflection string         `json:"reflection"` // shown after the tap, in place of an insight card
-}
-
 type bankFile struct {
 	Questions []bankQuestion `json:"questions"`
 }
 
 type bankQuestion struct {
-	ID       string       `json:"id"`
-	Theme    string       `json:"theme"`
-	Prompt   string       `json:"prompt"`
-	Options  []bankOption `json:"options"`
-	FollowUp FollowUp     `json:"followUp"`
+	ID      string       `json:"id"`
+	Theme   string       `json:"theme"`
+	Prompt  string       `json:"prompt"`
+	Options []bankOption `json:"options"`
 }
 
 type bankOption struct {
@@ -186,7 +172,6 @@ func validateBank(b bankFile) []error {
 	fail := func(format string, args ...any) { errs = append(errs, fmt.Errorf(format, args...)) }
 	ids := map[string]bool{}
 	perTheme := map[string]int{}
-	followUpPrompts := map[string]string{}
 
 	for _, q := range b.Questions {
 		where := q.ID
@@ -286,14 +271,6 @@ func validateBank(b bankFile) []error {
 		if prevDepth < 3 {
 			fail("%s: the deepest option must reach depth 3 or 4", where)
 		}
-
-		validateFollowUp(fail, q.ID, q.FollowUp)
-		if p := strings.TrimSpace(q.FollowUp.Prompt); p != "" {
-			if other, ok := followUpPrompts[p]; ok {
-				fail("%s: follow-up prompt repeats %s's; two could land on the same evening", where, other)
-			}
-			followUpPrompts[p] = q.ID
-		}
 	}
 
 	for key, src := range sources {
@@ -317,57 +294,6 @@ func validateBank(b bankFile) []error {
 	}
 	errs = append(errs, checkVoice(b)...)
 	return errs
-}
-
-// validateFollowUp checks a question's evening follow-up. It is lighter than
-// the morning card: a short reflection that speaks to the reader, no research.
-func validateFollowUp(fail func(string, ...any), qid string, f FollowUp) {
-	where := qid + " follow-up"
-	checkText(fail, where+" prompt", f.Prompt, 10, 120)
-	if surveyPrompt.MatchString(f.Prompt) {
-		fail("%s prompt reads like a survey scale", where)
-	}
-	if n := len(f.Options); n < 3 || n > 4 {
-		fail("%s needs 3 or 4 options, has %d", where, n)
-	}
-	ids := map[string]bool{}
-	reflections := map[string]bool{}
-	for _, o := range f.Options {
-		ow := fmt.Sprintf("%s/%s", where, o.ID)
-		if !idPattern.MatchString(o.ID) || len(o.ID) > 24 {
-			fail("%s: option id must be kebab-case, at most 24 characters", ow)
-		}
-		if ids[o.ID] {
-			fail("%s: duplicate option id", ow)
-		}
-		ids[o.ID] = true
-		checkText(fail, ow+" label", o.Label, 1, 60)
-		if surveyLabel.MatchString(o.Label) {
-			fail("%s: label reads like a survey scale", ow)
-		}
-		if len(o.Traits) > 2 {
-			fail("%s: at most 2 trait weights", ow)
-		}
-		for k, w := range o.Traits {
-			if !traitKeys[k] || w == 0 || w < -2 || w > 2 {
-				fail("%s: bad trait weight %s=%d", ow, k, w)
-			}
-		}
-		checkText(fail, ow+" reflection", o.Reflection, 100, 300)
-		if !readerPattern.MatchString(o.Reflection) {
-			fail("%s: reflection must speak to the reader (you, your)", ow)
-		}
-		if claimPattern.MatchString(o.Reflection) {
-			fail("%s: reflection makes an uncited research claim", ow)
-		}
-		if statPattern.MatchString(o.Reflection) || statPattern.MatchString(o.Label) {
-			fail("%s: states a statistic", ow)
-		}
-		if reflections[o.Reflection] {
-			fail("%s: reflection repeats another option's", ow)
-		}
-		reflections[o.Reflection] = true
-	}
 }
 
 // checkText applies the rules every visible string shares: length, no
@@ -421,6 +347,12 @@ func loadContentBank(raw, schedule []byte) (contentBank, error) {
 // loadShippedBank is the bank and schedule built into the binary.
 func loadShippedBank() (contentBank, error) { return loadContentBank(questionsJSON, scheduleJSON) }
 
+// passedGate remembers, by SHA-256, the bank files that have passed the
+// quality gate, so a process that loads the same bank more than once (the
+// schedule command, the tests) checks it once. The gate reads only the file
+// and the embedded sources, so the same bytes always get the same answer.
+var passedGate sync.Map
+
 // parseContentBank checks the bank against the quality gate and indexes it,
 // without dealing any dates.
 func parseContentBank(raw []byte) (contentBank, error) {
@@ -428,9 +360,18 @@ func parseContentBank(raw []byte) (contentBank, error) {
 	if err := decodeStrict(raw, &f); err != nil {
 		return contentBank{}, fmt.Errorf("question bank: %w", err)
 	}
-	if errs := validateBank(f); len(errs) > 0 {
-		return contentBank{}, fmt.Errorf("question bank fails %d checks, first: %w", len(errs), errs[0])
+	sum := sha256.Sum256(raw)
+	if _, ok := passedGate.Load(sum); !ok {
+		if errs := validateBank(f); len(errs) > 0 {
+			return contentBank{}, fmt.Errorf("question bank fails %d checks, first: %w", len(errs), errs[0])
+		}
+		passedGate.Store(sum, true)
 	}
+	return indexBank(f)
+}
+
+// indexBank indexes a bank that has passed the gate.
+func indexBank(f bankFile) (contentBank, error) {
 	b := contentBank{byArea: map[string][]bankQuestion{}, order: map[string][]int{}, byID: map[string]*bankQuestion{}}
 	for _, q := range f.Questions {
 		t := themes[q.Theme]
@@ -599,8 +540,7 @@ func shuffled(n int, area string, cycle int) []int {
 // dailyQuestion turns a bank question into the API shape. Ids carry the date,
 // so a question that comes round again starts with fresh votes.
 func (contentBank) dailyQuestion(q bankQuestion, date string) Question {
-	followUp := q.FollowUp
-	out := Question{ID: date + "-" + q.ID, Theme: q.Theme, Care: themes[q.Theme].care, Prompt: q.Prompt, FollowUp: &followUp}
+	out := Question{ID: date + "-" + q.ID, Theme: q.Theme, Care: themes[q.Theme].care, Prompt: q.Prompt}
 	for _, o := range q.Options {
 		in := &Insight{Reveal: o.Insight.Reveal, Step: o.Insight.Step}
 		if src, ok := sources[o.Insight.Source]; ok {

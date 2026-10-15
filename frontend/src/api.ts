@@ -20,23 +20,12 @@ export type Option = {
   traits?: Record<string, number>
   insight?: Insight
 }
-// The evening question that goes back to a morning one. The server still
-// sends it; the app stopped asking it on 2026-10-15, when Edwin asked for
-// exactly three questions a sitting.
-export type FollowUpOption = {
-  id: string
-  label: string
-  traits?: Record<string, number>
-  reflection: string
-}
-export type FollowUp = { prompt: string; options: FollowUpOption[] }
 export type Question = {
   id: string
   theme?: string
   care?: 'everyday' | 'personal' | 'intimate'
   prompt: string
   options: Option[]
-  followUp?: FollowUp
 }
 export type DailySet = {
   date: string

@@ -35,24 +35,6 @@ const today: DailySet = {
           },
         },
       ],
-      followUp: {
-        prompt: 'Did any dishes pile up today?',
-        options: [
-          {
-            id: 'washed',
-            label: 'I washed them straight away',
-            traits: { conscientiousness: 1 },
-            reflection: 'You kept on top of it again today, which suggests tidy surroundings help your head feel clear.',
-          },
-          {
-            id: 'piled',
-            label: 'They piled up a bit',
-            traits: { conscientiousness: -1 },
-            reflection: 'A pile on a full day is normal. You may have spent your energy on things that mattered more today.',
-          },
-          { id: 'no-dishes', label: "I didn't cook today", reflection: 'No dishes, no decision. Tomorrow you might notice when you choose to clear up.' },
-        ],
-      },
     },
     {
       id: 'q-bill',
@@ -77,19 +59,6 @@ const today: DailySet = {
           },
         },
       ],
-      followUp: {
-        prompt: 'How did getting up go this morning?',
-        options: [
-          { id: 'first-alarm', label: 'Up at the first alarm', reflection: 'Up at the first alarm suggests you went to bed with a plan you trusted.' },
-          {
-            id: 'snoozed',
-            label: 'I snoozed a few times',
-            traits: { neuroticism: 1 },
-            reflection: 'Snoozing may mean your night was short or your day felt heavy before it began.',
-          },
-          { id: 'no-alarm', label: 'No alarm today', reflection: 'A morning without an alarm tends to show what your body wants when you let it lead.' },
-        ],
-      },
     },
   ],
 }
