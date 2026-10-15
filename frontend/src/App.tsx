@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { ApiError, getDay, recalledChoice, recalledEvening, SKIPPED, type DailySet, type Option, type Question } from './api'
-import { followUpsFor, useDay } from './day'
+import { ApiError, getDay, recalledChoice, SKIPPED, type DailySet, type Question } from './api'
+import { useDay } from './day'
 import { QuestionCard, type Done } from './QuestionCard'
 import { DayClose } from './DayClose'
-import { FollowUpCard } from './FollowUpCard'
+import { DayPlan, NightScreen, PauseScreen, PrivacyLine, Upcoming, type Progress } from './Sittings'
 import { Mirror } from './Mirror'
-import { themeName, themeVars } from './themes'
+import { themeVars } from './themes'
 import { forgetPick, todaysPick } from './profile'
 import { intimacyOn, loadPrefs, savePrefs, type Prefs } from './prefs'
 import './App.css'
@@ -16,10 +16,12 @@ type State =
   | { kind: 'empty' }
   | { kind: 'error' }
 
-// One screen of the day: a question, or an evening check-in on a morning answer.
-type Step = { question: Question; said?: Option }
+const themesOf = (qs: Question[]) => qs.map((q) => q.theme).filter((t): t is string => !!t)
 
-const isCheckIn = (s: Step) => s.said !== undefined
+function progressOf(qs: Question[]): Progress {
+  const done = qs.filter((q) => recalledChoice(q.id)).length
+  return done === 0 ? 'none' : done === qs.length ? 'done' : 'started'
+}
 
 function App() {
   const [state, setState] = useState<State>({ kind: 'loading' })
@@ -31,9 +33,10 @@ function App() {
   // fresh render so the dashes catch up.
   const [, setFinished] = useState(0)
   const onDone = useCallback(() => setFinished((n) => n + 1), [])
-  // The phone's clock decides the time of day: the evening opens at 4 pm and
-  // a new day starts at midnight, while the app is open too.
-  const { date, evening } = useDay()
+  // The phone's clock decides the sitting: three questions from 5 am to
+  // 4:30 pm, three more from 5 pm to midnight, and rest in between. It
+  // turns while the app is open too.
+  const { date, sitting } = useDay()
 
   useEffect(() => {
     let live = true
@@ -62,33 +65,26 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [set, prefs, pickVersion],
   )
-  // The evening three open at 4 pm and are picked then, after the morning's answers.
+  const morning = progressOf(morningQs)
+  // The evening three are picked once the morning is answered or closed, so
+  // they can follow what the morning showed, and never repeat it.
   const hasEvening = !!set?.evening?.length
+  const eveningReady = hasEvening && (morning === 'done' || sitting === 'pause' || sitting === 'evening')
   const eveningQs = useMemo(
     () =>
-      set && hasEvening && evening
+      set && eveningReady
         ? todaysPick(set.pool ?? [], set.evening ?? [], set.date, intimacyOn(prefs), 'evening', morningQs)
         : [],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [set, hasEvening, evening, prefs, pickVersion, morningQs],
+    [set, eveningReady, prefs, pickVersion, morningQs],
   )
-  // The evening starts with a check-in on this morning's answers.
-  const followUps = useMemo(
-    () => (set && evening ? followUpsFor(morningQs, set.date) : []),
-    [set, evening, morningQs],
-  )
-  const steps = useMemo<Step[]>(
-    () => [
-      ...morningQs.map((question) => ({ question })),
-      ...followUps.map(({ question, said }) => ({ question, said })),
-      ...eveningQs.map((question) => ({ question })),
-    ],
-    [morningQs, followUps, eveningQs],
-  )
-  const hasIntimate = !!set?.pool?.some((q) => q.care === 'intimate')
-  const finished = (s: Step) => !!(isCheckIn(s) ? recalledEvening(s.question.id) : recalledChoice(s.question.id))
-  const flow = useStep(steps, finished)
+  const evening = hasEvening ? progressOf(eveningQs) : null
+  // Each sitting shows its own three, and only those.
+  const steps = sitting === 'morning' ? morningQs : sitting === 'evening' ? eveningQs : []
+  const flow = useStep(steps)
   const current = steps[flow.at]
+  const hasIntimate = !!set?.pool?.some((q) => q.care === 'intimate')
+  const asking = sitting === 'morning' || sitting === 'evening'
 
   function changePrefs(next: Prefs) {
     savePrefs(next)
@@ -107,7 +103,7 @@ function App() {
   }
 
   return (
-    <main className={tab === 'mirror' ? 'page mirror-page' : 'page'}>
+    <main className={tab === 'mirror' ? 'page mirror-page' : 'page today-page'}>
       <header className="masthead">
         <p className="brand">The Persona Index</p>
         {set && (
@@ -138,129 +134,125 @@ function App() {
       {set && tab === 'mirror' && <Mirror today={set.date} />}
 
       {set && tab === 'today' && (
-        <>
-          <div className="edition-bar">
-            <p className="edition-line">
-              {set.review ? 'Review day' : set.edition ? `Edition #${set.edition}` : "Today's questions"} ·{' '}
-              {weekday(set.date)}
-              {evening && !set.review && ' evening'}
-            </p>
-            {steps.length > 0 && (
-              <nav className="dashes" aria-label="Today's questions">
-                {steps.map((s, i) => {
-                  const done = isCheckIn(s) ? doneOf(recalledEvening(s.question.id)) : doneOf(recalledChoice(s.question.id))
-                  return (
-                    <button
-                      key={(isCheckIn(s) ? 'check-in:' : '') + s.question.id}
-                      type="button"
-                      className={`dash ${done ?? ''}`}
-                      style={themeVars(s.question.theme)}
-                      aria-label={`Question ${i + 1} of ${steps.length}`}
-                      aria-current={flow.at === i ? 'step' : undefined}
-                      disabled={!done && flow.at !== i}
-                      onClick={() => flow.go(i)}
-                    />
-                  )
-                })}
-              </nav>
+        <div className="today">
+          {/* The side of the day: on a phone its parts fall into place around
+              the card; on a wide screen it stands beside it. */}
+          <div className="today-side">
+            <div className="edition-bar">
+              <p className="edition-line">
+                {set.review ? 'Review day' : set.edition ? `Edition #${set.edition}` : "Today's questions"} ·{' '}
+                {weekday(set.date)}
+                {!set.review && (sitting === 'pause' || sitting === 'evening') && ' evening'}
+              </p>
+              {steps.length > 0 && (
+                <nav className="dashes" aria-label="Today's questions">
+                  {steps.map((q, i) => {
+                    const done = doneOf(recalledChoice(q.id))
+                    return (
+                      <button
+                        key={q.id}
+                        type="button"
+                        className={`dash ${done ?? ''}`}
+                        style={themeVars(q.theme)}
+                        aria-label={`Question ${i + 1} of ${steps.length}`}
+                        aria-current={flow.at === i ? 'step' : undefined}
+                        disabled={!done && flow.at !== i}
+                        onClick={() => flow.go(i)}
+                      />
+                    )
+                  })}
+                </nav>
+              )}
+            </div>
+            {!set.review && <DayPlan sitting={sitting} morning={morning} evening={evening} />}
+            <PrivacyLine />
+            {prefs.adult === true && (
+              <label className="switch">
+                <input
+                  type="checkbox"
+                  checked={prefs.mild}
+                  onChange={(e) => changePrefs({ ...prefs, mild: e.target.checked })}
+                />
+                Keep it mild (no intimacy questions)
+              </label>
             )}
           </div>
 
-          {set.review && (
-            <section className="notice review" aria-labelledby="review-title">
-              <h2 id="review-title">Sunday is for looking back.</h2>
-              <p>
-                No new questions today. Your week is waiting in your mirror: what you noticed, how you've been changing
-                and what to try next. Fresh questions arrive tomorrow morning.
-              </p>
-              {(set.tomorrowThemes ?? []).length > 0 && (
-                <p className="tomorrow">
-                  <span className="eyebrow">Tomorrow</span> {set.tomorrowThemes!.map(themeName).join(' · ')}
+          <div className="today-main">
+            {set.review && (
+              <section className="notice review" aria-labelledby="review-title">
+                <h2 id="review-title">Sunday is for looking back.</h2>
+                <p>
+                  No new questions today. Your week is waiting in your mirror: what you noticed, how you've been
+                  changing and what to try next. Fresh questions arrive tomorrow at 5 am.
                 </p>
-              )}
-              <button type="button" className="option" onClick={() => setTab('mirror')}>
-                Open your mirror
-              </button>
-            </section>
-          )}
+                <Upcoming label="Tomorrow" themes={set.tomorrowThemes ?? []} />
+                <button type="button" className="option" onClick={() => setTab('mirror')}>
+                  Open your mirror
+                </button>
+              </section>
+            )}
 
-          {!set.review && (
-            <>
-              {hasIntimate && prefs.adult === null && (
-                <section className="notice gate" aria-labelledby="gate-title">
-                  <h2 id="gate-title">Are you 18 or older?</h2>
-                  <p className="muted">
-                    Some questions are about intimacy and sex. They are frank, never graphic, and only kept as "a private
-                    answer".
-                  </p>
-                  <div className="confirm">
-                    <button type="button" className="option" onClick={() => changePrefs({ ...prefs, adult: true })}>
-                      Yes, I'm 18 or older
-                    </button>
-                    <button type="button" className="option" onClick={() => changePrefs({ ...prefs, adult: false })}>
-                      No
-                    </button>
-                  </div>
-                </section>
-              )}
+            {!set.review && sitting === 'night' && <NightScreen morningThemes={themesOf(morningQs)} />}
 
-              {current && isCheckIn(current) && flow.at === morningQs.length && !recalledEvening(current.question.id) && (
-                <p className="evening-intro">Welcome back. Before anything new, how did this morning go?</p>
-              )}
+            {!set.review && sitting === 'pause' && (
+              <PauseScreen morning={morning} eveningThemes={hasEvening ? themesOf(eveningQs) : null} />
+            )}
 
-              {current &&
-                (isCheckIn(current) ? (
-                  <FollowUpCard
-                    key={'check-in:' + current.question.id}
-                    question={current.question}
-                    said={current.said!}
-                    date={set.date}
-                    onDone={onDone}
-                    onNext={() => flow.go(flow.at + 1)}
-                  />
-                ) : (
+            {!set.review && asking && (
+              <>
+                {hasIntimate && prefs.adult === null && (
+                  <section className="notice gate" aria-labelledby="gate-title">
+                    <h2 id="gate-title">Are you 18 or older?</h2>
+                    <p className="muted">
+                      Some questions are about intimacy and sex. They are frank, never graphic, and only kept as "a
+                      private answer".
+                    </p>
+                    <div className="confirm">
+                      <button type="button" className="option" onClick={() => changePrefs({ ...prefs, adult: true })}>
+                        Yes, I'm 18 or older
+                      </button>
+                      <button type="button" className="option" onClick={() => changePrefs({ ...prefs, adult: false })}>
+                        No
+                      </button>
+                    </div>
+                  </section>
+                )}
+
+                {current && (
                   <QuestionCard
-                    key={current.question.id}
-                    question={current.question}
+                    key={current.id}
+                    question={current}
                     date={set.date}
                     onDone={onDone}
                     onNext={() => flow.go(flow.at + 1)}
                   />
-                ))}
+                )}
 
-              {flow.at >= steps.length &&
-                steps.length > 0 &&
-                (evening ? (
-                  <DayClose
-                    sitting="evening"
-                    date={set.date}
-                    questions={eveningQs}
-                    followUps={followUps}
-                    tomorrowThemes={set.tomorrowThemes ?? []}
-                  />
-                ) : (
-                  <DayClose
-                    sitting="morning"
-                    date={set.date}
-                    questions={morningQs}
-                    later={{ questions: hasEvening, checkIn: followUpsFor(morningQs, set.date).length > 0 }}
-                    tomorrowThemes={set.tomorrowThemes ?? []}
-                  />
-                ))}
-            </>
-          )}
-
-          {prefs.adult === true && (
-            <label className="switch">
-              <input
-                type="checkbox"
-                checked={prefs.mild}
-                onChange={(e) => changePrefs({ ...prefs, mild: e.target.checked })}
-              />
-              Keep it mild (no intimacy questions)
-            </label>
-          )}
-        </>
+                {flow.at >= steps.length &&
+                  (sitting === 'evening' ? (
+                    <DayClose
+                      sitting="evening"
+                      date={set.date}
+                      questions={eveningQs}
+                      morning={morningQs}
+                      tomorrowThemes={set.tomorrowThemes ?? []}
+                    />
+                  ) : (
+                    steps.length > 0 && (
+                      <DayClose
+                        sitting="morning"
+                        date={set.date}
+                        questions={morningQs}
+                        eveningThemes={hasEvening ? themesOf(eveningQs) : null}
+                        tomorrowThemes={set.tomorrowThemes ?? []}
+                      />
+                    )
+                  ))}
+              </>
+            )}
+          </div>
+        </div>
       )}
     </main>
   )
@@ -271,16 +263,16 @@ function doneOf(choice: string | null): Done | undefined {
   return choice === SKIPPED ? 'skipped' : 'answered'
 }
 
-// useStep tracks which screen of the day is showing: it opens on the first
-// unfinished one (or the end, when all are done) and then moves only when the
-// person moves it, so answering never jumps ahead on its own. When the day
-// grows at 4 pm, it opens again on the first unfinished screen.
-function useStep(steps: Step[], finished: (s: Step) => boolean) {
-  const key = steps.map((s) => (isCheckIn(s) ? 'check-in:' : '') + s.question.id).join(',')
+// useStep tracks which question of the sitting is showing: it opens on the
+// first unanswered one (or the end, when all are done) and then moves only
+// when the person moves it, so answering never jumps ahead on its own. When
+// the sitting changes, it opens again on the first unanswered question.
+function useStep(steps: Question[]) {
+  const key = steps.map((q) => q.id).join(',')
   const [pin, setPin] = useState({ key: '', at: 0 })
   let at = pin.at
   if (pin.key !== key) {
-    const open = steps.findIndex((s) => !finished(s))
+    const open = steps.findIndex((q) => !recalledChoice(q.id))
     at = open < 0 ? steps.length : open
     setPin({ key, at })
   }

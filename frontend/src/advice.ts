@@ -1,7 +1,9 @@
 // The advice at the end of an edition: what today's answers lean towards,
-// the strength in it and one way to grow. Built on this phone from the trait
-// weights of the options chosen; nothing is sent anywhere.
+// the strength in it, what it can honestly cost and one way to grow. Built on
+// this phone from the trait weights of the options chosen; nothing is sent
+// anywhere.
 
+import { TRAITS } from './mirrorText'
 import { TRAIT_WORDS } from './profile'
 
 type Advice = { strength: string; grow: string }
@@ -121,7 +123,7 @@ export const TRAIT_ADVICE: Record<string, { higher: Advice; lower: Advice }> = {
 
 export type TodaysAdvice = {
   headline: string
-  points: { trait: string; name: string; strength: string; grow: string }[]
+  points: { trait: string; name: string; strength: string; honest: string; grow: string }[]
 }
 
 // adviceFor sums the trait weights of today's chosen options and speaks to
@@ -132,10 +134,15 @@ export function adviceFor(chosen: { traits?: Record<string, number> }[]): Todays
     for (const [t, w] of Object.entries(o.traits ?? {})) sums[t] = (sums[t] ?? 0) + w
   }
   const points = Object.entries(sums)
-    .filter(([t, s]) => s !== 0 && TRAIT_ADVICE[t] && TRAIT_WORDS[t])
+    .filter(([t, s]) => s !== 0 && TRAIT_ADVICE[t] && TRAIT_WORDS[t] && TRAITS[t])
     .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]) || a[0].localeCompare(b[0]))
     .slice(0, 2)
-    .map(([t, s]) => ({ trait: t, name: TRAIT_WORDS[t].name, ...TRAIT_ADVICE[t][s > 0 ? 'higher' : 'lower'] }))
+    .map(([t, s]) => ({
+      trait: t,
+      name: TRAIT_WORDS[t].name,
+      ...TRAIT_ADVICE[t][s > 0 ? 'higher' : 'lower'],
+      honest: TRAITS[t][s > 0 ? 'high' : 'low'].cost,
+    }))
 
   if (points.length === 0) {
     return {
@@ -146,7 +153,7 @@ export function adviceFor(chosen: { traits?: Record<string, number> }[]): Todays
   }
   const names = points.map((p) => p.name.toLowerCase()).join(' and ')
   return {
-    headline: `Here's what I noticed today: your answers lean on ${names}. One day is a hint, not a verdict, so let's see whether it holds this week.`,
+    headline: `Here's what I noticed today: your answers lean on ${names}. You'll get the good and the harder side of each, kindly but honestly. One day is a hint, not a verdict, so let's see whether it holds this week.`,
     points,
   }
 }

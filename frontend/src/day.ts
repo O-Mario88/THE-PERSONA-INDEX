@@ -1,23 +1,43 @@
 // The local day, on the phone's own clock. Each phone plays the edition for
-// its own date: three questions in the morning, then from EVENING_HOUR (4 pm)
-// a check-in on the morning's answers and three more questions. The day turns
-// over at local midnight. Nobody picks a time of day; the clock decides.
-// Sunday has no questions: it is the day for the mirror.
+// its own date in two sittings of three questions: the morning, from 5 am
+// to 4:30 pm, and the evening, from 5 pm to midnight (Edwin, 2026-10-15).
+// Between them is a half-hour pause, and the night until 5 am is for rest.
+// Nobody picks a time of day; the clock decides. Sunday has no questions:
+// it is the day for the mirror.
 
 import { useEffect, useState } from 'react'
-import { answeredAt, recalledChoice, type Option, type Question } from './api'
 
-export const EVENING_HOUR = 16
+// Minutes after midnight.
+export const MORNING_OPENS = 5 * 60
+export const MORNING_CLOSES = 16 * 60 + 30
+export const EVENING_OPENS = 17 * 60
+
+export type Sitting = 'night' | 'morning' | 'pause' | 'evening'
 
 const pad = (n: number) => String(n).padStart(2, '0')
+const minutesOf = (now: Date) => now.getHours() * 60 + now.getMinutes()
 
 // localDate is the phone's own date as YYYY-MM-DD.
 export function localDate(now = new Date()): string {
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
 }
 
+export function sittingAt(now: Date): Sitting {
+  const m = minutesOf(now)
+  if (m < MORNING_OPENS) return 'night'
+  if (m < MORNING_CLOSES) return 'morning'
+  if (m < EVENING_OPENS) return 'pause'
+  return 'evening'
+}
+
+// isEvening says whether the morning is over: from 4:30 pm to midnight.
 export function isEvening(now = new Date()): boolean {
-  return now.getHours() >= EVENING_HOUR
+  return minutesOf(now) >= MORNING_CLOSES
+}
+
+// opensAt names when a sitting opens, the way a person would say it.
+export function opensAt(sitting: 'morning' | 'evening'): string {
+  return sitting === 'morning' ? '5 am' : '5 pm'
 }
 
 // isSaturday says whether date (YYYY-MM-DD) is a Saturday: tomorrow is review day.
@@ -25,34 +45,38 @@ export function isSaturday(date: string): boolean {
   return new Date(`${date}T00:00:00Z`).getUTCDay() === 6
 }
 
-// eveningStart is the moment the evening opens on date, in ms.
-export function eveningStart(date: string): number {
+// morningEnd is the moment the morning closes on date, in ms. Anything
+// after it belongs to the evening.
+export function morningEnd(date: string): number {
   const [y, m, d] = date.split('-').map(Number)
-  return new Date(y, m - 1, d, EVENING_HOUR).getTime()
+  return new Date(y, m - 1, d, 0, MORNING_CLOSES).getTime()
 }
 
-export type Day = { date: string; evening: boolean }
+export type Day = { date: string; sitting: Sitting }
 
 export function dayAt(now: Date): Day {
-  return { date: localDate(now), evening: isEvening(now) }
+  return { date: localDate(now), sitting: sittingAt(now) }
 }
 
-// nextTurn is when the day next changes after now, in ms: 4 pm, or midnight.
+// nextTurn is when the day next changes after now, in ms: 5 am, 4:30 pm,
+// 5 pm or midnight.
 export function nextTurn(now: Date): number {
-  const [y, m, d] = [now.getFullYear(), now.getMonth(), now.getDate()]
-  return isEvening(now) ? new Date(y, m, d + 1).getTime() : new Date(y, m, d, EVENING_HOUR).getTime()
+  const [y, mo, d] = [now.getFullYear(), now.getMonth(), now.getDate()]
+  const m = minutesOf(now)
+  const next = [MORNING_OPENS, MORNING_CLOSES, EVENING_OPENS].find((t) => t > m)
+  return next === undefined ? new Date(y, mo, d + 1).getTime() : new Date(y, mo, d, 0, next).getTime()
 }
 
-// useDay is the phone's date and whether its evening has opened. It turns by
-// itself while the app is open, and checks again whenever the app comes back
-// into view, since a phone asleep at 4 pm or midnight may miss the timer.
+// useDay is the phone's date and its sitting. It turns by itself while the
+// app is open, and checks again whenever the app comes back into view, since
+// a phone asleep at a turn may miss the timer.
 export function useDay(): Day {
   const [day, setDay] = useState(() => dayAt(new Date()))
   useEffect(() => {
     const check = () =>
       setDay((d) => {
         const now = dayAt(new Date())
-        return now.date === d.date && now.evening === d.evening ? d : now
+        return now.date === d.date && now.sitting === d.sitting ? d : now
       })
     const now = new Date()
     const id = setTimeout(check, nextTurn(now) - now.getTime() + 1000)
@@ -65,20 +89,4 @@ export function useDay(): Day {
     }
   }, [day])
   return day
-}
-
-export type FollowUpItem = { question: Question; said: Option }
-
-// followUpsFor lists the morning answers the evening check-in goes back to:
-// answered (not skipped) before the evening opened, on questions that have a
-// follow-up. A question first answered in the evening has had no day to
-// reflect on yet. Answers saved before answer times were kept count as morning.
-export function followUpsFor(questions: Question[], date: string): FollowUpItem[] {
-  const opens = eveningStart(date)
-  return questions.flatMap((question) => {
-    const said = question.options.find((o) => o.id === recalledChoice(question.id))
-    const at = answeredAt(question.id)
-    if (!question.followUp || !said || (at !== null && at >= opens)) return []
-    return [{ question, said }]
-  })
 }

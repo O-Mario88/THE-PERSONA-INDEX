@@ -50,7 +50,7 @@ Answers go after five weeks, so the longer mirrors (`GET /api/mirror/{month|quar
 
 ## Daily rollover
 
-Each phone plays the edition for its own local date, from `GET /api/editions/{date}`, so the morning three arrive in the person's morning. At 4 pm on the phone's clock the evening opens by itself: a check-in on the morning's answers, then three more questions. The check-in answers stay on the phone and are never sent. The day turns over at the phone's midnight.
+Each phone plays the edition for its own local date, from `GET /api/editions/{date}`, in two sittings on the phone's clock (Edwin, 2026-10-15): the morning three from 5 am to 4:30 pm, then the evening three from 5 pm to midnight. Between them, and from midnight to 5 am, the app shows what opens next and asks nothing. Questions not answered by 4:30 pm or midnight close quietly. The evening's follow-up questions that `followUp` still carries are no longer asked, so each sitting is exactly three. Words a person types instead of tapping stay on the phone; only the option they say comes closest is sent as their vote. The day turns over at the phone's midnight.
 
 Time zones run from UTC-12 to UTC+14, so a date is today somewhere for about 50 hours: from 10:00 UTC the day before until 12:00 UTC the day after. The server serves a date, and accepts votes on its questions, only in that window, plus 10 minutes of grace for votes. A set is cached at most 5 minutes at the edge and 1 minute in the browser, shorter than the grace. Results stay readable for a day after the window closes. Edition numbers and question ids are the same everywhere for a date.
 

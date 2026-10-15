@@ -7,10 +7,12 @@ import {
   saveStep,
   type Depth,
   type Mirror as MirrorData,
+  type OwnWords,
   type Period,
   type PeriodMirror,
   type StepStatus,
   type ThemeRead,
+  wordsBetween,
 } from './api'
 import { setMoveStatus } from './moves'
 import {
@@ -116,6 +118,8 @@ function MirrorPage({ m, today, reload }: { m: MirrorData; today: string; reload
   const line = tagline(m.traits)
   const lean = leanings(m.traits)
   const moved = m.traits.some((t) => t.history.filter((h) => h.score !== undefined).length >= 2)
+  // Own words live on this phone only; the server never sees them.
+  const words = wordsBetween(m.from, m.to)
 
   // Each section shows only when there is something real in it.
   const parts: Part[] = [
@@ -124,6 +128,7 @@ function MirrorPage({ m, today, reload }: { m: MirrorData; today: string; reload
     { key: 'moved', title: "How you've moved", body: <Moved m={m} />, show: moved },
     { key: 'all', title: 'All of you', body: <AllOfYou themes={m.themes} />, show: m.themes.length > 0 },
     { key: 'who', title: 'Who you were this week', body: <WhoYouWere m={m} />, show: lean.length > 0 },
+    { key: 'words', title: 'In your own words', body: <OwnWordsList words={words} />, show: words.length > 0 },
     {
       key: 'steps',
       title: 'Your small steps',
@@ -519,6 +524,9 @@ function WhoYouWere({ m }: { m: MirrorData }) {
               </div>
               <p className="m-who-headline">{l.side.headline}</p>
               <p>{l.side.prediction}</p>
+              <p className="m-who-honest">
+                <strong>The honest part:</strong> {l.side.cost}
+              </p>
               {l.read.evidence.length > 0 && (
                 <p className="m-who-evidence">
                   You said: {l.read.evidence.map((e) => `“${e}”`).join(', ')}
@@ -533,6 +541,33 @@ function WhoYouWere({ m }: { m: MirrorData }) {
           )
         })}
     </ul>
+  )
+}
+
+// What someone wrote instead of tapping, read from this phone. An intimacy
+// answer shows only that it was written, so the words never sit open on a page.
+function OwnWordsList({ words }: { words: OwnWords[] }) {
+  return (
+    <>
+      <ul className="m-words">
+        {words.map((w) => (
+          <li key={w.questionId} className="m-card m-word" style={themeVars(w.theme)}>
+            <p className="m-step-meta">
+              <span aria-hidden="true">{themeStyle(w.theme).icon} </span>
+              {w.theme ? themeName(w.theme) : 'Today'} · {longDate(w.date)}
+            </p>
+            <p className="m-word-prompt">{w.prompt}</p>
+            {w.private ? (
+              <p className="m-word-private">A private answer, in your own words.</p>
+            ) : (
+              <blockquote className="m-word-text">“{w.words}”</blockquote>
+            )}
+            {w.closest && !w.private && <p className="m-note">Closest to: {w.closest}</p>}
+          </li>
+        ))}
+      </ul>
+      <p className="m-note">Only on this phone. These words were never sent anywhere.</p>
+    </>
   )
 }
 
@@ -714,7 +749,7 @@ function Footer({ reload }: { reload: () => void }) {
         <p>
           Your answers are kept on our server under an anonymous key made from this phone's code: no name, no email, no
           account. That's how this mirror is built. Intimate answers are kept only as "a private answer", never what you
-          chose. Check-in answers stay on this phone.
+          chose. Anything you write in your own words stays on this phone and is never sent.
         </p>
         <p>
           Your answers and steps are deleted after five weeks. For your month, quarter and year, a small note of each
@@ -729,7 +764,7 @@ function Footer({ reload }: { reload: () => void }) {
       )}
       {step === 'confirm' && (
         <div className="m-confirm">
-          <p>This deletes your answers, steps and weekly notes, here and on our server.</p>
+          <p>This deletes your answers, your own words, your steps and weekly notes, here and on our server.</p>
           <button type="button" className="m-button danger" onClick={deleteAll}>
             Yes, delete it all
           </button>
@@ -1005,6 +1040,9 @@ function PeriodWho({ p }: { p: PeriodMirror }) {
             </div>
             <p className="m-who-headline">{l.side.headline}</p>
             <p>{l.side.prediction}</p>
+            <p className="m-who-honest">
+              <strong>The honest part:</strong> {l.side.cost}
+            </p>
             <p className="m-who-kind">
               {l.read.solid
                 ? `A solid read, from ${l.read.answers} answers this ${p.period}.`

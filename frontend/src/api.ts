@@ -18,8 +18,9 @@ export type Option = {
   traits?: Record<string, number>
   insight?: Insight
 }
-// The evening question that goes back to a morning one. Its answers stay on
-// the phone and are never sent.
+// The evening question that goes back to a morning one. The server still
+// sends it; the app stopped asking it on 2026-10-15, when Edwin asked for
+// exactly three questions a sitting.
 export type FollowUpOption = {
   id: string
   label: string
@@ -39,7 +40,7 @@ export type DailySet = {
   date: string
   edition?: number
   questions: Question[] // the morning's default three
-  evening?: Question[] // the evening's default three, opened at 4 pm on the phone
+  evening?: Question[] // the evening's default three, opened at 5 pm on the phone
   pool?: Question[]
   review?: boolean // Sunday: no new questions, the day for the weekly mirror
   tomorrowThemes?: string[]
@@ -387,15 +388,6 @@ export function answeredAt(questionId: string): number | null {
   return v > 0 ? v : null
 }
 
-// Evening answers: the follow-up option chosen (or SKIPPED). Never sent anywhere.
-export function rememberEvening(questionId: string, optionId: string) {
-  save(`pi.evening.${questionId}`, optionId)
-}
-
-export function recalledEvening(questionId: string): string | null {
-  return load(`pi.evening.${questionId}`)
-}
-
 export function recalledChoice(questionId: string): string | null {
   return load(`pi.choice.${questionId}`)
 }
@@ -404,4 +396,58 @@ export function rememberSkip(questionId: string) {
   save(`pi.choice.${questionId}`, SKIPPED)
 }
 export const SKIPPED = '-'
+
+// Own words: an answer typed instead of tapped (Edwin, 2026-10-15: "room for
+// the users to type their own answers"). The words stay on this phone and
+// are never sent. When an option comes close, that tap is the vote and its
+// card is the insight; when none does, nothing is sent at all.
+export type OwnWords = {
+  questionId: string
+  date: string
+  prompt: string
+  theme?: string
+  private?: boolean // an intimacy question: the mirror shows only that it was answered
+  words: string
+  closest?: string // the label of the option that came closest
+}
+
+// The choice kept when no option came close to someone's own words.
+export const OWN_WORDS = '~'
+export const MAX_WORDS = 280
+
+const wordsPrefix = 'pi.words.'
+
+export function rememberWords(w: OwnWords) {
+  save(wordsPrefix + w.questionId, JSON.stringify(w))
+}
+
+function parseWords(v: string | null): OwnWords | null {
+  try {
+    const w = JSON.parse(v ?? 'null')
+    return w && typeof w.words === 'string' && typeof w.date === 'string' && typeof w.prompt === 'string' ? w : null
+  } catch {
+    return null
+  }
+}
+
+export function recalledWords(questionId: string): OwnWords | null {
+  return parseWords(load(wordsPrefix + questionId))
+}
+
+// wordsBetween lists the own words kept for dates from..to (YYYY-MM-DD), oldest first.
+export function wordsBetween(from: string, to: string): OwnWords[] {
+  const keys = new Set([...memory.keys()])
+  try {
+    for (const k of Object.keys(localStorage)) keys.add(k)
+  } catch {
+    // memory only
+  }
+  return [...keys]
+    .filter((k) => k.startsWith(wordsPrefix))
+    .flatMap((k) => {
+      const w = parseWords(load(k))
+      return w && w.date >= from && w.date <= to ? [w] : []
+    })
+    .sort((a, b) => a.date.localeCompare(b.date))
+}
 
