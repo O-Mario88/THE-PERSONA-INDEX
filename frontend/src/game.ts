@@ -1,3 +1,5 @@
+import type { StepStatus } from './api'
+
 // Points and levels, kept on this phone only. They reward discovering things
 // about yourself, never being right or playing every day: nothing here is lost
 // by missing a day.
@@ -68,16 +70,41 @@ export function awardEvening(date: string): number {
   return award(`n:${date}`, POINTS_PER_EVENING)
 }
 
-// Moves: each morning the person picks one small step to try that day, and
-// the evening check-in asks whether they tried it. Kept on this phone.
-export type Move = { date: string; questionId: string; step: string; tried?: boolean }
+// Moves: the small steps a person chooses to try, one per insight card at
+// most ("I'll try it"). The evening asks how each went. Kept on this phone,
+// and sent with the device's answers so the mirror can show them.
+export type Move = { date: string; questionId: string; optionId: string; step: string; status: StepStatus }
 
 const movesKey = 'pi.moves.v1'
+const STATUSES: StepStatus[] = ['started', 'helped', 'no_change', 'not_tried']
+
+// Before several moves a day, a move was one per day with tried true/false.
+// A tried move of that time counts as tried, never as helped.
+function migrate(m: Record<string, unknown>): Move {
+  const status: StepStatus =
+    typeof m.status === 'string' && STATUSES.includes(m.status as StepStatus)
+      ? (m.status as StepStatus)
+      : m.tried === true
+        ? 'no_change'
+        : m.tried === false
+          ? 'not_tried'
+          : 'started'
+  return {
+    date: String(m.date),
+    questionId: String(m.questionId ?? ''),
+    optionId: typeof m.optionId === 'string' ? m.optionId : '',
+    step: String(m.step),
+    status,
+  }
+}
+
 
 export function loadMoves(): Move[] {
   try {
     const v = JSON.parse(localStorage.getItem(movesKey) ?? '[]')
-    return Array.isArray(v) ? v.filter((m) => m && typeof m.date === 'string' && typeof m.step === 'string') : []
+    return Array.isArray(v)
+      ? v.filter((m) => m && typeof m.date === 'string' && typeof m.step === 'string').map(migrate)
+      : []
   } catch {
     return []
   }
@@ -91,32 +118,30 @@ function saveMoves(moves: Move[]) {
   }
 }
 
-export function pickMove(date: string, questionId: string, step: string) {
-  saveMoves([...loadMoves().filter((m) => m.date !== date), { date, questionId, step }])
-}
-
-export function todaysMove(date: string): Move | undefined {
-  return loadMoves().find((m) => m.date === date)
-}
-
-// markMove records whether the day's move was tried; trying it earns points once.
-export function markMove(date: string, tried: boolean): number {
+export function startMove(date: string, questionId: string, optionId: string, step: string) {
   const moves = loadMoves()
-  const m = moves.find((x) => x.date === date)
-  if (!m) return 0
-  m.tried = tried
-  saveMoves(moves)
-  return tried ? award(`m:${date}`, POINTS_PER_STEP) : 0
+  if (moves.some((m) => m.questionId === questionId)) return
+  saveMoves([...moves, { date, questionId, optionId, step, status: 'started' }])
 }
 
-// Moves picked and tried in the seven days ending on today.
-export function movesThisWeek(today: string): { picked: number; tried: number } {
-  const end = Date.parse(`${today}T00:00:00Z`)
-  const week = loadMoves().filter((m) => {
-    const t = Date.parse(`${m.date}T00:00:00Z`)
-    return t <= end && t > end - 7 * 86400_000
-  })
-  return { picked: week.length, tried: week.filter((m) => m.tried === true).length }
+export function moveFor(questionId: string): Move | undefined {
+  return loadMoves().find((m) => m.questionId === questionId)
+}
+
+export function movesOn(date: string): Move[] {
+  return loadMoves().filter((m) => m.date === date)
+}
+
+export const tried = (s: StepStatus) => s === 'helped' || s === 'no_change'
+
+// setMoveStatus records how a move went; trying it earns points once.
+export function setMoveStatus(questionId: string, status: StepStatus): number {
+  const moves = loadMoves()
+  const m = moves.find((x) => x.questionId === questionId)
+  if (!m) return 0
+  m.status = status
+  saveMoves(moves)
+  return tried(status) ? award(`m:${questionId}`, POINTS_PER_STEP) : 0
 }
 
 // Levels by insights collected: about one level a week early on, slower later.

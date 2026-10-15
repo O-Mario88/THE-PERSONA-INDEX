@@ -3,21 +3,21 @@ import { recalledEvening, rememberEvening, SKIPPED, type Option, type Question }
 import { awardReflection } from './game'
 import { recordEvening } from './profile'
 import type { Done } from './QuestionCard'
+import { splitReveal } from './reveal'
 import { themeName, themeStyle, themeVars } from './themes'
 
 type Props = {
   question: Question
   said: Option // the morning answer this follows up on
-  index: number
-  total: number
   date: string
   onDone?: (questionId: string, done: Done) => void
+  onNext: () => void
 }
 
-// One evening follow-up: a quiet line with this morning's answer, the
-// question, tap-only options, then a short reflection. Lighter than the
-// morning card, and nothing here is sent to the server.
-export function FollowUpCard({ question, said, index, total, date, onDone }: Props) {
+// One evening follow-up on its own screen: a quiet line with this morning's
+// answer, the question, tap-only options, then a short reflection. Lighter
+// than the morning, and nothing here is sent to the server.
+export function FollowUpCard({ question, said, date, onDone, onNext }: Props) {
   const followUp = question.followUp!
   const [choice, setChoice] = useState<string | null>(() => recalledEvening(question.id))
   const [earned, setEarned] = useState(0)
@@ -39,25 +39,28 @@ export function FollowUpCard({ question, said, index, total, date, onDone }: Pro
   function skip() {
     rememberEvening(question.id, SKIPPED)
     setChoice(SKIPPED)
+    onDone?.(question.id, 'skipped')
+    onNext()
   }
 
   const headingId = `f-${question.id}`
   const chosen = followUp.options.find((o) => o.id === choice)
 
   return (
-    <section className="card question followup" style={themeVars(question.theme)} aria-labelledby={headingId}>
-      <div className="question-top">
-        <span className="theme-pill">
-          <span aria-hidden="true">{theme.icon}</span> {question.theme ? themeName(question.theme) : 'Today'}
-        </span>
-        <span className="eyebrow">
-          Evening · {index + 1} of {total}
-        </span>
-      </div>
+    <section
+      className={chosen ? 'screen question followup answered' : 'screen question followup'}
+      style={themeVars(question.theme)}
+      aria-labelledby={headingId}
+    >
+      <span className="theme-chip">
+        <span aria-hidden="true">{theme.icon}</span> {question.theme ? themeName(question.theme) : 'Today'}
+      </span>
       <p className="said">
-        <span className="muted">This morning you said:</span> {said.label}
+        <span className="eyebrow">This morning you said</span> {said.label}
       </p>
-      <h2 id={headingId}>{followUp.prompt}</h2>
+      <h2 id={headingId} className="prompt">
+        {followUp.prompt}
+      </h2>
 
       {!choice && (
         <div className="options" role="group" aria-labelledby={headingId}>
@@ -66,28 +69,38 @@ export function FollowUpCard({ question, said, index, total, date, onDone }: Pro
               {o.label}
             </button>
           ))}
-          <button type="button" className="link-button" onClick={skip}>
-            Skip
+          <button type="button" className="text-button skip" onClick={skip}>
+            Skip this one
           </button>
         </div>
       )}
 
-      {choice === SKIPPED && <p className="muted">Skipped</p>}
+      {choice === SKIPPED && (
+        <>
+          <p className="muted">You skipped this one. That's fine.</p>
+          <button type="button" className="next" onClick={onNext}>
+            Next
+          </button>
+        </>
+      )}
 
       {chosen && (
-        <div className="insight reflection" role="note" aria-label="Tonight's reflection">
-          <div className="insight-head">
-            <span className="insight-icon" aria-hidden="true">
-              🌙
-            </span>
-            <span className="insight-title">Reflection</span>
-            {earned > 0 && <span className="points-pill">+{earned} pts</span>}
-          </div>
-          <p className="insight-answer">
-            <span className="muted">Tonight:</span> {chosen.label}
+        <div className="answer">
+          <p className="you-chose">
+            <span className="eyebrow">Tonight</span>
+            <span className="chosen">{chosen.label}</span>
+            {earned > 0 && <span className="points-pill">+{earned}</span>}
           </p>
-          <p className="insight-reveal">{chosen.reflection}</p>
-          <p className="muted insight-note">For self-reflection, not a diagnosis. Evening answers stay on this phone.</p>
+          <div className="insight reflection" role="note" aria-label="Tonight's reflection">
+            <p className="insight-headline">{splitReveal(chosen.reflection).headline}</p>
+            {splitReveal(chosen.reflection).body && (
+              <p className="insight-body">{splitReveal(chosen.reflection).body}</p>
+            )}
+            <p className="insight-note">For self-reflection, not a diagnosis. Evening answers stay on this phone.</p>
+          </div>
+          <button type="button" className="next" onClick={onNext}>
+            Next
+          </button>
         </div>
       )}
     </section>

@@ -2,40 +2,44 @@ import { useEffect, useState } from 'react'
 import {
   ApiError,
   castVote,
-  rememberChoice,
-  rememberSkip,
+  CROWD_MIN_VOTES,
+  getResults,
   rateCard,
-  rememberRated,
-  wasRated,
   recalledChoice,
   recordPlayed,
+  rememberChoice,
+  rememberRated,
+  rememberSkip,
+  saveStep,
   SKIPPED,
   voteKey,
+  wasRated,
   type Insight,
   type Option,
   type Question,
+  type QuestionResults,
 } from './api'
-import { awardInsight } from './game'
-import { recordAnswer, recordSkip, TRAIT_WORDS } from './profile'
+import { awardInsight, moveFor, startMove } from './game'
+import { recordAnswer, recordSkip } from './profile'
+import { splitReveal } from './reveal'
 import { themeName, themeStyle, themeVars } from './themes'
 
 export type Done = 'answered' | 'skipped'
 
 type Props = {
   question: Question
-  index: number
-  total: number
   date: string
   onDone?: (questionId: string, done: Done) => void
+  onNext: () => void
 }
 
 // Stored when the server says this device already voted but we don't know which option.
 export const UNKNOWN_CHOICE = '?'
 
-// One question: tap an answer, and its insight card opens in place. The vote
-// still goes to the server for the real community counts, but nothing about
-// the crowd is shown here.
-export function QuestionCard({ question, index, total, date, onDone }: Props) {
+// One question on its own screen. Tap an answer and the same screen turns
+// into what it says about you: the crowd (only when real and big enough),
+// the insight, one small step to try and a way to say whether it landed.
+export function QuestionCard({ question, date, onDone, onNext }: Props) {
   const [choice, setChoice] = useState<string | null>(() => recalledChoice(question.id))
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -74,54 +78,60 @@ export function QuestionCard({ question, index, total, date, onDone }: Props) {
     rememberSkip(question.id)
     recordSkip(question, date)
     setChoice(SKIPPED)
+    onDone?.(question.id, 'skipped')
+    onNext()
   }
 
   const headingId = `q-${question.id}`
   const chosen = question.options.find((o) => o.id === choice)
+  const answered = !!choice && choice !== SKIPPED
 
   return (
-    <section className="card question" style={themeVars(question.theme)} aria-labelledby={headingId}>
-      <div className="question-top">
-        <span className="theme-pill">
-          <span aria-hidden="true">{theme.icon}</span> {question.theme ? themeName(question.theme) : 'Today'}
-        </span>
-        <span className="eyebrow">
-          Question {index + 1} of {total}
-        </span>
-      </div>
-      <h2 id={headingId}>{question.prompt}</h2>
+    <section
+      className={answered ? 'screen question answered' : 'screen question'}
+      style={themeVars(question.theme)}
+      aria-labelledby={headingId}
+    >
+      <span className="theme-chip">
+        <span aria-hidden="true">{theme.icon}</span> {question.theme ? themeName(question.theme) : 'Today'}
+      </span>
+      <h2 id={headingId} className="prompt">
+        {question.prompt}
+      </h2>
 
       {!choice && (
         <div className="options" role="group" aria-labelledby={headingId}>
           {question.options.map((o) => (
-            <button
-              key={o.id}
-              type="button"
-              className="option"
-              disabled={sending}
-              onClick={() => vote(o.id)}
-            >
+            <button key={o.id} type="button" className="option" disabled={sending} onClick={() => vote(o.id)}>
               {o.label}
             </button>
           ))}
-          <button type="button" className="link-button" disabled={sending} onClick={skip}>
-            Skip
+          <button type="button" className="text-button skip" disabled={sending} onClick={skip}>
+            Skip this one
           </button>
         </div>
       )}
 
-      {choice === SKIPPED && <p className="muted">Skipped</p>}
-      {choice === UNKNOWN_CHOICE && <p className="muted">You already answered this one on this phone.</p>}
+      {choice === SKIPPED && (
+        <>
+          <p className="muted">You skipped this one. That's fine.</p>
+          <button type="button" className="next" onClick={onNext}>
+            Next
+          </button>
+        </>
+      )}
 
-      {chosen?.insight && (
-        <InsightCard
-          option={chosen}
-          insight={chosen.insight}
-          icon={theme.icon}
-          earned={earned}
-          rate={(learned) => rateCard(question.id, chosen.id, learned)}
-          questionId={question.id}
-        />
+      {choice === UNKNOWN_CHOICE && (
+        <>
+          <p className="muted">You already answered this one on this phone.</p>
+          <button type="button" className="next" onClick={onNext}>
+            Next
+          </button>
+        </>
+      )}
+
+      {chosen && (
+        <Answer question={question} option={chosen} earned={earned} date={date} onNext={onNext} />
       )}
 
       {error && (
@@ -139,63 +149,87 @@ const STRENGTH_LABEL: Record<NonNullable<Insight['strength']>, string> = {
   early: 'Early evidence',
 }
 
-function InsightCard({
+function Answer({
+  question,
   option,
-  insight,
-  icon,
   earned,
-  rate,
-  questionId,
+  date,
+  onNext,
 }: {
+  question: Question
   option: Option
-  insight: Insight
-  icon: string
   earned: number
-  rate: (learned: boolean) => Promise<unknown>
-  questionId: string
+  date: string
+  onNext: () => void
 }) {
-  const [rated, setRated] = useState(() => wasRated(questionId))
-  function tap(learned: boolean) {
-    setRated(true)
-    rememberRated(questionId)
-    rate(learned).catch(() => {
-      // a lost rating is not worth bothering anyone about
-    })
-  }
-  const traits = Object.entries(option.traits ?? {}).filter(([t]) => TRAIT_WORDS[t])
+  const insight = option.insight
+  return (
+    <div className="answer">
+      <p className="you-chose">
+        <span className="eyebrow">You chose</span>
+        <span className="chosen">{option.label}</span>
+        {earned > 0 && <span className="points-pill">+{earned}</span>}
+      </p>
+      <CrowdSplit question={question} option={option} />
+      {insight && <InsightPanel insight={insight} />}
+      {insight?.step && <TryThis question={question} option={option} step={insight.step} date={date} />}
+      {insight && <Rate questionId={question.id} optionId={option.id} />}
+      <button type="button" className="next" onClick={onNext}>
+        Next
+      </button>
+    </div>
+  )
+}
+
+// The crowd's real split, from the server's counts. Hidden below
+// CROWD_MIN_VOTES votes or when the counts can't be loaded: never estimated.
+function CrowdSplit({ question, option }: { question: Question; option: Option }) {
+  const [results, setResults] = useState<QuestionResults | null>(null)
+  useEffect(() => {
+    let live = true
+    getResults(question.id).then(
+      (r) => live && setResults(r),
+      () => {
+        // no split is better than a wrong one
+      },
+    )
+    return () => {
+      live = false
+    }
+  }, [question.id])
+  if (!results || results.totalVotes < CROWD_MIN_VOTES) return null
+  const mine = results.options.find((o) => o.optionId === option.id)
+  const others = results.options.filter((o) => o.optionId !== option.id)
+  const label = (id: string) => question.options.find((o) => o.id === id)?.label ?? ''
+  return (
+    <div className="crowd" role="group" aria-label="How players answered">
+      <p className="crowd-big">You and {Math.round(mine?.percent ?? 0)}% of players</p>
+      <p className="muted">{results.totalVotes.toLocaleString('en')} votes</p>
+      <ul>
+        {others.map((o) => (
+          <li key={o.optionId}>
+            <span>{label(o.optionId)}</span>
+            <span className="crowd-pct">{Math.round(o.percent)}%</span>
+            <span className="crowd-track" aria-hidden="true">
+              <span style={{ width: `${o.percent}%` }} />
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+function InsightPanel({ insight }: { insight: Insight }) {
+  const { headline, body } = splitReveal(insight.reveal)
   return (
     <div className="insight" role="note" aria-label="What your answer may say">
-      <div className="insight-head">
-        <span className="insight-icon" aria-hidden="true">
-          {icon}
-        </span>
-        <span className="insight-title">Insight unlocked</span>
-        {earned > 0 && <span className="points-pill">+{earned} pts</span>}
-      </div>
-      <p className="insight-answer">
-        <span className="muted">Your answer:</span> {option.label}
-      </p>
-      <p className="insight-reveal">{insight.reveal}</p>
-
-      {traits.length > 0 && (
-        <ul className="trait-meters" aria-label="Traits this answer touches">
-          {traits.map(([t, w]) => (
-            <li key={t}>
-              <span className="trait-meter-name">{TRAIT_WORDS[t].name}</span>
-              <span className="meter" aria-hidden="true">
-                <span className="meter-mid" />
-                <span className="meter-dot" style={{ left: `${50 + (Math.max(-2, Math.min(2, w)) * 50) / 2.4}%` }} />
-              </span>
-              <span className="meter-word">{w > 0 ? 'more' : 'less'}</span>
-            </li>
-          ))}
-        </ul>
-      )}
-
+      <p className="insight-headline">{headline}</p>
+      {body && <p className="insight-body">{body}</p>}
       {insight.research && (
         <p className="insight-research">
           {insight.research}{' '}
-          <span className="muted">
+          <span className="insight-source">
             {insight.strength && `${STRENGTH_LABEL[insight.strength]} · `}
             {insight.sourceUrl ? (
               <a href={insight.sourceUrl} target="_blank" rel="noreferrer">
@@ -207,22 +241,61 @@ function InsightCard({
           </span>
         </p>
       )}
-      <p className="insight-step">
-        <strong>Try this:</strong> {insight.step}
+      <p className="insight-note">For self-reflection, not a diagnosis.</p>
+    </div>
+  )
+}
+
+// One small step from the card. "I'll try it" keeps it as today's move: the
+// evening asks how it went, and the mirror counts it.
+function TryThis({ question, option, step, date }: { question: Question; option: Option; step: string; date: string }) {
+  const [state, setState] = useState<'open' | 'started' | 'later'>(() => (moveFor(question.id) ? 'started' : 'open'))
+  function start() {
+    startMove(date, question.id, option.id, step)
+    setState('started')
+    saveStep(question.id, option.id, 'started', date).catch(() => {
+      // kept on the phone; the mirror just won't count it
+    })
+  }
+  return (
+    <div className="try" role="group" aria-label="Try this">
+      <p>
+        <strong>Try this:</strong> {step}
       </p>
-      {rated ? (
-        <p className="muted">Thanks. This helps us keep the good cards.</p>
-      ) : (
-        <div className="rate">
-          <button type="button" className="chip" onClick={() => tap(true)}>
-            <span aria-hidden="true">🤯 </span>I learned something
+      {state === 'open' && (
+        <div className="try-buttons">
+          <button type="button" className="pill-button" onClick={start}>
+            I'll try it
           </button>
-          <button type="button" className="chip" onClick={() => tap(false)}>
-            <span aria-hidden="true">🤷 </span>Not really
+          <button type="button" className="text-button" onClick={() => setState('later')}>
+            Not now
           </button>
         </div>
       )}
-      <p className="muted insight-note">For self-reflection, not a diagnosis.</p>
+      {state === 'started' && <p className="muted">Added to today's moves. I'll check in with you about it later.</p>}
+    </div>
+  )
+}
+
+function Rate({ questionId, optionId }: { questionId: string; optionId: string }) {
+  const [rated, setRated] = useState(() => wasRated(questionId))
+  function tap(learned: boolean) {
+    setRated(true)
+    rememberRated(questionId)
+    rateCard(questionId, optionId, learned).catch(() => {
+      // a lost rating is not worth bothering anyone about
+    })
+  }
+  return rated ? (
+    <p className="muted rate-thanks">Thanks for telling me. It helps keep the good cards.</p>
+  ) : (
+    <div className="rate" role="group" aria-label="Did this land?">
+      <button type="button" className="text-button" onClick={() => tap(true)}>
+        I learned something
+      </button>
+      <button type="button" className="text-button" onClick={() => tap(false)}>
+        Not me
+      </button>
     </div>
   )
 }

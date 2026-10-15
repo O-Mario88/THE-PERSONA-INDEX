@@ -313,6 +313,28 @@ func TestMirrorCrowd(t *testing.T) {
 		}
 	})
 
+	t.Run("an answer at least an even share of players picked is with the crowd", func(t *testing.T) {
+		// Three options, so an even share is a third. With "fewer than half"
+		// nearly every answer to a three- or four-option question would read
+		// as against the crowd, the most common one included.
+		s := mirrorServer(mon)
+		for i := range 40 {
+			answer(t, s, fmt.Sprintf("now%d", i), mon, "tidy", "now")
+		}
+		for i := range 35 {
+			answer(t, s, fmt.Sprintf("later%d", i), mon, "tidy", "later")
+		}
+		for i := range 25 {
+			answer(t, s, fmt.Sprintf("pile%d", i), mon, "tidy", "pile")
+		}
+		aggregate(t, s)
+		for device, want := range map[string]string{"now0": "with", "later0": "with", "pile0": "against"} {
+			if c := dayOf(getMirror(t, s, device, mon), mon).Answers[0].Crowd; c != want {
+				t.Fatalf("%s: expected %q (40/35/25 split), got %q", device, want, c)
+			}
+		}
+	})
+
 	t.Run("too few votes says so instead of guessing", func(t *testing.T) {
 		s := mirrorServer(mon)
 		for i := range 5 {

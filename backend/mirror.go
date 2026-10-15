@@ -55,7 +55,7 @@ type Mirror struct {
 	Days       []MirrorDay   `json:"days"`  // Monday to Sunday
 	Areas      []AreaRead    `json:"areas"` // in the fixed order of areas
 	Rarest     *AnswerSplit  `json:"rarest,omitempty"`
-	Minority   []AnswerSplit `json:"minority"` // this week's answers fewer than half of players shared, rarest first
+	Minority   []AnswerSplit `json:"minority"` // this week's answers against the crowd, rarest first
 	Divisive   *AnswerSplit  `json:"divisive,omitempty"`
 	Traits     []TraitRead   `json:"traits"`
 	Ranked     bool          `json:"ranked"` // at least one read is a rank among players
@@ -75,7 +75,7 @@ type MirrorStats struct {
 	Answers            int `json:"answers"`   // private ones included
 	Private            int `json:"private"`
 	Deepest            int `json:"deepest"`  // answers that took the question's deepest option
-	Minority           int `json:"minority"` // answers fewer than half of players shared
+	Minority           int `json:"minority"` // answers against the crowd (see verdicts)
 	Judged             int `json:"judged"`   // answers on questions with enough votes to say
 	Learned            int `json:"learned"`
 	Rated              int `json:"rated"`
@@ -398,8 +398,12 @@ func (a answered) deepest() bool {
 	return most > 0 && a.Depth == most
 }
 
-// verdicts says, per question, whether an option was shared by at least half
-// of players, from the real tallies. Questions below crowdMinVotes get none.
+// verdicts says, per question, whether an option went with the crowd: picked
+// by at least an even share of players (a third of them on a three-option
+// question), from the real tallies. "At least half" would put nearly every
+// answer to a three- or four-option question against the crowd, the most
+// common one included. Questions below crowdMinVotes get no verdict. The
+// phone's share squares use the same rule (frontend/src/api.ts withCrowd).
 type verdicts struct {
 	s      *Server
 	ctx    context.Context
@@ -433,7 +437,7 @@ func (v *verdicts) of(a answered) (string, error) {
 	switch {
 	case total < crowdMinVotes:
 		return "early", nil
-	case 2*c[a.OptionID] < total:
+	case c[a.OptionID]*len(a.q.Options) < total:
 		return "against", nil
 	default:
 		return "with", nil

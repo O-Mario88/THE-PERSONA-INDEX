@@ -1,29 +1,30 @@
-// Theme names, colors and icons, shared by the cards, the recap and My week.
+// Theme names, colors, icons and areas, shared by the cards, the recap and the mirror.
 
-type ThemeStyle = { name: string; icon: string; from: string; to: string }
+// area matches the theme's area in backend/content.go.
+type ThemeStyle = { name: string; icon: string; from: string; to: string; area: string }
 
-const THEMES: Record<string, ThemeStyle> = {
-  habits: { name: 'Daily habits', icon: '☀️', from: '#f59e0b', to: '#f97316' },
-  'sleep-health': { name: 'Sleep and health', icon: '🌙', from: '#6366f1', to: '#06b6d4' },
-  money: { name: 'Money', icon: '💰', from: '#10b981', to: '#84cc16' },
-  'work-career': { name: 'Work and career', icon: '💼', from: '#3b82f6', to: '#06b6d4' },
-  learning: { name: 'Learning', icon: '📚', from: '#8b5cf6', to: '#3b82f6' },
-  friendship: { name: 'Friendship', icon: '🤝', from: '#f97316', to: '#eab308' },
-  family: { name: 'Family', icon: '🏡', from: '#ef4444', to: '#f59e0b' },
-  partnership: { name: 'Partnership', icon: '💞', from: '#ec4899', to: '#f43f5e' },
-  dating: { name: 'Dating', icon: '💌', from: '#f43f5e', to: '#a855f7' },
-  helping: { name: 'Helping others', icon: '🤲', from: '#14b8a6', to: '#22c55e' },
-  happiness: { name: 'Happiness', icon: '😊', from: '#eab308', to: '#f97316' },
-  'sadness-stress': { name: 'Sadness and stress', icon: '🌧️', from: '#64748b', to: '#6366f1' },
-  anger: { name: 'Anger', icon: '🔥', from: '#ef4444', to: '#f97316' },
-  honesty: { name: 'Honesty', icon: '🧭', from: '#0ea5e9', to: '#6366f1' },
-  'quality-quantity': { name: 'Quality or quantity', icon: '⚖️', from: '#a855f7', to: '#ec4899' },
-  'wealth-luxury': { name: 'Wealth and luxury', icon: '💎', from: '#06b6d4', to: '#8b5cf6' },
-  'ambition-desire': { name: "Ambition and heart's desire", icon: '🚀', from: '#f97316', to: '#ec4899' },
-  intimacy: { name: 'Intimacy', icon: '🌹', from: '#e11d48', to: '#9333ea' },
+export const THEMES: Record<string, ThemeStyle> = {
+  habits: { name: 'Daily habits', icon: '☀️', from: '#f59e0b', to: '#f97316', area: 'everyday' },
+  'sleep-health': { name: 'Sleep and health', icon: '🌙', from: '#6366f1', to: '#06b6d4', area: 'everyday' },
+  money: { name: 'Money', icon: '💰', from: '#10b981', to: '#84cc16', area: 'everyday' },
+  'work-career': { name: 'Work and career', icon: '💼', from: '#3b82f6', to: '#06b6d4', area: 'everyday' },
+  learning: { name: 'Learning', icon: '📚', from: '#8b5cf6', to: '#3b82f6', area: 'everyday' },
+  friendship: { name: 'Friendship', icon: '🤝', from: '#f97316', to: '#eab308', area: 'people' },
+  family: { name: 'Family', icon: '🏡', from: '#ef4444', to: '#f59e0b', area: 'people' },
+  partnership: { name: 'Partnership', icon: '💞', from: '#ec4899', to: '#f43f5e', area: 'people' },
+  dating: { name: 'Dating', icon: '💌', from: '#f43f5e', to: '#a855f7', area: 'people' },
+  helping: { name: 'Helping others', icon: '🤲', from: '#14b8a6', to: '#22c55e', area: 'people' },
+  happiness: { name: 'Happiness', icon: '😊', from: '#eab308', to: '#f97316', area: 'inner' },
+  'sadness-stress': { name: 'Sadness and stress', icon: '🌧️', from: '#64748b', to: '#6366f1', area: 'inner' },
+  anger: { name: 'Anger', icon: '🔥', from: '#ef4444', to: '#f97316', area: 'inner' },
+  honesty: { name: 'Honesty', icon: '🧭', from: '#0ea5e9', to: '#6366f1', area: 'inner' },
+  'quality-quantity': { name: 'Quality or quantity', icon: '⚖️', from: '#a855f7', to: '#ec4899', area: 'desire' },
+  'wealth-luxury': { name: 'Wealth and luxury', icon: '💎', from: '#06b6d4', to: '#8b5cf6', area: 'desire' },
+  'ambition-desire': { name: "Ambition and heart's desire", icon: '🚀', from: '#f97316', to: '#ec4899', area: 'desire' },
+  intimacy: { name: 'Intimacy', icon: '🌹', from: '#e11d48', to: '#9333ea', area: 'desire' },
 }
 
-const FALLBACK: ThemeStyle = { name: 'Today', icon: '✨', from: '#6d5dfc', to: '#ec4899' }
+const FALLBACK: ThemeStyle = { name: 'Today', icon: '✨', from: '#6d5dfc', to: '#ec4899', area: '' }
 
 export const THEME_COUNT = Object.keys(THEMES).length
 

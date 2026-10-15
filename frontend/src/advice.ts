@@ -140,13 +140,13 @@ export function adviceFor(chosen: { traits?: Record<string, number> }[]): Todays
   if (points.length === 0) {
     return {
       headline:
-        'Your answers today were balanced, with no single pattern standing out. Notice which moments this week feel easy and which feel heavy; tomorrow will sharpen the picture.',
+        "Your answers today were balanced, with no single pattern standing out. Notice which moments feel easy today and which feel heavy; tomorrow will sharpen the picture.",
       points: [],
     }
   }
   const names = points.map((p) => p.name.toLowerCase()).join(' and ')
   return {
-    headline: `Today your answers lean most on ${names}. One day is a hint, not a verdict, so treat this as something to test this week.`,
+    headline: `Here's what I noticed today: your answers lean on ${names}. One day is a hint, not a verdict, so let's see whether it holds this week.`,
     points,
   }
 }
