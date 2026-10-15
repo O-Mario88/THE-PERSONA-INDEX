@@ -85,52 +85,67 @@ const (
 
 type themeInfo struct{ area, care string }
 
+// Each theme's display name, icon and colors live in frontend/src/themes.ts;
+// TestThemesMatchTheFrontend keeps the two lists in step.
 var themes = map[string]themeInfo{
 	"habits":           {"everyday", careEveryday},
 	"sleep-health":     {"everyday", careEveryday},
 	"money":            {"everyday", careEveryday},
 	"work-career":      {"everyday", careEveryday},
 	"learning":         {"everyday", careEveryday},
+	"school":           {"everyday", careEveryday},
+	"home":             {"everyday", careEveryday},
+	"food":             {"everyday", careEveryday},
+	"phone":            {"everyday", careEveryday},
+	"getting-around":   {"everyday", careEveryday},
+	"body":             {"everyday", careEveryday},
 	"friendship":       {"people", carePersonal},
 	"family":           {"people", carePersonal},
+	"relatives":        {"people", carePersonal},
+	"parenting":        {"people", carePersonal},
 	"partnership":      {"people", carePersonal},
 	"dating":           {"people", carePersonal},
+	"neighbours":       {"people", carePersonal},
+	"colleagues":       {"people", carePersonal},
 	"helping":          {"people", carePersonal},
 	"happiness":        {"inner", carePersonal},
 	"sadness-stress":   {"inner", carePersonal},
 	"anger":            {"inner", carePersonal},
 	"honesty":          {"inner", carePersonal},
+	"faith":            {"inner", carePersonal},
+	"confidence":       {"inner", carePersonal},
 	"quality-quantity": {"desire", careEveryday},
 	"wealth-luxury":    {"desire", careEveryday},
 	"ambition-desire":  {"desire", careEveryday},
+	"celebrations":     {"desire", careEveryday},
+	"plans":            {"desire", careEveryday},
+	"rest":             {"desire", careEveryday},
 	"intimacy":         {"desire", careIntimate},
 }
 
 // areas is the fixed order the daily set follows.
 var areas = []string{"everyday", "people", "inner", "desire"}
 
-type source struct{ title, url, strength string }
-
-// sources is the citation library: the only research a card may cite. Each
-// entry was checked against its source; cards restate the claim, never add to it.
-var sources = map[string]source{
-	"roberts2007":       {"Roberts et al., 2007", "https://www.psychologicalscience.org/journals/perspectives/j.1745-6916.2007.00047.x/", "strong"},
-	"soto2019":          {"Soto, 2019", "https://www.psychologicalscience.org/observer/new-replicability-project-bolsters-research-correlating-personality-traits-and-life-outcomes", "strong"},
-	"vazire2010":        {"Vazire, 2010", "https://source.washu.edu/2010/03/others-may-know-us-better-than-we-know-ourselves-study-finds/", "moderate"},
-	"ross1977":          {"Ross, Greene & House, 1977", "https://spsp.org/news-center/blog/pelham-false-consensus", "strong"},
-	"fraley_ecr":        {"Fraley, adult attachment research", "https://labs.psychology.illinois.edu/~rcfraley/measures/measures.html", "strong"},
-	"hexaco2005":        {"Lee, Ashton & de Vries, 2005", "https://research.vu.nl/en/publications/predicting-workplace-delinquency-and-integrity-with-the-hexaco-an/", "moderate"},
-	"meier2010":         {"Meier & Sprenger, 2010", "https://www.newyorkfed.org/medialibrary/media/banking/MeierSlides_NYU.pdf", "moderate"},
-	"gollwitzer2006":    {"Gollwitzer & Sheeran, 2006", "https://kops.uni-konstanz.de/entities/publication/2e749bfb-8533-437c-8203-7e788c910c5f", "strong"},
-	"lally2010":         {"Lally et al., 2010", "https://www.ucl.ac.uk/news/2009/aug/how-long-does-it-take-form-habit", "moderate"},
-	"bushman2002":       {"Bushman, 2002", "https://journals.sagepub.com/doi/10.1177/0146167202289002", "moderate"},
-	"muise2016":         {"Muise et al., 2016", "https://www.eurekalert.org/news-releases/654391", "moderate"},
-	"gottman":           {"Gottman Institute", "https://www.gottman.com/blog/the-four-h", "moderate"},
-	"vanboven2003":      {"Van Boven & Gilovich, 2003", "https://cdn.vanderbilt.edu/vu-wp0/wp-content/uploads/sites/59/2011/05/06143905/to-do-or-to-have.pdf", "moderate"},
-	"dunn2008":          {"Dunn, Aknin & Norton, 2008", "https://www.nationalgeographic.com/science/article/money-can-buy-happiness-if-you-spend-it-on-other-people", "moderate"},
-	"killingsworth2023": {"Killingsworth, Kahneman & Mellers, 2023", "https://sciencedaily.com/releases/2023/03/230306163006.htm", "strong"},
-	"holtlunstad2010":   {"Holt-Lunstad et al., 2010", "https://journals.plos.org/plosmedicine/article/info:doi/10.1371/journal.pmed.1000316", "strong"},
+// source is one entry of the citation library (content/sources.json): the
+// only research a card may cite. Each entry was checked against its source;
+// cards restate the claim, never add to it. The library is built from the
+// shared evidence library, so it holds only what the cards cite.
+type source struct {
+	Title    string `json:"title"`
+	URL      string `json:"url"`
+	Strength string `json:"strength"` // strong | moderate | early
 }
+
+//go:embed content/sources.json
+var sourcesJSON []byte
+
+var sources = func() map[string]source {
+	var m map[string]source
+	if err := decodeStrict(sourcesJSON, &m); err != nil {
+		panic(fmt.Sprintf("citation library: %v", err))
+	}
+	return m
+}()
 
 var traitKeys = map[string]bool{
 	"openness": true, "conscientiousness": true, "extraversion": true, "agreeableness": true,
@@ -152,7 +167,14 @@ var (
 	readerPattern   = regexp.MustCompile(`(?i)\byou(r|rs|rself|'re|'ve|'d|'ll)?\b`)
 	// Research is only ever stated in the research field, with its source.
 	claimPattern = regexp.MustCompile(`(?i)\b(stud(y|ies)|research(ers)?|scientists?|experiments?|proven)\b`)
+	// The card's first sentence is its headline (frontend/src/reveal.ts splits it the same way).
+	headlinePattern = regexp.MustCompile(`(?s)^(.+?[.!?])\s+\S`)
+	// Cards talk like a person, not a report: the old formula openers are gone for good.
+	formulaPattern = regexp.MustCompile(`(?i)^(your (response|answer|choice) (indicates|points|suggests|reflects|shows)|this (answer|choice|response) (indicates|reflects|suggests|shows)|choosing this (suggests|shows))\b|\b(individuals with|this orientation)\b|(^|[.!?]\s+)people like (this|you) tend\b`)
 )
+
+// maxHeadline keeps the headline to one glanceable line on a phone.
+const maxHeadline = 70
 
 // minPerTheme keeps the daily mix varied; a theme thinner than this fails validation.
 const minPerTheme = 5
@@ -189,7 +211,7 @@ func validateBank(b bankFile) []error {
 
 		optIDs := map[string]bool{}
 		reveals := map[string]bool{}
-		prevDepth := 0
+		prevDepth, cited := 0, 0
 		for i, o := range q.Options {
 			ow := fmt.Sprintf("%s/%s", q.ID, o.ID)
 			if !idPattern.MatchString(o.ID) || len(o.ID) > 24 {
@@ -226,6 +248,14 @@ func validateBank(b bankFile) []error {
 			if claimPattern.MatchString(in.Reveal) {
 				fail("%s: reveal makes an uncited research claim; research belongs in the research field", ow)
 			}
+			if m := headlinePattern.FindStringSubmatch(in.Reveal); m == nil {
+				fail("%s: reveal needs a short headline sentence and then more", ow)
+			} else if n := len([]rune(m[1])); n > maxHeadline {
+				fail("%s: headline is %d characters, at most %d", ow, n, maxHeadline)
+			}
+			if formulaPattern.MatchString(in.Reveal) {
+				fail("%s: reveal uses a formula phrase; say it the way a person would", ow)
+			}
 			checkText(fail, ow+" step", in.Step, 20, 160)
 			if reveals[in.Reveal] {
 				fail("%s: reveal repeats another option's", ow)
@@ -243,11 +273,15 @@ func validateBank(b bankFile) []error {
 				switch {
 				case !ok:
 					fail("%s: cites %q, which is not in the citation library", ow, in.Source)
-				case src.strength != in.Strength:
-					fail("%s: strength %q, library says %q", ow, in.Strength, src.strength)
+				case src.Strength != in.Strength:
+					fail("%s: strength %q, library says %q", ow, in.Strength, src.Strength)
 				}
 				checkText(fail, ow+" research", in.Research, 20, 260)
+				cited++
 			}
+		}
+		if cited == 0 {
+			fail("%s: no card cites the evidence library; every question needs at least one", where)
 		}
 		if prevDepth < 3 {
 			fail("%s: the deepest option must reach depth 3 or 4", where)
@@ -259,6 +293,20 @@ func validateBank(b bankFile) []error {
 				fail("%s: follow-up prompt repeats %s's; two could land on the same evening", where, other)
 			}
 			followUpPrompts[p] = q.ID
+		}
+	}
+
+	for key, src := range sources {
+		where := "source " + key
+		if !idPattern.MatchString(strings.ReplaceAll(key, "_", "-")) {
+			fail("%s: key must be lowercase letters, digits and dashes", where)
+		}
+		checkText(fail, where+" title", src.Title, 4, 80)
+		if !strings.HasPrefix(src.URL, "https://") || strings.ContainsAny(src.URL, " \"<>") {
+			fail("%s: url must be a plain https link", where)
+		}
+		if src.Strength != "strong" && src.Strength != "moderate" && src.Strength != "early" {
+			fail("%s: strength %q is not strong, moderate or early", where, src.Strength)
 		}
 	}
 
@@ -475,7 +523,7 @@ func (contentBank) dailyQuestion(q bankQuestion, date string) Question {
 	for _, o := range q.Options {
 		in := &Insight{Reveal: o.Insight.Reveal, Step: o.Insight.Step}
 		if src, ok := sources[o.Insight.Source]; ok {
-			in.Research, in.SourceTitle, in.SourceURL, in.Strength = o.Insight.Research, src.title, src.url, o.Insight.Strength
+			in.Research, in.SourceTitle, in.SourceURL, in.Strength = o.Insight.Research, src.Title, src.URL, o.Insight.Strength
 		}
 		out.Options = append(out.Options, Option{ID: o.ID, Label: o.Label, Depth: o.Depth, Traits: o.Traits, Insight: in})
 	}
