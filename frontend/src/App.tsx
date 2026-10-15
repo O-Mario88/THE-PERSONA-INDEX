@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ApiError, getToday, recalledChoice, SKIPPED, type DailySet, type Question } from './api'
 import { readCompare } from './compare'
-import { QuestionCard } from './QuestionCard'
+import { QuestionCard, type Done } from './QuestionCard'
 import { EditionSummary } from './EditionSummary'
 import { MyWeek } from './MyWeek'
-import type { Outcome } from './crowd'
+import { levelFor, loadGame } from './game'
+import { themeVars } from './themes'
 import { forgetPick, todaysPick } from './profile'
 import { intimacyOn, loadPrefs, savePrefs, type Prefs } from './prefs'
 import './App.css'
@@ -22,9 +23,9 @@ function App() {
   const [prefs, setPrefs] = useState<Prefs>(loadPrefs)
   const [pickVersion, setPickVersion] = useState(0)
   const [invite] = useState(() => readCompare(window.location.hash))
-  const [outcomes, setOutcomes] = useState<Record<string, Outcome>>({})
-  const onOutcome = useCallback((id: string, o: Outcome) => {
-    setOutcomes((prev) => (prev[id] === o ? prev : { ...prev, [id]: o }))
+  const [done, setDone] = useState<Record<string, Done>>({})
+  const onDone = useCallback((id: string, d: Done) => {
+    setDone((prev) => (prev[id] === d ? prev : { ...prev, [id]: d }))
   }, [])
 
   useEffect(() => {
@@ -94,6 +95,8 @@ function App() {
         )}
       </header>
 
+      {set && tab === 'today' && questions.length > 0 && <Progress questions={questions} done={done} />}
+
       {state.kind === 'loading' && <p className="muted">Loading today's questions…</p>}
 
       {state.kind === 'empty' && (
@@ -142,18 +145,18 @@ function App() {
             index={i}
             total={questions.length}
             date={set.date}
-            onOutcome={onOutcome}
+            onDone={onDone}
           />
         ))}
 
       {set &&
         tab === 'today' &&
         set.edition !== undefined &&
-        questions.every((q) => outcomes[q.id]) && (
+        questions.every((q) => done[q.id]) && (
           <EditionSummary
             date={set.date}
             edition={set.edition}
-            outcomes={questions.map((q) => outcomes[q.id])}
+            questions={questions}
             tomorrowThemes={set.tomorrowThemes ?? []}
             answers={questions
               .filter((q) => q.care !== 'intimate')
@@ -165,7 +168,7 @@ function App() {
       {set &&
         tab === 'today' &&
         compareQs &&
-        questions.every((q) => outcomes[q.id]) && <CompareResult items={compareQs} />}
+        questions.every((q) => done[q.id]) && <CompareResult items={compareQs} />}
 
       {set && tab === 'today' && prefs.adult === true && (
         <label className="switch">
@@ -178,6 +181,30 @@ function App() {
         </label>
       )}
     </main>
+  )
+}
+
+// Today's progress and the level, kept on this phone.
+function Progress({ questions, done }: { questions: Question[]; done: Record<string, Done> }) {
+  const game = loadGame()
+  const level = levelFor(game.insights)
+  const finished = questions.filter((q) => done[q.id]).length
+  return (
+    <div className="progress" aria-label="Today's progress">
+      <div className="progress-steps" aria-hidden="true">
+        {questions.map((q) => (
+          <span
+            key={q.id}
+            className={done[q.id] === 'answered' ? 'seg on' : done[q.id] ? 'seg skipped' : 'seg'}
+            style={themeVars(q.theme)}
+          />
+        ))}
+      </div>
+      <p className="muted">
+        {finished} of {questions.length} done · <span aria-hidden="true">{level.icon} </span>
+        {level.name} · {game.points} pts
+      </p>
+    </div>
   )
 }
 

@@ -2,10 +2,7 @@ import { useEffect, useState } from 'react'
 import {
   ApiError,
   castVote,
-  getResults,
-  recalledGuess,
   rememberChoice,
-  rememberGuess,
   rememberSkip,
   rateCard,
   rememberRated,
@@ -15,63 +12,40 @@ import {
   SKIPPED,
   voteKey,
   type Insight,
+  type Option,
   type Question,
-  type QuestionResults,
 } from './api'
-import { GUESSES, guessFeedback, outcomeFor, type Outcome } from './crowd'
-import { recordAnswer, recordSkip } from './profile'
+import { awardInsight } from './game'
+import { recordAnswer, recordSkip, TRAIT_WORDS } from './profile'
+import { themeName, themeStyle, themeVars } from './themes'
+
+export type Done = 'answered' | 'skipped'
 
 type Props = {
   question: Question
   index: number
   total: number
   date: string
-  onOutcome?: (questionId: string, outcome: Outcome) => void
+  onDone?: (questionId: string, done: Done) => void
 }
 
-// Stored when the player skips the guess-the-crowd step.
-const NO_GUESS = 'none'
-
-// Results are published by a worker, so a fresh vote may take a moment to show.
-const REFRESH_DELAYS_MS = [1500, 3000, 6000]
-
 // Stored when the server says this device already voted but we don't know which option.
-const UNKNOWN_CHOICE = '?'
+export const UNKNOWN_CHOICE = '?'
 
-export function QuestionCard({ question, index, total, date, onOutcome }: Props) {
-  const [choice, setChoice] = useState<string | null>(() =>
-    recalledChoice(question.id),
-  )
-  const [guess, setGuess] = useState<string | null>(() => recalledGuess(question.id))
+// One question: tap an answer, and its insight card opens in place. The vote
+// still goes to the server for the real community counts, but nothing about
+// the crowd is shown here.
+export function QuestionCard({ question, index, total, date, onDone }: Props) {
+  const [choice, setChoice] = useState<string | null>(() => recalledChoice(question.id))
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [results, setResults] = useState<QuestionResults | null>(null)
+  const [earned, setEarned] = useState(0)
+  const theme = themeStyle(question.theme)
 
-  const answered = choice !== null && choice !== SKIPPED
-  // Results and the insight wait until the player has guessed the crowd.
-  const revealed = answered && (guess !== null || choice === UNKNOWN_CHOICE)
-
+  // Report a finished card, including one restored from storage.
   useEffect(() => {
-    if (choice === SKIPPED || choice === UNKNOWN_CHOICE) onOutcome?.(question.id, 'skipped')
-    else if (choice && results && revealed) onOutcome?.(question.id, outcomeFor(choice, results.options))
-  }, [choice, results, revealed, question.id, onOutcome])
-
-  // Once revealed, fetch results and refresh a few times while the count catches up.
-  useEffect(() => {
-    if (!revealed) return
-    let live = true
-    const load = () =>
-      getResults(question.id).then(
-        (r) => live && setResults(r),
-        () => live && setError('Results are not available right now.'),
-      )
-    load()
-    const timers = REFRESH_DELAYS_MS.map((ms) => setTimeout(load, ms))
-    return () => {
-      live = false
-      timers.forEach(clearTimeout)
-    }
-  }, [revealed, question.id])
+    if (choice) onDone?.(question.id, choice === SKIPPED ? 'skipped' : 'answered')
+  }, [choice, question.id, onDone])
 
   async function vote(optionId: string) {
     setSending(true)
@@ -81,6 +55,7 @@ export function QuestionCard({ question, index, total, date, onOutcome }: Props)
       rememberChoice(question.id, optionId)
       recordAnswer(question, optionId, date)
       recordPlayed(date)
+      setEarned(awardInsight(question.id, question.theme))
       setChoice(optionId)
     } catch (e) {
       if (e instanceof ApiError && e.code === 'duplicate_vote') {
@@ -88,7 +63,7 @@ export function QuestionCard({ question, index, total, date, onOutcome }: Props)
         rememberChoice(question.id, UNKNOWN_CHOICE)
         setChoice(UNKNOWN_CHOICE)
       } else {
-        setError('Your vote did not go through. Please try again.')
+        setError('Your answer did not go through. Please try again.')
       }
     } finally {
       setSending(false)
@@ -101,19 +76,19 @@ export function QuestionCard({ question, index, total, date, onOutcome }: Props)
     setChoice(SKIPPED)
   }
 
-  function chooseGuess(g: string) {
-    rememberGuess(question.id, g)
-    setGuess(g)
-  }
-
   const headingId = `q-${question.id}`
-  const guessId = `g-${question.id}`
+  const chosen = question.options.find((o) => o.id === choice)
 
   return (
-    <section className="card" aria-labelledby={headingId}>
-      <p className="eyebrow">
-        Question {index + 1} of {total}
-      </p>
+    <section className="card question" style={themeVars(question.theme)} aria-labelledby={headingId}>
+      <div className="question-top">
+        <span className="theme-pill">
+          <span aria-hidden="true">{theme.icon}</span> {question.theme ? themeName(question.theme) : 'Today'}
+        </span>
+        <span className="eyebrow">
+          Question {index + 1} of {total}
+        </span>
+      </div>
       <h2 id={headingId}>{question.prompt}</h2>
 
       {!choice && (
@@ -136,35 +111,17 @@ export function QuestionCard({ question, index, total, date, onOutcome }: Props)
       )}
 
       {choice === SKIPPED && <p className="muted">Skipped</p>}
+      {choice === UNKNOWN_CHOICE && <p className="muted">You already answered this one on this phone.</p>}
 
-      {answered && !revealed && (
-        <div className="guess">
-          <p id={guessId} className="guess-prompt">
-            How many people do you think chose what you chose?
-          </p>
-          <div className="guess-options" role="group" aria-labelledby={guessId}>
-            {GUESSES.map((g) => (
-              <button key={g.id} type="button" className="option" onClick={() => chooseGuess(g.id)}>
-                {g.label}
-              </button>
-            ))}
-          </div>
-          <button type="button" className="link-button" onClick={() => chooseGuess(NO_GUESS)}>
-            Skip the guess
-          </button>
-        </div>
-      )}
-
-      {revealed && (
+      {chosen?.insight && (
         <InsightCard
-          insight={chosenInsight(question, choice)}
-          rate={(learned) => rateCard(question.id, choice, learned)}
+          option={chosen}
+          insight={chosen.insight}
+          icon={theme.icon}
+          earned={earned}
+          rate={(learned) => rateCard(question.id, chosen.id, learned)}
           questionId={question.id}
         />
-      )}
-
-      {revealed && (
-        <Results question={question} choice={choice} results={results} guess={guess} />
       )}
 
       {error && (
@@ -176,10 +133,6 @@ export function QuestionCard({ question, index, total, date, onOutcome }: Props)
   )
 }
 
-function chosenInsight(question: Question, choice: string): Insight | undefined {
-  return question.options.find((o) => o.id === choice)?.insight
-}
-
 const STRENGTH_LABEL: Record<NonNullable<Insight['strength']>, string> = {
   strong: 'Strong evidence',
   moderate: 'Some evidence',
@@ -187,16 +140,21 @@ const STRENGTH_LABEL: Record<NonNullable<Insight['strength']>, string> = {
 }
 
 function InsightCard({
+  option,
   insight,
+  icon,
+  earned,
   rate,
   questionId,
 }: {
-  insight: Insight | undefined
+  option: Option
+  insight: Insight
+  icon: string
+  earned: number
   rate: (learned: boolean) => Promise<unknown>
   questionId: string
 }) {
   const [rated, setRated] = useState(() => wasRated(questionId))
-  if (!insight) return null
   function tap(learned: boolean) {
     setRated(true)
     rememberRated(questionId)
@@ -204,9 +162,36 @@ function InsightCard({
       // a lost rating is not worth bothering anyone about
     })
   }
+  const traits = Object.entries(option.traits ?? {}).filter(([t]) => TRAIT_WORDS[t])
   return (
     <div className="insight" role="note" aria-label="What your answer may say">
+      <div className="insight-head">
+        <span className="insight-icon" aria-hidden="true">
+          {icon}
+        </span>
+        <span className="insight-title">Insight unlocked</span>
+        {earned > 0 && <span className="points-pill">+{earned} pts</span>}
+      </div>
+      <p className="insight-answer">
+        <span className="muted">Your answer:</span> {option.label}
+      </p>
       <p className="insight-reveal">{insight.reveal}</p>
+
+      {traits.length > 0 && (
+        <ul className="trait-meters" aria-label="Traits this answer touches">
+          {traits.map(([t, w]) => (
+            <li key={t}>
+              <span className="trait-meter-name">{TRAIT_WORDS[t].name}</span>
+              <span className="meter" aria-hidden="true">
+                <span className="meter-mid" />
+                <span className="meter-dot" style={{ left: `${50 + (Math.max(-2, Math.min(2, w)) * 50) / 2.4}%` }} />
+              </span>
+              <span className="meter-word">{w > 0 ? 'more' : 'less'}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+
       {insight.research && (
         <p className="insight-research">
           {insight.research}{' '}
@@ -230,72 +215,14 @@ function InsightCard({
       ) : (
         <div className="rate">
           <button type="button" className="chip" onClick={() => tap(true)}>
-            I learned something
+            <span aria-hidden="true">🤯 </span>I learned something
           </button>
           <button type="button" className="chip" onClick={() => tap(false)}>
-            Not really
+            <span aria-hidden="true">🤷 </span>Not really
           </button>
         </div>
       )}
       <p className="muted insight-note">For self-reflection, not a diagnosis.</p>
     </div>
   )
-}
-
-function Results({
-  question,
-  choice,
-  results,
-  guess,
-}: {
-  question: Question
-  choice: string
-  results: QuestionResults | null
-  guess: string | null
-}) {
-  if (!results) {
-    return <p className="muted">Loading results…</p>
-  }
-  const byId = new Map(results.options.map((r) => [r.optionId, r]))
-  const feedback =
-    guess && choice !== UNKNOWN_CHOICE
-      ? guessFeedback(guess, byId.get(choice)?.percent ?? 0, results.totalVotes)
-      : null
-  return (
-    <div className="results">
-      <ul aria-label="Community results">
-        {question.options.map((o) => {
-          const r = byId.get(o.id) ?? { count: 0, percent: 0 }
-          const mine = o.id === choice
-          return (
-            <li key={o.id} className={mine ? 'result mine' : 'result'}>
-              <div className="result-row">
-                <span>
-                  {o.label}
-                  {mine && <span className="badge">Your answer</span>}
-                </span>
-                <span className="pct">{formatPercent(r.percent)}</span>
-              </div>
-              <div className="bar" aria-hidden="true">
-                <div className="fill" style={{ width: `${r.percent}%` }} />
-              </div>
-            </li>
-          )
-        })}
-      </ul>
-      {feedback && <p className="guess-feedback">{feedback}</p>}
-      {choice === UNKNOWN_CHOICE && (
-        <p className="muted">You already answered this one on this device.</p>
-      )}
-      <p className="muted">
-        {results.totalVotes === 0
-          ? 'Your vote is in. Results update in a few seconds.'
-          : `${results.totalVotes.toLocaleString()} ${results.totalVotes === 1 ? 'vote' : 'votes'} so far`}
-      </p>
-    </div>
-  )
-}
-
-function formatPercent(p: number): string {
-  return `${Number.isInteger(p) ? p : p.toFixed(1)}%`
 }

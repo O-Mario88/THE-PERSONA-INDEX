@@ -1,36 +1,49 @@
-import { useState } from 'react'
-import { playedDays } from './api'
-import { daysPlayedThisWeek, SQUARE, themeName, type Outcome } from './crowd'
+import { useEffect, useState, type CSSProperties } from 'react'
+import { playedDays, recalledChoice, type Question } from './api'
+import { adviceFor } from './advice'
 import { encodeCompare } from './compare'
+import { awardEdition, awardStep, levelFor, loadGame, POINTS_PER_STEP, stepDone } from './game'
+import { daysPlayedThisWeek, THEME_COUNT, themeName, themeStyle, themeVars } from './themes'
 
 type Props = {
   date: string
   edition: number
-  outcomes: Outcome[]
+  questions: Question[]
   tomorrowThemes: string[]
   answers: [string, string][] // what a compare link may carry: no intimate answers
 }
 
-// The end of a session: the shareable edition squares, the week's rhythm and
-// tomorrow's themes. Nothing here resets or punishes a missed day.
-export function EditionSummary({ date, edition, outcomes, tomorrowThemes, answers }: Props) {
+// The end of an edition: today's insight cards again, advice built from them,
+// the small steps to try, and progress kept on this phone. Nothing here
+// resets or punishes a missed day.
+export function EditionSummary({ date, edition, questions, tomorrowThemes, answers }: Props) {
   const [copied, setCopied] = useState(false)
-  const squares = outcomes.map((o) => SQUARE[o]).join('')
+  const [bonus, setBonus] = useState(0)
+  const [, setVersion] = useState(0)
+  const cards = questions
+    .map((q) => ({ q, o: q.options.find((o) => o.id === recalledChoice(q.id)) }))
+    .filter((c): c is { q: Question; o: NonNullable<typeof c.o> } => !!c.o?.insight)
+  const advice = adviceFor(cards.map((c) => c.o))
+  const game = loadGame()
+  const level = levelFor(game.insights)
   const played = daysPlayedThisWeek(playedDays(), date)
   const headingId = `edition-${edition}`
 
-  async function share() {
-    const url = window.location.origin
-    await send(`Persona Index #${edition}\n${squares}\n🟩 with the crowd · 🟧 against it\n${url}`)
+  useEffect(() => {
+    if (cards.length > 0) setBonus(awardEdition(date))
+    // award once per edition, when the recap first opens
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [date])
+
+  function tick(questionId: string) {
+    awardStep(questionId)
+    setVersion((v) => v + 1)
   }
 
   async function compare() {
     const link = `${window.location.origin}/#c=${encodeCompare({ e: edition, a: answers })}`
-    await send(`I answered today's Persona Index. Answer the same questions and see where we agree: ${link}`)
-  }
-
-  async function send(text: string) {
     try {
+      const text = `I answered today's Persona Index. Answer the same questions and see where we agree: ${link}`
       if (navigator.share) {
         await navigator.share({ text })
         return
@@ -44,23 +57,121 @@ export function EditionSummary({ date, edition, outcomes, tomorrowThemes, answer
 
   return (
     <section className="card summary" aria-labelledby={headingId}>
-      <h2 id={headingId}>Edition #{edition} done</h2>
-      <p className="squares" aria-label={`${outcomes.filter((o) => o === 'with').length} with the crowd`}>
-        {squares}
-      </p>
-      <button type="button" className="option primary" onClick={share}>
-        Share
-      </button>
+      {bonus > 0 && <Confetti />}
+      <div className="summary-head">
+        <span className="summary-badge" aria-hidden="true">
+          🏆
+        </span>
+        <div>
+          <h2 id={headingId}>Edition #{edition} complete</h2>
+          <p className="muted">
+            {cards.length} {cards.length === 1 ? 'insight' : 'insights'} today
+            {bonus > 0 && <span className="points-pill">+{bonus} pts bonus</span>}
+          </p>
+        </div>
+      </div>
+
+      {cards.length > 0 && (
+        <>
+          <h3>Your insight cards</h3>
+          <ul className="recap">
+            {cards.map(({ q, o }) => (
+              <li key={q.id} className="recap-card" style={themeVars(q.theme)}>
+                <p className="recap-theme">
+                  <span aria-hidden="true">{themeStyle(q.theme).icon}</span>{' '}
+                  {q.theme ? themeName(q.theme) : 'Today'}
+                </p>
+                <p className="recap-prompt">{q.prompt}</p>
+                <p>{o.insight!.reveal}</p>
+              </li>
+            ))}
+          </ul>
+
+          <div className="advice" role="note" aria-label="Advice for you">
+            <h3>
+              <span aria-hidden="true">💡 </span>Advice for you
+            </h3>
+            <p>{advice.headline}</p>
+            {advice.points.map((p) => (
+              <div key={p.trait} className="advice-point">
+                <p className="trait-name">{p.name}</p>
+                <p>{p.strength}</p>
+                <p>
+                  <strong>How to grow:</strong> {p.grow}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <div className="steps">
+            <h3>
+              <span aria-hidden="true">🎯 </span>Your moves this week
+            </h3>
+            <ul>
+              {cards.map(({ q, o }) => {
+                const done = stepDone(q.id)
+                return (
+                  <li key={q.id}>
+                    <button
+                      type="button"
+                      className={done ? 'step done' : 'step'}
+                      aria-pressed={done}
+                      onClick={() => !done && tick(q.id)}
+                    >
+                      <span className="step-box" aria-hidden="true">
+                        {done ? '✓' : ''}
+                      </span>
+                      <span>{o.insight!.step}</span>
+                      {!done && <span className="step-points">+{POINTS_PER_STEP}</span>}
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+            <p className="muted">Tick a move once you have tried it.</p>
+          </div>
+        </>
+      )}
+
+      <div className="level" aria-label="Your level">
+        <p className="level-name">
+          <span aria-hidden="true">{level.icon} </span>
+          {level.name} · {game.points} pts
+        </p>
+        <div className="level-bar" aria-hidden="true">
+          <div className="level-fill" style={{ width: `${Math.round(level.progress * 100)}%` }} />
+        </div>
+        <p className="muted">
+          {level.next
+            ? `${level.toNext} more ${level.toNext === 1 ? 'insight' : 'insights'} to ${level.next.name}`
+            : 'Top level reached'}
+          {' · '}
+          {game.themes.length} of {THEME_COUNT} life areas discovered · played {played} of the last 7 days
+        </p>
+      </div>
+
       {answers.length > 0 && (
         <button type="button" className="option" onClick={compare}>
           Compare with someone
         </button>
       )}
       {copied && <p className="muted">Copied. Paste it anywhere.</p>}
-      <p className="muted">You played {played} of the last 7 days.</p>
       {tomorrowThemes.length > 0 && (
-        <p>Tomorrow: {tomorrowThemes.map(themeName).join(' · ')}</p>
+        <p className="tomorrow">
+          <span aria-hidden="true">🌅 </span>Tomorrow: {tomorrowThemes.map(themeName).join(' · ')}
+        </p>
       )}
+      <p className="muted insight-note">For self-reflection, not a diagnosis.</p>
     </section>
+  )
+}
+
+function Confetti() {
+  return (
+    <div className="confetti" aria-hidden="true">
+      {Array.from({ length: 24 }, (_, i) => (
+        <span key={i} style={{ '--i': i } as CSSProperties} />
+      ))}
+    </div>
   )
 }
