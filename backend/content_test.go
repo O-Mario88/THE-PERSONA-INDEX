@@ -43,17 +43,17 @@ func TestShippedBankPassesTheQualityGate(t *testing.T) {
 
 func TestValidateBankCatchesBrokenCards(t *testing.T) {
 	good := func() bankQuestion {
-		card := func(reveal string) bankInsight {
-			return bankInsight{Reveal: reveal, Strength: "none", Step: "Next time it happens, notice what you do first."}
+		card := func(reveal, otherSide string) bankInsight {
+			return bankInsight{Reveal: reveal, OtherSide: otherSide, Strength: "none", Step: "Next time it happens, notice what you do first."}
 		}
 		cited := func(in bankInsight) bankInsight {
 			in.Research, in.Source, in.Strength = "People who strongly prefer a reward now over a bigger one later tend to carry more credit card debt.", "meier2010", "moderate"
 			return in
 		}
 		return bankQuestion{ID: "money-test", Theme: "money", Prompt: "Payday arrives. What goes first?", Options: []bankOption{
-			{ID: "bills", Label: "Bills", Depth: 1, Insight: card("Your worries go first, then the fun. You probably tidy before guests arrive and answer the hard email first, and a treat tastes better once nothing is hanging over you.")},
-			{ID: "savings", Label: "Savings", Depth: 2, Insight: cited(card("You trust your future self. You likely plan trips early, and you're often the calm one when a surprise bill lands on everyone at once."))},
-			{ID: "treat", Label: "Something for me", Depth: 3, Insight: card("The week took more out of you than you let on. You give a lot at work, and you rarely notice you need a break, so payday becomes the break.")},
+			{ID: "bills", Label: "Bills", Depth: 1, Insight: card("Your worries go first, then the fun. You probably tidy before guests arrive and answer the hard email first, and a treat tastes better once nothing is hanging over you.", "When money is tight, you may skip every treat, and a month with no small joy in it is harder to keep going.")},
+			{ID: "savings", Label: "Savings", Depth: 2, Insight: cited(card("You trust your future self. You likely plan trips early, and you're often the calm one when a surprise bill lands on everyone at once.", "Saving can turn into never spending, even on the things that would make your life easier now."))},
+			{ID: "treat", Label: "Something for me", Depth: 3, Insight: card("The week took more out of you than you let on. You give a lot at work, and you rarely notice you need a break, so payday becomes the break.", "If payday is your only break, the bills you put off can come back as a bigger worry later in the month.")},
 		}}
 	}
 	cases := []struct {
@@ -104,6 +104,25 @@ func TestValidateBankCatchesBrokenCards(t *testing.T) {
 		{"uncited research claim in a reveal", func(q *bankQuestion) {
 			q.Options[2].Insight.Reveal = "Your answer suggests you are tired. Studies show people like you tend to give a lot at work and are often the last to notice they need a break."
 		}, "uncited research"},
+		// Every answer has an other side, the healthiest-looking included.
+		{"no other side", func(q *bankQuestion) { q.Options[0].Insight.OtherSide = "" }, "other side: 0 characters"},
+		{"other side not to the reader", func(q *bankQuestion) {
+			q.Options[1].Insight.OtherSide = "Savers can turn saving into never spending, even on things that would make life easier now."
+		}, "other side: must speak to the reader"},
+		{"other side cites research", func(q *bankQuestion) {
+			q.Options[1].Insight.OtherSide = "Studies show saving can turn into never spending, even on what would make your life easier."
+		}, "other side: makes a research claim"},
+		{"other side states a statistic", func(q *bankQuestion) {
+			q.Options[2].Insight.OtherSide = "Around 40% of the time, the bills you put off come back as a bigger worry for you."
+		}, "other side: states a statistic"},
+		{"other side repeats the reveal", func(q *bankQuestion) {
+			q.Options[2].Insight.OtherSide = "You give a lot at work, and you rarely notice you need a break, so payday becomes the break."
+		}, "repeats the reveal"},
+		{"early evidence said as fact", func(q *bankQuestion) {
+			in := &q.Options[0].Insight
+			in.Research, in.Source, in.Strength = "Early evidence, standing in here to test the soft-wording rule.", "andrews2015", "early"
+			in.Reveal = "Your worries go first, then the fun. You tidy before guests arrive and answer the hard email first, and a treat tastes better once nothing is hanging over you."
+		}, "the evidence is early, so say it softly"},
 		{"the app calls itself a therapist", func(q *bankQuestion) {
 			q.Options[2].Insight.Step = "Like a good therapist would say, take one quiet evening for you this week, and notice how payday feels after it."
 		}, "banned word"},
@@ -249,41 +268,4 @@ func TestDailyPick(t *testing.T) {
 			t.Fatalf("expected 1, got %d", n)
 		}
 	})
-}
-
-// TestSliceMeetsFullCardRules checks some themes against the Phase 2 card
-// rules before the whole bank meets them (requireFullCards):
-// PI_SLICE_THEMES=money,food go test -run TestSliceMeetsFullCardRules ./
-func TestSliceMeetsFullCardRules(t *testing.T) {
-	want := map[string]bool{}
-	for _, th := range strings.Split(os.Getenv("PI_SLICE_THEMES"), ",") {
-		if th = strings.TrimSpace(th); th != "" {
-			want[th] = true
-		}
-	}
-	if len(want) == 0 {
-		t.Skip("set PI_SLICE_THEMES")
-	}
-	var f bankFile
-	if err := decodeStrict(questionsJSON, &f); err != nil {
-		t.Fatal(err)
-	}
-	var qs []bankQuestion
-	for _, q := range f.Questions {
-		if want[q.Theme] {
-			qs = append(qs, q)
-		}
-	}
-	if len(qs) == 0 {
-		t.Fatal("no questions in those themes")
-	}
-	n := 0
-	for _, err := range validateBankWith(bankFile{Questions: qs}, true) {
-		if strings.HasPrefix(err.Error(), "theme ") || strings.HasPrefix(err.Error(), "bank: ") {
-			continue // rules about the whole bank
-		}
-		t.Error(err)
-		n++
-	}
-	t.Logf("%d questions checked, %d problems", len(qs), n)
 }

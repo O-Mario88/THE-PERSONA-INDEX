@@ -33,9 +33,8 @@ import (
 //     (since 2026-10-16). It still counts as an answer and towards its theme.
 
 const (
-	minTraitAnswers  = 2  // answers on a trait before it is read at all
-	solidReadAnswers = 12 // answers on a trait before its read is called solid
-	traitWindowDays  = 21 // a week's read uses that week and the two before
+	minTraitAnswers = 2  // answers on a trait before it is read at all
+	traitWindowDays = 21 // a week's read uses that week and the two before
 )
 
 // How far a read has been earned (the review of 2026-10-15, "How readings
@@ -144,11 +143,10 @@ type DayAnswer struct {
 
 type TraitRead struct {
 	Trait    string      `json:"trait"`
-	Answers  int         `json:"answers"` // answers that could show it, last three weeks
-	Days     int         `json:"days"`    // the days they were given on
-	Weeks    int         `json:"weeks"`   // the weeks they were given in
-	Level    string      `json:"level"`   // hint | pattern | steady | changing
-	Solid    bool        `json:"solid"`
+	Answers  int         `json:"answers"`          // answers that could show it, last three weeks
+	Days     int         `json:"days"`             // the days they were given on
+	Weeks    int         `json:"weeks"`            // the weeks they were given in
+	Level    string      `json:"level"`            // hint | pattern | steady | changing
 	Score    int         `json:"score"`            // 0..100: where the answers sit among their questions' options
 	Change   *int        `json:"change,omitempty"` // against last week's read
 	History  []WeekScore `json:"history"`          // two weeks ago, last week, this week
@@ -160,7 +158,6 @@ type TraitRead struct {
 type WeekScore struct {
 	Week  int  `json:"week"`
 	Score *int `json:"score,omitempty"`
-	Solid bool `json:"solid"`
 }
 
 type ThemeRead struct {
@@ -669,14 +666,14 @@ func (s *Server) buildMirror(ctx context.Context, key, date string) (Mirror, err
 			return WeekScore{Week: wk}
 		}
 		sc := int(math.Round(100 * t.mean()))
-		return WeekScore{Week: wk, Score: &sc, Solid: t.n >= solidReadAnswers}
+		return WeekScore{Week: wk, Score: &sc}
 	}
 	for trait, t := range weeks[2] {
 		now := score(2, trait)
 		if now.Score == nil {
 			continue
 		}
-		r := TraitRead{Trait: trait, Answers: t.n, Days: t.days, Weeks: t.weeks, Solid: now.Solid, Score: *now.Score}
+		r := TraitRead{Trait: trait, Answers: t.n, Days: t.days, Weeks: t.weeks, Score: *now.Score}
 		r.Level = readLevel(t.n, t.days, t.weeks, weeks[1][trait], thisWeek[trait])
 		for k := range 3 {
 			r.History = append(r.History, score(k, trait))

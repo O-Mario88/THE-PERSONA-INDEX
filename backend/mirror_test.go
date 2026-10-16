@@ -321,8 +321,8 @@ func TestMirrorTraitReads(t *testing.T) {
 		}
 		m := getMirror(t, s, "a", wed)
 		r, ok := traitOf(m, "conscientiousness")
-		if !ok || r.Answers != 3 || r.Solid || r.Score != 100 {
-			t.Fatalf("expected an early read of 100 from 3 answers, got %+v (ok=%v)", r, ok)
+		if !ok || r.Answers != 3 || r.Level != levelPattern || r.Score != 100 {
+			t.Fatalf("expected a pattern scoring 100 from 3 answers on 3 days, got %+v (ok=%v)", r, ok)
 		}
 		if len(r.Evidence) == 0 || r.Evidence[0] != "Right away" {
 			t.Fatalf("expected the answers behind the read, got %v", r.Evidence)

@@ -97,10 +97,9 @@ type PeriodStats struct {
 type PeriodTrait struct {
 	Trait   string      `json:"trait"`
 	Answers int         `json:"answers"`
-	Days    int         `json:"days"`  // the days they were given on
-	Weeks   int         `json:"weeks"` // the weeks they were given in
-	Level   string      `json:"level"` // hint | pattern | steady | changing (mirror.go)
-	Solid   bool        `json:"solid"`
+	Days    int         `json:"days"`             // the days they were given on
+	Weeks   int         `json:"weeks"`            // the weeks they were given in
+	Level   string      `json:"level"`            // hint | pattern | steady | changing (mirror.go)
 	Score   int         `json:"score"`            // 0..100, the mean position over the period
 	Weekly  []WeekScore `json:"weekly"`           // one per week so far
 	Change  *int        `json:"change,omitempty"` // the later weeks with a read against the earlier ones
@@ -525,7 +524,7 @@ func periodTraits(ws []WeekSummary, kept []bool) []PeriodTrait {
 					days += max(w.Traits[trait].Days, 1)
 				}
 			}
-			ws := WeekScore{Week: iso, Solid: t.n >= solidReadAnswers}
+			ws := WeekScore{Week: iso}
 			if t.n >= minTraitAnswers {
 				sc := score(t)
 				ws.Score = &sc
@@ -539,7 +538,7 @@ func periodTraits(ws []WeekSummary, kept []bool) []PeriodTrait {
 		if total.n < minTraitAnswers {
 			continue
 		}
-		r.Answers, r.Solid, r.Score = total.n, total.n >= solidReadAnswers, score(total)
+		r.Answers, r.Score = total.n, score(total)
 		r.Days, r.Weeks = days, len(read)
 		var early, late traitSum
 		if len(read) >= 2 {

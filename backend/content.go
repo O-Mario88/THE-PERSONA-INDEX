@@ -172,20 +172,7 @@ const minPerTheme = 5
 
 // validateBank returns every content rule a bank breaks. An empty result means
 // the bank is safe to serve without anyone reviewing it by hand.
-func validateBank(b bankFile) []error { return validateBankWith(b, requireFullCards) }
-
-// requireFullCards turns on the two card rules that came with Phase 2 for
-// every card: an other side on every answer, and soft wording wherever the
-// evidence is early. Until then they apply to the cards that have an other
-// side, so the bank can be brought up to them in batches.
-const requireFullCards = false
-
-// softPattern finds the words that keep a claim modest.
-var softPattern = regexp.MustCompile(`(?i)\b(probably|likely|tends? to|tended to|may|might|perhaps|maybe|can|could|often|sometimes|for some|some people)\b`)
-
-// validateBankWith is validateBank with the Phase 2 card rules on for every
-// card (full) or only for cards that already have an other side.
-func validateBankWith(b bankFile, full bool) []error {
+func validateBank(b bankFile) []error {
 	var errs []error
 	fail := func(format string, args ...any) { errs = append(errs, fmt.Errorf(format, args...)) }
 	ids := map[string]bool{}
@@ -260,9 +247,7 @@ func validateBankWith(b bankFile, full bool) []error {
 				fail("%s: reveal uses a formula phrase; say it the way a person would", ow)
 			}
 			checkText(fail, ow+" step", in.Step, 20, 160)
-			if full || in.OtherSide != "" {
-				checkOtherSide(fail, ow, in)
-			}
+			checkOtherSide(fail, ow, in)
 			if reveals[in.Reveal] {
 				fail("%s: reveal repeats another option's", ow)
 			}
@@ -331,6 +316,9 @@ func checkText(fail func(string, ...any), where, s string, minLen, maxLen int) {
 		fail("%s: uses a currency symbol", where)
 	}
 }
+
+// softPattern finds the words that keep a claim modest.
+var softPattern = regexp.MustCompile(`(?i)\b(probably|likely|tends? to|tended to|may|might|perhaps|maybe|can|could|often|sometimes|for some|some people)\b`)
 
 // checkOtherSide holds an answer's other side to the card rules: one or two
 // short sentences to the reader, no research claim, nothing the reveal

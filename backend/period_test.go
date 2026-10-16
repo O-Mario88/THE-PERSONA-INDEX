@@ -320,8 +320,8 @@ func TestPeriodMirror(t *testing.T) {
 				r = tr
 			}
 		}
-		if r.Answers != 4 || r.Score != 50 || r.Solid {
-			t.Fatalf("expected an early read of 50 from four answers, got %+v", r)
+		if r.Answers != 4 || r.Score != 50 {
+			t.Fatalf("expected a read of 50 from four answers, got %+v", r)
 		}
 		if len(r.Weekly) != 3 || r.Weekly[0].Score != nil || *r.Weekly[1].Score != 100 || *r.Weekly[2].Score != 0 || r.Weekly[1].Week != 41 {
 			t.Fatalf("expected no read for week 40, 100 for week 41 and 0 for week 42, got %s", asJSON(t, r.Weekly))

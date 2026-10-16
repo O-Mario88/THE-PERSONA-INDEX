@@ -127,7 +127,7 @@ async function withDevice<T>(send: (token: string) => Promise<T>): Promise<T> {
 // only ever set against this phone's own past. Shapes mirror backend/mirror.go.
 export type Depth = 'light' | 'deeper' | 'deep' | 'private'
 export type StepStatus = 'started' | 'helped' | 'no_change' | 'not_tried'
-export type WeekScore = { week: number; score?: number; solid: boolean }
+export type WeekScore = { week: number; score?: number }
 // How far a read has been earned (backend/mirror.go): a hint is one or two
 // answers or one day; a pattern three or more answers on two or more days;
 // steady seven or more across three or more weeks; changing a pattern whose
@@ -139,7 +139,6 @@ export type TraitRead = {
   days: number
   weeks: number
   level: Level
-  solid: boolean
   score: number // 0..100: where the answers sit among their questions' options
   change?: number
   history: WeekScore[]
@@ -231,7 +230,6 @@ export type PeriodTrait = {
   days: number
   weeks: number
   level: Level
-  solid: boolean
   score: number
   weekly: WeekScore[]
   change?: number // the later weeks with a read against the earlier ones
