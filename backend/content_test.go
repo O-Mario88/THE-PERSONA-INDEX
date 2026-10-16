@@ -250,3 +250,40 @@ func TestDailyPick(t *testing.T) {
 		}
 	})
 }
+
+// TestSliceMeetsFullCardRules checks some themes against the Phase 2 card
+// rules before the whole bank meets them (requireFullCards):
+// PI_SLICE_THEMES=money,food go test -run TestSliceMeetsFullCardRules ./
+func TestSliceMeetsFullCardRules(t *testing.T) {
+	want := map[string]bool{}
+	for _, th := range strings.Split(os.Getenv("PI_SLICE_THEMES"), ",") {
+		if th = strings.TrimSpace(th); th != "" {
+			want[th] = true
+		}
+	}
+	if len(want) == 0 {
+		t.Skip("set PI_SLICE_THEMES")
+	}
+	var f bankFile
+	if err := decodeStrict(questionsJSON, &f); err != nil {
+		t.Fatal(err)
+	}
+	var qs []bankQuestion
+	for _, q := range f.Questions {
+		if want[q.Theme] {
+			qs = append(qs, q)
+		}
+	}
+	if len(qs) == 0 {
+		t.Fatal("no questions in those themes")
+	}
+	n := 0
+	for _, err := range validateBankWith(bankFile{Questions: qs}, true) {
+		if strings.HasPrefix(err.Error(), "theme ") || strings.HasPrefix(err.Error(), "bank: ") {
+			continue // rules about the whole bank
+		}
+		t.Error(err)
+		n++
+	}
+	t.Logf("%d questions checked, %d problems", len(qs), n)
+}
