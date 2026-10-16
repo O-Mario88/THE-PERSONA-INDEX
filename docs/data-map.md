@@ -13,9 +13,12 @@ Local storage in the browser, every key starting with `pi.` (`frontend/src/stora
 | Device pass: a server-signed random id, no personal data | `pi.device.v1` | Until "Delete everywhere" | Sent with every vote, step and mirror request |
 | Answers in the person's own words | `pi.words.<questionId>` | 7, 35 (default) or 90 days, chosen in Settings | Never. Only the option the person says comes closest is sent, as their vote |
 | A half-written answer | `pi.draft.<questionId>` | Until it is kept, or one day past its question's day | Never |
-| Answer history: each answer's theme, depth and trait leanings, and skips | `pi.history.v1` | 60 days (`KEEP_DAYS`, `profile.ts`) | Never |
+| Answer history: each answer's theme, depth, option and trait leanings, the card's "That's me", "Partly" or "Not me", the reading picked as closer after "Not me", and skips | `pi.history.v1` | 60 days (`KEEP_DAYS`, `profile.ts`) | Never. The tap under a card is also sent once as a rating (below); the closer reading never is |
+| After "Not me", a line in the person's own words on what is closer | `pi.instead.<questionId>` | As long as own words, chosen in Settings | Never |
+| "That's me", "Partly" or "Not me" on a leaning in the mirror | `pi.leaning.<trait>.<high\|low>` | 35 days (`LEANING_KEEP_DAYS`, `profile.ts`) | Never. A leaning marked "Not me" stays out of the mirror's title, summary and one line on this phone |
+| The order answers are shown in: a random seed, so the healthiest answer is not always first | `pi.seed` | Until "Delete from this phone" | Never |
 | Small steps and how they went | `pi.moves.v1` | The latest 60 | Each step's status is sent to the mirror; a step on a private answer cannot be started |
-| Per-question notes: the option tapped, a vote waiting to send, when it was answered, whether the card was rated | `pi.choice.`, `pi.pending.`, `pi.at.`, `pi.rated.` + question id | Eight days past the question's day (`NOTES_KEPT_DAYS`), longer than any question takes votes | A waiting vote is sent again with its original key; the rest never |
+| Per-question notes: the option tapped, a vote waiting to send, when it was answered, the card's "That's me", "Partly" or "Not me" and that tap while it waits to send | `pi.choice.`, `pi.pending.`, `pi.at.`, `pi.rated.`, `pi.unrated.` + question id | Eight days past the question's day (`NOTES_KEPT_DAYS`), longer than any question takes votes | A waiting vote or card tap is sent again with its original key; the rest never |
 | The three questions each sitting showed | `pi.pick.<date>` and `pi.pick.<date>.pm` | Yesterday and today | Never |
 | The day's questions, for opening offline | `pi.edition.<date>` | Yesterday, today and tomorrow | Public content, nothing personal |
 | Settings: 18+ answer, keep it mild, how long own words stay | `pi.prefs.v1` | Until deleted | Never |
@@ -30,9 +33,9 @@ Postgres, schema in `backend/migrations/`. Every key below is an HMAC made from 
 | --- | --- | --- | --- | --- |
 | `votes` | A vote or a card rating, waiting to be counted or kept for the one-vote rule | Question, option, a voter hash that is different for every question, the idempotency key, the time to the hour, when it was counted | `VOTE_RETENTION_DAYS` after it is counted: default 7, never less than 7 (`main.go`) | Yes, found through the phone's voter hashes for every edition still kept (`deviceVoteHashes`) |
 | `vote_tallies` | One option's count | Question, option, count. No device key of any kind | For good | No: with nothing to link a count to a phone, it is a real total, not personal data |
-| `mirror_answers` | One answer, for the phone's mirror | Mirror key, question, date, morning or evening, theme, option, depth, the "I learned something" tap | 35 days (`mirrorRetention`, `mirrorstore.go`) | Yes |
+| `mirror_answers` | One answer, for the phone's mirror | Mirror key, question, date, morning or evening, theme, option, depth, the tap under the card (`verdict`: me, partly or not_me) | 35 days (`mirrorRetention`, `mirrorstore.go`) | Yes |
 | `mirror_steps` | One small step | Mirror key, question, option, the day it started, its status, the hour it last changed | 35 days | Yes |
-| `mirror_weeks` | One finished week, for the monthly, quarterly and yearly mirrors | Mirror key, counts, theme depths, trait sums, steps that helped, the three answers that said the most. Never a private answer's question or option, never own words | 400 days (`weekSummaryRetention`, `period.go`) | Yes |
+| `mirror_weeks` | One finished week, for the monthly, quarterly and yearly mirrors | Mirror key, counts, theme depths, trait sums and on how many days each trait came up, steps that helped, the three answers that said the most. Never a private answer's question or option, never own words | 400 days (`weekSummaryRetention`, `period.go`) | Yes |
 | `mirror_folds` | A week that has been folded for everyone | The Monday and when it was folded. Nothing about any phone | For good | No |
 | `forgotten_devices` | A phone that deleted everything | Mirror key and the date | 35 days, with the rest of the mirror | It is what the delete writes |
 | `schema_migrations` | A migration that has run | File name and time | For good | No |
@@ -44,7 +47,7 @@ The choice on an intimacy question is never stored on the server, in any table:
 - The phone sends `~private` as its option, and the server stores `~private` whatever arrives (`CastVote`, `api.go`). The count for the question is how many answered, not what.
 - `GET /api/questions/{id}/results` refuses an intimate question with `403 private_question`.
 - The mirror row says only that a private answer was given: an HMAC in place of the question id, no option, depth 0. Private answers never shape a trait read and never appear in a weekly note.
-- A card rating on one is stored as `~private/learned` or `~private/not`.
+- A card rating on one is stored as `~private/me`, `~private/partly` or `~private/not`.
 - A small step cannot be started on one.
 
 ### What cannot be joined

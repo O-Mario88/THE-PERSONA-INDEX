@@ -28,12 +28,70 @@ import (
 //     least, 0.5 for the options' average weight.
 //   - A week's read is the mean position over that week and the two before
 //     (traitWindowDays), as a score from 0 to 100. Private answers never count.
+//   - An answer whose card the phone tapped "Not me" counts towards nothing
+//     about who the person is: no trait read, no example and no moment
+//     (since 2026-10-16). It still counts as an answer and towards its theme.
 
 const (
-	minTraitAnswers  = 2  // answers on a trait before it is read at all
-	solidReadAnswers = 12 // answers on a trait before its read is called solid
-	traitWindowDays  = 21 // a week's read uses that week and the two before
+	minTraitAnswers = 2  // answers on a trait before it is read at all
+	traitWindowDays = 21 // a week's read uses that week and the two before
 )
+
+// How far a read has been earned (the review of 2026-10-15, "How readings
+// build"). A leaning is named only when the answers earn it, and the app says
+// how many answers it rests on. The thresholds are a starting point, to tune
+// from real use.
+//   - hint: one or two answers, or all on one day. Only the day close speaks
+//     of a hint; the mirrors show it without naming a leaning.
+//   - pattern: three or more answers on two or more days.
+//   - steady: seven or more answers across three or more weeks.
+//   - changing: a pattern whose recent answers point the other way: the read
+//     before leaned one way (60 and over, or 40 and under) and the newest
+//     answers on their own sit on the other side of the middle.
+const (
+	levelHint     = "hint"
+	levelPattern  = "pattern"
+	levelSteady   = "steady"
+	levelChanging = "changing"
+
+	patternAnswers = 3
+	patternDays    = 2
+	steadyAnswers  = 7
+	steadyWeeks    = 3
+
+	leanHigh = 60 // a read at or over this leans high (frontend HIGH)
+	leanLow  = 40 // at or under this, low (frontend LOW)
+)
+
+// readLevel says how far a read of n answers on days days across weeks weeks
+// has been earned. before is the earlier read it is set against, and recent
+// the newest answers on their own; either may be missing.
+func readLevel(n, days, weeks int, before, recent traitSum) string {
+	if n < patternAnswers || days < patternDays {
+		return levelHint
+	}
+	if before.n >= patternAnswers && recent.n >= minTraitAnswers {
+		b, r := 100*before.mean(), 100*recent.mean()
+		if (b >= leanHigh && r < 50) || (b <= leanLow && r > 50) {
+			return levelChanging
+		}
+	}
+	if n >= steadyAnswers && weeks >= steadyWeeks {
+		return levelSteady
+	}
+	return levelPattern
+}
+
+// levelRank orders reads for the screen: the most earned first.
+func levelRank(level string) int {
+	switch level {
+	case levelSteady, levelChanging:
+		return 2
+	case levelPattern:
+		return 1
+	}
+	return 0
+}
 
 // Mirror is the response of GET /api/mirror?date=YYYY-MM-DD.
 type Mirror struct {
@@ -62,7 +120,9 @@ type MirrorStats struct {
 	Answers            int `json:"answers"`   // private ones included
 	Private            int `json:"private"`
 	Deepest            int `json:"deepest"` // answers that took the question's deepest option
-	Learned            int `json:"learned"`
+	Me                 int `json:"me"`      // cards tapped "That's me"
+	Partly             int `json:"partly"`
+	NotMe              int `json:"notMe"`
 	Rated              int `json:"rated"`
 	StepsStarted       int `json:"stepsStarted"`
 	StepsTried         int `json:"stepsTried"`
@@ -83,8 +143,10 @@ type DayAnswer struct {
 
 type TraitRead struct {
 	Trait    string      `json:"trait"`
-	Answers  int         `json:"answers"` // answers that could show it, last three weeks
-	Solid    bool        `json:"solid"`
+	Answers  int         `json:"answers"`          // answers that could show it, last three weeks
+	Days     int         `json:"days"`             // the days they were given on
+	Weeks    int         `json:"weeks"`            // the weeks they were given in
+	Level    string      `json:"level"`            // hint | pattern | steady | changing
 	Score    int         `json:"score"`            // 0..100: where the answers sit among their questions' options
 	Change   *int        `json:"change,omitempty"` // against last week's read
 	History  []WeekScore `json:"history"`          // two weeks ago, last week, this week
@@ -96,7 +158,6 @@ type TraitRead struct {
 type WeekScore struct {
 	Week  int  `json:"week"`
 	Score *int `json:"score,omitempty"`
-	Solid bool `json:"solid"`
 }
 
 type ThemeRead struct {
@@ -417,6 +478,10 @@ func (s *Server) resolve(answers []MirrorAnswer) []answered {
 	return out
 }
 
+// reads reports whether the answer may say anything about who the person is:
+// its question is known and the phone did not tap "Not me" on its card.
+func (a answered) reads() bool { return a.found && a.Verdict != verdictNotMe }
+
 func (a answered) deepest() bool {
 	if !a.found {
 		return false
@@ -463,6 +528,8 @@ func traitPosition(q Question, optionID, trait string) (float64, bool) {
 type traitSum struct {
 	n   int
 	sum float64
+	// The days and weeks the answers were given on. Set by traitSums only.
+	days, weeks int
 }
 
 // mean is rounded so the same answers always give exactly the same value,
@@ -472,8 +539,9 @@ func (t traitSum) mean() float64 { return math.Round(t.sum/float64(t.n)*1e6) / 1
 // traitSums reads every trait the answers dated in [from, to] can show.
 func traitSums(answers []answered, from, to string) map[string]traitSum {
 	out := map[string]traitSum{}
+	days, weeks := map[string]map[string]bool{}, map[string]map[string]bool{}
 	for _, a := range answers {
-		if !a.found || a.Date < from || a.Date > to {
+		if !a.reads() || a.Date < from || a.Date > to {
 			continue
 		}
 		for _, trait := range traitsOn(a.q) {
@@ -482,8 +550,17 @@ func traitSums(answers []answered, from, to string) map[string]traitSum {
 				t.n++
 				t.sum += p
 				out[trait] = t
+				if days[trait] == nil {
+					days[trait], weeks[trait] = map[string]bool{}, map[string]bool{}
+				}
+				days[trait][a.Date] = true
+				weeks[trait][weekStart(a.Date)] = true
 			}
 		}
+	}
+	for trait, t := range out {
+		t.days, t.weeks = len(days[trait]), len(weeks[trait])
+		out[trait] = t
 	}
 	return out
 }
@@ -560,11 +637,9 @@ func (s *Server) buildMirror(ctx context.Context, key, date string) (Mirror, err
 		if a.deepest() {
 			m.Stats.Deepest++
 		}
-		if a.Learned != nil {
+		if a.Verdict != "" {
 			m.Stats.Rated++
-			if *a.Learned {
-				m.Stats.Learned++
-			}
+			countVerdict(a.Verdict, &m.Stats.Me, &m.Stats.Partly, &m.Stats.NotMe)
 		}
 		if i := int(mustDate(a.Date).Sub(monday).Hours() / 24); i >= 0 && i < 7 {
 			m.Days[i].Answers = append(m.Days[i].Answers, DayAnswer{Theme: a.Theme, Depth: depthWord(a.Private(), float64(a.Depth))})
@@ -583,6 +658,7 @@ func (s *Server) buildMirror(ctx context.Context, key, date string) (Mirror, err
 		return traitSums(all, end.AddDate(0, 0, 1-traitWindowDays).Format(dateLayout), end.Format(dateLayout))
 	}
 	weeks := []map[string]traitSum{read(0), read(1), read(2)}
+	thisWeek := traitSums(all, monday.Format(dateLayout), sunday.Format(dateLayout))
 	score := func(k int, trait string) WeekScore {
 		_, wk := monday.AddDate(0, 0, -7*(2-k)).ISOWeek()
 		t, ok := weeks[k][trait]
@@ -590,14 +666,15 @@ func (s *Server) buildMirror(ctx context.Context, key, date string) (Mirror, err
 			return WeekScore{Week: wk}
 		}
 		sc := int(math.Round(100 * t.mean()))
-		return WeekScore{Week: wk, Score: &sc, Solid: t.n >= solidReadAnswers}
+		return WeekScore{Week: wk, Score: &sc}
 	}
 	for trait, t := range weeks[2] {
 		now := score(2, trait)
 		if now.Score == nil {
 			continue
 		}
-		r := TraitRead{Trait: trait, Answers: t.n, Solid: now.Solid, Score: *now.Score}
+		r := TraitRead{Trait: trait, Answers: t.n, Days: t.days, Weeks: t.weeks, Score: *now.Score}
+		r.Level = readLevel(t.n, t.days, t.weeks, weeks[1][trait], thisWeek[trait])
 		for k := range 3 {
 			r.History = append(r.History, score(k, trait))
 		}
@@ -609,11 +686,8 @@ func (s *Server) buildMirror(ctx context.Context, key, date string) (Mirror, err
 		m.Traits = append(m.Traits, r)
 	}
 	slices.SortFunc(m.Traits, func(x, y TraitRead) int {
-		if x.Solid != y.Solid {
-			if x.Solid {
-				return -1
-			}
-			return 1
+		if c := cmp.Compare(levelRank(y.Level), levelRank(x.Level)); c != 0 {
+			return c
 		}
 		if c := cmp.Compare(abs(y.Score-50), abs(x.Score-50)); c != 0 {
 			return c
@@ -767,7 +841,7 @@ func evidence(week []answered, trait string, higher bool) ([]string, string, int
 	}
 	var leans []lean
 	for _, a := range week {
-		if !a.found {
+		if !a.reads() {
 			continue
 		}
 		if p, ok := traitPosition(a.q, a.OptionID, trait); ok && ((higher && p > 0.5) || (!higher && p < 0.5)) {

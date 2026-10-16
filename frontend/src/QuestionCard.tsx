@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   ApiError,
   castVote,
@@ -11,9 +11,12 @@ import {
   rateCard,
   recalledChoice,
   recalledDraft,
+  recalledInstead,
+  recalledVerdict,
   recalledWords,
   rememberAnswered,
   rememberChoice,
+  rememberInstead,
   rememberRated,
   rememberSkip,
   rememberWords,
@@ -21,20 +24,23 @@ import {
   SKIPPED,
   UNKNOWN,
   voteKey,
-  wasRated,
-  type Insight,
+  type Instead,
   type Option,
   type OwnWords,
   type Question,
   type Sitting,
+  type Verdict,
 } from './api'
 import { isEvening } from './day'
+import { Helpline } from './Helpline'
 import { moveFor, startMove } from './moves'
+import { inOrder } from './order'
 import { DEFAULT_WORDS_DAYS } from './prefs'
-import { recordAnswer, recordSkip } from './profile'
+import { isHeavy, loadHistory, recalledAnswer, recordAnswer, recordSkip, recordVerdict, threadLine } from './profile'
 import { splitReveal } from './reveal'
 import { onOtherTab } from './storage'
 import { themeName, themeStyle, themeVars } from './themes'
+import { NOT_ME_REPLY, VERDICT_REPLIES } from './words'
 
 export type Done = 'answered' | 'skipped'
 
@@ -66,6 +72,8 @@ export function QuestionCard({ question, date, sitting, wordsDays = DEFAULT_WORD
   const [kept, setKept] = useState(false)
   const theme = themeStyle(question.theme)
   const intimate = question.care === 'intimate'
+  // Shuffled once per phone and question, never shallow to deep (order.ts).
+  const options = useMemo(() => inOrder(question), [question])
 
   // Report a finished card, including one restored from storage.
   useEffect(() => {
@@ -187,7 +195,7 @@ export function QuestionCard({ question, date, sitting, wordsDays = DEFAULT_WORD
 
       {!choice && mode === 'options' && (
         <div className="options" role="group" aria-labelledby={headingId}>
-          {question.options.map((o) => (
+          {options.map((o) => (
             <button key={o.id} type="button" className="option" disabled={sending} onClick={() => vote(o)}>
               {o.label}
             </button>
@@ -246,7 +254,7 @@ export function QuestionCard({ question, date, sitting, wordsDays = DEFAULT_WORD
             Which of these comes closest? Your insight comes from that one.
           </p>
           <div className="options" role="group" aria-labelledby={closestId}>
-            {question.options.map((o) => (
+            {options.map((o) => (
               <button key={o.id} type="button" className="option" disabled={sending} onClick={() => vote(o, typed)}>
                 {o.label}
               </button>
@@ -315,7 +323,9 @@ export function QuestionCard({ question, date, sitting, wordsDays = DEFAULT_WORD
           Your first answer had already reached me, so that's the one I kept.
         </p>
       )}
-      {chosen && <Answer question={question} option={chosen} words={words} date={date} onNext={onNext} />}
+      {chosen && (
+        <Answer question={question} option={chosen} words={words} date={date} wordsDays={wordsDays} onNext={onNext} />
+      )}
 
       {error && (
         <p className="error" role="alert">
@@ -341,20 +351,30 @@ function YourWords({ words }: { words: OwnWords }) {
   )
 }
 
+// The card, in seven parts (the review of 2026-10-15): the answer or the
+// person's own words; the headline; what it looks like in a day; the other
+// side, what this answer can cost; the thread to earlier answers, when there
+// is a true one; one small step; and whether it is them.
 function Answer({
   question,
   option,
   words,
   date,
+  wordsDays,
   onNext,
 }: {
   question: Question
   option: Option
   words: OwnWords | null
   date: string
+  wordsDays: number
   onNext: () => void
 }) {
   const insight = option.insight
+  // Worked out once, from the history this answer was just added to, and
+  // put away if the person says the card is not them.
+  const [thread] = useState(() => threadLine(loadHistory(), question, option.id, date))
+  const [notMe, setNotMe] = useState(() => recalledVerdict(question.id) === 'not_me')
   return (
     <div className="answer">
       {words ? (
@@ -365,9 +385,18 @@ function Answer({
           <span className="chosen">{option.label}</span>
         </p>
       )}
-      {insight && <InsightPanel insight={insight} />}
+      {insight && <InsightPanel reveal={insight.reveal} otherSide={insight.otherSide} thread={notMe ? null : thread} />}
+      {isHeavy(question.theme, option.depth) && <Helpline />}
       {insight?.step && <TryThis question={question} option={option} step={insight.step} date={date} />}
-      {insight && <Rate questionId={question.id} optionId={question.care === 'intimate' ? PRIVATE_OPTION : option.id} />}
+      {insight && (
+        <Rate
+          question={question}
+          option={option}
+          date={date}
+          wordsDays={wordsDays}
+          onVerdict={(v) => setNotMe(v === 'not_me')}
+        />
+      )}
       <button type="button" className="next" onClick={onNext}>
         Next
       </button>
@@ -375,12 +404,23 @@ function Answer({
   )
 }
 
-function InsightPanel({ insight }: { insight: Insight }) {
-  const { headline, body } = splitReveal(insight.reveal)
+function InsightPanel({ reveal, otherSide, thread }: { reveal: string; otherSide?: string; thread: string | null }) {
+  const { headline, body } = splitReveal(reveal)
   return (
     <div className="insight" role="note" aria-label="What your answer may say">
       <p className="insight-headline">{headline}</p>
       {body && <p className="insight-body">{body}</p>}
+      {otherSide && (
+        <p className="insight-other">
+          <span className="eyebrow">The other side</span> {otherSide}
+        </p>
+      )}
+      {thread && (
+        <p className="insight-thread">
+          <span aria-hidden="true">↺ </span>
+          {thread}
+        </p>
+      )}
       <p className="insight-note">For self-reflection, not a diagnosis.</p>
     </div>
   )
@@ -423,25 +463,143 @@ function TryThis({ question, option, step, date }: { question: Question; option:
   )
 }
 
-function Rate({ questionId, optionId }: { questionId: string; optionId: string }) {
-  const [rated, setRated] = useState(() => wasRated(questionId))
-  function tap(learned: boolean) {
-    setRated(true)
-    rememberRated(questionId)
-    rateCard(questionId, optionId, learned).catch(() => {
-      // a lost rating is not worth bothering anyone about
+// Rate asks whether the card is them: "That's me", "Partly" or "Not me"
+// (chosen 2026-10-16, in place of "I learned something"). The tap is kept
+// with the answer on this phone and in the mirror, and counted, never with
+// words, so vague cards show up. "Not me" asks what is closer: the reading of
+// another answer, or a line of the person's own that stays on this phone.
+function Rate({
+  question,
+  option,
+  date,
+  wordsDays,
+  onVerdict,
+}: {
+  question: Question
+  option: Option
+  date: string
+  wordsDays: number
+  onVerdict: (v: Verdict) => void
+}) {
+  const [verdict, setVerdict] = useState(() => recalledVerdict(question.id))
+  function tap(v: Verdict) {
+    setVerdict(v)
+    onVerdict(v)
+    rememberRated(question.id, v)
+    recordVerdict(question.id, v)
+    const sent = question.care === 'intimate' ? PRIVATE_OPTION : option.id
+    rateCard(question.id, sent, v).catch(() => {
+      // a lost tap is not worth bothering anyone about
     })
   }
-  return rated ? (
-    <p className="muted rate-thanks">Thanks for telling me. It helps keep the good cards.</p>
-  ) : (
-    <div className="rate" role="group" aria-label="Did this land?">
-      <button type="button" className="text-button" onClick={() => tap(true)}>
-        I learned something
-      </button>
-      <button type="button" className="text-button" onClick={() => tap(false)}>
-        Not me
-      </button>
+  if (verdict === 'not_me') return <Closer question={question} option={option} date={date} wordsDays={wordsDays} />
+  if (verdict) return <p className="muted rate-thanks">{VERDICT_REPLIES[verdict]}</p>
+  return (
+    <div className="rate" role="group" aria-labelledby={`rate-${question.id}`}>
+      <p id={`rate-${question.id}`} className="rate-ask">
+        Does this sound like you?
+      </p>
+      <div className="rate-buttons">
+        <button type="button" className="chip" onClick={() => tap('me')}>
+          That's me
+        </button>
+        <button type="button" className="chip" onClick={() => tap('partly')}>
+          Partly
+        </button>
+        <button type="button" className="chip" onClick={() => tap('not_me')}>
+          Not me
+        </button>
+      </div>
     </div>
   )
 }
+
+// Closer follows "Not me": which reading is closer, or a line of one's own.
+function Closer({ question, option, date, wordsDays }: { question: Question; option: Option; date: string; wordsDays: number }) {
+  const others = useMemo(
+    () => inOrder(question).filter((o) => o.id !== option.id && o.insight),
+    [question, option.id],
+  )
+  const [closer, setCloser] = useState(() => recalledAnswer(question.id)?.closer?.optionId ?? null)
+  const [instead, setInstead] = useState<Instead | null>(() => recalledInstead(question.id))
+  const [line, setLine] = useState('')
+  const [done, setDone] = useState(closer === NEITHER)
+  const picked = others.find((o) => o.id === closer)
+
+  function pick(o: Option) {
+    recordVerdict(question.id, 'not_me', { optionId: o.id, traits: o.traits ?? {} })
+    setCloser(o.id)
+  }
+  // "Neither" is kept too, so the card does not ask again.
+  function neither() {
+    recordVerdict(question.id, 'not_me', { optionId: NEITHER, traits: {} })
+    setDone(true)
+  }
+  function keepLine() {
+    const w: Instead = { questionId: question.id, date, words: line.trim() }
+    rememberInstead(w, wordsDays)
+    setInstead(w)
+  }
+
+  return (
+    <div className="closer" role="group" aria-label="Not me">
+      <p className="muted">{NOT_ME_REPLY}</p>
+      {picked && <p className="closer-picked">Closer to you: “{splitReveal(picked.insight!.reveal).headline}”</p>}
+      {instead && (
+        <figure className="you-wrote">
+          <figcaption className="eyebrow">In your words</figcaption>
+          <blockquote className="own-quote">“{instead.words}”</blockquote>
+        </figure>
+      )}
+      {!picked && !instead && !done && (
+        <>
+          <p className="rate-ask" id={`closer-${question.id}`}>
+            What's closer to you?
+          </p>
+          <div className="closer-options" role="group" aria-labelledby={`closer-${question.id}`}>
+            {others.map((o) => (
+              <button key={o.id} type="button" className="option closer-option" onClick={() => pick(o)}>
+                {splitReveal(o.insight!.reveal).headline}
+              </button>
+            ))}
+          </div>
+          <form
+            className="own"
+            onSubmit={(e) => {
+              e.preventDefault()
+              if (line.trim()) keepLine()
+            }}
+          >
+            <label htmlFor={`instead-${question.id}`} className="eyebrow">
+              Or in a line of your own
+            </label>
+            <input
+              id={`instead-${question.id}`}
+              className="own-line"
+              value={line}
+              maxLength={MAX_INSTEAD}
+              onChange={(e) => setLine(e.target.value)}
+            />
+            <p className="own-meta">
+              <span>
+                <span aria-hidden="true">🔒 </span>Kept on this phone. The app never sends it.
+              </span>
+            </p>
+            <div className="own-buttons">
+              <button type="submit" className="pill-button" disabled={!line.trim()}>
+                Keep my line
+              </button>
+              <button type="button" className="text-button" onClick={neither}>
+                Neither
+              </button>
+            </div>
+          </form>
+        </>
+      )}
+    </div>
+  )
+}
+
+const MAX_INSTEAD = 140
+// The closer reading kept when none of the others was closer.
+const NEITHER = ''

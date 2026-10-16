@@ -85,7 +85,9 @@ type PeriodStats struct {
 	Answers      int `json:"answers"`
 	Private      int `json:"private"`
 	Deepest      int `json:"deepest"`
-	Learned      int `json:"learned"`
+	Me           int `json:"me"` // cards tapped "That's me"
+	Partly       int `json:"partly"`
+	NotMe        int `json:"notMe"`
 	Rated        int `json:"rated"`
 	StepsStarted int `json:"stepsStarted"`
 	StepsTried   int `json:"stepsTried"`
@@ -95,7 +97,9 @@ type PeriodStats struct {
 type PeriodTrait struct {
 	Trait   string      `json:"trait"`
 	Answers int         `json:"answers"`
-	Solid   bool        `json:"solid"`
+	Days    int         `json:"days"`             // the days they were given on
+	Weeks   int         `json:"weeks"`            // the weeks they were given in
+	Level   string      `json:"level"`            // hint | pattern | steady | changing (mirror.go)
 	Score   int         `json:"score"`            // 0..100, the mean position over the period
 	Weekly  []WeekScore `json:"weekly"`           // one per week so far
 	Change  *int        `json:"change,omitempty"` // the later weeks with a read against the earlier ones
@@ -234,11 +238,9 @@ func (s *Server) summarizeWeek(key string, monday time.Time, answers []MirrorAns
 		if a.deepest() {
 			w.Deepest++
 		}
-		if a.Learned != nil {
+		if a.Verdict != "" {
 			w.Rated++
-			if *a.Learned {
-				w.Learned++
-			}
+			countVerdict(a.Verdict, &w.Me, &w.Partly, &w.NotMe)
 		}
 		if a.Theme != "" {
 			if w.Themes == nil {
@@ -266,7 +268,7 @@ func (s *Server) summarizeWeek(key string, monday time.Time, answers []MirrorAns
 		if w.Traits == nil {
 			w.Traits = map[string]TraitTally{}
 		}
-		w.Traits[trait] = TraitTally{N: t.n, Sum: t.sum}
+		w.Traits[trait] = TraitTally{N: t.n, Sum: t.sum, Days: t.days}
 	}
 
 	byQuestion := map[string]answered{}
@@ -297,7 +299,7 @@ func (s *Server) summarizeWeek(key string, monday time.Time, answers []MirrorAns
 // momentOf reads an answer as a moment, when its option leans at least
 // momentLean on one of the traits it carries.
 func momentOf(a answered) (Moment, bool) {
-	if !a.found {
+	if !a.reads() {
 		return Moment{}, false
 	}
 	o := optionOf(a.q, a.OptionID)
@@ -411,7 +413,9 @@ func addUp(ws []WeekSummary, kept []bool, daysSoFar int) PeriodStats {
 		st.Answers += w.Answers
 		st.Private += w.Private
 		st.Deepest += w.Deepest
-		st.Learned += w.Learned
+		st.Me += w.Me
+		st.Partly += w.Partly
+		st.NotMe += w.NotMe
 		st.Rated += w.Rated
 		st.StepsStarted += w.StepsStarted
 		st.StepsTried += w.StepsTried
@@ -507,14 +511,20 @@ func periodTraits(ws []WeekSummary, kept []bool) []PeriodTrait {
 	for trait := range names {
 		var total traitSum
 		var read []traitSum // weeks with a read, in order
+		days := 0
 		r := PeriodTrait{Trait: trait}
 		for i, w := range ws {
 			_, iso := mustDate(w.Monday).ISOWeek()
 			t := traitSum{}
 			if kept[i] {
 				t = traitSum{n: w.Traits[trait].N, sum: w.Traits[trait].Sum}
+				if t.n > 0 {
+					// A week folded before days were kept counts as one day:
+					// the least it can have been.
+					days += max(w.Traits[trait].Days, 1)
+				}
 			}
-			ws := WeekScore{Week: iso, Solid: t.n >= solidReadAnswers}
+			ws := WeekScore{Week: iso}
 			if t.n >= minTraitAnswers {
 				sc := score(t)
 				ws.Score = &sc
@@ -528,9 +538,10 @@ func periodTraits(ws []WeekSummary, kept []bool) []PeriodTrait {
 		if total.n < minTraitAnswers {
 			continue
 		}
-		r.Answers, r.Solid, r.Score = total.n, total.n >= solidReadAnswers, score(total)
+		r.Answers, r.Score = total.n, score(total)
+		r.Days, r.Weeks = days, len(read)
+		var early, late traitSum
 		if len(read) >= 2 {
-			var early, late traitSum
 			for j, t := range read {
 				if j < len(read)/2 {
 					early.n, early.sum = early.n+t.n, early.sum+t.sum
@@ -543,14 +554,14 @@ func periodTraits(ws []WeekSummary, kept []bool) []PeriodTrait {
 				r.Change = &c
 			}
 		}
+		// The earlier weeks against the later ones, as the weekly mirror sets
+		// last week's read against this week's answers.
+		r.Level = readLevel(total.n, days, len(read), early, late)
 		out = append(out, r)
 	}
 	slices.SortFunc(out, func(x, y PeriodTrait) int {
-		if x.Solid != y.Solid {
-			if x.Solid {
-				return -1
-			}
-			return 1
+		if c := cmp.Compare(levelRank(y.Level), levelRank(x.Level)); c != 0 {
+			return c
 		}
 		if c := cmp.Compare(abs(y.Score-50), abs(x.Score-50)); c != 0 {
 			return c

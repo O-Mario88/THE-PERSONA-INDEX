@@ -100,15 +100,16 @@ The API has its own per-instance limits (30 votes per device per minute, 20 new 
 
 ## Insight card ratings
 
-`POST /api/ratings` counts the one-tap "I learned something" / "Not really" on each card, anonymously and once per device per question, in the same vote store: question `rating/<questionId>` (the question id is `<date>-<bank id>`), option `<optionId>/learned` or `<optionId>/not`. On an intimate question the option is always `~private/learned` or `~private/not`. Learned rate per card across all days:
+`POST /api/ratings` counts the one tap under each card, "That's me", "Partly" or "Not me" (`verdict`: `me`, `partly` or `not_me`), anonymously and once per device per question, in the same vote store: question `rating/<questionId>` (the question id is `<date>-<bank id>`), option `<optionId>/me`, `<optionId>/partly` or `<optionId>/not`. On an intimate question the option is always `~private/me`, `~private/partly` or `~private/not`. An app from before 2026-10-16 still sends `learned: true|false`; the server reads it as `me` or `not_me`, and migration 005 renamed the old `/learned` counts to `/me` the same way. Fit per card across all days:
 
 ```sql
 SELECT substring(question_id from 19) AS bank_question,
        split_part(option_id, '/', 1) AS option_id,
-       sum(count) FILTER (WHERE option_id LIKE '%/learned')::float / sum(count) AS learned_rate,
+       sum(count) FILTER (WHERE option_id LIKE '%/me')::float / sum(count) AS me_rate,
+       sum(count) FILTER (WHERE option_id LIKE '%/not')::float / sum(count) AS not_me_rate,
        sum(count) AS ratings
 FROM vote_tallies WHERE question_id LIKE 'rating/%'
-GROUP BY 1, 2 HAVING sum(count) >= 100 ORDER BY learned_rate;
+GROUP BY 1, 2 HAVING sum(count) >= 100 ORDER BY not_me_rate DESC;
 ```
 
-Cards at the bottom with enough ratings are the ones to rewrite. (Automatic retirement from these numbers is the next step.)
+Cards at the top with enough ratings are the ones to rewrite: most people who chose that answer said the card was not them. (Automatic retirement from these numbers is the next step.) An answer whose card a phone tapped "Not me" still counts as an answer in that phone's mirror, but never towards a trait read, an example or a moment.

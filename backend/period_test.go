@@ -184,6 +184,37 @@ func TestPeriodMirror(t *testing.T) {
 		}
 	})
 
+	t.Run("a card tapped 'Not me' is no moment and adds to no trait, but is counted", func(t *testing.T) {
+		s := mirrorServer("2026-10-06")
+		answer(t, s, "a", "2026-10-06", "queue", "boil")
+		answer(t, s, "a", "2026-10-07", "queue", "boil")
+		rate(t, s, "a", "2026-10-06", "queue", "boil", verdictNotMe)
+		rate(t, s, "a", "2026-10-07", "queue", "boil", verdictMe)
+		check := func(when string, m PeriodMirror) {
+			t.Helper()
+			if len(m.Moments) != 1 || m.Moments[0].Date != "2026-10-07" {
+				t.Fatalf("%s: expected only the answer not tapped 'Not me' as a moment, got %+v", when, m.Moments)
+			}
+			if st := m.Stats; st.Answers != 2 || st.Rated != 2 || st.Me != 1 || st.NotMe != 1 || st.Partly != 0 {
+				t.Fatalf("%s: expected both answers and both taps counted, got %+v", when, st)
+			}
+		}
+		check("from the answers", getPeriod(t, s, "a", "month", "2026-10-07"))
+		if n := fold(t, s, "2026-10-20"); n == 0 {
+			t.Fatal("expected the week of 5 October folded")
+		}
+		if _, err := s.mirror.DeleteMirrorBefore(context.Background(), "2026-10-12"); err != nil {
+			t.Fatal(err)
+		}
+		m := getPeriod(t, s, "a", "month", "2026-10-20")
+		check("from the folded week", m)
+		for _, tr := range m.Traits {
+			if tr.Trait == "rumination" && tr.Answers != 1 {
+				t.Fatalf("expected one answer on rumination after the fold, got %+v", tr)
+			}
+		}
+	})
+
 	t.Run("the answers that said the most, and the steps that helped, keep their words", func(t *testing.T) {
 		s := mirrorServer("2026-10-06")
 		answer(t, s, "a", "2026-10-06", "tidy", "pile")
@@ -289,8 +320,8 @@ func TestPeriodMirror(t *testing.T) {
 				r = tr
 			}
 		}
-		if r.Answers != 4 || r.Score != 50 || r.Solid {
-			t.Fatalf("expected an early read of 50 from four answers, got %+v", r)
+		if r.Answers != 4 || r.Score != 50 {
+			t.Fatalf("expected a read of 50 from four answers, got %+v", r)
 		}
 		if len(r.Weekly) != 3 || r.Weekly[0].Score != nil || *r.Weekly[1].Score != 100 || *r.Weekly[2].Score != 0 || r.Weekly[1].Week != 41 {
 			t.Fatalf("expected no read for week 40, 100 for week 41 and 0 for week 42, got %s", asJSON(t, r.Weekly))

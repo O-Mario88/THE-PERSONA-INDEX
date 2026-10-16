@@ -163,9 +163,9 @@ func (p *pgStore) Accept(ctx context.Context, idempotencyKey string, b Ballot, a
 	}
 	if r := b.Rating; r != nil {
 		batch.Queue(`
-			UPDATE mirror_answers SET learned = $7
-			WHERE device_key = $5 AND question_id = $6 AND learned IS NULL AND `+thisBallot,
-			b.VoterHash, idempotencyKey, b.QuestionID, b.OptionID, b.DeviceKey, r.QuestionID, r.Learned)
+			UPDATE mirror_answers SET verdict = $7
+			WHERE device_key = $5 AND question_id = $6 AND verdict IS NULL AND `+thisBallot,
+			b.VoterHash, idempotencyKey, b.QuestionID, b.OptionID, b.DeviceKey, r.QuestionID, r.Verdict)
 	}
 	// What is stored now under this key, and whether the phone is forgotten.
 	batch.Queue(`

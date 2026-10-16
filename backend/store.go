@@ -40,10 +40,11 @@ type Ballot struct {
 	Rating    *Rating       // a rating: noted on the answer the mirror keeps
 }
 
-// Rating is the "I learned something" tap, as the mirror notes it.
+// Rating is the tap under the card (that's me, partly, not me), as the
+// mirror notes it.
 type Rating struct {
 	QuestionID string // as the mirror stores it: a keyed hash for a private answer
-	Learned    bool
+	Verdict    string // verdictMe, verdictPartly or verdictNotMe
 }
 
 // VoteEvent is one accepted vote.
@@ -161,9 +162,8 @@ func (m *memoryStore) keepLocked(b Ballot) {
 		}
 	}
 	if r := b.Rating; r != nil {
-		if a, ok := m.mirror.answers[b.DeviceKey][r.QuestionID]; ok && a.Learned == nil {
-			learned := r.Learned
-			a.Learned = &learned
+		if a, ok := m.mirror.answers[b.DeviceKey][r.QuestionID]; ok && a.Verdict == "" {
+			a.Verdict = r.Verdict
 			m.mirror.answers[b.DeviceKey][r.QuestionID] = a
 		}
 	}

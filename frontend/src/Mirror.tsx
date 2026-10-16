@@ -3,27 +3,35 @@ import {
   getMirror,
   getPeriodMirror,
   type Depth,
+  type Level,
   type Mirror as MirrorData,
   type OwnWords,
   type Period,
   type PeriodMirror,
   type StepStatus,
   type ThemeRead,
+  type Verdict,
   wordsBetween,
 } from './api'
 import { setMoveStatus, startMove } from './moves'
 import {
   AREA_NAMES,
-  archetype,
   leanings,
+  levelLine,
+  levelMeta,
   PERIOD_CLOSE,
   periodName,
   periodSummary,
   summary,
   tagline,
-  TRAITS,
+  title,
+  weekRange,
+  type Lean,
 } from './mirrorText'
+import { leaningVerdict, notMeSides, rememberLeaning } from './profile'
 import { THEMES, themeName, themeStyle, themeVars } from './themes'
+import { honestLine, TRAITS } from './traits'
+import { LEANING_REPLIES } from './words'
 
 type Span = 'week' | Period
 type State =
@@ -121,8 +129,10 @@ function MirrorPage({
   reload: () => void
   onOpenKept: () => void
 }) {
-  const name = archetype(m.traits)
-  const line = tagline(m.traits)
+  // Leanings the person said are not them stay out of the title (profile.ts).
+  const [notMe, setNotMe] = useState(() => notMeSides(today))
+  const name = title(m.traits, notMe)
+  const line = tagline(m.traits, notMe)
   const lean = leanings(m.traits)
   const moved = m.traits.some((t) => t.history.filter((h) => h.score !== undefined).length >= 2)
   // Own words live on this phone only; the server never sees them.
@@ -134,7 +144,12 @@ function MirrorPage({
     { key: 'traits', title: 'Your trait read', body: <Traits m={m} />, show: true },
     { key: 'moved', title: "How you've moved", body: <Moved m={m} />, show: moved },
     { key: 'all', title: 'All of you', body: <AllOfYou themes={m.themes} />, show: m.themes.length > 0 },
-    { key: 'who', title: 'Who you were this week', body: <WhoYouWere m={m} />, show: lean.length > 0 },
+    {
+      key: 'who',
+      title: 'Who you were this week',
+      body: <Who leans={lean} date={today} span="week" onVerdict={() => setNotMe(notMeSides(today))} />,
+      show: lean.length > 0,
+    },
     { key: 'words', title: 'In your own words', body: <OwnWordsList words={words} />, show: words.length > 0 },
     {
       key: 'steps',
@@ -155,20 +170,18 @@ function MirrorPage({
   return (
     <>
       <header className="m-hero">
-        <p className="m-eyebrow">
-          Your weekly mirror · Week {m.week} · Editions #{m.editions[0]}–#{m.editions[1]}
-        </p>
+        <p className="m-eyebrow">Your week · {weekRange(m.from)}</p>
         <h2>
           {name ? (
             <>
-              This week you were <span className="m-name">{name}.</span>
+              This week, you were <span className="m-name">{name}.</span>
             </>
           ) : (
             'This week is just getting started.'
           )}
         </h2>
         {line && <p className="m-tagline">{line}</p>}
-        <p className="m-summary">{summary(m)}</p>
+        <p className="m-summary">{summary(m, notMe)}</p>
       </header>
 
       {m.lowMood && (
@@ -183,7 +196,7 @@ function MirrorPage({
         </div>
       )}
 
-      <OneLine m={m} />
+      <OneLine m={m} notMe={notMe} />
       <StatTiles m={m} />
       {sections}
       <Footer onOpenKept={onOpenKept} />
@@ -207,8 +220,10 @@ function numbered(parts: Part[]) {
     ))
 }
 
-function OneLine({ m }: { m: MirrorData }) {
-  const lean = leanings(m.traits)[0]
+// The answer behind the clearest leaning, unless the person said that
+// leaning is not them.
+function OneLine({ m, notMe }: { m: MirrorData; notMe: string[] }) {
+  const lean = leanings(m.traits, notMe)[0]
   if (lean?.read.evidence[0]) {
     return (
       <figure className="m-card m-oneline" aria-label="One line from this week">
@@ -239,10 +254,7 @@ function StatTiles({ m }: { m: MirrorData }) {
       `${s.answers}`,
       (s.daysSoFar >= 6 ? 'this week' : 'so far this week') + (s.private > 0 ? `, ${s.private} kept private` : ''),
     ],
-    ['Went deepest', `${s.deepest}`, 'times you chose the most revealing answer'],
-    s.rated > 0
-      ? ['Learned something', `${s.learned} of ${s.rated}`, 'cards you rated']
-      : ['Learned something', '–', 'Tap "I learned something" on a card'],
+    fitTile(s),
     s.stepsStarted > 0
       ? ['Small steps kept', `${s.stepsTried} of ${s.stepsStarted}`, `${s.stepsHelped} helped`]
       : ['Small steps kept', '–', 'Pick one with "I\'ll try it"'],
@@ -258,6 +270,14 @@ function StatTiles({ m }: { m: MirrorData }) {
       ))}
     </ul>
   )
+}
+
+// How many of the cards the person judged were them. "Went deepest" is gone:
+// it turned hard answers into a score (the review of 2026-10-15).
+function fitTile(s: { me: number; partly: number; rated: number }): [string, string, string] {
+  return s.rated > 0
+    ? ["That's me", `${s.me} of ${s.rated}`, s.partly > 0 ? `cards you judged, ${s.partly} partly` : 'cards you judged']
+    : ["That's me", '–', 'Tap "That\'s me" on a card that fits']
 }
 
 // Editions are numbered from launch; anything earlier has no number to show.
@@ -377,9 +397,7 @@ function Traits({ m }: { m: MirrorData }) {
                   <span className="m-scale-mid" />
                   <span className="m-scale-dot" style={{ left: `${t.score}%` }} />
                 </span>
-                <p className="m-trait-meta">
-                  {t.solid ? 'Solid read' : 'Early read'} · {t.answers} {t.answers === 1 ? 'answer' : 'answers'}
-                </p>
+                <p className="m-trait-meta">{levelMeta(t)}</p>
               </li>
             )
           })}
@@ -518,36 +536,73 @@ function AllOfYou({ themes: read }: { themes: ThemeRead[] }) {
 
 const DEPTH_WORDS = { light: 'light', deeper: 'deeper', deep: 'deep', private: 'private' } as const
 
-function WhoYouWere({ m }: { m: MirrorData }) {
+// The leanings that have earned a name, each with its honest part and
+// whether the person says it is them. Used by the week and the longer spans.
+function Who({
+  leans,
+  date,
+  span,
+  onVerdict,
+}: {
+  leans: Lean<{ trait: string; score: number; level: Level; answers: number; days: number; weeks: number; evidence?: string[] }>[]
+  date: string
+  span: string
+  onVerdict: () => void
+}) {
   return (
     <ul className="m-who">
-      {leanings(m.traits)
-        .slice(0, 3)
-        .map((l) => {
-          return (
-            <li key={l.read.trait} className="m-card m-who-card">
-              <div className="m-who-top">
-                <span className="m-who-trait">{l.text.name}</span>
-              </div>
-              <p className="m-who-headline">{l.side.headline}</p>
-              <p>{l.side.prediction}</p>
-              <p className="m-who-honest">
-                <strong>The honest part:</strong> {l.side.cost}
-              </p>
-              {l.read.evidence.length > 0 && (
-                <p className="m-who-evidence">
-                  You said: {l.read.evidence.map((e) => `“${e}”`).join(', ')}
-                </p>
-              )}
-              <p className="m-who-kind">
-                {l.read.solid
-                  ? 'Prediction: a solid read, from enough answers to be worth testing in real life.'
-                  : `Early read: from ${l.read.answers} answers. Treat it as a hunch to check.`}
-              </p>
-            </li>
-          )
-        })}
+      {leans.slice(0, 3).map((l) => (
+        <li key={l.read.trait} className="m-card m-who-card">
+          <div className="m-who-top">
+            <span className="m-who-trait">{l.text.name}</span>
+          </div>
+          <p className="m-who-headline">{l.side.headline}</p>
+          <p>{l.side.prediction}</p>
+          <p className="m-who-honest">
+            <strong>The honest part:</strong> {honestLine(l.side, date, 'mirror').text}
+          </p>
+          {l.read.evidence && l.read.evidence.length > 0 && (
+            <p className="m-who-evidence">You said: {l.read.evidence.map((e) => `“${e}”`).join(', ')}</p>
+          )}
+          <p className="m-who-kind">{levelLine(l.read, span)}</p>
+          <LeaningVerdict trait={l.read.trait} high={l.high} date={date} onVerdict={onVerdict} />
+        </li>
+      ))}
     </ul>
+  )
+}
+
+// "That's me", "Partly" or "Not me" under a leaning, kept on this phone only.
+function LeaningVerdict({
+  trait,
+  high,
+  date,
+  onVerdict,
+}: {
+  trait: string
+  high: boolean
+  date: string
+  onVerdict: () => void
+}) {
+  const [verdict, setVerdict] = useState(() => leaningVerdict(trait, high, date))
+  function tap(v: Verdict) {
+    rememberLeaning(trait, high, v, date)
+    setVerdict(v)
+    onVerdict()
+  }
+  if (verdict) return <p className="m-note">{LEANING_REPLIES[verdict]}</p>
+  return (
+    <div className="m-verdict" role="group" aria-label="Does this sound like you?">
+      <button type="button" className="m-chip" onClick={() => tap('me')}>
+        That's me
+      </button>
+      <button type="button" className="m-chip" onClick={() => tap('partly')}>
+        Partly
+      </button>
+      <button type="button" className="m-chip" onClick={() => tap('not_me')}>
+        Not me
+      </button>
+    </div>
   )
 }
 
@@ -656,7 +711,7 @@ function Steps({ m, today, reload }: { m: MirrorData; today: string; reload: () 
 
 function NextWeek({ m, today, reload }: { m: MirrorData; today: string; reload: () => void }) {
   const [error, setError] = useState(false)
-  const early = m.traits.filter((t) => !t.solid && TRAITS[t.trait]).slice(0, 2)
+  const early = m.traits.filter((t) => t.level === 'hint' && TRAITS[t.trait]).slice(0, 2)
   async function start(s: MirrorData['nextSteps'][number]) {
     setError(false)
     try {
@@ -701,10 +756,8 @@ function NextWeek({ m, today, reload }: { m: MirrorData; today: string; reload: 
           <div className="m-card">
             <p className="m-eyebrow">Sharpen your read</p>
             <p>
-              {early.map((t) => `${TRAITS[t.trait].name} needs ${plural(12 - t.answers, 'more answer', 'more answers')}`).join('; ')}{' '}
-              {early.length === 1
-                ? 'to become a solid read. Keep answering and it will firm up.'
-                : 'to become solid reads. Keep answering and they will firm up.'}
+              {early.map((t) => TRAITS[t.trait].name).join(' and ')} {early.length === 1 ? 'is' : 'are'} only a hint so
+              far. Answers on a few more days will show whether {early.length === 1 ? "it's a pattern" : "they're patterns"}.
             </p>
           </div>
         )}
@@ -767,8 +820,9 @@ const longDate = (iso: string) => {
 // its own earlier weeks and the period before.
 function PeriodPage({ p, onOpenKept }: { p: PeriodMirror; onOpenKept: () => void }) {
   const noun = p.period
-  const name = archetype(p.traits)
-  const line = tagline(p.traits)
+  const [notMe, setNotMe] = useState(() => notMeSides(p.date))
+  const name = title(p.traits, notMe)
+  const line = tagline(p.traits, notMe)
   const lean = leanings(p.traits)
   const moved = noun !== 'year' && p.traits.some((t) => t.weekly.filter((w) => w.score !== undefined).length >= 2)
   const parts: Part[] = [
@@ -776,7 +830,12 @@ function PeriodPage({ p, onOpenKept }: { p: PeriodMirror; onOpenKept: () => void
     { key: 'traits', title: 'Your trait read', body: <PeriodTraits p={p} />, show: true },
     { key: 'moved', title: "How you've moved", body: <PeriodMoved p={p} />, show: moved },
     { key: 'moments', title: 'The answers that said the most', body: <Moments p={p} />, show: p.moments.length > 0 },
-    { key: 'who', title: `Who you were this ${noun}`, body: <PeriodWho p={p} />, show: lean.length > 0 },
+    {
+      key: 'who',
+      title: `Who you were this ${noun}`,
+      body: <Who leans={lean} date={p.date} span={noun} onVerdict={() => setNotMe(notMeSides(p.date))} />,
+      show: lean.length > 0,
+    },
     { key: 'all', title: 'All of you', body: <AllOfYou themes={p.themes} />, show: p.themes.length > 0 },
     { key: 'steps', title: 'Your small steps', body: <PeriodSteps p={p} />, show: p.stats.stepsStarted > 0 },
   ]
@@ -792,14 +851,14 @@ function PeriodPage({ p, onOpenKept }: { p: PeriodMirror; onOpenKept: () => void
         <h2>
           {name ? (
             <>
-              This {noun} you were <span className="m-name">{name}.</span>
+              This {noun}, you were <span className="m-name">{name}.</span>
             </>
           ) : (
             `This ${noun} is just getting started.`
           )}
         </h2>
         {line && <p className="m-tagline">{line}</p>}
-        <p className="m-summary">{periodSummary(p)}</p>
+        <p className="m-summary">{periodSummary(p, notMe)}</p>
       </header>
       <PeriodTiles p={p} />
       {numbered(parts)}
@@ -835,7 +894,7 @@ function PeriodTiles({ p }: { p: PeriodMirror }) {
           : 'weeks on record',
     ],
     ['Answers', `${s.answers}`, s.private > 0 ? `${s.private} kept private` : `this ${p.period}`],
-    ['Went deepest', `${s.deepest}`, 'times you chose the most revealing answer'],
+    fitTile(s),
     s.stepsStarted > 0
       ? ['Small steps kept', `${s.stepsTried} of ${s.stepsStarted}`, `${s.stepsHelped} helped`]
       : ['Small steps kept', '–', 'Pick one with "I\'ll try it"'],
@@ -934,9 +993,7 @@ function PeriodTraits({ p }: { p: PeriodMirror }) {
                 <span className="m-scale-mid" />
                 <span className="m-scale-dot" style={{ left: `${t.score}%` }} />
               </span>
-              <p className="m-trait-meta">
-                {t.solid ? 'Solid read' : 'Early read'} · {plural(t.answers, 'answer', 'answers')}
-              </p>
+              <p className="m-trait-meta">{levelMeta(t)}</p>
             </li>
           )
         })}
@@ -995,32 +1052,6 @@ function Moments({ p }: { p: PeriodMirror }) {
       </ul>
       <p className="m-note">Your deepest answers this {p.period} that leaned clearly one way. Private answers are never shown.</p>
     </>
-  )
-}
-
-function PeriodWho({ p }: { p: PeriodMirror }) {
-  return (
-    <ul className="m-who">
-      {leanings(p.traits)
-        .slice(0, 3)
-        .map((l) => (
-          <li key={l.read.trait} className="m-card m-who-card">
-            <div className="m-who-top">
-              <span className="m-who-trait">{l.text.name}</span>
-            </div>
-            <p className="m-who-headline">{l.side.headline}</p>
-            <p>{l.side.prediction}</p>
-            <p className="m-who-honest">
-              <strong>The honest part:</strong> {l.side.cost}
-            </p>
-            <p className="m-who-kind">
-              {l.read.solid
-                ? `A solid read, from ${l.read.answers} answers this ${p.period}.`
-                : `Early read: from ${l.read.answers} answers. Treat it as a hunch to check.`}
-            </p>
-          </li>
-        ))}
-    </ul>
   )
 }
 

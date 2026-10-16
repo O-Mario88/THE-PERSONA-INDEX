@@ -1,23 +1,26 @@
-// The on-phone profile: answer history, interest per theme, the weekly trait
-// read and the low-mood check. None of it is ever sent to the server.
+// The on-phone profile: answer history, interest per theme, how far each
+// leaning has been earned, the thread line on a card and the low-mood check.
+// None of it is ever sent to the server.
 //
-// Scoring rules, version 2 (change SCORING_VERSION when they change, so old
+// Scoring rules, version 3 (change SCORING_VERSION when they change, so old
 // reads are never silently reinterpreted):
 // - Interest per theme: each answer adds (depth - 2.5) / 1.5, from -1 for the
 //   lightest option to +1 for the deepest; each skip adds -1. Every event
 //   halves in weight each week, so interests fade over about two weeks.
-// - Trait read: answers from the last 7 days. For each trait, the mean of the
-//   weights of the options chosen; shown only with 2+ answers touching it.
-//   A mean above +0.25 reads "higher", below -0.25 "lower", else "middle".
-//   Under 21 answers (about a week of play) the read is labelled "Early".
-// - Evening follow-up answers (version 2; asked until 2026-10-15, still read
-//   while they are kept) count towards the trait read only: they carry trait
-//   weights but no depth, so they never move interest.
+// - A leaning (a trait and a side) is earned by the answers of the last 21
+//   days whose weights point that way (earned): a hint, a pattern or steady.
+// - An answer whose card the person tapped "Not me" says nothing about them
+//   (since 2026-10-16): it counts towards no leaning, unless they picked the
+//   reading that is closer, whose trait weights count in its place
+//   (traitsOf). It still moves interest, since they did answer it.
+// - Evening follow-up answers (asked until 2026-10-15, still read while they
+//   are kept) carry trait weights but no depth, so they never move interest.
 
-import type { Question } from './api'
-import { loadJSON, remove, saveJSON } from './storage'
+import type { Question, Verdict } from './api'
+import { addDays, loadJSON, remove, saveJSON } from './storage'
+import { TRAITS, type TraitSide } from './traits'
 
-export const SCORING_VERSION = 2
+export const SCORING_VERSION = 3
 
 export type AnswerRecord = {
   date: string
@@ -25,6 +28,9 @@ export type AnswerRecord = {
   theme: string
   depth: number
   traits: Record<string, number>
+  optionId?: string // since 2026-10-16
+  verdict?: Verdict // the tap under the card
+  closer?: { optionId: string; traits: Record<string, number> } // after "Not me": the reading picked as closer
   evening?: true
 }
 export type History = { answers: AnswerRecord[]; skips: { date: string; theme: string }[] }
@@ -34,6 +40,11 @@ const days = (from: string, to: string) => (Date.parse(`${to}T00:00:00Z`) - Date
 
 const historyKey = 'pi.history.v1'
 const KEEP_DAYS = 60
+
+// recalledAnswer is the history kept of one answered question, if any.
+export function recalledAnswer(questionId: string): AnswerRecord | null {
+  return loadHistory().answers.find((a) => a.questionId === questionId) ?? null
+}
 
 export function loadHistory(): History {
   const raw = loadJSON(historyKey) as History | null
@@ -51,8 +62,27 @@ export function recordAnswer(q: Question, optionId: string, date: string) {
   if (!o || !q.theme) return
   const h = loadHistory()
   if (h.answers.some((a) => a.questionId === q.id)) return
-  h.answers.push({ date, questionId: q.id, theme: q.theme, depth: o.depth ?? 1, traits: o.traits ?? {} })
+  h.answers.push({ date, questionId: q.id, theme: q.theme, depth: o.depth ?? 1, traits: o.traits ?? {}, optionId })
   saveHistory(h, date)
+}
+
+// recordVerdict keeps the tap under a card with its answer, and after "Not
+// me" the trait weights of the reading the person picked as closer.
+export function recordVerdict(questionId: string, verdict: Verdict, closer?: AnswerRecord['closer']) {
+  const h = loadHistory()
+  const a = h.answers.find((x) => x.questionId === questionId)
+  if (!a) return
+  a.verdict = verdict
+  if (closer) a.closer = closer
+  else delete a.closer
+  saveHistory(h, a.date)
+}
+
+// traitsOf is what an answer says about the person: its option's trait
+// weights, or after "Not me" those of the closer reading, or nothing.
+export function traitsOf(a: AnswerRecord): Record<string, number> {
+  if (a.verdict !== 'not_me') return a.traits
+  return a.closer?.traits ?? {}
 }
 
 export function recordSkip(q: Question, date: string) {
@@ -142,100 +172,110 @@ export function forgetPick(today: string, halves: Half[] = ['morning', 'evening'
   for (const half of halves) remove(pickKey(today, half))
 }
 
-export type TraitRead = { trait: string; direction: 'higher' | 'lower' | 'middle'; answers: number }
+// A deep answer about sadness and stress. Its card, and the close of its
+// sitting, carry one quiet line on where to find support (the review of
+// 2026-10-15: help was hard to find). The weekly mirror adds its own note
+// when such answers repeat (backend/mirror.go).
+export const isHeavy = (theme: string | undefined, depth: number | undefined) =>
+  theme === 'sadness-stress' && (depth ?? 0) >= 3
 
-export const SOLID_READ_ANSWERS = 21 // about a week of play
+// How far a leaning has been earned on this phone (the same rules as the
+// server's mirror, backend/mirror.go): a hint is one or two answers or one
+// day; a pattern is three or more answers on two or more days; steady is
+// seven or more across three or more weeks. Answers from the last 21 days.
+export type Earned = { level: 'hint' | 'pattern' | 'steady'; answers: number; days: number; weeks: number }
 
-export function readTraits(h: History, today: string): { label: string; traits: TraitRead[] } {
-  const week = h.answers.filter((a) => days(a.date, today) >= 0 && days(a.date, today) < 7)
-  const sums: Record<string, { sum: number; n: number }> = {}
-  for (const a of week) {
-    for (const [trait, w] of Object.entries(a.traits)) {
-      const s = (sums[trait] ??= { sum: 0, n: 0 })
-      s.sum += w
-      s.n++
+const EARN_DAYS = 21
+
+export function earned(h: History, today: string, trait: string, high: boolean): Earned {
+  const dates = new Set<string>()
+  const mondays = new Set<string>()
+  let answers = 0
+  for (const a of h.answers) {
+    const age = days(a.date, today)
+    const w = traitsOf(a)[trait] ?? 0
+    if (age < 0 || age >= EARN_DAYS || w === 0 || w > 0 !== high) continue
+    answers++
+    dates.add(a.date)
+    mondays.add(mondayOf(a.date))
+  }
+  const level =
+    answers >= 7 && mondays.size >= 3 ? 'steady' : answers >= 3 && dates.size >= 2 ? 'pattern' : 'hint'
+  return { level, answers, days: dates.size, weeks: mondays.size }
+}
+
+function mondayOf(date: string): string {
+  const day = new Date(`${date}T00:00:00Z`).getUTCDay()
+  return addDays(date, -((day + 6) % 7))
+}
+
+const ORDINALS = ['', '', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth', 'Seventh', 'Eighth', 'Ninth', 'Tenth']
+
+// "14 September": the day first, whatever the phone's locale.
+const dayMonth = (iso: string) => {
+  const d = new Date(`${iso}T00:00:00Z`)
+  return `${d.getUTCDate()} ${d.toLocaleDateString('en', { month: 'long', timeZone: 'UTC' })}`
+}
+
+// threadLine ties a fresh answer to the person's own earlier ones, and is
+// there only when it is true (the review of 2026-10-15): the last time the
+// same question came up, or else how often this week's answers have leaned
+// the same way. Built on this phone from its own history; nothing is sent.
+// The answer itself must already be recorded.
+export function threadLine(h: History, q: Question, optionId: string, today: string): string | null {
+  const bankId = q.id.slice(11)
+  if (q.care !== 'intimate') {
+    const before = h.answers
+      .filter((a) => a.questionId !== q.id && a.questionId.slice(11) === bankId && a.optionId && a.date < today)
+      .sort((a, b) => b.date.localeCompare(a.date))[0]
+    const then = before && q.options.find((o) => o.id === before.optionId)
+    if (before && then) {
+      return then.id === optionId
+        ? `Same answer as when this came up on ${dayMonth(before.date)}.`
+        : `When this came up on ${dayMonth(before.date)}, you chose “${then.label}”.`
     }
   }
-  const traits = Object.entries(sums)
-    .filter(([, s]) => s.n >= 2)
-    .map(([trait, s]): TraitRead => {
-      const mean = s.sum / s.n
-      return { trait, answers: s.n, direction: mean > 0.25 ? 'higher' : mean < -0.25 ? 'lower' : 'middle' }
-    })
-    .sort((a, b) => b.answers - a.answers)
-  const n = week.filter((a) => !a.evening).length
-  const label =
-    n === 0
-      ? 'No answers this week yet'
-      : `${n < SOLID_READ_ANSWERS ? 'Early read' : 'Solid read'}, ${n} ${n === 1 ? 'answer' : 'answers'}`
-  return { label, traits }
+
+  const mine = h.answers.find((a) => a.questionId === q.id)
+  if (!mine) return null
+  const monday = mondayOf(today)
+  let best: { n: number; side: TraitSide } | null = null
+  for (const [trait, w] of Object.entries(traitsOf(mine))) {
+    const t = TRAITS[trait]
+    if (!t || w === 0) continue
+    const n = h.answers.filter((a) => {
+      const v = traitsOf(a)[trait] ?? 0
+      return a.date >= monday && a.date <= today && v !== 0 && v > 0 === w > 0
+    }).length
+    if (n >= 2 && (!best || n > best.n)) best = { n, side: w > 0 ? t.high : t.low }
+  }
+  if (!best) return null
+  return best.n < ORDINALS.length
+    ? `${ORDINALS[best.n]} time this week your answer leaned towards ${best.side.lean}.`
+    : `Your answers have leaned towards ${best.side.lean} ${best.n} times this week.`
 }
 
-// Repeated deep answers about sadness and stress within a week bring a calm
-// note with support contacts. One answer never does.
-export function lowMoodRepeated(h: History, today: string): boolean {
-  return (
-    h.answers.filter((a) => !a.evening && a.theme === 'sadness-stress' && a.depth >= 3 && days(a.date, today) >= 0 && days(a.date, today) < 7)
-      .length >= 3
+// "That's me", "Partly" or "Not me" under a leaning in the mirror. Kept on
+// this phone only, for five weeks, so a leaning the person said is not them
+// is left out of the mirror's title and summary until fresh answers have had
+// time to say otherwise.
+export const LEANING_KEEP_DAYS = 35
+const leaningPrefix = 'pi.leaning.'
+type LeaningVerdict = { verdict: Verdict; date: string }
+
+export function rememberLeaning(trait: string, high: boolean, verdict: Verdict, date: string) {
+  saveJSON(`${leaningPrefix}${trait}.${high ? 'high' : 'low'}`, { verdict, date } satisfies LeaningVerdict)
+}
+
+export function leaningVerdict(trait: string, high: boolean, today: string): Verdict | null {
+  const v = loadJSON(`${leaningPrefix}${trait}.${high ? 'high' : 'low'}`) as LeaningVerdict | null
+  if (!v || typeof v.date !== 'string' || days(v.date, today) > LEANING_KEEP_DAYS) return null
+  return v.verdict === 'me' || v.verdict === 'partly' || v.verdict === 'not_me' ? v.verdict : null
+}
+
+// notMeSides lists the leanings the person said are not them, as "trait.high".
+export function notMeSides(today: string): string[] {
+  return Object.keys(TRAITS).flatMap((t) =>
+    [true, false].filter((high) => leaningVerdict(t, high, today) === 'not_me').map((high) => `${t}.${high ? 'high' : 'low'}`),
   )
-}
-
-// What each trait means in plain words, for each direction. Every line must be
-// one a sizeable share of people would say is not them.
-export const TRAIT_WORDS: Record<string, { name: string; higher: string; lower: string }> = {
-  conscientiousness: {
-    name: 'Getting things done',
-    higher: 'You tend to finish the task before you rest, even small ones.',
-    lower: 'You keep plans loose and are comfortable leaving things for later.',
-  },
-  openness: {
-    name: 'Openness to new things',
-    higher: 'You reach for the unfamiliar option more often than the safe one.',
-    lower: 'You prefer what you know works over trying something new.',
-  },
-  extraversion: {
-    name: 'Energy from people',
-    higher: 'Time with people tends to charge you up rather than drain you.',
-    lower: 'You recharge alone and choose company carefully.',
-  },
-  agreeableness: {
-    name: 'Keeping the peace',
-    higher: 'You often give way to keep things smooth with others.',
-    lower: 'You say what you think, even when it causes friction.',
-  },
-  neuroticism: {
-    name: 'Worry and tension',
-    higher: 'Things tend to stay on your mind after the moment has passed.',
-    lower: 'Setbacks tend to roll off you quickly.',
-  },
-  honesty_humility: {
-    name: 'Fairness',
-    higher: 'You hold to fair play even when bending it would cost no one you know.',
-    lower: 'You treat rules as flexible when the cost lands on no one in particular.',
-  },
-  attachment_anxiety: {
-    name: 'Reading closeness',
-    higher: 'You watch for signs that people are drifting away from you.',
-    lower: 'You rarely read silence or distance as being about you.',
-  },
-  attachment_avoidance: {
-    name: 'Keeping space',
-    higher: 'You keep some distance, even from people you are close to.',
-    lower: 'You let people in close without much hesitation.',
-  },
-  present_bias: {
-    name: 'Now versus later',
-    higher: 'The reward in front of you tends to win over the bigger one later.',
-    lower: 'You will wait for the better result, even when now is tempting.',
-  },
-  rumination: {
-    name: 'Replaying',
-    higher: 'You replay hard moments long after they end.',
-    lower: 'Once something is over, you tend to let it go.',
-  },
-  materialism: {
-    name: 'Things or experiences',
-    higher: 'Owning something you want tends to matter more to you than doing something.',
-    lower: 'You would rather spend on doing something than on owning something.',
-  },
 }

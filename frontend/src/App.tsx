@@ -7,6 +7,7 @@ import {
   pruneLocal,
   pruneWords,
   recalledChoice,
+  sendUnrated,
   SKIPPED,
   type DailySet,
   type Question,
@@ -94,10 +95,11 @@ function App() {
   }, [offline])
 
   // Each day the app opens: clear what has outlived its use and send any
-  // small step the server did not get.
+  // small step or card tap the server did not get.
   useEffect(() => {
     pruneLocal(date, loadPrefs().wordsDays)
     sendUnsent(date)
+    sendUnrated()
   }, [date])
 
   // Another tab on this phone answered, changed a setting or deleted

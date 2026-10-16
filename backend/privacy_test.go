@@ -86,18 +86,18 @@ func TestStoreContract(t *testing.T) {
 		if _, err := st.Accept(ctx, "k1", ballotFor("a", "q1", "now"), at); err != nil {
 			t.Fatal(err)
 		}
-		rating := func(learned bool) Ballot {
-			return Ballot{Vote: Vote{QuestionID: ratingKey("q1"), OptionID: ratingOption("now", learned), VoterHash: "hash-a-rating"},
-				DeviceKey: "dev-a", Rating: &Rating{QuestionID: "q1", Learned: learned}}
+		rating := func(verdict string) Ballot {
+			return Ballot{Vote: Vote{QuestionID: ratingKey("q1"), OptionID: ratingOption("now", verdict), VoterHash: "hash-a-rating"},
+				DeviceKey: "dev-a", Rating: &Rating{QuestionID: "q1", Verdict: verdict}}
 		}
-		if _, err := st.Accept(ctx, "r1", rating(true), at); err != nil {
+		if _, err := st.Accept(ctx, "r1", rating(verdictPartly), at); err != nil {
 			t.Fatal(err)
 		}
-		if _, err := st.Accept(ctx, "r2", rating(false), at); !errors.Is(err, ErrDuplicateVote) {
+		if _, err := st.Accept(ctx, "r2", rating(verdictNotMe), at); !errors.Is(err, ErrDuplicateVote) {
 			t.Fatalf("expected a second rating refused, got %v", err)
 		}
-		if got := historyOf(t, st, "a"); len(got) != 1 || got[0].Learned == nil || !*got[0].Learned {
-			t.Fatalf("expected the answer marked learned, got %+v", got)
+		if got := historyOf(t, st, "a"); len(got) != 1 || got[0].Verdict != verdictPartly {
+			t.Fatalf("expected the answer marked partly, got %+v", got)
 		}
 	})
 

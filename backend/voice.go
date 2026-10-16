@@ -207,7 +207,7 @@ func checkVoice(b bankFile) []error {
 				fail("%s: label uses the loaded word %q; name what you do and let the card say what it means", ow, m)
 			}
 
-			for _, f := range []struct{ name, text string }{{"reveal", in.Reveal}, {"step", in.Step}} {
+			for _, f := range []struct{ name, text string }{{"reveal", in.Reveal}, {"other side", in.OtherSide}, {"step", in.Step}} {
 				where, s := ow+" "+f.name, f.text
 				checkWording(fail, where, s)
 				if m := findComparison(s); m != "" {
@@ -225,14 +225,17 @@ func checkVoice(b bankFile) []error {
 				fail("%s: reveal hedges %d times (%s); notice more, guess less: at most %d", ow, n,
 					strings.Join(hedgePattern.FindAllString(in.Reveal, -1), ", "), maxHedges)
 			}
-			if m := inventedPattern.FindString(in.Reveal); m != "" {
+			if n := len(hedgePattern.FindAllString(in.OtherSide, -1)); n > maxHedges {
+				fail("%s: other side hedges %d times; at most %d", ow, n, maxHedges)
+			}
+			if m := inventedPattern.FindString(in.Reveal + " " + in.OtherSide); m != "" {
 				fail("%s: reveal invents a detail of your life (%q); stay with what the answer shows", ow, m)
 			}
 			if m := headlinePattern.FindStringSubmatch(in.Reveal); m != nil && !readerPattern.MatchString(m[1]) {
 				fail("%s: headline must speak to the reader (you, your): %q", ow, m[1])
 			}
 
-			card := in.Reveal + "\n" + in.Step
+			card := in.Reveal + "\n" + in.OtherSide + "\n" + in.Step
 			for i, p := range phraseCapPatterns {
 				if p.MatchString(card) {
 					capped[i]++

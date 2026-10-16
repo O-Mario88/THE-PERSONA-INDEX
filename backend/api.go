@@ -361,25 +361,55 @@ func (s *Server) CastVote(w http.ResponseWriter, r *http.Request) {
 	s.accept(w, r, key, ballot)
 }
 
-// RatingRequest is the body of POST /api/ratings: the one-tap "I learned
-// something" (or not) on the insight card for the chosen option. For an
-// intimate question OptionID is "~private", as with the vote.
+// RatingRequest is the body of POST /api/ratings: the one tap under the
+// insight card for the chosen option, saying whether the card fits: "me"
+// (that's me), "partly" or "not_me". For an intimate question OptionID is
+// "~private", as with the vote.
+//
+// Learned is the tap the app sent before 2026-10-16 ("I learned something"
+// or not). It is read only when Verdict is empty: true as "me", false as
+// "not_me", so a phone still on the old app keeps working.
 type RatingRequest struct {
 	QuestionID string `json:"questionId"`
 	OptionID   string `json:"optionId"`
-	Learned    bool   `json:"learned"`
+	Verdict    string `json:"verdict,omitempty"`
+	Learned    *bool  `json:"learned,omitempty"`
 	VoterID    string `json:"voterId"`
 }
 
+// The three verdicts, as the API and the mirror store them.
+const (
+	verdictMe     = "me"
+	verdictPartly = "partly"
+	verdictNotMe  = "not_me"
+)
+
+// verdict reads the request's verdict, or the old learned tap in its place.
+func (v RatingRequest) verdict() (string, bool) {
+	switch {
+	case v.Verdict == verdictMe || v.Verdict == verdictPartly || v.Verdict == verdictNotMe:
+		return v.Verdict, true
+	case v.Verdict == "" && v.Learned != nil && *v.Learned:
+		return verdictMe, true
+	case v.Verdict == "" && v.Learned != nil:
+		return verdictNotMe, true
+	}
+	return "", false
+}
+
 // ratingKey is where a question's ratings are counted in the vote store,
-// under options "<optionId>/learned" and "<optionId>/not". It is one key per
-// question, so the one-vote rule allows one rating per phone per question.
-// The prefix cannot clash with question ids, which start with a date.
+// under options "<optionId>/me", "<optionId>/partly" and "<optionId>/not".
+// It is one key per question, so the one-vote rule allows one rating per
+// phone per question. The prefix cannot clash with question ids, which start
+// with a date.
 func ratingKey(questionID string) string { return "rating/" + questionID }
 
-func ratingOption(optionID string, learned bool) string {
-	if learned {
-		return optionID + "/learned"
+func ratingOption(optionID, verdict string) string {
+	switch verdict {
+	case verdictMe:
+		return optionID + "/me"
+	case verdictPartly:
+		return optionID + "/partly"
 	}
 	return optionID + "/not"
 }
@@ -390,14 +420,19 @@ func (s *Server) RateCard(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	verdict, ok := v.verdict()
+	if !ok {
+		writeError(w, http.StatusBadRequest, "unknown_verdict")
+		return
+	}
 	option, kept := v.OptionID, q.ID
 	if q.Care == careIntimate {
 		option, kept = privateOption, s.devices.privateQuestionID(q.ID)
 	}
 	ballot := Ballot{
-		Vote:      Vote{QuestionID: ratingKey(q.ID), OptionID: ratingOption(option, v.Learned), VoterHash: s.devices.voterHash(deviceID, ratingKey(q.ID))},
+		Vote:      Vote{QuestionID: ratingKey(q.ID), OptionID: ratingOption(option, verdict), VoterHash: s.devices.voterHash(deviceID, ratingKey(q.ID))},
 		DeviceKey: s.devices.mirrorKey(deviceID),
-		Rating:    &Rating{QuestionID: kept, Learned: v.Learned},
+		Rating:    &Rating{QuestionID: kept, Verdict: verdict},
 	}
 	s.accept(w, r, key, ballot)
 }

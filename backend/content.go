@@ -27,6 +27,7 @@ var questionsJSON []byte
 // Insight is the card shown right after someone taps an option.
 type Insight struct {
 	Reveal      string `json:"reveal"`
+	OtherSide   string `json:"otherSide,omitempty"` // what this answer can cost, said kindly
 	Research    string `json:"research,omitempty"`
 	SourceTitle string `json:"sourceTitle,omitempty"`
 	SourceURL   string `json:"sourceUrl,omitempty"`
@@ -54,11 +55,15 @@ type bankOption struct {
 }
 
 type bankInsight struct {
-	Reveal   string `json:"reveal"`
-	Research string `json:"research"`
-	Source   string `json:"source"`
-	Strength string `json:"strength"`
-	Step     string `json:"step"`
+	Reveal string `json:"reveal"`
+	// OtherSide is the kind sentence on what this answer can cost. Every
+	// answer has one, the healthiest-looking included, so honesty is even-handed
+	// (improvement proposal, 2026-10-15).
+	OtherSide string `json:"otherSide,omitempty"`
+	Research  string `json:"research"`
+	Source    string `json:"source"`
+	Strength  string `json:"strength"`
+	Step      string `json:"step"`
 }
 
 // Care levels. Intimate questions are held back from the daily set until the
@@ -242,6 +247,7 @@ func validateBank(b bankFile) []error {
 				fail("%s: reveal uses a formula phrase; say it the way a person would", ow)
 			}
 			checkText(fail, ow+" step", in.Step, 20, 160)
+			checkOtherSide(fail, ow, in)
 			if reveals[in.Reveal] {
 				fail("%s: reveal repeats another option's", ow)
 			}
@@ -308,6 +314,32 @@ func checkText(fail func(string, ...any), where, s string, minLen, maxLen int) {
 	}
 	if currencyPattern.MatchString(s) {
 		fail("%s: uses a currency symbol", where)
+	}
+}
+
+// softPattern finds the words that keep a claim modest.
+var softPattern = regexp.MustCompile(`(?i)\b(probably|likely|tends? to|tended to|may|might|perhaps|maybe|can|could|often|sometimes|for some|some people)\b`)
+
+// checkOtherSide holds an answer's other side to the card rules: one or two
+// short sentences to the reader, no research claim, nothing the reveal
+// already says, and soft wording when the card's evidence is early.
+func checkOtherSide(fail func(string, ...any), ow string, in bankInsight) {
+	where := ow + " other side"
+	checkText(fail, where, in.OtherSide, 40, 200)
+	if !readerPattern.MatchString(in.OtherSide) {
+		fail("%s: must speak to the reader (you, your)", where)
+	}
+	if claimPattern.MatchString(in.OtherSide) {
+		fail("%s: makes a research claim; research belongs in the research field", where)
+	}
+	if statPattern.MatchString(in.OtherSide) {
+		fail("%s: states a statistic", where)
+	}
+	if t := strings.TrimSpace(in.OtherSide); t != "" && strings.Contains(in.Reveal, t) {
+		fail("%s: repeats the reveal; say what the answer can cost", where)
+	}
+	if in.Strength == "early" && !softPattern.MatchString(in.Reveal) {
+		fail("%s reveal: the evidence is early, so say it softly (can, may, often, tends to)", ow)
 	}
 }
 
@@ -542,7 +574,7 @@ func shuffled(n int, area string, cycle int) []int {
 func (contentBank) dailyQuestion(q bankQuestion, date string) Question {
 	out := Question{ID: date + "-" + q.ID, Theme: q.Theme, Care: themes[q.Theme].care, Prompt: q.Prompt}
 	for _, o := range q.Options {
-		in := &Insight{Reveal: o.Insight.Reveal, Step: o.Insight.Step}
+		in := &Insight{Reveal: o.Insight.Reveal, OtherSide: o.Insight.OtherSide, Step: o.Insight.Step}
 		if src, ok := sources[o.Insight.Source]; ok {
 			in.Research, in.SourceTitle, in.SourceURL, in.Strength = o.Insight.Research, src.Title, src.URL, o.Insight.Strength
 		}

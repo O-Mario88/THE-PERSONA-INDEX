@@ -7,6 +7,7 @@ import { addDays, dateOf, daysBetween, keys, load, loadJSON, remove, save, saveJ
 // (Edwin, 2026-10-15: citing is not needed "as long as the source is accurate").
 export type Insight = {
   reveal: string
+  otherSide?: string // one kind sentence on what this answer can cost
   research?: string
   sourceTitle?: string
   sourceUrl?: string
@@ -126,11 +127,18 @@ async function withDevice<T>(send: (token: string) => Promise<T>): Promise<T> {
 // only ever set against this phone's own past. Shapes mirror backend/mirror.go.
 export type Depth = 'light' | 'deeper' | 'deep' | 'private'
 export type StepStatus = 'started' | 'helped' | 'no_change' | 'not_tried'
-export type WeekScore = { week: number; score?: number; solid: boolean }
+export type WeekScore = { week: number; score?: number }
+// How far a read has been earned (backend/mirror.go): a hint is one or two
+// answers or one day; a pattern three or more answers on two or more days;
+// steady seven or more across three or more weeks; changing a pattern whose
+// newest answers point the other way.
+export type Level = 'hint' | 'pattern' | 'steady' | 'changing'
 export type TraitRead = {
   trait: string
   answers: number
-  solid: boolean
+  days: number
+  weeks: number
+  level: Level
   score: number // 0..100: where the answers sit among their questions' options
   change?: number
   history: WeekScore[]
@@ -153,7 +161,9 @@ export type Mirror = {
     answers: number
     private: number
     deepest: number
-    learned: number
+    me: number // cards tapped "That's me"
+    partly: number
+    notMe: number
     rated: number
     stepsStarted: number
     stepsTried: number
@@ -196,7 +206,9 @@ export type PeriodStats = {
   answers: number
   private: number
   deepest: number
-  learned: number
+  me: number
+  partly: number
+  notMe: number
   rated: number
   stepsStarted: number
   stepsTried: number
@@ -215,7 +227,9 @@ export type PeriodWeek = {
 export type PeriodTrait = {
   trait: string
   answers: number
-  solid: boolean
+  days: number
+  weeks: number
+  level: Level
   score: number
   weekly: WeekScore[]
   change?: number // the later weeks with a read against the earlier ones
@@ -299,25 +313,73 @@ export function saveStep(questionId: string, optionId: string, status: StepStatu
   )
 }
 
-// The one-tap "I learned something" on an insight card. Kept with the
-// phone's answers for its mirror, and counted to retire weak cards. For an
-// intimacy question optionId is PRIVATE_OPTION.
-export function rateCard(questionId: string, optionId: string, learned: boolean): Promise<unknown> {
-  return withDevice((voterId) =>
-    request('/api/ratings', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Idempotency-Key': randomId() },
-      body: JSON.stringify({ questionId, optionId, learned, voterId }),
-    }),
-  )
+// The one tap under an insight card: does it fit? "That's me", "Partly" or
+// "Not me". Kept with the phone's answers for its mirror, and counted to
+// retire vague cards. Never sent with words. For an intimacy question
+// optionId is PRIVATE_OPTION.
+export type Verdict = 'me' | 'partly' | 'not_me'
+const VERDICTS: Verdict[] = ['me', 'partly', 'not_me']
+
+export function rateCard(questionId: string, optionId: string, verdict: Verdict): Promise<unknown> {
+  const r: UnsentRating = { key: randomId(), optionId, verdict }
+  save(unratedPrefix + questionId, JSON.stringify(r))
+  return sendRating(questionId, r)
 }
 
-export function rememberRated(questionId: string) {
-  save(`pi.rated.${questionId}`, '1')
+// A tap keeps its idempotency key until the server has it, and is sent again
+// with that key when the app next opens, so a tap lost to a dropped
+// connection still reaches the mirror ("Not me" decides what it reads) and
+// can never count twice. An answer from the server, other than "busy", ends
+// it: the tap got there, or never can.
+type UnsentRating = { key: string; optionId: string; verdict: Verdict }
+const unratedPrefix = 'pi.unrated.'
+
+async function sendRating(questionId: string, r: UnsentRating): Promise<unknown> {
+  try {
+    const res = await withDevice((voterId) =>
+      request('/api/ratings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Idempotency-Key': r.key },
+        body: JSON.stringify({ questionId, optionId: r.optionId, verdict: r.verdict, voterId }),
+      }),
+    )
+    remove(unratedPrefix + questionId)
+    return res
+  } catch (e) {
+    if (e instanceof ApiError && e.status < 500 && e.status !== 429) remove(unratedPrefix + questionId)
+    throw e
+  }
 }
 
-export function wasRated(questionId: string): boolean {
-  return load(`pi.rated.${questionId}`) === '1'
+// sendUnrated sends again every tap the server did not get, once.
+export async function sendUnrated() {
+  for (const k of keys(unratedPrefix)) {
+    let r: UnsentRating | null = null
+    try {
+      r = JSON.parse(load(k) ?? 'null')
+    } catch {
+      // unreadable: dropped below
+    }
+    if (!r || typeof r.key !== 'string' || typeof r.optionId !== 'string' || !VERDICTS.includes(r.verdict)) {
+      remove(k)
+      continue
+    }
+    await sendRating(k.slice(unratedPrefix.length), r).catch(() => {
+      // still offline: next time
+    })
+  }
+}
+
+export function rememberRated(questionId: string, verdict: Verdict) {
+  save(`pi.rated.${questionId}`, verdict)
+}
+
+// recalledVerdict is the tap kept for a card: a verdict, "rated" for a tap
+// from before verdicts (2026-10-16), or null.
+export function recalledVerdict(questionId: string): Verdict | 'rated' | null {
+  const v = load(`pi.rated.${questionId}`)
+  if (v === null) return null
+  return VERDICTS.includes(v as Verdict) ? (v as Verdict) : 'rated'
 }
 
 // forgetLocal deletes everything this app keeps on the phone. The pass goes
@@ -356,6 +418,11 @@ export function pruneLocal(today: string, wordsDays: number) {
     }
     // Which three questions each sitting showed (profile.ts), only needed on their day.
     if (k.startsWith(pickPrefix) && k.slice(pickPrefix.length, pickPrefix.length + 10) < addDays(today, -1)) remove(k)
+    // A verdict on a mirror leaning (profile.ts), after its five weeks.
+    if (k.startsWith(leaningPrefix)) {
+      const v = loadJSON(k) as { date?: unknown } | null
+      if (typeof v?.date !== 'string' || daysBetween(v.date, today) > 35) remove(k)
+    }
   }
 }
 
@@ -367,7 +434,8 @@ const pendingPrefix = 'pi.pending.'
 const draftPrefix = 'pi.draft.'
 const editionPrefix = 'pi.edition.'
 const pickPrefix = 'pi.pick.'
-const perQuestion = [choicePrefix, pendingPrefix, draftPrefix, 'pi.at.', 'pi.rated.']
+const leaningPrefix = 'pi.leaning.'
+const perQuestion = [choicePrefix, pendingPrefix, draftPrefix, 'pi.at.', 'pi.rated.', 'pi.unrated.']
 
 function randomId(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
@@ -507,6 +575,27 @@ export type OwnWords = {
   closest?: string // the label of the option that came closest
 }
 
+// After "Not me", the line the person wrote about what is closer to them.
+// Own words too: kept on this phone for as long as own words are, never sent.
+export type Instead = { questionId: string; date: string; words: string }
+const insteadPrefix = 'pi.instead.'
+
+export function rememberInstead(w: Instead, keepDays: number) {
+  save(insteadPrefix + w.questionId, JSON.stringify(w))
+  pruneWords(w.date, keepDays)
+}
+
+export const insteadCount = () => keys(insteadPrefix).length
+
+export function recalledInstead(questionId: string): Instead | null {
+  try {
+    const w = JSON.parse(load(insteadPrefix + questionId) ?? 'null')
+    return w && typeof w.words === 'string' && typeof w.date === 'string' ? w : null
+  } catch {
+    return null
+  }
+}
+
 // The choice kept when no option came close to someone's own words.
 export const OWN_WORDS = '~'
 export const MAX_WORDS = 280
@@ -524,6 +613,10 @@ export function pruneWords(today: string, keepDays: number) {
   const cutoff = addDays(today, -keepDays)
   for (const k of keys(wordsPrefix)) {
     const old = parseWords(load(k))
+    if (!old || old.date < cutoff) remove(k)
+  }
+  for (const k of keys(insteadPrefix)) {
+    const old = recalledInstead(k.slice(insteadPrefix.length))
     if (!old || old.date < cutoff) remove(k)
   }
 }

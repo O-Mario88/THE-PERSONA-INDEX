@@ -321,8 +321,8 @@ func TestMirrorTraitReads(t *testing.T) {
 		}
 		m := getMirror(t, s, "a", wed)
 		r, ok := traitOf(m, "conscientiousness")
-		if !ok || r.Answers != 3 || r.Solid || r.Score != 100 {
-			t.Fatalf("expected an early read of 100 from 3 answers, got %+v (ok=%v)", r, ok)
+		if !ok || r.Answers != 3 || r.Level != levelPattern || r.Score != 100 {
+			t.Fatalf("expected a pattern scoring 100 from 3 answers on 3 days, got %+v (ok=%v)", r, ok)
 		}
 		if len(r.Evidence) == 0 || r.Evidence[0] != "Right away" {
 			t.Fatalf("expected the answers behind the read, got %v", r.Evidence)
@@ -372,15 +372,128 @@ func TestMirrorTraitReads(t *testing.T) {
 	})
 }
 
+// day is date moved by n days.
+func day(date string, n int) string { return mustDate(date).AddDate(0, 0, n).Format(dateLayout) }
+
+func TestReadingLevels(t *testing.T) {
+	level := func(t *testing.T, s *Server, date string) TraitRead {
+		t.Helper()
+		r, ok := traitOf(getMirror(t, s, "a", date), "conscientiousness")
+		if !ok {
+			t.Fatal("expected a read on conscientiousness")
+		}
+		return r
+	}
+
+	t.Run("two answers are a hint, three on two days a pattern", func(t *testing.T) {
+		s := mirrorServer(mon)
+		answer(t, s, "a", mon, "tidy", "now")
+		answer(t, s, "a", tue, "tidy", "now")
+		if r := level(t, s, tue); r.Level != levelHint || r.Answers != 2 || r.Days != 2 || r.Weeks != 1 {
+			t.Fatalf("expected a hint from two answers on two days, got %+v", r)
+		}
+		answer(t, s, "a", wed, "tidy", "now")
+		if r := level(t, s, wed); r.Level != levelPattern || r.Answers != 3 || r.Days != 3 {
+			t.Fatalf("expected a pattern from three answers, got %+v", r)
+		}
+	})
+
+	t.Run("seven answers across three weeks are steady; fewer weeks stay a pattern", func(t *testing.T) {
+		s := mirrorServer(mon)
+		for _, d := range []string{day(mon, -14), day(mon, -13), day(mon, -7), day(mon, -6), day(mon, -5), mon} {
+			answer(t, s, "a", d, "tidy", "now")
+		}
+		if r := level(t, s, mon); r.Level != levelPattern || r.Answers != 6 || r.Weeks != 3 {
+			t.Fatalf("expected six answers to stay a pattern, got %+v", r)
+		}
+		answer(t, s, "a", tue, "tidy", "now")
+		if r := level(t, s, tue); r.Level != levelSteady || r.Answers != 7 || r.Weeks != 3 {
+			t.Fatalf("expected seven answers across three weeks to be steady, got %+v", r)
+		}
+
+		s = mirrorServer(mon)
+		for _, d := range []string{day(mon, -7), day(mon, -6), day(mon, -5), day(mon, -4), mon, tue, wed} {
+			answer(t, s, "a", d, "tidy", "now")
+		}
+		if r := level(t, s, wed); r.Level != levelPattern || r.Weeks != 2 {
+			t.Fatalf("expected seven answers in two weeks to stay a pattern, got %+v", r)
+		}
+	})
+
+	t.Run("a pattern whose newest answers point the other way is changing", func(t *testing.T) {
+		s := mirrorServer(mon)
+		for _, d := range []string{day(mon, -7), day(mon, -6), day(mon, -5)} {
+			answer(t, s, "a", d, "tidy", "now")
+		}
+		answer(t, s, "a", mon, "tidy", "pile")
+		if r := level(t, s, mon); r.Level == levelChanging {
+			t.Fatalf("expected one answer the other way not to be enough, got %+v", r)
+		}
+		answer(t, s, "a", tue, "tidy", "pile")
+		r := level(t, s, tue)
+		if r.Level != levelChanging || r.Score != 60 {
+			t.Fatalf("expected a high read turning, got %+v", r)
+		}
+		m := getMirror(t, s, "a", tue)
+		if m.Traits[0].Trait != "conscientiousness" {
+			t.Fatalf("expected the changing read first, got %+v", m.Traits)
+		}
+	})
+
+	t.Run("an answer tapped 'Not me' earns nothing", func(t *testing.T) {
+		s := mirrorServer(mon)
+		for _, d := range []string{mon, tue, wed} {
+			answer(t, s, "a", d, "tidy", "now")
+		}
+		rate(t, s, "a", wed, "tidy", "now", verdictNotMe)
+		if r := level(t, s, wed); r.Level != levelHint || r.Answers != 2 {
+			t.Fatalf("expected a hint again, got %+v", r)
+		}
+	})
+}
+
+// rate taps the verdict under device's card for date's question.
+func rate(t *testing.T, s *Server, device, date, question, option, verdict string) {
+	t.Helper()
+	onDay(s, date)
+	r := RatingRequest{QuestionID: date + "-" + question, OptionID: option, Verdict: verdict, VoterID: device}
+	expectStatus(t, postRating(t, s, r, device+"-"+date+"-"+question+"-rating"), http.StatusAccepted)
+}
+
+func TestMirrorLeavesOutNotMe(t *testing.T) {
+	s := mirrorServer(mon)
+	for _, d := range []string{mon, tue, wed} {
+		answer(t, s, "a", d, "tidy", "now")
+	}
+	if r, ok := traitOf(getMirror(t, s, "a", wed), "conscientiousness"); !ok || r.Answers != 3 {
+		t.Fatalf("expected a read from three answers, got %+v", r)
+	}
+
+	rate(t, s, "a", tue, "tidy", "now", verdictNotMe)
+	rate(t, s, "a", wed, "tidy", "now", verdictPartly)
+	m := getMirror(t, s, "a", wed)
+	if r, ok := traitOf(m, "conscientiousness"); !ok || r.Answers != 2 {
+		t.Fatalf("expected the 'Not me' answer left out of the read and 'Partly' kept, got %+v", r)
+	}
+	if m.Stats.Answers != 3 || m.Stats.Rated != 2 || m.Stats.NotMe != 1 || m.Stats.Partly != 1 {
+		t.Fatalf("expected every answer still counted, got %+v", m.Stats)
+	}
+
+	rate(t, s, "a", mon, "tidy", "now", verdictNotMe)
+	if r, ok := traitOf(getMirror(t, s, "a", wed), "conscientiousness"); ok {
+		t.Fatalf("expected no read from one answer left, got %+v", r)
+	}
+}
+
 func TestMirrorRatingsAndMood(t *testing.T) {
 	s := mirrorServer(mon)
 	answer(t, s, "a", mon, "tidy", "now")
-	raw, _ := json.Marshal(RatingRequest{QuestionID: mon + "-tidy", OptionID: "now", Learned: true, VoterID: tokenFor(s, "a")})
+	raw, _ := json.Marshal(RatingRequest{QuestionID: mon + "-tidy", OptionID: "now", Verdict: verdictMe, VoterID: tokenFor(s, "a")})
 	req := httptest.NewRequest(http.MethodPost, "/api/ratings", bytes.NewReader(raw))
 	req.Header.Set("Idempotency-Key", "r1")
 	expectStatus(t, do(t, s, req), http.StatusAccepted)
-	if m := getMirror(t, s, "a", mon); m.Stats.Learned != 1 || m.Stats.Rated != 1 {
-		t.Fatalf("expected one card rated 'I learned something', got %+v", m.Stats)
+	if m := getMirror(t, s, "a", mon); m.Stats.Me != 1 || m.Stats.Partly != 0 || m.Stats.NotMe != 0 || m.Stats.Rated != 1 {
+		t.Fatalf("expected one card rated 'That's me', got %+v", m.Stats)
 	}
 
 	if getMirror(t, s, "a", mon).LowMood {
