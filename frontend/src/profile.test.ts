@@ -1,10 +1,18 @@
 import { describe, expect, it, beforeEach } from 'vitest'
 import type { Question } from './api'
 import {
+  earned,
   interestScores,
-  lowMoodRepeated,
+  isHeavy,
+  leaningVerdict,
+  notMeSides,
   pickThree,
-  readTraits,
+  recordAnswer,
+  recordVerdict,
+  rememberLeaning,
+  threadLine,
+  traitsOf,
+  loadHistory,
   type History,
 } from './profile'
 
@@ -123,35 +131,134 @@ describe('picking the evening three', () => {
   })
 })
 
-describe('the trait read', () => {
-  it('says how many answers it rests on, and stays early below three weeks of daily play', () => {
-    const answers = Array.from({ length: 4 }, (_, i) => answer('2026-10-11', `t${i}`, 3, { conscientiousness: 1 }))
-    const read = readTraits({ answers, skips: [] }, '2026-10-12')
-    expect(read.label).toBe('Early read, 4 answers')
-    expect(read.traits[0]).toMatchObject({ trait: 'conscientiousness', direction: 'higher' })
+describe('how far a leaning is earned', () => {
+  const on = (date: string, w: number) => answer(date, 'habits', 2, { conscientiousness: w })
+
+  it('is a hint from one or two answers, or from one day', () => {
+    expect(earned({ answers: [on('2026-10-12', 1)], skips: [] }, '2026-10-12', 'conscientiousness', true)).toEqual({
+      level: 'hint',
+      answers: 1,
+      days: 1,
+      weeks: 1,
+    })
+    const oneDay = { answers: [1, 2, 3].map((i) => ({ ...on('2026-10-12', 1), questionId: `q${i}` })), skips: [] }
+    expect(earned(oneDay, '2026-10-12', 'conscientiousness', true).level).toBe('hint')
   })
 
-  it('only uses the last seven days', () => {
-    const read = readTraits({ answers: [answer('2026-10-01', 'money', 4, { present_bias: 2 })], skips: [] }, '2026-10-12')
-    expect(read.traits).toEqual([])
-    expect(read.label).toBe('No answers this week yet')
-  })
-
-  it('leaves out traits with too little to go on', () => {
-    const read = readTraits({ answers: [answer('2026-10-11', 'money', 4, { present_bias: 2 })], skips: [] }, '2026-10-12')
-    expect(read.traits).toEqual([])
+  it('is a pattern from three answers on two days, and steady from seven across three weeks', () => {
+    const three = { answers: ['2026-10-12', '2026-10-13', '2026-10-13'].map((d) => on(d, 1)), skips: [] }
+    expect(earned(three, '2026-10-13', 'conscientiousness', true)).toMatchObject({ level: 'pattern', answers: 3, days: 2 })
+    const seven = {
+      answers: ['2026-09-28', '2026-09-29', '2026-10-05', '2026-10-06', '2026-10-07', '2026-10-12', '2026-10-13'].map((d) => on(d, 2)),
+      skips: [],
+    }
+    expect(earned(seven, '2026-10-13', 'conscientiousness', true)).toMatchObject({ level: 'steady', answers: 7, weeks: 3 })
+    expect(earned(seven, '2026-10-13', 'conscientiousness', false).answers).toBe(0)
   })
 })
 
-describe('low mood care', () => {
-  it('notices repeated low-mood answers in a week, and not a single one', () => {
-    const one = { answers: [answer('2026-10-11', 'sadness-stress', 4)], skips: [] }
-    expect(lowMoodRepeated(one, '2026-10-12')).toBe(false)
-    const three = {
-      answers: ['2026-10-09', '2026-10-10', '2026-10-11'].map((d) => answer(d, 'sadness-stress', 4)),
+describe('the tap under a card', () => {
+  const question: Question = {
+    id: '2026-10-12-dishes',
+    theme: 'habits',
+    prompt: 'Dishes?',
+    options: [
+      { id: 'now', label: 'Right away', depth: 1, traits: { conscientiousness: 1 } },
+      { id: 'pile', label: 'When the pile is high', depth: 3, traits: { conscientiousness: -1 } },
+    ],
+  }
+  beforeEach(() => localStorage.clear())
+
+  it('is kept with the answer, and "Not me" takes it out of every read', () => {
+    recordAnswer(question, 'now', '2026-10-12')
+    recordVerdict(question.id, 'partly')
+    let [a] = loadHistory().answers
+    expect(a).toMatchObject({ optionId: 'now', verdict: 'partly' })
+    expect(traitsOf(a)).toEqual({ conscientiousness: 1 })
+
+    recordVerdict(question.id, 'not_me')
+    ;[a] = loadHistory().answers
+    expect(traitsOf(a)).toEqual({})
+
+    recordVerdict(question.id, 'not_me', { optionId: 'pile', traits: { conscientiousness: -1 } })
+    ;[a] = loadHistory().answers
+    expect(traitsOf(a)).toEqual({ conscientiousness: -1 })
+  })
+
+  it('on a leaning, stays on the phone for five weeks', () => {
+    rememberLeaning('rumination', true, 'not_me', '2026-10-12')
+    expect(leaningVerdict('rumination', true, '2026-10-20')).toBe('not_me')
+    expect(leaningVerdict('rumination', false, '2026-10-20')).toBeNull()
+    expect(notMeSides('2026-10-20')).toEqual(['rumination.high'])
+    expect(leaningVerdict('rumination', true, '2026-11-17')).toBeNull()
+    expect(notMeSides('2026-11-17')).toEqual([])
+  })
+})
+
+describe('the thread line', () => {
+  const ask = (date: string): Question => ({
+    id: `${date}-dishes`,
+    theme: 'habits',
+    prompt: 'Dishes?',
+    options: [
+      { id: 'now', label: 'Right away', depth: 1, traits: { conscientiousness: 1 } },
+      { id: 'pile', label: 'When the pile is high', depth: 3, traits: { conscientiousness: -1 } },
+    ],
+  })
+  const rec = (date: string, questionId: string, traits: Record<string, number>, optionId?: string) => ({
+    ...answer(date, 'habits', 2, traits),
+    questionId,
+    optionId,
+  })
+
+  it('says nothing when there is nothing true to say', () => {
+    const h: History = { answers: [rec('2026-10-14', '2026-10-14-dishes', { conscientiousness: 1 }, 'now')], skips: [] }
+    expect(threadLine(h, ask('2026-10-14'), 'now', '2026-10-14')).toBeNull()
+  })
+
+  it('counts this week\'s answers that leaned the same way, this one included', () => {
+    const h: History = {
+      answers: [
+        rec('2026-10-11', 'x0', { conscientiousness: 1 }), // last week
+        rec('2026-10-12', 'x1', { conscientiousness: 2 }),
+        rec('2026-10-13', 'x2', { conscientiousness: -1 }), // the other way
+        rec('2026-10-13', 'x3', { conscientiousness: 1 }, 'a'),
+        rec('2026-10-14', '2026-10-14-dishes', { conscientiousness: 1 }, 'now'),
+      ],
       skips: [],
     }
-    expect(lowMoodRepeated(three, '2026-10-12')).toBe(true)
+    expect(threadLine(h, ask('2026-10-14'), 'now', '2026-10-14')).toBe(
+      'Third time this week your answer leaned towards getting things done.',
+    )
+    h.answers[3].verdict = 'not_me'
+    expect(threadLine(h, ask('2026-10-14'), 'now', '2026-10-14')).toBe(
+      'Second time this week your answer leaned towards getting things done.',
+    )
+  })
+
+  it('remembers the last time the same question came up', () => {
+    const before: History = {
+      answers: [
+        rec('2026-09-14', '2026-09-14-dishes', { conscientiousness: -1 }, 'pile'),
+        rec('2026-10-14', '2026-10-14-dishes', { conscientiousness: 1 }, 'now'),
+      ],
+      skips: [],
+    }
+    expect(threadLine(before, ask('2026-10-14'), 'now', '2026-10-14')).toBe(
+      'When this came up on 14 September, you chose “When the pile is high”.',
+    )
+    before.answers[0].optionId = 'now'
+    expect(threadLine(before, ask('2026-10-14'), 'now', '2026-10-14')).toBe('Same answer as when this came up on 14 September.')
+    // Never for an intimacy question.
+    expect(threadLine(before, { ...ask('2026-10-14'), care: 'intimate' }, 'now', '2026-10-14')).toBeNull()
+  })
+})
+
+describe('heavy answers', () => {
+  it('are deep answers about sadness and stress', () => {
+    expect(isHeavy('sadness-stress', 3)).toBe(true)
+    expect(isHeavy('sadness-stress', 2)).toBe(false)
+    expect(isHeavy('anger', 4)).toBe(false)
   })
 })
 
@@ -162,21 +269,11 @@ describe('evening answers', () => {
     evening: true as const,
   })
 
-  it('count towards the trait read, but not the size of the read, interest or low-mood care', () => {
+  it('never move interest', () => {
     const h: History = {
-      answers: [
-        answer('2026-10-11', 'money', 4, { present_bias: 1 }),
-        evening('2026-10-11', { present_bias: 1 }),
-        { ...evening('2026-10-10', {}), theme: 'sadness-stress' },
-        { ...evening('2026-10-09', {}), theme: 'sadness-stress' },
-        { ...evening('2026-10-08', {}), theme: 'sadness-stress' },
-      ],
+      answers: [answer('2026-10-11', 'money', 4, { present_bias: 1 }), evening('2026-10-11', { present_bias: 1 })],
       skips: [],
     }
-    const read = readTraits(h, '2026-10-12')
-    expect(read.traits).toEqual([{ trait: 'present_bias', direction: 'higher', answers: 2 }])
-    expect(read.label).toBe('Early read, 1 answer')
     expect(interestScores(h, '2026-10-12')).toEqual(interestScores({ answers: [h.answers[0]], skips: [] }, '2026-10-12'))
-    expect(lowMoodRepeated(h, '2026-10-12')).toBe(false)
   })
 })

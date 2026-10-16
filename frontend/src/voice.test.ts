@@ -1,6 +1,9 @@
-import type { Mirror, Period, PeriodMirror, PeriodTrait, TraitRead } from './api'
-import { TRAIT_ADVICE, adviceFor } from './advice'
-import { AREA_NAMES, PERIOD_CLOSE, TRAITS, archetype, periodSummary, summary, tagline } from './mirrorText'
+import type { Level, Mirror, Period, PeriodMirror, PeriodTrait, Question, TraitRead } from './api'
+import { adviceFor, levelLine as closeLevelLine } from './advice'
+import { AREA_NAMES, levelLine, levelMeta, PERIOD_CLOSE, periodSummary, summary, tagline, title } from './mirrorText'
+import { threadLine, type AnswerRecord } from './profile'
+import { TRAITS } from './traits'
+import { FIXED_WORDS } from './words'
 
 // The voice rules (Edwin, 2026-10-15), applied to the words the mirror and the
 // day's close show: never measure you against other people, guess at most once
@@ -96,8 +99,8 @@ function voiceProblems(s: string): string[] {
 
 // Trait reads, and mirrors that lean on them: summary and periodSummary only
 // read the stats and traits.
-const read = (trait: string, score: number) => ({ trait, score }) as TraitRead
-const periodRead = (trait: string, score: number) => ({ trait, score }) as PeriodTrait
+const read = (trait: string, score: number, level: Level = 'pattern') => ({ trait, score, level }) as TraitRead
+const periodRead = (trait: string, score: number, level: Level = 'pattern') => ({ trait, score, level }) as PeriodTrait
 const weekMirror = (answers: number, daysSoFar: number, weeksActive: number, traits: TraitRead[]) =>
   ({ weeksActive, stats: { daysActive: 1, answers, daysSoFar }, traits }) as Mirror
 const periodMirror = (period: Period, answers: number, over: boolean, traits: PeriodTrait[]) =>
@@ -108,53 +111,75 @@ const periodMirror = (period: Period, answers: number, over: boolean, traits: Pe
     stats: { answers, daysActive: 1, weeksActive: 1 },
     traits,
   }) as PeriodMirror
+const today = '2026-10-14'
+const record = (date: string, n: number, traits: Record<string, number>): AnswerRecord => ({
+  date,
+  questionId: `${date}-q${n}`,
+  theme: 'habits',
+  depth: 2,
+  traits,
+  optionId: 'a',
+})
 
-// shownWords is every sentence and phrase from mirrorText.ts and advice.ts
-// that reaches the screen, with where it came from. The research lines and
-// sources are kept for accuracy but not shown, so they are left out.
+// shownWords is every sentence and phrase from traits.ts, mirrorText.ts,
+// advice.ts, profile.ts and words.ts that reaches the screen, with where it
+// came from. The research lines and sources are kept for accuracy but not
+// shown, so they are left out.
 function shownWords(): [string, string][] {
-  const out: [string, string][] = []
+  const out: [string, string][] = [...FIXED_WORDS]
   const traits = Object.keys(TRAITS)
   for (const [trait, t] of Object.entries(TRAITS)) {
-    out.push([`${trait}.name`, t.name], [`${trait}.science`, t.science])
+    out.push([`${trait}.name`, t.name])
     for (const [side, s] of [
       ['high', t.high],
       ['low', t.low],
     ] as const) {
-      for (const key of ['adj', 'noun', 'quality', 'with', 'headline', 'prediction', 'cost'] as const) {
+      for (const key of ['lean', 'adj', 'noun', 'quality', 'with', 'headline', 'prediction', 'strength', 'grow', 'edge'] as const) {
         out.push([`${trait}.${side}.${key}`, s[key]])
       }
-    }
-  }
-  for (const [trait, a] of Object.entries(TRAIT_ADVICE)) {
-    for (const [side, advice] of Object.entries(a)) {
-      out.push([`advice ${trait}.${side}.strength`, advice.strength], [`advice ${trait}.${side}.grow`, advice.grow])
+      s.honest.forEach((l, i) => out.push([`${trait}.${side}.honest[${i}]`, l.text]))
     }
   }
   for (const [area, name] of Object.entries(AREA_NAMES)) out.push([`area ${area}`, name])
   for (const [period, line] of Object.entries(PERIOD_CLOSE)) out.push([`close ${period}`, line])
+  for (const level of ['hint', 'pattern', 'steady', 'changing'] as const) {
+    for (const answers of [1, 5]) {
+      const r = { level, answers, days: 2, weeks: 3 }
+      out.push([`level ${level} ${answers}`, levelLine(r, 'week')], [`level meta ${level} ${answers}`, levelMeta(r)])
+      if (level !== 'changing') out.push([`close level ${level} ${answers}`, closeLevelLine({ ...r, level })])
+    }
+  }
 
   // The sentences built from those words, for every leaning.
   out.push(
     ['summary, quiet week', summary(weekMirror(0, 3, 2, []))],
     ['summary, first week', summary(weekMirror(0, 3, 0, []))],
     ['summary, balanced', summary(weekMirror(5, 6, 1, [read(traits[0], 50)]))],
-    ['day close, balanced', adviceFor([]).headline],
+    ['summary, only hints', summary(weekMirror(5, 6, 1, [read(traits[0], 90, 'hint')]))],
   )
   for (const period of ['month', 'quarter', 'year'] as const) {
     out.push([`${period} summary, empty`, periodSummary(periodMirror(period, 0, false, []))])
   }
   for (const trait of traits) {
     for (const score of [80, 20]) {
+      const w = score > 50 ? 2 : -2
       const traitsRead = [read(trait, score)]
+      const other = traits.find((t) => t !== trait)!
+      const sitting = [record(today, 1, { [trait]: w })]
+      const pattern = [record('2026-10-12', 1, { [trait]: w }), record('2026-10-13', 1, { [trait]: w }), ...sitting]
       out.push(
         [`summary ${trait} ${score}`, summary(weekMirror(1, 6, 1, traitsRead))],
         [`summary so far ${trait} ${score}`, summary(weekMirror(4, 3, 1, traitsRead))],
         [`month summary ${trait} ${score}`, periodSummary(periodMirror('month', 9, true, [periodRead(trait, score)]))],
         [`quarter summary so far ${trait} ${score}`, periodSummary(periodMirror('quarter', 9, false, [periodRead(trait, score)]))],
-        [`archetype ${trait} ${score}`, archetype(traitsRead) ?? ''],
+        [`title ${trait} ${score}`, `This week, you were ${title([...traitsRead, read(other, 85)]) ?? ''}.`],
         [`tagline ${trait} ${score}`, tagline(traitsRead) ?? ''],
-        [`day close ${trait} ${score}`, adviceFor([{ traits: { [trait]: score > 50 ? 2 : -2 } }]).headline],
+        [`day close hint ${trait} ${score}`, adviceFor(sitting, { answers: sitting, skips: [] }, today, 'morning').headline],
+        [`day close pattern ${trait} ${score}`, adviceFor(sitting, { answers: pattern, skips: [] }, today, 'morning').headline],
+        [
+          `thread ${trait} ${score}`,
+          threadLine({ answers: pattern, skips: [] }, { id: `${today}-q1`, prompt: '', options: [] } as Question, 'a', today) ?? '',
+        ],
       )
     }
   }

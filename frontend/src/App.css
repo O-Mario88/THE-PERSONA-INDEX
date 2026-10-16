@@ -304,16 +304,14 @@
   color: var(--amber);
 }
 
-.try-buttons,
-.rate {
+.try-buttons {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px 16px;
 }
 
-.try-buttons .text-button,
-.rate .text-button {
+.try-buttons .text-button {
   align-self: auto;
   padding-left: 0;
   padding-right: 0;
@@ -330,6 +328,119 @@
 }
 
 .rate-thanks {
+  font-size: 0.85rem;
+}
+
+/* The other side of a card: what this answer can cost, said kindly. */
+.insight-other {
+  padding-top: 10px;
+  border-top: 1px solid color-mix(in srgb, var(--pink) 30%, transparent);
+  color: #d9dcea;
+  line-height: 1.55;
+}
+
+.insight-other .eyebrow {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--pink);
+}
+
+/* The thread to the person's own earlier answers, only when it is true. */
+.insight-thread {
+  color: var(--accent);
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+/* One quiet line on where to find support, never an alarm. */
+.helpline {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  color: #d9dcea;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.helpline a {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.rate {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rate-ask {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.rate-buttons,
+.closer-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--text);
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.chip:hover,
+.chip:focus-visible {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.closer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.closer-options {
+  flex-direction: column;
+}
+
+.closer-option {
+  min-height: 48px;
+  font-size: 0.95rem;
+}
+
+.closer-picked {
+  color: #d9dcea;
+  line-height: 1.5;
+}
+
+.own-line {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+}
+
+.own-line:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+.thread-level {
+  color: var(--muted);
   font-size: 0.85rem;
 }
 
@@ -1466,6 +1577,7 @@
   color: var(--m-muted);
 }
 
+.m-verdict,
 .m-step-buttons {
   display: flex;
   flex-wrap: wrap;

@@ -1,5 +1,13 @@
 import { useEffect, useState } from 'react'
-import { deleteEverywhere, forgetLocal, getKept, wordsBetween, type Deleted, type Kept as ServerKept } from './api'
+import {
+  deleteEverywhere,
+  forgetLocal,
+  getKept,
+  insteadCount,
+  wordsBetween,
+  type Deleted,
+  type Kept as ServerKept,
+} from './api'
 import { loadMoves } from './moves'
 import { loadPrefs } from './prefs'
 import { loadHistory } from './profile'
@@ -17,6 +25,7 @@ const weeks = (days: number) => (days % 7 === 0 ? plural(days / 7, 'week') : plu
 function onPhone() {
   return {
     words: wordsBetween('0000-01-01', '9999-12-31').length,
+    instead: insteadCount(),
     answers: loadHistory().answers.length,
     steps: loadMoves().length,
     wordsDays: loadPrefs().wordsDays,
@@ -80,9 +89,16 @@ export function KeptScreen({ today, onBack }: { today: string; onBack: () => voi
             <strong>{plural(phone.words, 'answer')} in your own words.</strong>{' '}
             {`Never sent. Kept ${weeks(phone.wordsDays)}; you can change that in Settings.`}
           </li>
+          {phone.instead > 0 && (
+            <li>
+              <strong>{plural(phone.instead, 'line')} on cards that weren't you.</strong>{' '}
+              {`What you wrote after "Not me". Never sent. Kept as long as your own words.`}
+            </li>
+          )}
           <li>
-            <strong>{plural(phone.answers, 'answer')} in your history.</strong> The themes and depth of your answers, so I
-            can choose questions that interest you. Kept 60 days.
+            <strong>{plural(phone.answers, 'answer')} in your history.</strong> Which answer you chose, its theme and
+            depth, and whether its card was you, so I can choose questions that interest you and tie new answers to earlier
+            ones. Kept 60 days.
           </li>
           <li>
             <strong>{plural(phone.steps, 'small step')}.</strong> The ones you said you'd try, and how they went.

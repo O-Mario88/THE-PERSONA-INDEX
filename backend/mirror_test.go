@@ -372,6 +372,86 @@ func TestMirrorTraitReads(t *testing.T) {
 	})
 }
 
+// day is date moved by n days.
+func day(date string, n int) string { return mustDate(date).AddDate(0, 0, n).Format(dateLayout) }
+
+func TestReadingLevels(t *testing.T) {
+	level := func(t *testing.T, s *Server, date string) TraitRead {
+		t.Helper()
+		r, ok := traitOf(getMirror(t, s, "a", date), "conscientiousness")
+		if !ok {
+			t.Fatal("expected a read on conscientiousness")
+		}
+		return r
+	}
+
+	t.Run("two answers are a hint, three on two days a pattern", func(t *testing.T) {
+		s := mirrorServer(mon)
+		answer(t, s, "a", mon, "tidy", "now")
+		answer(t, s, "a", tue, "tidy", "now")
+		if r := level(t, s, tue); r.Level != levelHint || r.Answers != 2 || r.Days != 2 || r.Weeks != 1 {
+			t.Fatalf("expected a hint from two answers on two days, got %+v", r)
+		}
+		answer(t, s, "a", wed, "tidy", "now")
+		if r := level(t, s, wed); r.Level != levelPattern || r.Answers != 3 || r.Days != 3 {
+			t.Fatalf("expected a pattern from three answers, got %+v", r)
+		}
+	})
+
+	t.Run("seven answers across three weeks are steady; fewer weeks stay a pattern", func(t *testing.T) {
+		s := mirrorServer(mon)
+		for _, d := range []string{day(mon, -14), day(mon, -13), day(mon, -7), day(mon, -6), day(mon, -5), mon} {
+			answer(t, s, "a", d, "tidy", "now")
+		}
+		if r := level(t, s, mon); r.Level != levelPattern || r.Answers != 6 || r.Weeks != 3 {
+			t.Fatalf("expected six answers to stay a pattern, got %+v", r)
+		}
+		answer(t, s, "a", tue, "tidy", "now")
+		if r := level(t, s, tue); r.Level != levelSteady || r.Answers != 7 || r.Weeks != 3 {
+			t.Fatalf("expected seven answers across three weeks to be steady, got %+v", r)
+		}
+
+		s = mirrorServer(mon)
+		for _, d := range []string{day(mon, -7), day(mon, -6), day(mon, -5), day(mon, -4), mon, tue, wed} {
+			answer(t, s, "a", d, "tidy", "now")
+		}
+		if r := level(t, s, wed); r.Level != levelPattern || r.Weeks != 2 {
+			t.Fatalf("expected seven answers in two weeks to stay a pattern, got %+v", r)
+		}
+	})
+
+	t.Run("a pattern whose newest answers point the other way is changing", func(t *testing.T) {
+		s := mirrorServer(mon)
+		for _, d := range []string{day(mon, -7), day(mon, -6), day(mon, -5)} {
+			answer(t, s, "a", d, "tidy", "now")
+		}
+		answer(t, s, "a", mon, "tidy", "pile")
+		if r := level(t, s, mon); r.Level == levelChanging {
+			t.Fatalf("expected one answer the other way not to be enough, got %+v", r)
+		}
+		answer(t, s, "a", tue, "tidy", "pile")
+		r := level(t, s, tue)
+		if r.Level != levelChanging || r.Score != 60 {
+			t.Fatalf("expected a high read turning, got %+v", r)
+		}
+		m := getMirror(t, s, "a", tue)
+		if m.Traits[0].Trait != "conscientiousness" {
+			t.Fatalf("expected the changing read first, got %+v", m.Traits)
+		}
+	})
+
+	t.Run("an answer tapped 'Not me' earns nothing", func(t *testing.T) {
+		s := mirrorServer(mon)
+		for _, d := range []string{mon, tue, wed} {
+			answer(t, s, "a", d, "tidy", "now")
+		}
+		rate(t, s, "a", wed, "tidy", "now", verdictNotMe)
+		if r := level(t, s, wed); r.Level != levelHint || r.Answers != 2 {
+			t.Fatalf("expected a hint again, got %+v", r)
+		}
+	})
+}
+
 // rate taps the verdict under device's card for date's question.
 func rate(t *testing.T, s *Server, device, date, question, option, verdict string) {
 	t.Helper()

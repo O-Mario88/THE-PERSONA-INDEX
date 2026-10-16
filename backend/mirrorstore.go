@@ -165,8 +165,9 @@ type ThemeTally struct {
 
 // TraitTally is the sum of an answer's positions on a trait (traitPosition).
 type TraitTally struct {
-	N   int     `json:"n"`
-	Sum float64 `json:"sum"`
+	N    int     `json:"n"`
+	Sum  float64 `json:"sum"`
+	Days int     `json:"days,omitempty"` // the days of the week they were given on (since 2026-10-16)
 }
 
 // summarySources is the range of answer dates a week's summary is made

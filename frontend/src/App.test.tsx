@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import App from './App'
 import type { DailySet, Mirror, PeriodMirror, Question } from './api'
-import { TRAITS } from './mirrorText'
+import { honestLine, TRAITS } from './traits'
 
 const today: DailySet = {
   date: '2026-10-12',
@@ -497,19 +497,74 @@ describe('the daily questions', () => {
     expect(localStorage.getItem('pi.moves.v1')).toBeNull()
   })
 
-  it('asks whether the card landed, and sends only that tap', async () => {
+  it('asks whether the card is you, and sends only that tap', async () => {
     const fetchMock = stubApi({})
     render(<App />)
     await answer('Right after eating')
-    fireEvent.click(screen.getByRole('button', { name: 'I learned something' }))
-    expect(await screen.findByText(/Thanks for telling me/)).toBeInTheDocument()
+    const ask = screen.getByRole('group', { name: 'Does this sound like you?' })
+    fireEvent.click(within(ask).getByRole('button', { name: 'Partly' }))
+    expect(await screen.findByText("Noted. I'll hold it loosely and keep watching.")).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Not me' })).not.toBeInTheDocument()
     await waitFor(() => expect(calls(fetchMock, '/api/ratings')).toHaveLength(1))
     expect(bodyOf(calls(fetchMock, '/api/ratings')[0])).toMatchObject({
       questionId: 'q-dishes',
       optionId: 'right-away',
-      learned: true,
+      verdict: 'partly',
     })
+    expect(JSON.parse(localStorage.getItem('pi.history.v1')!).answers[0]).toMatchObject({ verdict: 'partly' })
+  })
+
+  it('after "Not me", asks what is closer and reads that one instead', async () => {
+    const fetchMock = stubApi({})
+    render(<App />)
+    await answer('Right after eating')
+    fireEvent.click(screen.getByRole('button', { name: 'Not me' }))
+    expect(await screen.findByText("You told me this isn't you, so I'll watch rather than assume.")).toBeInTheDocument()
+    const closer = screen.getByRole('group', { name: "What's closer to you?" })
+    fireEvent.click(within(closer).getByRole('button', { name: /Batching chores suggests you protect your evenings/ }))
+    expect(await screen.findByText(/Closer to you: “Batching chores/)).toBeInTheDocument()
+    expect(JSON.parse(localStorage.getItem('pi.history.v1')!).answers[0]).toMatchObject({
+      verdict: 'not_me',
+      closer: { optionId: 'end-of-day', traits: {} },
+    })
+    await waitFor(() => expect(calls(fetchMock, '/api/ratings')).toHaveLength(1))
+    expect(bodyOf(calls(fetchMock, '/api/ratings')[0])).toMatchObject({ optionId: 'right-away', verdict: 'not_me' })
+  })
+
+  it('after "Not me", keeps a line in your own words on this phone and never sends it', async () => {
+    const fetchMock = stubApi({})
+    render(<App />)
+    await answer('Right after eating')
+    fireEvent.click(screen.getByRole('button', { name: 'Not me' }))
+    fireEvent.change(await screen.findByLabelText('Or in a line of your own'), {
+      target: { value: 'I wash up fast so I can stop thinking about it' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Keep my line' }))
+    expect(await screen.findByText('“I wash up fast so I can stop thinking about it”')).toBeInTheDocument()
+    expect(JSON.parse(localStorage.getItem('pi.instead.q-dishes')!)).toMatchObject({
+      words: 'I wash up fast so I can stop thinking about it',
+    })
+    await waitFor(() => expect(calls(fetchMock, '/api/ratings')).toHaveLength(1))
+    for (const [, init] of fetchMock.mock.calls) expect(String(init?.body ?? '')).not.toContain('wash up fast')
+  })
+
+  it('shows the other side of the answer, and ties it to earlier ones only when that is true', async () => {
+    const other = structuredClone(today)
+    other.questions[0].options[0].insight!.otherSide = 'A clear sink can turn into a rule that keeps you from resting.'
+    localStorage.setItem(
+      'pi.history.v1',
+      JSON.stringify({
+        answers: [{ date: '2026-10-12', questionId: 'x', theme: 'money', depth: 2, traits: { conscientiousness: 1 } }],
+        skips: [],
+      }),
+    )
+    stubApi({ today: { status: 200, body: other } })
+    render(<App />)
+    await answer('Right after eating')
+    const card = screen.getByRole('note', { name: 'What your answer may say' })
+    expect(card).toHaveTextContent('The other side A clear sink can turn into a rule')
+    expect(card).toHaveTextContent('Second time this week your answer leaned towards getting things done.')
+    expect(card).toHaveTextContent('For self-reflection, not a diagnosis.')
   })
 
   it('ends the morning with "Morning done.", the thread, the moves and what opens at 5 pm, without repeating the cards or keeping score', async () => {
@@ -530,13 +585,15 @@ describe('the daily questions', () => {
       '✨Todayanswered',
     ])
     const thread = within(done).getByRole('note', { name: "Today's thread" })
-    expect(thread).toHaveTextContent("Here's what I noticed today")
+    expect(thread).toHaveTextContent(
+      "Today your answers leaned towards getting things done, and towards worry. One day is only a hint, so here's what each could mean.",
+    )
     expect(thread).toHaveTextContent('Getting things done')
     expect(thread).toHaveTextContent('Worry and tension')
+    expect(thread).toHaveTextContent('Only a hint so far, from 1 answer.')
     expect(thread).toHaveTextContent('For the rest of today:')
-    // Edwin, 2026-10-15: "not afraid of telling them the negative things ... in a polite human language".
-    expect(thread).toHaveTextContent(`The honest part: ${TRAITS.conscientiousness.high.cost}`)
-    expect(thread).toHaveTextContent(`The honest part: ${TRAITS.neuroticism.high.cost}`)
+    // One answer is a hint: the honest part waits for a pattern.
+    expect(thread).not.toHaveTextContent('The honest part')
     const moves = within(done).getByRole('group', { name: "Small steps you'll try" })
     expect(moves).toHaveTextContent('Tonight, set one alarm fewer')
     // Something to look forward to: the evening's three themes, and when.
@@ -558,6 +615,37 @@ describe('the daily questions', () => {
     // The dashes go back to any finished card.
     fireEvent.click(screen.getByRole('button', { name: 'Question 1 of 3' }))
     expect(await screen.findByRole('note', { name: 'What your answer may say' })).toHaveTextContent('clear sink')
+  })
+
+  it('tells the honest part once a leaning is a pattern', async () => {
+    localStorage.setItem(
+      'pi.history.v1',
+      JSON.stringify({
+        answers: ['2026-10-09', '2026-10-10'].map((date, i) => ({
+          date,
+          questionId: `x${i}`,
+          theme: 'money',
+          depth: 2,
+          traits: { conscientiousness: 1 },
+        })),
+        skips: [],
+      }),
+    )
+    stubApi({ today: { status: 200, body: sixADay } })
+    render(<App />)
+    await answer('Right after eating')
+    next()
+    await skip()
+    await skip()
+    const thread = within(await screen.findByRole('region', { name: 'Morning done.' })).getByRole('note', {
+      name: "Today's thread",
+    })
+    expect(thread).toHaveTextContent('Getting things done has come up in 3 answers over 3 days, so a pattern is forming.')
+    expect(thread).toHaveTextContent('A pattern is forming: 3 answers over 3 days.')
+    // Edwin, 2026-10-15: "not afraid of telling them the negative things ... in a polite human language".
+    expect(thread).toHaveTextContent(
+      `The honest part: ${honestLine(TRAITS.conscientiousness.high, '2026-10-12', 'morning').text}`,
+    )
   })
 
   it('opens a returning phone on its first open question, and keeps no score or record of days', async () => {
@@ -605,6 +693,7 @@ describe('the daily questions', () => {
       theme: 'money',
       depth: 4,
       traits: { present_bias: 2 },
+      optionId: 'treat',
     })
   })
 
@@ -724,7 +813,7 @@ describe('the evening, from 5 pm', () => {
     next()
     await answer('Text that I will call later')
     next()
-    const day = await screen.findByRole('region', { name: 'Day complete' })
+    const day = await screen.findByRole('region', { name: "That's your day." })
     expect(within(day).getByRole('list', { name: "This evening's answers" }).children).toHaveLength(3)
     const tomorrow = within(day).getByRole('group', { name: 'Tomorrow' })
     expect(tomorrow).toHaveTextContent('Money')
@@ -830,7 +919,7 @@ describe('the evening, from 5 pm', () => {
     await skip()
     await skip()
 
-    const day = await screen.findByRole('region', { name: 'Day complete' })
+    const day = await screen.findByRole('region', { name: "That's your day." })
     expect(day).not.toHaveTextContent(crowdOrScore)
     const moves = within(day).getByRole('group', { name: 'Your small steps' })
     expect(moves).toHaveTextContent('set one alarm fewer')
@@ -880,7 +969,7 @@ describe('the evening, from 5 pm', () => {
     vi.setSystemTime(at(19))
     stubApi({})
     render(<App />)
-    const day = await screen.findByRole('region', { name: 'Day complete' })
+    const day = await screen.findByRole('region', { name: "That's your day." })
     expect(screen.queryByRole('navigation', { name: "Today's questions" })).not.toBeInTheDocument()
     expect(within(day).queryByRole('list', { name: "This evening's answers" })).not.toBeInTheDocument()
     expect(within(screen.getByRole('group', { name: 'Your day' })).getAllByRole('listitem')).toHaveLength(1)
@@ -902,7 +991,9 @@ const mirror: Mirror = {
     answers: 18,
     private: 1,
     deepest: 5,
-    learned: 12,
+    me: 12,
+    partly: 2,
+    notMe: 1,
     rated: 15,
     stepsStarted: 3,
     stepsTried: 2,
@@ -936,6 +1027,9 @@ const mirror: Mirror = {
     {
       trait: 'conscientiousness',
       answers: 14,
+      days: 9,
+      weeks: 3,
+      level: 'steady',
       solid: true,
       score: 74,
       change: 4,
@@ -951,6 +1045,9 @@ const mirror: Mirror = {
     {
       trait: 'attachment_anxiety',
       answers: 9,
+      days: 5,
+      weeks: 2,
+      level: 'pattern',
       solid: false,
       score: 68,
       change: 7,
@@ -966,6 +1063,9 @@ const mirror: Mirror = {
     {
       trait: 'extraversion',
       answers: 4,
+      days: 1,
+      weeks: 1,
+      level: 'hint',
       solid: false,
       score: 52,
       history: [
@@ -1026,7 +1126,9 @@ const emptyMirror: Mirror = {
     answers: 0,
     private: 0,
     deepest: 0,
-    learned: 0,
+    me: 0,
+    partly: 0,
+    notMe: 0,
     rated: 0,
     stepsStarted: 0,
     stepsTried: 0,
@@ -1051,28 +1153,32 @@ async function openMirror(routes: Parameters<typeof stubApi>[0] = {}) {
   return fetchMock
 }
 
+// Both sides of the fixture's clearest leanings, in plain words, not a type label.
+const weekTitle = 'This week, you were a steady noticer, and you may let rest wait too long.'
+
 const mirrorCalls = (f: ReturnType<typeof stubApi>) => f.mock.calls.filter(([u]) => String(u).startsWith('/api/mirror?'))
 
 describe('the weekly mirror', () => {
   it("is built from the server's data for this phone, sent with its device token", async () => {
     const fetchMock = await openMirror()
     const page = screen.getByRole('region', { name: 'Your weekly mirror' })
-    expect(await within(page).findByText('The Steady Noticer.')).toBeInTheDocument()
+    expect(await within(page).findByRole('heading', { level: 2, name: weekTitle })).toBeInTheDocument()
 
     const [url, init] = mirrorCalls(fetchMock)[0]
     expect(url).toBe('/api/mirror?date=2026-10-18')
     expect((init!.headers as Record<string, string>).Authorization).toBe('Device v1.device1.sig')
 
-    expect(page).toHaveTextContent('Your weekly mirror · Week 42 · Editions #1–#6')
-    expect(page).toHaveTextContent('This week you were The Steady Noticer.')
+    expect(page).toHaveTextContent('Your week · 12 to 17 October')
+    // Both sides of the clearest leanings, in plain words, not a type label.
     expect(page).toHaveTextContent('Steady follow-through, with a radar tuned for silence.')
     expect(page).toHaveTextContent('You showed up on 5 days this week and gave 18 answers.')
 
     const tiles = within(page).getByRole('list', { name: 'This week in numbers' })
     expect(tiles).toHaveTextContent('Days active5 of 6Up from 4 last week')
     expect(tiles).toHaveTextContent('Answers18this week, 1 kept private')
-    expect(tiles).toHaveTextContent('Went deepest5times you chose the most revealing answer')
-    expect(tiles).toHaveTextContent('Learned something12 of 15')
+    expect(tiles).toHaveTextContent("That's me12 of 15cards you judged, 2 partly")
+    // Hard answers are not a score (the review of 2026-10-15).
+    expect(tiles).not.toHaveTextContent('Went deepest')
     expect(tiles).toHaveTextContent('Small steps kept2 of 3')
 
     const line = within(page).getByRole('figure', { name: 'One line from this week' })
@@ -1083,7 +1189,7 @@ describe('the weekly mirror', () => {
   it('shows every section that has real data, numbered in order', async () => {
     await openMirror()
     const page = screen.getByRole('region', { name: 'Your weekly mirror' })
-    await within(page).findByText('The Steady Noticer.')
+    await within(page).findByRole('heading', { level: 2, name: weekTitle })
     expect(within(page).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual([
       '01 Your week at a glance',
       '02 Your trait read',
@@ -1102,23 +1208,29 @@ describe('the weekly mirror', () => {
     expect(within(page).getByRole('listitem', { name: /^Sunday:/ })).toHaveAccessibleName('Sunday: review day')
 
     const traits = within(page).getByRole('list', { name: 'Trait read' })
-    expect(traits).toHaveTextContent('Organised74 +4 vs last week')
-    expect(traits).toHaveTextContent('Solid read · 14 answers')
-    expect(traits).toHaveTextContent('Early read · 9 answers')
+    expect(traits).toHaveTextContent('Getting things done74 +4 vs last week')
+    expect(traits).toHaveTextContent('Steady · 14 answers')
+    expect(traits).toHaveTextContent('A pattern · 9 answers')
+    expect(traits).toHaveTextContent('A hint · 4 answers')
     expect(page).toHaveTextContent('compares you only with yourself')
 
     const who = within(page).getByRole('heading', { name: '05 Who you were this week' }).parentElement!
     expect(who).toHaveTextContent('You finish what you start.')
     expect(who).toHaveTextContent('You said: “Right after eating”, “Before bed”')
-    expect(who).toHaveTextContent('Prediction: a solid read')
-    expect(who).toHaveTextContent('Early read: from 9 answers')
-    expect(who).toHaveTextContent(`The honest part: ${TRAITS.conscientiousness.high.cost}`)
-    expect(who).toHaveTextContent(`The honest part: ${TRAITS.attachment_anxiety.high.cost}`)
-    expect(who).not.toHaveTextContent('Energy from people') // 52 sits in the middle
+    expect(who).toHaveTextContent('This keeps showing up: 14 answers over 3 weeks. Worth testing against your real week.')
+    expect(who).toHaveTextContent('A pattern is forming: 9 answers over 5 days. Worth testing against your real week.')
+    expect(who).toHaveTextContent(
+      `The honest part: ${honestLine(TRAITS.conscientiousness.high, '2026-10-18', 'mirror').text}`,
+    )
+    expect(who).toHaveTextContent(
+      `The honest part: ${honestLine(TRAITS.attachment_anxiety.high, '2026-10-18', 'mirror').text}`,
+    )
+    expect(who).not.toHaveTextContent('Energy from people') // 52 sits in the middle, and is only a hint
 
     expect(page).toHaveTextContent('4 steps started, 2 tried, 1 helped.')
-    expect(page).toHaveTextContent(
-      'Closeness radar needs 3 more answers; Outgoing needs 8 more answers to become solid reads.',
+    // Only a hint: answers on a few more days will tell.
+    expect(within(page).getByText('Sharpen your read').parentElement).toHaveTextContent(
+      "Energy from people is only a hint so far. Answers on a few more days will show whether it's a pattern.",
     )
     expect(page).toHaveTextContent('Coming up')
     expect(page).toHaveTextContent('Money · Dating')
@@ -1145,7 +1257,7 @@ describe('the weekly mirror', () => {
       '04 The road ahead',
     ])
     expect(within(page).queryByRole('figure', { name: 'One line from this week' })).not.toBeInTheDocument()
-    expect(within(page).getByRole('list', { name: 'This week in numbers' })).toHaveTextContent('Went deepest0')
+    expect(within(page).getByRole('list', { name: 'This week in numbers' })).toHaveTextContent(`That's me–Tap "That's me" on a card that fits`)
     expect(page).not.toHaveTextContent('%')
   })
 
@@ -1218,7 +1330,7 @@ describe('the weekly mirror', () => {
         { status: 200, body: mirror },
       ],
     })
-    expect(await screen.findByText('The Steady Noticer.')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 2, name: weekTitle })).toBeInTheDocument()
     expect(mirrorCalls(fetchMock).map(([, init]) => (init!.headers as Record<string, string>).Authorization)).toEqual([
       'Device v1.stale.sig',
       'Device v1.device1.sig',
@@ -1234,7 +1346,7 @@ describe('the weekly mirror', () => {
     })
     expect(await screen.findByText("I couldn't load your mirror just now.")).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Try again' }))
-    expect(await screen.findByText('The Steady Noticer.')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 2, name: weekTitle })).toBeInTheDocument()
     expect(mirrorCalls(fetchMock)).toHaveLength(2)
   })
 
@@ -1266,7 +1378,9 @@ const month: PeriodMirror = {
     answers: 27,
     private: 1,
     deepest: 7,
-    learned: 15,
+    me: 15,
+    partly: 3,
+    notMe: 2,
     rated: 20,
     stepsStarted: 4,
     stepsTried: 3,
@@ -1280,7 +1394,9 @@ const month: PeriodMirror = {
     answers: 20,
     private: 0,
     deepest: 3,
-    learned: 9,
+    me: 9,
+    partly: 2,
+    notMe: 1,
     rated: 12,
     stepsStarted: 1,
     stepsTried: 1,
@@ -1291,6 +1407,9 @@ const month: PeriodMirror = {
     {
       trait: 'conscientiousness',
       answers: 16,
+      days: 8,
+      weeks: 3,
+      level: 'steady',
       solid: true,
       score: 72,
       change: 9,
@@ -1303,6 +1422,9 @@ const month: PeriodMirror = {
     {
       trait: 'rumination',
       answers: 5,
+      days: 3,
+      weeks: 1,
+      level: 'pattern',
       solid: false,
       score: 70,
       weekly: [
@@ -1365,15 +1487,17 @@ const year: PeriodMirror = {
   helped: [],
 }
 
+const monthTitle = 'This month, you were a steady thinker, and you may let rest wait too long.'
+
 const periodCalls = (f: ReturnType<typeof stubApi>) => f.mock.calls.filter(([u]) => /^\/api\/mirror\/\w+\?/.test(String(u)))
 
 describe('the monthly, quarterly and yearly mirrors', () => {
   it("adds up this phone's weeks of the month, set only against its own past", async () => {
     const fetchMock = await openMirror({ period: { status: 200, body: month } })
-    await within(screen.getByRole('region', { name: 'Your weekly mirror' })).findByText('The Steady Noticer.')
+    await within(screen.getByRole('region', { name: 'Your weekly mirror' })).findByRole('heading', { level: 2, name: weekTitle })
     fireEvent.click(screen.getByRole('button', { name: 'Month' }))
     const page = screen.getByRole('region', { name: 'Your monthly mirror' })
-    expect(await within(page).findByText('The Steady Thinker.')).toBeInTheDocument()
+    expect(await within(page).findByRole('heading', { level: 2, name: monthTitle })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Month' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByRole('button', { name: 'Week' })).toHaveAttribute('aria-pressed', 'false')
 
@@ -1382,7 +1506,6 @@ describe('the monthly, quarterly and yearly mirrors', () => {
     expect((init!.headers as Record<string, string>).Authorization).toBe('Device v1.device1.sig')
 
     expect(page).toHaveTextContent('Your monthly mirror · October 2026 · Week 3 of 5')
-    expect(page).toHaveTextContent('This month you were The Steady Thinker.')
     expect(page).toHaveTextContent('Steady follow-through, with a habit of going over hard moments.')
     expect(page).toHaveTextContent(
       "So far this month you've shown up on 8 days in 2 weeks and given 27 answers. What stood out most: you finish what you start.",
@@ -1405,7 +1528,9 @@ describe('the monthly, quarterly and yearly mirrors', () => {
     expect(within(page).getByRole('listitem', { name: /^Week 41:/ })).toHaveAccessibleName('Week 41: 0 of 6 days, 0 answers')
     expect(page).toHaveTextContent('You came back in 2 of 3 weeks.')
     expect(page).toHaveTextContent('2 weeks still to come.')
-    expect(within(page).getByRole('list', { name: 'Trait read' })).toHaveTextContent('Organised72 +9 since your first weeks')
+    expect(within(page).getByRole('list', { name: 'Trait read' })).toHaveTextContent(
+      'Getting things done72 +9 since your first weeksSteady · 16 answersReplaying70A pattern · 5 answers',
+    )
 
     const moments = within(page).getByRole('list', { name: 'The answers that said the most' })
     expect(moments).toHaveTextContent(
@@ -1416,7 +1541,8 @@ describe('the monthly, quarterly and yearly mirrors', () => {
       'This week, call one friend instead of texting.',
     )
     const who = within(page).getByRole('heading', { name: '05 Who you were this month' }).parentElement!
-    expect(who).toHaveTextContent(`The honest part: ${TRAITS.rumination.high.cost}`)
+    expect(who).toHaveTextContent(`The honest part: ${honestLine(TRAITS.rumination.high, '2026-10-18', 'mirror').text}`)
+    expect(who).toHaveTextContent('A pattern is forming: 5 answers over 3 days. Worth testing against your real month.')
     expect(page).toHaveTextContent('4 steps started, 3 tried, 2 helped.')
     expect(page).toHaveTextContent('A month is long enough to see a pattern, and short enough to change one.')
 
@@ -1456,11 +1582,11 @@ describe('the monthly, quarterly and yearly mirrors', () => {
     expect(await screen.findByText("I couldn't load your mirror just now.")).toBeInTheDocument()
     expect(periodCalls(fetchMock)[0][0]).toBe('/api/mirror/quarter?date=2026-10-18')
     fireEvent.click(screen.getByRole('button', { name: 'Try again' }))
-    expect(await screen.findByText('The Steady Thinker.')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 2, name: monthTitle })).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Week' }))
     const week = screen.getByRole('region', { name: 'Your weekly mirror' })
-    expect(await within(week).findByText('The Steady Noticer.')).toBeInTheDocument()
+    expect(await within(week).findByRole('heading', { level: 2, name: weekTitle })).toBeInTheDocument()
     expect(mirrorCalls(fetchMock)).toHaveLength(2)
   })
 })
@@ -1508,7 +1634,7 @@ describe('the week', () => {
     vi.setSystemTime(at(9, 18))
     stubApi({ edition: { status: 200, body: sunday }, mirror: { status: 200, body: mirror } })
     render(<App />)
-    expect(await screen.findByText('The Steady Noticer.')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 2, name: weekTitle })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Your mirror' })).toHaveAttribute('aria-pressed', 'true')
 
     fireEvent.click(screen.getByRole('button', { name: 'Today' }))
@@ -1532,7 +1658,7 @@ describe('the week', () => {
     await skip()
     await skip()
     await skip()
-    const done = await screen.findByRole('region', { name: 'Day complete' })
+    const done = await screen.findByRole('region', { name: "That's your day." })
     expect(done).toHaveTextContent('Tomorrow is Sunday: no new questions, just your week in the mirror.')
     expect(done).toHaveTextContent('Sleep well. Tomorrow is for looking back')
   })
