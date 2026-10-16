@@ -196,7 +196,7 @@ function MirrorPage({
         </div>
       )}
 
-      <OneLine m={m} />
+      <OneLine m={m} notMe={notMe} />
       <StatTiles m={m} />
       {sections}
       <Footer onOpenKept={onOpenKept} />
@@ -220,8 +220,10 @@ function numbered(parts: Part[]) {
     ))
 }
 
-function OneLine({ m }: { m: MirrorData }) {
-  const lean = leanings(m.traits)[0]
+// The answer behind the clearest leaning, unless the person said that
+// leaning is not them.
+function OneLine({ m, notMe }: { m: MirrorData; notMe: string[] }) {
+  const lean = leanings(m.traits, notMe)[0]
   if (lean?.read.evidence[0]) {
     return (
       <figure className="m-card m-oneline" aria-label="One line from this week">

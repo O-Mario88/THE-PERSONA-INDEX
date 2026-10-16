@@ -112,9 +112,11 @@ function stubApi(routes: {
   forget?: Route
   kept?: Route
   steps?: Route
+  rating?: Route | Route[]
 }) {
   let devices = 0
   let votes = 0
+  let ratings = 0
   let mirrors = 0
   let periods = 0
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -130,7 +132,7 @@ function stubApi(routes: {
       return json(routes.today ?? { status: 200, body: today })
     }
     if (url === '/api/ratings' && init?.method === 'POST') {
-      return json({ status: 202, body: { status: 'accepted', eventId: 'evt_r' } })
+      return json(pick(routes.rating, ratings++) ?? { status: 202, body: { status: 'accepted', eventId: 'evt_r' } })
     }
     if (url === '/api/votes' && init?.method === 'POST') {
       const r = pick(routes.vote, votes++)
@@ -531,6 +533,44 @@ describe('the daily questions', () => {
     expect(bodyOf(calls(fetchMock, '/api/ratings')[0])).toMatchObject({ optionId: 'right-away', verdict: 'not_me' })
   })
 
+  it('after "Not me" and "Neither", does not ask again when the card is opened later', async () => {
+    stubApi({})
+    const first = render(<App />)
+    await answer('Right after eating')
+    fireEvent.click(screen.getByRole('button', { name: 'Not me' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Neither' }))
+    expect(screen.queryByText("What's closer to you?")).not.toBeInTheDocument()
+    first.unmount()
+
+    render(<App />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Question 1 of 3' }))
+    expect(await screen.findByText("You told me this isn't you, so I'll watch rather than assume.")).toBeInTheDocument()
+    expect(screen.queryByText("What's closer to you?")).not.toBeInTheDocument()
+  })
+
+  it('sends a card tap that did not get through again, with the same key, when the app next opens', async () => {
+    const fetchMock = stubApi({
+      rating: [
+        { status: 503, body: { error: 'unavailable' } },
+        { status: 202, body: { status: 'accepted', eventId: 'evt_r' } },
+      ],
+    })
+    const first = render(<App />)
+    await answer('Right after eating')
+    fireEvent.click(screen.getByRole('button', { name: 'Not me' }))
+    await waitFor(() => expect(calls(fetchMock, '/api/ratings')).toHaveLength(1))
+    await waitFor(() => expect(localStorage.getItem('pi.unrated.q-dishes')).not.toBeNull())
+    first.unmount()
+
+    render(<App />)
+    await waitFor(() => expect(calls(fetchMock, '/api/ratings')).toHaveLength(2))
+    const [lost, again] = calls(fetchMock, '/api/ratings')
+    const key = (c: unknown[]) => ((c[1] as RequestInit).headers as Record<string, string>)['Idempotency-Key']
+    expect(key(again)).toBe(key(lost))
+    expect(bodyOf(again)).toMatchObject({ questionId: 'q-dishes', optionId: 'right-away', verdict: 'not_me' })
+    await waitFor(() => expect(localStorage.getItem('pi.unrated.q-dishes')).toBeNull())
+  })
+
   it('after "Not me", keeps a line in your own words on this phone and never sends it', async () => {
     const fetchMock = stubApi({})
     render(<App />)
@@ -565,6 +605,10 @@ describe('the daily questions', () => {
     expect(card).toHaveTextContent('The other side A clear sink can turn into a rule')
     expect(card).toHaveTextContent('Second time this week your answer leaned towards getting things done.')
     expect(card).toHaveTextContent('For self-reflection, not a diagnosis.')
+    // Once the person says the card is not them, the thread no longer counts it.
+    fireEvent.click(screen.getByRole('button', { name: 'Not me' }))
+    expect(card).not.toHaveTextContent('Second time this week')
+    expect(card).toHaveTextContent('The other side A clear sink can turn into a rule')
   })
 
   it('ends the morning with "Morning done.", the thread, the moves and what opens at 5 pm, without repeating the cards or keeping score', async () => {
@@ -1240,6 +1284,18 @@ describe('the weekly mirror', () => {
     expect(within(page).queryByRole('list', { name: 'Sources' })).not.toBeInTheDocument()
     expect(within(page).queryAllByRole('link')).toEqual([])
     expect(document.body.textContent).not.toMatch(noClinicianWords)
+  })
+
+  it('leaves a leaning marked "Not me" out of the title and the one line', async () => {
+    localStorage.setItem('pi.leaning.conscientiousness.high', JSON.stringify({ verdict: 'not_me', date: '2026-10-18' }))
+    await openMirror()
+    const page = screen.getByRole('region', { name: 'Your weekly mirror' })
+    const heading = await within(page).findByRole('heading', { level: 2 })
+    expect(heading).not.toHaveTextContent(weekTitle)
+    expect(heading).not.toHaveTextContent('rest wait too long')
+    const line = within(page).getByRole('figure', { name: 'One line from this week' })
+    expect(line).toHaveTextContent('“Check my phone again”')
+    expect(line).not.toHaveTextContent('Right after eating')
   })
 
   it('hides what has no real data yet, for a new player', async () => {

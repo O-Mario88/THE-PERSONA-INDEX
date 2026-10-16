@@ -34,8 +34,12 @@ const bankId = (id: string) => (/^\d{4}-\d{2}-\d{2}-/.test(id) ? id.slice(11) : 
 
 export function inOrder(q: Question): Option[] {
   const key = `${seed()}|${bankId(q.id)}|`
-  return [...q.options]
+  const order = [...q.options]
     .map((o) => ({ o, h: fnv1a(key + o.id) }))
     .sort((a, b) => a.h - b.h || a.o.id.localeCompare(b.o.id))
     .map((x) => x.o)
+  // A shuffle can land on shallow to deep by chance; then the first goes last.
+  const depth = (o: Option) => o.depth ?? 1
+  const shallowToDeep = order.every((o, i) => i === 0 || depth(order[i - 1]) <= depth(o))
+  return shallowToDeep && order.some((o) => depth(o) !== depth(order[0])) ? [...order.slice(1), order[0]] : order
 }

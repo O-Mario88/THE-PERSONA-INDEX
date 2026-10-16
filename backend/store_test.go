@@ -161,7 +161,8 @@ func TestVerdictMigration(t *testing.T) {
 		('d', 'q-none', '2026-10-12', 'habits', 'now', 1, false, NULL)`)
 	exec(`INSERT INTO mirror_weeks (device_key, monday, summary) VALUES
 		('d', '2026-10-05', '{"answers": 3, "learned": 2, "rated": 3}'),
-		('d', '2026-09-28', '{"answers": 1}')`)
+		('d', '2026-09-28', '{"answers": 1}'),
+		('d', '2026-09-21', '{"answers": 2, "rated": 2}')`)
 	exec(`INSERT INTO votes (id, question_id, option_id, voter_hash, idem_key, dedupe_key, accepted_at) VALUES
 		('v1', 'rating/q-yes', 'now/learned', 'h1', 'k1', 'x1', now()),
 		('v2', 'rating/q-no', 'now/not', 'h2', 'k2', 'x2', now()),
@@ -169,6 +170,9 @@ func TestVerdictMigration(t *testing.T) {
 	exec(`INSERT INTO vote_tallies (question_id, option_id, count) VALUES
 		('rating/q-yes', 'now/learned', 5), ('rating/q-yes', 'now/me', 1), ('rating/q-yes', 'now/not', 2),
 		('rating/q-no', '~private/learned', 3), ('q-yes', 'learned', 7)`)
+	run("005_verdicts.sql")
+	// A week folded after the change, then the file run again: nothing moves.
+	exec(`INSERT INTO mirror_weeks (device_key, monday, summary) VALUES ('d', '2026-10-12', '{"answers": 2, "partly": 2, "rated": 2}')`)
 	run("005_verdicts.sql")
 
 	texts := func(sql string) []string {
@@ -189,8 +193,13 @@ func TestVerdictMigration(t *testing.T) {
 	if got := texts(`SELECT column_name FROM information_schema.columns WHERE table_schema = 'verdict_migration' AND table_name = 'mirror_answers' AND column_name = 'learned'`); len(got) != 0 {
 		t.Fatal("expected the learned column gone")
 	}
-	if got := texts(`SELECT monday::text || '=' || summary::text FROM mirror_weeks ORDER BY monday`); !slices.Equal(got, []string{`2026-09-28={"answers": 1}`, `2026-10-05={"me": 2, "rated": 3, "answers": 3}`}) {
-		t.Fatalf("expected week summaries counting me, got %v", got)
+	if got := texts(`SELECT monday::text || '=' || summary::text FROM mirror_weeks ORDER BY monday`); !slices.Equal(got, []string{
+		`2026-09-21={"notMe": 2, "rated": 2, "answers": 2}`,
+		`2026-09-28={"answers": 1}`,
+		`2026-10-05={"me": 2, "notMe": 1, "rated": 3, "answers": 3}`,
+		`2026-10-12={"rated": 2, "partly": 2, "answers": 2}`,
+	}) {
+		t.Fatalf("expected week summaries counting me and not me, got %v", got)
 	}
 	if got := texts(`SELECT question_id || '=' || option_id FROM votes ORDER BY id`); !slices.Equal(got, []string{"rating/q-yes=now/me", "rating/q-no=now/not", "q-yes=learned"}) {
 		t.Fatalf("expected rating votes renamed and nothing else, got %v", got)

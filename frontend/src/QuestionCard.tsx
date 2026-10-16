@@ -371,8 +371,10 @@ function Answer({
   onNext: () => void
 }) {
   const insight = option.insight
-  // Worked out once, from the history this answer was just added to.
+  // Worked out once, from the history this answer was just added to, and
+  // put away if the person says the card is not them.
   const [thread] = useState(() => threadLine(loadHistory(), question, option.id, date))
+  const [notMe, setNotMe] = useState(() => recalledVerdict(question.id) === 'not_me')
   return (
     <div className="answer">
       {words ? (
@@ -383,10 +385,18 @@ function Answer({
           <span className="chosen">{option.label}</span>
         </p>
       )}
-      {insight && <InsightPanel reveal={insight.reveal} otherSide={insight.otherSide} thread={thread} />}
+      {insight && <InsightPanel reveal={insight.reveal} otherSide={insight.otherSide} thread={notMe ? null : thread} />}
       {isHeavy(question.theme, option.depth) && <Helpline />}
       {insight?.step && <TryThis question={question} option={option} step={insight.step} date={date} />}
-      {insight && <Rate question={question} option={option} date={date} wordsDays={wordsDays} />}
+      {insight && (
+        <Rate
+          question={question}
+          option={option}
+          date={date}
+          wordsDays={wordsDays}
+          onVerdict={(v) => setNotMe(v === 'not_me')}
+        />
+      )}
       <button type="button" className="next" onClick={onNext}>
         Next
       </button>
@@ -458,10 +468,23 @@ function TryThis({ question, option, step, date }: { question: Question; option:
 // with the answer on this phone and in the mirror, and counted, never with
 // words, so vague cards show up. "Not me" asks what is closer: the reading of
 // another answer, or a line of the person's own that stays on this phone.
-function Rate({ question, option, date, wordsDays }: { question: Question; option: Option; date: string; wordsDays: number }) {
+function Rate({
+  question,
+  option,
+  date,
+  wordsDays,
+  onVerdict,
+}: {
+  question: Question
+  option: Option
+  date: string
+  wordsDays: number
+  onVerdict: (v: Verdict) => void
+}) {
   const [verdict, setVerdict] = useState(() => recalledVerdict(question.id))
   function tap(v: Verdict) {
     setVerdict(v)
+    onVerdict(v)
     rememberRated(question.id, v)
     recordVerdict(question.id, v)
     const sent = question.care === 'intimate' ? PRIVATE_OPTION : option.id
@@ -500,12 +523,17 @@ function Closer({ question, option, date, wordsDays }: { question: Question; opt
   const [closer, setCloser] = useState(() => recalledAnswer(question.id)?.closer?.optionId ?? null)
   const [instead, setInstead] = useState<Instead | null>(() => recalledInstead(question.id))
   const [line, setLine] = useState('')
-  const [done, setDone] = useState(false)
+  const [done, setDone] = useState(closer === NEITHER)
   const picked = others.find((o) => o.id === closer)
 
   function pick(o: Option) {
     recordVerdict(question.id, 'not_me', { optionId: o.id, traits: o.traits ?? {} })
     setCloser(o.id)
+  }
+  // "Neither" is kept too, so the card does not ask again.
+  function neither() {
+    recordVerdict(question.id, 'not_me', { optionId: NEITHER, traits: {} })
+    setDone(true)
   }
   function keepLine() {
     const w: Instead = { questionId: question.id, date, words: line.trim() }
@@ -561,7 +589,7 @@ function Closer({ question, option, date, wordsDays }: { question: Question; opt
               <button type="submit" className="pill-button" disabled={!line.trim()}>
                 Keep my line
               </button>
-              <button type="button" className="text-button" onClick={() => setDone(true)}>
+              <button type="button" className="text-button" onClick={neither}>
                 Neither
               </button>
             </div>
@@ -573,3 +601,5 @@ function Closer({ question, option, date, wordsDays }: { question: Question; opt
 }
 
 const MAX_INSTEAD = 140
+// The closer reading kept when none of the others was closer.
+const NEITHER = ''

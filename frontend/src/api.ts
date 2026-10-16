@@ -321,13 +321,53 @@ export type Verdict = 'me' | 'partly' | 'not_me'
 const VERDICTS: Verdict[] = ['me', 'partly', 'not_me']
 
 export function rateCard(questionId: string, optionId: string, verdict: Verdict): Promise<unknown> {
-  return withDevice((voterId) =>
-    request('/api/ratings', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Idempotency-Key': randomId() },
-      body: JSON.stringify({ questionId, optionId, verdict, voterId }),
-    }),
-  )
+  const r: UnsentRating = { key: randomId(), optionId, verdict }
+  save(unratedPrefix + questionId, JSON.stringify(r))
+  return sendRating(questionId, r)
+}
+
+// A tap keeps its idempotency key until the server has it, and is sent again
+// with that key when the app next opens, so a tap lost to a dropped
+// connection still reaches the mirror ("Not me" decides what it reads) and
+// can never count twice. An answer from the server, other than "busy", ends
+// it: the tap got there, or never can.
+type UnsentRating = { key: string; optionId: string; verdict: Verdict }
+const unratedPrefix = 'pi.unrated.'
+
+async function sendRating(questionId: string, r: UnsentRating): Promise<unknown> {
+  try {
+    const res = await withDevice((voterId) =>
+      request('/api/ratings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Idempotency-Key': r.key },
+        body: JSON.stringify({ questionId, optionId: r.optionId, verdict: r.verdict, voterId }),
+      }),
+    )
+    remove(unratedPrefix + questionId)
+    return res
+  } catch (e) {
+    if (e instanceof ApiError && e.status < 500 && e.status !== 429) remove(unratedPrefix + questionId)
+    throw e
+  }
+}
+
+// sendUnrated sends again every tap the server did not get, once.
+export async function sendUnrated() {
+  for (const k of keys(unratedPrefix)) {
+    let r: UnsentRating | null = null
+    try {
+      r = JSON.parse(load(k) ?? 'null')
+    } catch {
+      // unreadable: dropped below
+    }
+    if (!r || typeof r.key !== 'string' || typeof r.optionId !== 'string' || !VERDICTS.includes(r.verdict)) {
+      remove(k)
+      continue
+    }
+    await sendRating(k.slice(unratedPrefix.length), r).catch(() => {
+      // still offline: next time
+    })
+  }
 }
 
 export function rememberRated(questionId: string, verdict: Verdict) {
@@ -395,7 +435,7 @@ const draftPrefix = 'pi.draft.'
 const editionPrefix = 'pi.edition.'
 const pickPrefix = 'pi.pick.'
 const leaningPrefix = 'pi.leaning.'
-const perQuestion = [choicePrefix, pendingPrefix, draftPrefix, 'pi.at.', 'pi.rated.']
+const perQuestion = [choicePrefix, pendingPrefix, draftPrefix, 'pi.at.', 'pi.rated.', 'pi.unrated.']
 
 function randomId(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
