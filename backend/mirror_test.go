@@ -372,15 +372,48 @@ func TestMirrorTraitReads(t *testing.T) {
 	})
 }
 
+// rate taps the verdict under device's card for date's question.
+func rate(t *testing.T, s *Server, device, date, question, option, verdict string) {
+	t.Helper()
+	onDay(s, date)
+	r := RatingRequest{QuestionID: date + "-" + question, OptionID: option, Verdict: verdict, VoterID: device}
+	expectStatus(t, postRating(t, s, r, device+"-"+date+"-"+question+"-rating"), http.StatusAccepted)
+}
+
+func TestMirrorLeavesOutNotMe(t *testing.T) {
+	s := mirrorServer(mon)
+	for _, d := range []string{mon, tue, wed} {
+		answer(t, s, "a", d, "tidy", "now")
+	}
+	if r, ok := traitOf(getMirror(t, s, "a", wed), "conscientiousness"); !ok || r.Answers != 3 {
+		t.Fatalf("expected a read from three answers, got %+v", r)
+	}
+
+	rate(t, s, "a", tue, "tidy", "now", verdictNotMe)
+	rate(t, s, "a", wed, "tidy", "now", verdictPartly)
+	m := getMirror(t, s, "a", wed)
+	if r, ok := traitOf(m, "conscientiousness"); !ok || r.Answers != 2 {
+		t.Fatalf("expected the 'Not me' answer left out of the read and 'Partly' kept, got %+v", r)
+	}
+	if m.Stats.Answers != 3 || m.Stats.Rated != 2 || m.Stats.NotMe != 1 || m.Stats.Partly != 1 {
+		t.Fatalf("expected every answer still counted, got %+v", m.Stats)
+	}
+
+	rate(t, s, "a", mon, "tidy", "now", verdictNotMe)
+	if r, ok := traitOf(getMirror(t, s, "a", wed), "conscientiousness"); ok {
+		t.Fatalf("expected no read from one answer left, got %+v", r)
+	}
+}
+
 func TestMirrorRatingsAndMood(t *testing.T) {
 	s := mirrorServer(mon)
 	answer(t, s, "a", mon, "tidy", "now")
-	raw, _ := json.Marshal(RatingRequest{QuestionID: mon + "-tidy", OptionID: "now", Learned: true, VoterID: tokenFor(s, "a")})
+	raw, _ := json.Marshal(RatingRequest{QuestionID: mon + "-tidy", OptionID: "now", Verdict: verdictMe, VoterID: tokenFor(s, "a")})
 	req := httptest.NewRequest(http.MethodPost, "/api/ratings", bytes.NewReader(raw))
 	req.Header.Set("Idempotency-Key", "r1")
 	expectStatus(t, do(t, s, req), http.StatusAccepted)
-	if m := getMirror(t, s, "a", mon); m.Stats.Learned != 1 || m.Stats.Rated != 1 {
-		t.Fatalf("expected one card rated 'I learned something', got %+v", m.Stats)
+	if m := getMirror(t, s, "a", mon); m.Stats.Me != 1 || m.Stats.Partly != 0 || m.Stats.NotMe != 0 || m.Stats.Rated != 1 {
+		t.Fatalf("expected one card rated 'That's me', got %+v", m.Stats)
 	}
 
 	if getMirror(t, s, "a", mon).LowMood {

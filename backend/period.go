@@ -85,7 +85,9 @@ type PeriodStats struct {
 	Answers      int `json:"answers"`
 	Private      int `json:"private"`
 	Deepest      int `json:"deepest"`
-	Learned      int `json:"learned"`
+	Me           int `json:"me"` // cards tapped "That's me"
+	Partly       int `json:"partly"`
+	NotMe        int `json:"notMe"`
 	Rated        int `json:"rated"`
 	StepsStarted int `json:"stepsStarted"`
 	StepsTried   int `json:"stepsTried"`
@@ -234,11 +236,9 @@ func (s *Server) summarizeWeek(key string, monday time.Time, answers []MirrorAns
 		if a.deepest() {
 			w.Deepest++
 		}
-		if a.Learned != nil {
+		if a.Verdict != "" {
 			w.Rated++
-			if *a.Learned {
-				w.Learned++
-			}
+			countVerdict(a.Verdict, &w.Me, &w.Partly, &w.NotMe)
 		}
 		if a.Theme != "" {
 			if w.Themes == nil {
@@ -297,7 +297,7 @@ func (s *Server) summarizeWeek(key string, monday time.Time, answers []MirrorAns
 // momentOf reads an answer as a moment, when its option leans at least
 // momentLean on one of the traits it carries.
 func momentOf(a answered) (Moment, bool) {
-	if !a.found {
+	if !a.reads() {
 		return Moment{}, false
 	}
 	o := optionOf(a.q, a.OptionID)
@@ -411,7 +411,9 @@ func addUp(ws []WeekSummary, kept []bool, daysSoFar int) PeriodStats {
 		st.Answers += w.Answers
 		st.Private += w.Private
 		st.Deepest += w.Deepest
-		st.Learned += w.Learned
+		st.Me += w.Me
+		st.Partly += w.Partly
+		st.NotMe += w.NotMe
 		st.Rated += w.Rated
 		st.StepsStarted += w.StepsStarted
 		st.StepsTried += w.StepsTried

@@ -28,6 +28,9 @@ import (
 //     least, 0.5 for the options' average weight.
 //   - A week's read is the mean position over that week and the two before
 //     (traitWindowDays), as a score from 0 to 100. Private answers never count.
+//   - An answer whose card the phone tapped "Not me" counts towards nothing
+//     about who the person is: no trait read, no example and no moment
+//     (since 2026-10-16). It still counts as an answer and towards its theme.
 
 const (
 	minTraitAnswers  = 2  // answers on a trait before it is read at all
@@ -62,7 +65,9 @@ type MirrorStats struct {
 	Answers            int `json:"answers"`   // private ones included
 	Private            int `json:"private"`
 	Deepest            int `json:"deepest"` // answers that took the question's deepest option
-	Learned            int `json:"learned"`
+	Me                 int `json:"me"`      // cards tapped "That's me"
+	Partly             int `json:"partly"`
+	NotMe              int `json:"notMe"`
 	Rated              int `json:"rated"`
 	StepsStarted       int `json:"stepsStarted"`
 	StepsTried         int `json:"stepsTried"`
@@ -417,6 +422,10 @@ func (s *Server) resolve(answers []MirrorAnswer) []answered {
 	return out
 }
 
+// reads reports whether the answer may say anything about who the person is:
+// its question is known and the phone did not tap "Not me" on its card.
+func (a answered) reads() bool { return a.found && a.Verdict != verdictNotMe }
+
 func (a answered) deepest() bool {
 	if !a.found {
 		return false
@@ -473,7 +482,7 @@ func (t traitSum) mean() float64 { return math.Round(t.sum/float64(t.n)*1e6) / 1
 func traitSums(answers []answered, from, to string) map[string]traitSum {
 	out := map[string]traitSum{}
 	for _, a := range answers {
-		if !a.found || a.Date < from || a.Date > to {
+		if !a.reads() || a.Date < from || a.Date > to {
 			continue
 		}
 		for _, trait := range traitsOn(a.q) {
@@ -560,11 +569,9 @@ func (s *Server) buildMirror(ctx context.Context, key, date string) (Mirror, err
 		if a.deepest() {
 			m.Stats.Deepest++
 		}
-		if a.Learned != nil {
+		if a.Verdict != "" {
 			m.Stats.Rated++
-			if *a.Learned {
-				m.Stats.Learned++
-			}
+			countVerdict(a.Verdict, &m.Stats.Me, &m.Stats.Partly, &m.Stats.NotMe)
 		}
 		if i := int(mustDate(a.Date).Sub(monday).Hours() / 24); i >= 0 && i < 7 {
 			m.Days[i].Answers = append(m.Days[i].Answers, DayAnswer{Theme: a.Theme, Depth: depthWord(a.Private(), float64(a.Depth))})
@@ -767,7 +774,7 @@ func evidence(week []answered, trait string, higher bool) ([]string, string, int
 	}
 	var leans []lean
 	for _, a := range week {
-		if !a.found {
+		if !a.reads() {
 			continue
 		}
 		if p, ok := traitPosition(a.q, a.OptionID, trait); ok && ((higher && p > 0.5) || (!higher && p < 0.5)) {

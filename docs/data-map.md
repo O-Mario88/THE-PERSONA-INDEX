@@ -30,7 +30,7 @@ Postgres, schema in `backend/migrations/`. Every key below is an HMAC made from 
 | --- | --- | --- | --- | --- |
 | `votes` | A vote or a card rating, waiting to be counted or kept for the one-vote rule | Question, option, a voter hash that is different for every question, the idempotency key, the time to the hour, when it was counted | `VOTE_RETENTION_DAYS` after it is counted: default 7, never less than 7 (`main.go`) | Yes, found through the phone's voter hashes for every edition still kept (`deviceVoteHashes`) |
 | `vote_tallies` | One option's count | Question, option, count. No device key of any kind | For good | No: with nothing to link a count to a phone, it is a real total, not personal data |
-| `mirror_answers` | One answer, for the phone's mirror | Mirror key, question, date, morning or evening, theme, option, depth, the "I learned something" tap | 35 days (`mirrorRetention`, `mirrorstore.go`) | Yes |
+| `mirror_answers` | One answer, for the phone's mirror | Mirror key, question, date, morning or evening, theme, option, depth, the tap under the card (`verdict`: me, partly or not_me) | 35 days (`mirrorRetention`, `mirrorstore.go`) | Yes |
 | `mirror_steps` | One small step | Mirror key, question, option, the day it started, its status, the hour it last changed | 35 days | Yes |
 | `mirror_weeks` | One finished week, for the monthly, quarterly and yearly mirrors | Mirror key, counts, theme depths, trait sums, steps that helped, the three answers that said the most. Never a private answer's question or option, never own words | 400 days (`weekSummaryRetention`, `period.go`) | Yes |
 | `mirror_folds` | A week that has been folded for everyone | The Monday and when it was folded. Nothing about any phone | For good | No |
@@ -44,7 +44,7 @@ The choice on an intimacy question is never stored on the server, in any table:
 - The phone sends `~private` as its option, and the server stores `~private` whatever arrives (`CastVote`, `api.go`). The count for the question is how many answered, not what.
 - `GET /api/questions/{id}/results` refuses an intimate question with `403 private_question`.
 - The mirror row says only that a private answer was given: an HMAC in place of the question id, no option, depth 0. Private answers never shape a trait read and never appear in a weekly note.
-- A card rating on one is stored as `~private/learned` or `~private/not`.
+- A card rating on one is stored as `~private/me`, `~private/partly` or `~private/not`.
 - A small step cannot be started on one.
 
 ### What cannot be joined

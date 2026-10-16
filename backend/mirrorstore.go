@@ -27,11 +27,23 @@ type MirrorAnswer struct {
 	OptionID   string // empty for a private answer
 	Depth      int    // 0 for a private answer
 	Evening    bool   // answered in the evening sitting; never the time itself
-	Learned    *bool  // the "I learned something" tap, once given
+	Verdict    string // the tap under the card once given: verdictMe, verdictPartly or verdictNotMe
 }
 
 // Private reports whether the answer was kept without its option.
 func (a MirrorAnswer) Private() bool { return a.OptionID == "" }
+
+// countVerdict adds one to the count for the verdict given.
+func countVerdict(verdict string, me, partly, notMe *int) {
+	switch verdict {
+	case verdictMe:
+		*me++
+	case verdictPartly:
+		*partly++
+	case verdictNotMe:
+		*notMe++
+	}
+}
 
 // Step statuses. A step starts from the card of an answer, and the phone
 // reports how it went: tried and it helped, tried with no change yet, or not
@@ -132,7 +144,9 @@ type WeekSummary struct {
 	Answers      int                   `json:"answers,omitempty"`
 	Private      int                   `json:"private,omitempty"`
 	Deepest      int                   `json:"deepest,omitempty"`
-	Learned      int                   `json:"learned,omitempty"`
+	Me           int                   `json:"me,omitempty"` // cards tapped "That's me"
+	Partly       int                   `json:"partly,omitempty"`
+	NotMe        int                   `json:"notMe,omitempty"`
 	Rated        int                   `json:"rated,omitempty"`
 	StepsStarted int                   `json:"stepsStarted,omitempty"`
 	StepsTried   int                   `json:"stepsTried,omitempty"`

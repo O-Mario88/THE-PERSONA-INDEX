@@ -63,7 +63,7 @@ func (p *pgStore) deviceWrite(ctx context.Context, deviceKey, sql string, args .
 	return nil
 }
 
-const answerColumns = `device_key, question_id, edition_date::text, theme, coalesce(option_id, ''), depth, evening, learned`
+const answerColumns = `device_key, question_id, edition_date::text, theme, coalesce(option_id, ''), depth, evening, coalesce(verdict, '')`
 
 // answerOrder is the order answers are read back in: by date and sitting.
 const answerOrder = `edition_date, evening, question_id`
@@ -71,7 +71,7 @@ const answerOrder = `edition_date, evening, question_id`
 func scanAnswer(rows pgx.CollectableRow) (MirrorAnswer, error) {
 	var a MirrorAnswer
 	var depth int16
-	err := rows.Scan(&a.DeviceKey, &a.QuestionID, &a.Date, &a.Theme, &a.OptionID, &depth, &a.Evening, &a.Learned)
+	err := rows.Scan(&a.DeviceKey, &a.QuestionID, &a.Date, &a.Theme, &a.OptionID, &depth, &a.Evening, &a.Verdict)
 	a.Depth = int(depth)
 	return a, err
 }
