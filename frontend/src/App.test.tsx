@@ -35,24 +35,6 @@ const today: DailySet = {
           },
         },
       ],
-      followUp: {
-        prompt: 'Did any dishes pile up today?',
-        options: [
-          {
-            id: 'washed',
-            label: 'I washed them straight away',
-            traits: { conscientiousness: 1 },
-            reflection: 'You kept on top of it again today, which suggests tidy surroundings help your head feel clear.',
-          },
-          {
-            id: 'piled',
-            label: 'They piled up a bit',
-            traits: { conscientiousness: -1 },
-            reflection: 'A pile on a full day is normal. You may have spent your energy on things that mattered more today.',
-          },
-          { id: 'no-dishes', label: "I didn't cook today", reflection: 'No dishes, no decision. Tomorrow you might notice when you choose to clear up.' },
-        ],
-      },
     },
     {
       id: 'q-bill',
@@ -77,19 +59,6 @@ const today: DailySet = {
           },
         },
       ],
-      followUp: {
-        prompt: 'How did getting up go this morning?',
-        options: [
-          { id: 'first-alarm', label: 'Up at the first alarm', reflection: 'Up at the first alarm suggests you went to bed with a plan you trusted.' },
-          {
-            id: 'snoozed',
-            label: 'I snoozed a few times',
-            traits: { neuroticism: 1 },
-            reflection: 'Snoozing may mean your night was short or your day felt heavy before it began.',
-          },
-          { id: 'no-alarm', label: 'No alarm today', reflection: 'A morning without an alarm tends to show what your body wants when you let it lead.' },
-        ],
-      },
     },
   ],
 }
@@ -118,6 +87,11 @@ today.pool = [...today.questions, payday, closeness]
 
 type Route = { status: number; body: unknown }
 
+const keptOnServer = {
+  kept: { answers: 12, privateAnswers: 2, steps: 2, weeklyNotes: 1, votes: 12, firstAnswer: '2026-10-05' },
+  keptFor: { answersDays: 35, weeklyNotesDays: 400, votesDays: 7 },
+}
+
 function json({ status, body }: Route): Response {
   if (status === 204) return new Response(null, { status })
   return new Response(JSON.stringify(body), {
@@ -136,6 +110,7 @@ function stubApi(routes: {
   mirror?: Route | Route[]
   period?: Route | Route[]
   forget?: Route
+  kept?: Route
   steps?: Route
 }) {
   let devices = 0
@@ -170,8 +145,11 @@ function stubApi(routes: {
     if (/^\/api\/mirror\/(month|quarter|year)\?date=/.test(url)) {
       return json(pick(routes.period, periods++) ?? { status: 404, body: { error: 'not_found' } })
     }
-    if (url === '/api/mirror' && init?.method === 'DELETE') {
-      return json(routes.forget ?? { status: 204, body: null })
+    if (url === '/api/device/data' && init?.method === 'DELETE') {
+      return json(routes.forget ?? { status: 200, body: { deleted: { answers: 12, steps: 2, weeklyNotes: 1, votes: 12 } } })
+    }
+    if (url === '/api/device/data') {
+      return json(routes.kept ?? { status: 200, body: keptOnServer })
     }
     return json({ status: 404, body: { error: 'not_found' } })
   })
@@ -394,7 +372,7 @@ describe('the daily questions', () => {
     expect(within(insight).getByText('You like a clear sink before you relax.')).toHaveClass('insight-headline')
     expect(within(insight).getByText('Unfinished tasks are noisier for you than for most.')).toHaveClass('insight-body')
     expect(insight).toHaveTextContent('For self-reflection, not a diagnosis.')
-    expect(screen.getByRole('group', { name: 'Try this' })).toHaveTextContent('Try this: Next time a small task appears')
+    expect(screen.getByRole('group', { name: 'Small step' })).toHaveTextContent('Small step: Next time a small task appears')
     expect(screen.queryByText(/Batching chores/)).not.toBeInTheDocument()
   })
 
@@ -481,13 +459,13 @@ describe('the daily questions', () => {
     expect(calls(fetchMock, '/api/votes')).toHaveLength(0)
   })
 
-  it("keeps a card's step as one of today's moves, on the phone and in the mirror", async () => {
+  it("keeps a card's step as one of today's small steps, on the phone and in the mirror", async () => {
     const fetchMock = stubApi({})
     render(<App />)
     await answer('Right after eating')
     fireEvent.click(screen.getByRole('button', { name: "I'll try it" }))
-    expect(screen.getByRole('group', { name: 'Try this' })).toHaveTextContent(
-      "Added to today's moves. I'll ask how it went this evening.",
+    expect(screen.getByRole('group', { name: 'Small step' })).toHaveTextContent(
+      "Added to today's small steps. I'll ask how it went this evening.",
     )
     await waitFor(() => expect(calls(fetchMock, '/api/steps')).toHaveLength(1))
     expect(bodyOf(calls(fetchMock, '/api/steps')[0])).toEqual({
@@ -559,7 +537,7 @@ describe('the daily questions', () => {
     // Edwin, 2026-10-15: "not afraid of telling them the negative things ... in a polite human language".
     expect(thread).toHaveTextContent(`The honest part: ${TRAITS.conscientiousness.high.cost}`)
     expect(thread).toHaveTextContent(`The honest part: ${TRAITS.neuroticism.high.cost}`)
-    const moves = within(done).getByRole('group', { name: "Moves you'll try" })
+    const moves = within(done).getByRole('group', { name: "Small steps you'll try" })
     expect(moves).toHaveTextContent('Tonight, set one alarm fewer')
     // Something to look forward to: the evening's three themes, and when.
     const later = within(done).getByRole('group', { name: 'Your evening three · 5 pm' })
@@ -854,7 +832,7 @@ describe('the evening, from 5 pm', () => {
 
     const day = await screen.findByRole('region', { name: 'Day complete' })
     expect(day).not.toHaveTextContent(crowdOrScore)
-    const moves = within(day).getByRole('group', { name: 'Your moves' })
+    const moves = within(day).getByRole('group', { name: 'Your small steps' })
     expect(moves).toHaveTextContent('set one alarm fewer')
     expect(moves).toHaveTextContent('How did it go?')
     // A move picked this evening has had no day yet; the mirror asks about it later.
@@ -1222,29 +1200,14 @@ describe('the weekly mirror', () => {
     expect(bodyOf(calls(fetchMock, '/api/steps')[0])).toMatchObject({ questionId: 'q-money', optionId: 'save', status: 'started' })
   })
 
-  it('deletes everything, on the server and on this phone, except the device token', async () => {
-    localStorage.setItem('pi.history.v1', JSON.stringify({ answers: [], skips: [] }))
-    localStorage.setItem('pi.words.q-x', JSON.stringify({ questionId: 'q-x', date: '2026-10-13', prompt: 'P', words: 'Mine' }))
-    localStorage.setItem('pi.device.v1', 'v1.mine.sig')
-    const fetchMock = await openMirror()
-    fireEvent.click(await screen.findByRole('button', { name: 'Delete everything' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Yes, delete it all' }))
-    expect(await screen.findByText('Everything is deleted, here and on our server.')).toBeInTheDocument()
-
-    const del = fetchMock.mock.calls.find(([u, init]) => u === '/api/mirror' && init?.method === 'DELETE')!
-    expect((del[1]!.headers as Record<string, string>).Authorization).toBe('Device v1.mine.sig')
-    expect(localStorage.getItem('pi.history.v1')).toBeNull()
-    expect(localStorage.getItem('pi.words.q-x')).toBeNull()
-    expect(localStorage.getItem('pi.device.v1')).toBe('v1.mine.sig')
-  })
-
-  it('keeps everything when the server could not delete it', async () => {
-    localStorage.setItem('pi.history.v1', JSON.stringify({ answers: [], skips: [] }))
-    await openMirror({ forget: { status: 503, body: { error: 'unavailable' } } })
-    fireEvent.click(await screen.findByRole('button', { name: 'Delete everything' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Yes, delete it all' }))
-    expect(await screen.findByRole('alert')).toHaveTextContent("I couldn't reach the server, so nothing was deleted.")
-    expect(localStorage.getItem('pi.history.v1')).not.toBeNull()
+  it('sends the person to What I keep to see and delete what is kept', async () => {
+    await openMirror()
+    const note = await screen.findByRole('note', { name: 'What leaves my phone' })
+    expect(note).toHaveTextContent('never what you chose')
+    fireEvent.click(screen.getByRole('button', { name: 'What I keep, and how to delete it' }))
+    expect(await screen.findByRole('heading', { name: 'What I keep' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: '← Back' }))
+    expect(screen.getByRole('button', { name: 'Your mirror' })).toHaveAttribute('aria-pressed', 'true')
   })
 
   it('gets a new token and asks again when the server no longer accepts the old one', async () => {
@@ -1457,7 +1420,7 @@ describe('the monthly, quarterly and yearly mirrors', () => {
     expect(page).toHaveTextContent('4 steps started, 3 tried, 2 helped.')
     expect(page).toHaveTextContent('A month is long enough to see a pattern, and short enough to change one.')
 
-    expect(within(page).getByRole('note', { name: 'What leaves my phone' })).toHaveTextContent('stays for 13 months')
+    expect(within(page).getByRole('note', { name: 'What leaves my phone' })).toHaveTextContent('for 13 months')
     expect(page).toHaveTextContent('For self-reflection, not a diagnosis.')
     expect(page).not.toHaveTextContent(crowdOrScore)
     expect(within(page).queryAllByRole('link')).toEqual([])
@@ -1572,5 +1535,275 @@ describe('the week', () => {
     const done = await screen.findByRole('region', { name: 'Day complete' })
     expect(done).toHaveTextContent('Tomorrow is Sunday: no new questions, just your week in the mirror.')
     expect(done).toHaveTextContent('Sleep well. Tomorrow is for looking back')
+  })
+})
+
+// Review of 2026-10-15, part 1: keep the privacy promise, and fix the ways a
+// vote could get stuck.
+describe('what the server learns from a vote', () => {
+  const intimacyFan = () =>
+    localStorage.setItem(
+      'pi.history.v1',
+      JSON.stringify({
+        answers: [
+          { date: '2026-10-11', questionId: 'x', theme: 'intimacy', depth: 4, traits: {} },
+          { date: '2026-10-11', questionId: 'y', theme: 'intimacy', depth: 4, traits: {} },
+        ],
+        skips: [],
+      }),
+    )
+
+  it('never sends which option was chosen for an intimacy question', async () => {
+    intimacyFan()
+    localStorage.setItem('pi.prefs.v1', JSON.stringify({ adult: true, mild: false }))
+    const fetchMock = stubApi({})
+    render(<App />)
+    await screen.findByText(closeness.prompt)
+    await answer('I wait for them first')
+    await waitFor(() => expect(calls(fetchMock, '/api/votes')).toHaveLength(1))
+    expect(bodyOf(calls(fetchMock, '/api/votes')[0])).toMatchObject({ questionId: 'q-close', optionId: '~private' })
+    expect(JSON.stringify(fetchMock.mock.calls)).not.toContain('"wait"')
+    expect(localStorage.getItem('pi.choice.q-close')).toBe('wait') // the phone knows; the server never does
+  })
+
+  it('sends the sitting with each vote, and nothing about the moment', async () => {
+    const fetchMock = stubApi({})
+    render(<App />)
+    await answer('Right after eating')
+    expect(bodyOf(calls(fetchMock, '/api/votes')[0])).toEqual({
+      questionId: 'q-dishes',
+      optionId: 'right-away',
+      voterId: 'v1.device1.sig',
+      sitting: 'morning',
+    })
+  })
+})
+
+describe('a vote never gets stuck', () => {
+  const keyOf = (call: unknown[]) => ((call[1] as RequestInit).headers as Record<string, string>)['Idempotency-Key']
+
+  it('takes a new key for a different answer after a failure, and keeps the first answer when it had landed', async () => {
+    const fetchMock = stubApi({
+      vote: [
+        { status: 503, body: { error: 'unavailable' } },
+        { status: 409, body: { error: 'duplicate_vote' } },
+      ],
+    })
+    render(<App />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Right after eating' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('did not go through')
+    fireEvent.click(screen.getByRole('button', { name: 'At the end of the day' }))
+    expect(await screen.findByText("Your first answer had already reached me, so that's the one I kept.")).toBeInTheDocument()
+    const [first, second] = calls(fetchMock, '/api/votes')
+    expect(keyOf(first)).not.toBe(keyOf(second))
+    expect(screen.getByText('Right after eating')).toBeInTheDocument()
+    expect(screen.getByRole('note', { name: 'What your answer may say' })).toHaveTextContent('You like a clear sink')
+    expect(localStorage.getItem('pi.choice.q-dishes')).toBe('right-away')
+  })
+
+  it('sends once more with a fresh key when the server says the key belongs to another answer', async () => {
+    localStorage.setItem('pi.pending.q-dishes', 'a-key-from-an-older-version')
+    const fetchMock = stubApi({ vote: [{ status: 422, body: { error: 'idempotency_key_reused' } }, { status: 202, body: { status: 'accepted', eventId: 'e' } }] })
+    render(<App />)
+    await answer('Right after eating')
+    const keys = calls(fetchMock, '/api/votes').map(keyOf)
+    expect(keys).toHaveLength(2)
+    expect(keys[0]).not.toBe(keys[1])
+    expect(keys).not.toContain('a-key-from-an-older-version')
+    expect(screen.getByRole('note', { name: 'What your answer may say' })).toBeInTheDocument()
+  })
+
+  it('gets a new pass and sends again when another tab deleted everything', async () => {
+    localStorage.setItem('pi.device.v1', 'v2.gone.pass')
+    const fetchMock = stubApi({ vote: [{ status: 410, body: { error: 'device_forgotten' } }, { status: 202, body: { status: 'accepted', eventId: 'e' } }] })
+    render(<App />)
+    await answer('Right after eating')
+    expect(calls(fetchMock, '/api/votes').map((c) => bodyOf(c).voterId)).toEqual(['v2.gone.pass', 'v1.device1.sig'])
+  })
+
+  it('follows another tab that answers the same question, and never overwrites what it knows', async () => {
+    stubApi({ vote: { status: 409, body: { error: 'duplicate_vote' } } })
+    render(<App />)
+    await screen.findByRole('button', { name: 'Right after eating' })
+    localStorage.setItem('pi.choice.q-dishes', 'end-of-day')
+    window.dispatchEvent(new StorageEvent('storage', { key: 'pi.choice.q-dishes' }))
+    expect(await screen.findByRole('note', { name: 'What your answer may say' })).toHaveTextContent('Batching chores')
+    expect(screen.queryByRole('button', { name: 'Right after eating' })).not.toBeInTheDocument()
+    expect(localStorage.getItem('pi.choice.q-dishes')).toBe('end-of-day')
+  })
+
+  it('keeps a half-written answer in your own words when the app closes', async () => {
+    stubApi({})
+    const { unmount } = render(<App />)
+    fireEvent.click(await screen.findByRole('button', { name: /In my own words/ }))
+    fireEvent.change(screen.getByRole('textbox', { name: 'In your own words' }), { target: { value: 'Honestly, it depends' } })
+    unmount()
+    render(<App />)
+    expect(await screen.findByRole('textbox', { name: 'In your own words' })).toHaveValue('Honestly, it depends')
+    fireEvent.click(screen.getByRole('button', { name: 'Keep my words' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Right after eating' }))
+    await screen.findByRole('button', { name: 'Next' })
+    expect(localStorage.getItem('pi.draft.q-dishes')).toBeNull()
+  })
+
+  it('opens without a connection on the day the phone already holds', async () => {
+    stubApi({})
+    const { unmount } = render(<App />)
+    await screen.findByText('When do you wash the dishes?')
+    unmount()
+    vi.stubGlobal('fetch', vi.fn(async () => Promise.reject(new TypeError('Failed to fetch'))))
+    render(<App />)
+    expect(await screen.findByText('When do you wash the dishes?')).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent("You're offline")
+  })
+})
+
+describe('what I keep', () => {
+  const openKept = async () => {
+    fireEvent.click(await screen.findByRole('button', { name: 'What I keep' }))
+    return screen.findByRole('region', { name: 'What I keep' })
+  }
+
+  it('shows what is kept on this phone and on the server, and for how long', async () => {
+    localStorage.setItem('pi.device.v1', 'v2.mine.pass')
+    localStorage.setItem('pi.words.q-x', JSON.stringify({ questionId: 'q-x', date: '2026-10-10', prompt: 'P', words: 'Mine' }))
+    localStorage.setItem('pi.history.v1', JSON.stringify({ answers: [{ date: '2026-10-11', questionId: 'a', theme: 'habits', depth: 2, traits: {} }], skips: [] }))
+    const fetchMock = stubApi({})
+    render(<App />)
+    const page = await openKept()
+    const phone = within(page).getByRole('group', { name: 'On this phone' })
+    expect(phone).toHaveTextContent('1 answer in your own words. Never sent. Kept 5 weeks')
+    expect(phone).toHaveTextContent('1 answer in your history.')
+    const server = within(page).getByRole('group', { name: 'On the server' })
+    expect(await within(server).findByText(/12 answers/)).toBeInTheDocument()
+    expect(server).toHaveTextContent('12 answers, 2 of them private, under an anonymous key')
+    expect(server).toHaveTextContent('Kept 5 weeks.')
+    expect(server).toHaveTextContent('1 weekly note')
+    expect(server).toHaveTextContent('Kept 13 months.')
+    expect(server).toHaveTextContent('12 votes')
+    expect(server).toHaveTextContent('Kept 1 week, to the hour they came in.')
+    const get = calls(fetchMock, '/api/device/data')[0]
+    expect((get[1]!.headers as Record<string, string>).Authorization).toBe('Device v2.mine.pass')
+    expect(page).not.toHaveTextContent(crowdOrScore)
+  })
+
+  it('asks the server nothing for a phone that has never answered', async () => {
+    const fetchMock = stubApi({})
+    render(<App />)
+    const page = await openKept()
+    expect(within(page).getByRole('group', { name: 'On the server' })).toHaveTextContent('Nothing. This phone has no answers on the server.')
+    expect(calls(fetchMock, '/api/device/data')).toHaveLength(0)
+    expect(calls(fetchMock, '/api/device')).toHaveLength(0)
+  })
+
+  it('deletes everywhere: the server first, then this phone and its pass, and says how much went', async () => {
+    localStorage.setItem('pi.device.v1', 'v2.mine.pass')
+    localStorage.setItem('pi.history.v1', JSON.stringify({ answers: [], skips: [] }))
+    localStorage.setItem('pi.words.q-x', JSON.stringify({ questionId: 'q-x', date: '2026-10-10', prompt: 'P', words: 'Mine' }))
+    localStorage.setItem('pi.choice.2026-10-12-call', 'text')
+    localStorage.setItem('pi.choice.2026-10-01-old', 'text')
+    const fetchMock = stubApi({})
+    render(<App />)
+    const page = await openKept()
+    fireEvent.click(within(page).getByRole('button', { name: 'Delete everywhere' }))
+    fireEvent.click(within(page).getByRole('button', { name: 'Yes, delete it all' }))
+    expect(await within(page).findByText(/Everything is deleted, here and on the server/)).toHaveTextContent(
+      '12 answers, 2 small steps, 1 weekly note and 12 votes',
+    )
+    const dels = fetchMock.mock.calls.filter(([u, init]) => u === '/api/device/data' && init?.method === 'DELETE')
+    expect(dels).toHaveLength(1)
+    expect((dels[0][1]!.headers as Record<string, string>).Authorization).toBe('Device v2.mine.pass')
+    expect(localStorage.getItem('pi.device.v1')).toBeNull()
+    expect(localStorage.getItem('pi.history.v1')).toBeNull()
+    expect(localStorage.getItem('pi.words.q-x')).toBeNull()
+    expect(localStorage.getItem('pi.choice.2026-10-12-call')).toBe('x') // closed today, nothing kept of the answer
+    expect(localStorage.getItem('pi.choice.2026-10-01-old')).toBeNull()
+  })
+
+  it('keeps everything when the server could not delete it', async () => {
+    localStorage.setItem('pi.device.v1', 'v2.mine.pass')
+    localStorage.setItem('pi.history.v1', JSON.stringify({ answers: [], skips: [] }))
+    stubApi({ forget: { status: 503, body: { error: 'unavailable' } } })
+    render(<App />)
+    const page = await openKept()
+    fireEvent.click(within(page).getByRole('button', { name: 'Delete everywhere' }))
+    fireEvent.click(within(page).getByRole('button', { name: 'Yes, delete it all' }))
+    expect(await within(page).findByRole('alert')).toHaveTextContent("I couldn't reach the server, so nothing was deleted.")
+    expect(localStorage.getItem('pi.history.v1')).not.toBeNull()
+    expect(localStorage.getItem('pi.device.v1')).toBe('v2.mine.pass')
+  })
+
+  it('deletes from this phone only, keeping the pass and what the server keeps', async () => {
+    localStorage.setItem('pi.device.v1', 'v2.mine.pass')
+    localStorage.setItem('pi.history.v1', JSON.stringify({ answers: [], skips: [] }))
+    localStorage.setItem('pi.moves.v1', JSON.stringify([{ date: '2026-10-12', questionId: 'q', optionId: 'o', step: 'S', status: 'started' }]))
+    const fetchMock = stubApi({})
+    render(<App />)
+    const page = await openKept()
+    fireEvent.click(within(page).getByRole('button', { name: 'Delete from this phone' }))
+    fireEvent.click(within(page).getByRole('button', { name: 'Yes, clear this phone' }))
+    expect(within(page).getByRole('status')).toHaveTextContent('Deleted from this phone.')
+    expect(localStorage.getItem('pi.history.v1')).toBeNull()
+    expect(localStorage.getItem('pi.moves.v1')).toBeNull()
+    expect(localStorage.getItem('pi.device.v1')).toBe('v2.mine.pass')
+    expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'DELETE')).toBe(false)
+    expect(within(page).getByRole('group', { name: 'On this phone' })).toHaveTextContent('0 small steps')
+  })
+})
+
+describe('settings', () => {
+  it('changes the 18+ answer and how long your own words stay on this phone', async () => {
+    localStorage.setItem('pi.prefs.v1', JSON.stringify({ adult: true, mild: false }))
+    localStorage.setItem('pi.words.q-a', JSON.stringify({ questionId: 'q-a', date: '2026-10-02', prompt: 'P', words: 'Ten days ago' }))
+    localStorage.setItem('pi.words.q-b', JSON.stringify({ questionId: 'q-b', date: '2026-10-10', prompt: 'P', words: 'Two days ago' }))
+    stubApi({})
+    render(<App />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Settings' }))
+    const page = screen.getByRole('region', { name: 'Settings' })
+    expect(within(page).getByRole('radio', { name: 'Five weeks' })).toBeChecked()
+    fireEvent.click(within(page).getByRole('radio', { name: "I'm under 18, or I'd rather not have them" }))
+    fireEvent.click(within(page).getByRole('radio', { name: 'One week' }))
+    expect(JSON.parse(localStorage.getItem('pi.prefs.v1')!)).toEqual({ adult: false, mild: false, wordsDays: 7 })
+    expect(localStorage.getItem('pi.words.q-a')).toBeNull()
+    expect(localStorage.getItem('pi.words.q-b')).not.toBeNull()
+    fireEvent.click(within(page).getByRole('button', { name: '← Back' }))
+    expect(await screen.findByText('When do you wash the dishes?')).toBeInTheDocument()
+  })
+
+  it('clears own words past their time each time the app opens', async () => {
+    localStorage.setItem('pi.words.q-a', JSON.stringify({ questionId: 'q-a', date: '2026-09-01', prompt: 'P', words: 'Old' }))
+    localStorage.setItem('pi.draft.2026-10-01-x', 'an old draft')
+    localStorage.setItem('pi.pending.2026-09-30-y', 'old-key')
+    stubApi({})
+    render(<App />)
+    await screen.findByText('When do you wash the dishes?')
+    expect(localStorage.getItem('pi.words.q-a')).toBeNull()
+    expect(localStorage.getItem('pi.draft.2026-10-01-x')).toBeNull()
+    expect(localStorage.getItem('pi.pending.2026-09-30-y')).toBeNull()
+  })
+})
+
+describe('Sunday', () => {
+  it("asks how the week's small steps went", async () => {
+    vi.setSystemTime(at(9, 18))
+    localStorage.setItem(
+      'pi.moves.v1',
+      JSON.stringify([
+        { date: '2026-10-13', questionId: 'q1', optionId: 'o', step: 'Call one friend', status: 'started' },
+        { date: '2026-10-14', questionId: 'q2', optionId: 'o', step: 'Walk at lunch', status: 'helped' },
+        { date: '2026-10-05', questionId: 'q3', optionId: 'o', step: 'Last week', status: 'started' },
+      ]),
+    )
+    const fetchMock = stubApi({ edition: { status: 200, body: sunday }, mirror: { status: 200, body: mirror } })
+    render(<App />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Today' }))
+    const steps = screen.getByRole('group', { name: "This week's small steps" })
+    expect(steps).toHaveTextContent('Call one friend')
+    expect(steps).not.toHaveTextContent('Walk at lunch')
+    expect(steps).not.toHaveTextContent('Last week')
+    fireEvent.click(within(steps).getByRole('button', { name: 'It helped' }))
+    expect(steps).toHaveTextContent('Glad it helped.')
+    await waitFor(() => expect(calls(fetchMock, '/api/steps')).toHaveLength(1))
+    expect(bodyOf(calls(fetchMock, '/api/steps')[0])).toMatchObject({ questionId: 'q1', status: 'helped', date: '2026-10-18' })
   })
 })

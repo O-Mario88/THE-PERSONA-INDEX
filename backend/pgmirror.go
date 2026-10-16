@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"slices"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -14,39 +16,63 @@ func (p *pgStore) SaveAnswer(ctx context.Context, a MirrorAnswer) error {
 	if a.OptionID != "" {
 		option = &a.OptionID
 	}
-	_, err := p.pool.Exec(ctx, `
-		INSERT INTO mirror_answers (device_key, question_id, edition_date, theme, option_id, depth, answered_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+	return p.deviceWrite(ctx, a.DeviceKey, `
+		INSERT INTO mirror_answers (device_key, question_id, edition_date, theme, option_id, depth, evening)
+		SELECT $1, $2, $3, $4, $5, $6, $7
+		WHERE NOT EXISTS (SELECT 1 FROM forgotten_devices WHERE device_key = $1)
 		ON CONFLICT (device_key, question_id) DO NOTHING`,
-		a.DeviceKey, a.QuestionID, a.Date, a.Theme, option, a.Depth, a.AnsweredAt)
-	return err
-}
-
-func (p *pgStore) SaveRating(ctx context.Context, deviceKey, questionID string, learned bool) error {
-	_, err := p.pool.Exec(ctx, `
-		UPDATE mirror_answers SET learned = $3
-		WHERE device_key = $1 AND question_id = $2 AND learned IS NULL`, deviceKey, questionID, learned)
-	return err
+		a.DeviceKey, a.QuestionID, a.Date, a.Theme, option, a.Depth, a.Evening)
 }
 
 func (p *pgStore) SaveStep(ctx context.Context, s MirrorStep) error {
-	_, err := p.pool.Exec(ctx, `
+	return p.deviceWrite(ctx, s.DeviceKey, `
 		INSERT INTO mirror_steps (device_key, question_id, option_id, started_on, status, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		SELECT $1, $2, $3, $4, $5, $6
+		WHERE NOT EXISTS (SELECT 1 FROM forgotten_devices WHERE device_key = $1)
 		ON CONFLICT (device_key, question_id)
 		DO UPDATE SET option_id = EXCLUDED.option_id, status = EXCLUDED.status, updated_at = EXCLUDED.updated_at`,
 		s.DeviceKey, s.QuestionID, s.OptionID, s.Started, s.Status, s.UpdatedAt)
-	return err
 }
 
-const answerColumns = `device_key, question_id, edition_date::text, theme, coalesce(option_id, ''), depth, answered_at, learned`
+// deviceWrite runs one write under the device's lock, in one implicit
+// transaction, and reports ErrDeviceForgotten for a phone that deleted
+// everything (the write itself checks that and does nothing).
+func (p *pgStore) deviceWrite(ctx context.Context, deviceKey, sql string, args ...any) error {
+	batch := &pgx.Batch{}
+	batch.Queue(`SELECT pg_advisory_xact_lock($1, hashtext($2))`, deviceLockSpace, deviceKey)
+	batch.Queue(sql, args...)
+	batch.Queue(`SELECT EXISTS (SELECT 1 FROM forgotten_devices WHERE device_key = $1)`, deviceKey)
+	br := p.pool.SendBatch(ctx, batch)
+	defer br.Close()
+	if _, err := br.Exec(); err != nil {
+		return err
+	}
+	if _, err := br.Exec(); err != nil {
+		return err
+	}
+	var forgotten bool
+	if err := br.QueryRow().Scan(&forgotten); err != nil {
+		return err
+	}
+	if err := br.Close(); err != nil {
+		return err
+	}
+	if forgotten {
+		return ErrDeviceForgotten
+	}
+	return nil
+}
+
+const answerColumns = `device_key, question_id, edition_date::text, theme, coalesce(option_id, ''), depth, evening, learned`
+
+// answerOrder is the order answers are read back in: by date and sitting.
+const answerOrder = `edition_date, evening, question_id`
 
 func scanAnswer(rows pgx.CollectableRow) (MirrorAnswer, error) {
 	var a MirrorAnswer
 	var depth int16
-	err := rows.Scan(&a.DeviceKey, &a.QuestionID, &a.Date, &a.Theme, &a.OptionID, &depth, &a.AnsweredAt, &a.Learned)
+	err := rows.Scan(&a.DeviceKey, &a.QuestionID, &a.Date, &a.Theme, &a.OptionID, &depth, &a.Evening, &a.Learned)
 	a.Depth = int(depth)
-	a.AnsweredAt = a.AnsweredAt.UTC()
 	return a, err
 }
 
@@ -62,7 +88,7 @@ func scanStep(rows pgx.CollectableRow) (MirrorStep, error) {
 func (p *pgStore) DeviceHistory(ctx context.Context, deviceKey, from, to string) ([]MirrorAnswer, []MirrorStep, error) {
 	rows, err := p.pool.Query(ctx, `SELECT `+answerColumns+` FROM mirror_answers
 		WHERE device_key = $1 AND edition_date BETWEEN $2 AND $3
-		ORDER BY edition_date, answered_at`, deviceKey, from, to)
+		ORDER BY `+answerOrder, deviceKey, from, to)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -98,7 +124,7 @@ func (p *pgStore) EachDevice(ctx context.Context, from, to string, fn func(strin
 
 	rows, err = p.pool.Query(ctx, `SELECT `+answerColumns+` FROM mirror_answers
 		WHERE edition_date BETWEEN $1 AND $2
-		ORDER BY device_key, edition_date, answered_at`, from, to)
+		ORDER BY device_key, `+answerOrder, from, to)
 	if err != nil {
 		return err
 	}
@@ -131,32 +157,80 @@ func (p *pgStore) EachDevice(ctx context.Context, from, to string, fn func(strin
 	return flush()
 }
 
-func (p *pgStore) ForgetDevice(ctx context.Context, deviceKey string) error {
-	return pgx.BeginFunc(ctx, p.pool, func(tx pgx.Tx) error {
-		if _, err := tx.Exec(ctx, `DELETE FROM mirror_answers WHERE device_key = $1`, deviceKey); err != nil {
-			return err
+// ForgetDevice deletes everything kept for one phone in one implicit
+// transaction, under the phone's lock, and marks the phone forgotten so its
+// old pass takes no more writes: a vote retried after the delete cannot bring
+// an answer back.
+func (p *pgStore) ForgetDevice(ctx context.Context, deviceKey string, voterHashes []string, today string) (Forgotten, error) {
+	batch := &pgx.Batch{}
+	batch.Queue(`SELECT pg_advisory_xact_lock($1, hashtext($2))`, deviceLockSpace, deviceKey)
+	batch.Queue(`DELETE FROM mirror_answers WHERE device_key = $1`, deviceKey)
+	batch.Queue(`DELETE FROM mirror_steps WHERE device_key = $1`, deviceKey)
+	batch.Queue(`DELETE FROM mirror_weeks WHERE device_key = $1`, deviceKey)
+	batch.Queue(`DELETE FROM votes WHERE voter_hash = ANY($1)`, voterHashes)
+	batch.Queue(`INSERT INTO forgotten_devices (device_key, forgotten_on) VALUES ($1, $2)
+		ON CONFLICT (device_key) DO NOTHING`, deviceKey, today)
+	br := p.pool.SendBatch(ctx, batch)
+	defer br.Close()
+	var f Forgotten
+	if _, err := br.Exec(); err != nil {
+		return f, err
+	}
+	for _, n := range []*int{&f.Answers, &f.Steps, &f.Weeks, &f.Votes} {
+		tag, err := br.Exec()
+		if err != nil {
+			return Forgotten{}, err
 		}
-		if _, err := tx.Exec(ctx, `DELETE FROM mirror_steps WHERE device_key = $1`, deviceKey); err != nil {
-			return err
-		}
-		_, err := tx.Exec(ctx, `DELETE FROM mirror_weeks WHERE device_key = $1`, deviceKey)
-		return err
-	})
+		*n = int(tag.RowsAffected())
+	}
+	if _, err := br.Exec(); err != nil {
+		return Forgotten{}, err
+	}
+	return f, br.Close()
+}
+
+func (p *pgStore) DeviceData(ctx context.Context, deviceKey string, voterHashes []string) (Kept, error) {
+	var k Kept
+	var first *string
+	err := p.pool.QueryRow(ctx, `
+		SELECT (SELECT count(*) FROM mirror_answers WHERE device_key = $1),
+		       (SELECT count(*) FROM mirror_answers WHERE device_key = $1 AND option_id IS NULL),
+		       (SELECT min(edition_date)::text FROM mirror_answers WHERE device_key = $1),
+		       (SELECT count(*) FROM mirror_steps WHERE device_key = $1),
+		       (SELECT count(*) FROM mirror_weeks WHERE device_key = $1),
+		       (SELECT count(*) FROM votes WHERE voter_hash = ANY($2))`, deviceKey, voterHashes,
+	).Scan(&k.Answers, &k.Private, &first, &k.Steps, &k.Weeks, &k.Votes)
+	if first != nil {
+		k.FirstAnswer = *first
+	}
+	return k, err
 }
 
 func (p *pgStore) DeleteMirrorBefore(ctx context.Context, date string) (int, error) {
-	a, err := p.pool.Exec(ctx, `DELETE FROM mirror_answers WHERE edition_date < $1`, date)
-	if err != nil {
-		return 0, err
+	n := 0
+	for _, sql := range []string{
+		`DELETE FROM mirror_answers WHERE edition_date < $1`,
+		`DELETE FROM mirror_steps WHERE started_on < $1`,
+		`DELETE FROM forgotten_devices WHERE forgotten_on < $1`,
+	} {
+		tag, err := p.pool.Exec(ctx, sql, date)
+		if err != nil {
+			return n, err
+		}
+		n += int(tag.RowsAffected())
 	}
-	s, err := p.pool.Exec(ctx, `DELETE FROM mirror_steps WHERE started_on < $1`, date)
-	return int(a.RowsAffected() + s.RowsAffected()), err
+	return n, nil
 }
 
+// SaveWeekSummaries writes the batch in one implicit transaction, each
+// summary under its phone's lock, in device order so two folds running at
+// once cannot deadlock.
 func (p *pgStore) SaveWeekSummaries(ctx context.Context, ws []WeekSummary) error {
 	if len(ws) == 0 {
 		return nil
 	}
+	ws = slices.Clone(ws)
+	slices.SortStableFunc(ws, func(x, y WeekSummary) int { return strings.Compare(x.DeviceKey, y.DeviceKey) })
 	batch := &pgx.Batch{}
 	for _, w := range ws {
 		raw, err := json.Marshal(w)
@@ -164,6 +238,7 @@ func (p *pgStore) SaveWeekSummaries(ctx context.Context, ws []WeekSummary) error
 			return err
 		}
 		from, to := summarySources(w.Monday)
+		batch.Queue(`SELECT pg_advisory_xact_lock($1, hashtext($2))`, deviceLockSpace, w.DeviceKey)
 		batch.Queue(`INSERT INTO mirror_weeks (device_key, monday, summary)
 			SELECT $1::text, $2::date, $3::jsonb WHERE EXISTS (
 				SELECT 1 FROM mirror_answers WHERE device_key = $1 AND edition_date BETWEEN $4 AND $5)

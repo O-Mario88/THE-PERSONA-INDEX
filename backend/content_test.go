@@ -6,17 +6,26 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
 
+var shipped struct {
+	once sync.Once
+	bank contentBank
+	err  error
+}
+
+// shippedBank is the bank and schedule the server ships, loaded once: banks
+// are never changed after loading.
 func shippedBank(t *testing.T) contentBank {
 	t.Helper()
-	b, err := loadContentBank(questionsJSON)
-	if err != nil {
-		t.Fatal(err)
+	shipped.once.Do(func() { shipped.bank, shipped.err = loadShippedBank() })
+	if shipped.err != nil {
+		t.Fatal(shipped.err)
 	}
-	return b
+	return shipped.bank
 }
 
 func TestShippedBankPassesTheQualityGate(t *testing.T) {
@@ -42,14 +51,10 @@ func TestValidateBankCatchesBrokenCards(t *testing.T) {
 			return in
 		}
 		return bankQuestion{ID: "money-test", Theme: "money", Prompt: "Payday arrives. What goes first?", Options: []bankOption{
-			{ID: "bills", Label: "Bills", Depth: 1, Insight: card("Worries go first, then the fun. You probably tidy before guests arrive and answer the hard email first, and a treat tastes better once nothing is hanging over you.")},
-			{ID: "savings", Label: "Savings", Depth: 2, Insight: cited(card("You trust your future self more than most. You likely plan trips early, and you're often the calm one when a surprise bill lands on everyone at once."))},
-			{ID: "treat", Label: "Something for me", Depth: 3, Insight: card("The week took more out of you than you let on. You give a lot at work, and you're often the last to notice you need a break, so payday becomes the break.")},
-		}, FollowUp: FollowUp{Prompt: "Did money come in or go out today? What did you do first?", Options: []FollowUpOption{
-			{ID: "paid-bills", Label: "I paid what was due", Traits: map[string]int{"conscientiousness": 1}, Reflection: "Paying what was due first suggests you like a clear head before anything else. Tomorrow, you might notice how that calm feels, and give yourself one small treat for it."},
-			{ID: "treated-myself", Label: "I bought something for me", Reflection: "A treat on a money day may mean you needed a lift. That is allowed. Tomorrow, you could check whether it still feels good, which tends to show what was really worth it."},
-			{ID: "no-money", Label: "Money didn't come up today", Reflection: "No money moments today, and that is fine. Quiet days with your money often leave room to think about what you want it to do for you next."},
-		}}}
+			{ID: "bills", Label: "Bills", Depth: 1, Insight: card("Your worries go first, then the fun. You probably tidy before guests arrive and answer the hard email first, and a treat tastes better once nothing is hanging over you.")},
+			{ID: "savings", Label: "Savings", Depth: 2, Insight: cited(card("You trust your future self. You likely plan trips early, and you're often the calm one when a surprise bill lands on everyone at once."))},
+			{ID: "treat", Label: "Something for me", Depth: 3, Insight: card("The week took more out of you than you let on. You give a lot at work, and you rarely notice you need a break, so payday becomes the break.")},
+		}}
 	}
 	cases := []struct {
 		name   string
@@ -99,22 +104,9 @@ func TestValidateBankCatchesBrokenCards(t *testing.T) {
 		{"uncited research claim in a reveal", func(q *bankQuestion) {
 			q.Options[2].Insight.Reveal = "Your answer suggests you are tired. Studies show people like you tend to give a lot at work and are often the last to notice they need a break."
 		}, "uncited research"},
-		{"no evening follow-up", func(q *bankQuestion) { q.FollowUp = FollowUp{} }, "follow-up prompt"},
-		{"follow-up with too few options", func(q *bankQuestion) { q.FollowUp.Options = q.FollowUp.Options[:2] }, "follow-up needs 3 or 4 options"},
-		{"follow-up survey answer", func(q *bankQuestion) { q.FollowUp.Options[0].Label = "Strongly agree" }, "survey"},
-		{"thin reflection", func(q *bankQuestion) { q.FollowUp.Options[1].Reflection = "You treated yourself today." }, "characters"},
-		{"reflection about other people only", func(q *bankQuestion) {
-			q.FollowUp.Options[1].Reflection = "People who treat themselves on payday tend to be tired by the end of the week, and a small treat is often how they keep going until the weekend comes."
-		}, "speak to the reader"},
-		{"reflection with an uncited claim", func(q *bankQuestion) {
-			q.FollowUp.Options[1].Reflection = "Research shows a treat on payday lifts your mood for the week, so you made a sound choice and you can enjoy it without any worry at all tonight."
-		}, "uncited research"},
 		{"the app calls itself a therapist", func(q *bankQuestion) {
-			q.FollowUp.Options[2].Reflection = "Like a good therapist would say, quiet money days are a chance for you to rest. Tomorrow, you might think about what you want your money to do for you."
+			q.Options[2].Insight.Step = "Like a good therapist would say, take one quiet evening for you this week, and notice how payday feels after it."
 		}, "banned word"},
-		{"copied reflection", func(q *bankQuestion) { q.FollowUp.Options[1].Reflection = q.FollowUp.Options[0].Reflection }, "repeats"},
-		{"bad follow-up trait", func(q *bankQuestion) { q.FollowUp.Options[0].Traits = map[string]int{"luck": 1} }, "trait"},
-		{"duplicate follow-up option id", func(q *bankQuestion) { q.FollowUp.Options[1].ID = q.FollowUp.Options[0].ID }, "duplicate"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -131,18 +123,6 @@ func TestValidateBankCatchesBrokenCards(t *testing.T) {
 			}
 		})
 	}
-
-	t.Run("no two questions share an evening prompt", func(t *testing.T) {
-		a, b := good(), good()
-		b.ID = "money-test-two"
-		var found bool
-		for _, err := range validateBank(bankFile{Questions: []bankQuestion{a, b}}) {
-			found = found || strings.Contains(err.Error(), "follow-up prompt repeats")
-		}
-		if !found {
-			t.Fatal("expected a repeated follow-up prompt to fail")
-		}
-	})
 
 	t.Run("a good question passes every per-question rule", func(t *testing.T) {
 		for _, err := range validateBank(bankFile{Questions: []bankQuestion{good()}}) {

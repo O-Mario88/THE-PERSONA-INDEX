@@ -32,8 +32,8 @@ import (
 const (
 	// A week folds once a full week has passed since its Sunday: votes on it
 	// are final and its steps have had a week to be marked.
-	foldAfterDays = 14 // days from a week's Monday until it folds
-	foldBatch     = 500
+	foldAfterDays = 14  // days from a week's Monday until it folds
+	foldBatch     = 100 // summaries per write; each takes its phone's lock
 	// Thirteen months: a whole ISO year of weeks, readable through the January
 	// after it ends.
 	weekSummaryRetention = 400 * 24 * time.Hour

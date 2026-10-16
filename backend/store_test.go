@@ -2,10 +2,16 @@ package main
 
 import (
 	"context"
+	"io/fs"
 	"net/http"
 	"os"
+	"path"
+	"slices"
+	"strings"
 	"testing"
 	"time"
+
+	"github.com/jackc/pgx/v5"
 )
 
 // Vote store contract tests. They run against the in-memory store always and
@@ -76,9 +82,40 @@ func TestPostgresDurability(t *testing.T) {
 		expectError(t, postVote(t, after, dup, "k2"), http.StatusConflict, "duplicate_vote")
 	})
 
-	t.Run("migrations can run twice", func(t *testing.T) {
+	t.Run("migrations can run twice, and each is recorded once", func(t *testing.T) {
 		if err := testPG.migrate(ctx); err != nil {
 			t.Fatal(err)
+		}
+		rows, err := testPG.pool.Query(ctx, `SELECT name FROM schema_migrations ORDER BY name`)
+		if err != nil {
+			t.Fatal(err)
+		}
+		applied, err := pgx.CollectRows(rows, pgx.RowTo[string])
+		if err != nil {
+			t.Fatal(err)
+		}
+		files, _ := fs.Glob(migrationFS, "migrations/*.sql")
+		for i := range files {
+			files[i] = path.Base(files[i])
+		}
+		if !slices.Equal(applied, files) {
+			t.Fatalf("expected %v recorded, got %v", files, applied)
+		}
+	})
+
+	t.Run("a mirror answer keeps no moment, only its date and sitting", func(t *testing.T) {
+		var cols []string
+		rows, err := testPG.pool.Query(ctx, `SELECT column_name FROM information_schema.columns WHERE table_name = 'mirror_answers'`)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if cols, err = pgx.CollectRows(rows, pgx.RowTo[string]); err != nil {
+			t.Fatal(err)
+		}
+		for _, c := range cols {
+			if strings.Contains(c, "_at") || strings.Contains(c, "time") {
+				t.Fatalf("mirror_answers keeps a moment: %s", c)
+			}
 		}
 	})
 }

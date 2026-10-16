@@ -75,6 +75,13 @@ func (s *Server) Results(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "unknown_question")
 		return
 	}
+	if q.Care == careIntimate {
+		// Intimate answers are stored without the option (store.go), so there
+		// is nothing to publish, and an even split would be made up.
+		w.Header().Set("Cache-Control", "public, max-age=3600, s-maxage=3600")
+		writeError(w, http.StatusForbidden, "private_question")
+		return
+	}
 
 	counts, err := s.counts(r.Context(), q.ID)
 	if err != nil {

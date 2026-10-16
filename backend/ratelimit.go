@@ -11,8 +11,9 @@ import (
 // docs/operations.md) is the first line; these limits make sure a client that
 // reaches an instance directly still cannot stuff the ballot box.
 const (
-	votesPerDevicePerMinute  = 30 // 3 questions a day need 3
+	votesPerDevicePerMinute  = 30 // a sitting of three needs 3 votes, 3 ratings and a few steps
 	devicesPerAddressPerHour = 20 // households and shared networks need a few
+	forgetsPerAddressPerHour = 20 // "Delete everything" is rare; a made-up pass deletes nothing
 )
 
 // windowLimiter counts events per key in fixed windows. Memory is bounded by

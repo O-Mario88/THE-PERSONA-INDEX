@@ -5,3 +5,5 @@ coverage/
 .env*
 !.env.example
 /backend/backend
+/backend/*.test
+*.prof

@@ -45,3 +45,21 @@ carry the 1M-player burst estimate on a small machine, with the tally worker
 keeping up (0 untallied rows after the run). It does not cover network latency
 to a managed database, the edge, or read traffic; repeat it against the real
 staging stack before each traffic gate (50k, 250k, 1M).
+
+**2026-10-15, after the privacy changes** (a vote and its mirror answer now go
+in one transaction under the phone's lock, with the forgotten-phone check). The
+same kind of container, but shared with other work, so the absolute numbers are
+noisier than the day before. Each pair ran back to back on fresh databases,
+2,000 votes/s for 30 s:
+
+| Build | Votes | Failed | p50 | p95 | p99 | Lost |
+| --- | --- | --- | --- | --- | --- | --- |
+| This change, run 1 | 60,000 | 0 | 2.8 ms | 12 ms | 28 ms | 0 |
+| `main` before it, run 1 | 60,000 | 0 | 4.3 ms | 107 ms | 166 ms | 0 |
+| This change, run 2 | 60,000 | 0 | 3.9 ms | 29 ms | 96 ms | 0 |
+| `main` before it, run 2 | 60,000 | 0 | 5.2 ms | 58 ms | 131 ms | 0 |
+
+The vote path got no slower; one round trip in place of several is the likely
+reason it is quicker. The load generator now leaves out intimate questions,
+whose results the API no longer serves, so their votes cannot be checked
+against a tally.

@@ -38,8 +38,8 @@ func TestCardRatings(t *testing.T) {
 		other.Learned = false
 		expectStatus(t, postRating(t, s, other, "r1"), http.StatusAccepted)
 		aggregate(t, s)
-		got, err := s.votes.Counts(context.Background(), ratingKey("q-dishes", "right-away"))
-		if err != nil || got["learned"] != 1 || got["not"] != 1 {
+		got, err := s.votes.Counts(context.Background(), ratingKey("q-dishes"))
+		if err != nil || got[ratingOption("right-away", true)] != 1 || got[ratingOption("right-away", false)] != 1 {
 			t.Fatalf("expected 1 learned and 1 not, got %v (%v)", got, err)
 		}
 	})
@@ -74,7 +74,7 @@ func TestCardRatings(t *testing.T) {
 	})
 
 	t.Run("rating keys never collide with question ids", func(t *testing.T) {
-		if k := ratingKey("q-dishes", "right-away"); !strings.HasPrefix(k, "rating/") {
+		if k := ratingKey("q-dishes"); !strings.HasPrefix(k, "rating/") {
 			t.Fatalf("unexpected rating key %q", k)
 		}
 	})

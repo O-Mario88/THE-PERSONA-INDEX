@@ -36,6 +36,7 @@ jobs:
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/persona_load?sslmode=disable
           DEVICE_TOKEN_SECRET: ci-only-secret-0123456789abcdef0123
+          DATA_KEY_SECRET: ci-only-data-key-0123456789abcdef0123
           TRUST_CF_CONNECTING_IP: "1"
       - run: for i in $(seq 30); do curl -sf localhost:8080/api/health && break; sleep 1; done
       - run: ./loadgen -url http://localhost:8080 -rate "${{ inputs.rate }}" -duration "${{ inputs.duration }}"

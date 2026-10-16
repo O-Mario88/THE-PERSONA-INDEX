@@ -6,7 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"path"
 	"slices"
+	"strconv"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -23,6 +25,18 @@ var migrationFS embed.FS
 
 type pgStore struct{ pool *pgxpool.Pool }
 
+// Statement limits. A query that runs longer than this is cancelled, so one
+// slow statement cannot hold a connection (and a request) for ever.
+// Migrations run without the limit.
+const (
+	statementTimeout   = 10 * time.Second
+	idleInTxnTimeout   = 30 * time.Second
+	migrationLockKey   = 7177001 // pg_advisory_lock(bigint) while migrating
+	deviceLockSpace    = 7177    // pg_advisory_xact_lock(int, int): one phone's rows
+	pgMaxConnIdleTime  = 5 * time.Minute
+	pgHealthCheckEvery = 30 * time.Second
+)
+
 // openPGStore connects with a bounded pool, so a traffic spike queues inside
 // the pool instead of exhausting database connections, then migrates.
 func openPGStore(ctx context.Context, url string, maxConns int32) (*pgStore, error) {
@@ -31,7 +45,14 @@ func openPGStore(ctx context.Context, url string, maxConns int32) (*pgStore, err
 		return nil, fmt.Errorf("parse database url: %w", err)
 	}
 	cfg.MaxConns = maxConns
-	cfg.MaxConnIdleTime = 5 * time.Minute
+	cfg.MaxConnIdleTime = pgMaxConnIdleTime
+	cfg.HealthCheckPeriod = pgHealthCheckEvery
+	if cfg.ConnConfig.RuntimeParams == nil {
+		cfg.ConnConfig.RuntimeParams = map[string]string{}
+	}
+	cfg.ConnConfig.RuntimeParams["statement_timeout"] = strconv.Itoa(int(statementTimeout.Milliseconds()))
+	cfg.ConnConfig.RuntimeParams["idle_in_transaction_session_timeout"] = strconv.Itoa(int(idleInTxnTimeout.Milliseconds()))
+	cfg.ConnConfig.RuntimeParams["application_name"] = "persona-index"
 	pool, err := pgxpool.NewWithConfig(ctx, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("connect: %w", err)
@@ -46,9 +67,14 @@ func openPGStore(ctx context.Context, url string, maxConns int32) (*pgStore, err
 
 func (p *pgStore) Close() { p.pool.Close() }
 
-// migrate applies every embedded migration in order under an advisory lock,
-// so several instances starting at once do not race. Migrations are written
-// to be safe to re-run.
+// Ping checks the database answers, for the readiness check.
+func (p *pgStore) Ping(ctx context.Context) error { return p.pool.Ping(ctx) }
+
+// migrate applies, in name order, every embedded migration not yet recorded
+// in schema_migrations, each in its own transaction, under an advisory lock
+// so several instances starting at once do not race. Migrations are also
+// written to be safe to re-run, so a database made before the record existed
+// is brought up to date the same way.
 func (p *pgStore) migrate(ctx context.Context) error {
 	names, err := fs.Glob(migrationFS, "migrations/*.sql")
 	if err != nil {
@@ -60,53 +86,140 @@ func (p *pgStore) migrate(ctx context.Context) error {
 		return err
 	}
 	defer conn.Release()
-	if _, err := conn.Exec(ctx, `SELECT pg_advisory_lock(7177001)`); err != nil {
+	if _, err := conn.Exec(ctx, `SET statement_timeout = 0`); err != nil {
 		return err
 	}
-	defer conn.Exec(context.Background(), `SELECT pg_advisory_unlock(7177001)`)
+	defer conn.Exec(context.Background(), `RESET statement_timeout`)
+	if _, err := conn.Exec(ctx, `SELECT pg_advisory_lock($1)`, migrationLockKey); err != nil {
+		return err
+	}
+	defer conn.Exec(context.Background(), `SELECT pg_advisory_unlock($1)`, migrationLockKey)
+	if _, err := conn.Exec(ctx, `CREATE TABLE IF NOT EXISTS schema_migrations (
+		name text PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())`); err != nil {
+		return err
+	}
+	rows, err := conn.Query(ctx, `SELECT name FROM schema_migrations`)
+	if err != nil {
+		return err
+	}
+	applied, err := pgx.CollectRows(rows, pgx.RowTo[string])
+	if err != nil {
+		return err
+	}
 	for _, name := range names {
+		base := path.Base(name)
+		if slices.Contains(applied, base) {
+			continue
+		}
 		sql, err := migrationFS.ReadFile(name)
 		if err != nil {
 			return err
 		}
-		if _, err := conn.Exec(ctx, string(sql)); err != nil {
-			return fmt.Errorf("migration %s: %w", name, err)
+		err = pgx.BeginFunc(ctx, conn, func(tx pgx.Tx) error {
+			if _, err := tx.Exec(ctx, string(sql)); err != nil {
+				return err
+			}
+			_, err := tx.Exec(ctx, `INSERT INTO schema_migrations (name) VALUES ($1)`, base)
+			return err
+		})
+		if err != nil {
+			return fmt.Errorf("migration %s: %w", base, err)
 		}
 	}
 	return nil
 }
 
-func (p *pgStore) Accept(ctx context.Context, idempotencyKey string, v Vote, at time.Time) (VoteEvent, error) {
-	e := VoteEvent{ID: newEventID(), QuestionID: v.QuestionID, OptionID: v.OptionID, VoterHash: v.VoterHash, AcceptedAt: at}
-	tag, err := p.pool.Exec(ctx, `
+// Accept stores a ballot and its mirror side in one implicit transaction: the
+// batch below goes to the database in one round trip, and Postgres runs it as
+// one transaction. The phone's rows are locked first, so a "Delete
+// everything" for the same phone runs wholly before or wholly after.
+func (p *pgStore) Accept(ctx context.Context, idempotencyKey string, b Ballot, at time.Time) (VoteEvent, error) {
+	e := VoteEvent{ID: newEventID(), QuestionID: b.QuestionID, OptionID: b.OptionID, VoterHash: b.VoterHash, AcceptedAt: at}
+	batch := &pgx.Batch{}
+	if b.DeviceKey != "" {
+		batch.Queue(`SELECT pg_advisory_xact_lock($1, hashtext($2))`, deviceLockSpace, b.DeviceKey)
+	}
+	// The vote, unless this phone deleted everything.
+	batch.Queue(`
 		INSERT INTO votes (id, question_id, option_id, voter_hash, idem_key, dedupe_key, accepted_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
-		ON CONFLICT DO NOTHING`,
-		e.ID, v.QuestionID, v.OptionID, v.VoterHash, idempotencyKey, voteDedupeKey(v), at)
-	if err != nil {
-		return VoteEvent{}, err
+		SELECT $1, $2, $3, $4, $5, $6, $7
+		WHERE NOT EXISTS (SELECT 1 FROM forgotten_devices WHERE device_key = $8)
+		ON CONFLICT DO NOTHING
+		RETURNING id`,
+		e.ID, b.QuestionID, b.OptionID, b.VoterHash, idempotencyKey, voteDedupeKey(b.Vote), at, b.DeviceKey)
+	// The mirror side, only when the stored vote is this very ballot: a new
+	// vote, or a retry of it with the same key. Never for a second vote.
+	thisBallot := `EXISTS (SELECT 1 FROM votes WHERE voter_hash = $1 AND idem_key = $2 AND question_id = $3 AND option_id = $4)`
+	if a := b.Answer; a != nil {
+		var option *string
+		if a.OptionID != "" {
+			option = &a.OptionID
+		}
+		batch.Queue(`
+			INSERT INTO mirror_answers (device_key, question_id, edition_date, theme, option_id, depth, evening)
+			SELECT $5, $6, $7, $8, $9, $10, $11 WHERE `+thisBallot+`
+			ON CONFLICT (device_key, question_id) DO NOTHING`,
+			b.VoterHash, idempotencyKey, b.QuestionID, b.OptionID, a.DeviceKey, a.QuestionID, a.Date, a.Theme, option, a.Depth, a.Evening)
 	}
-	if tag.RowsAffected() == 1 {
-		return e, nil
+	if r := b.Rating; r != nil {
+		batch.Queue(`
+			UPDATE mirror_answers SET learned = $7
+			WHERE device_key = $5 AND question_id = $6 AND learned IS NULL AND `+thisBallot,
+			b.VoterHash, idempotencyKey, b.QuestionID, b.OptionID, b.DeviceKey, r.QuestionID, r.Learned)
 	}
+	// What is stored now under this key, and whether the phone is forgotten.
+	batch.Queue(`
+		SELECT EXISTS (SELECT 1 FROM forgotten_devices WHERE device_key = $3),
+		       v.id, v.question_id, v.option_id, v.voter_hash, v.accepted_at
+		FROM (SELECT 1) one LEFT JOIN votes v ON v.voter_hash = $1 AND v.idem_key = $2`,
+		b.VoterHash, idempotencyKey, b.DeviceKey)
 
-	// A conflict: either a retry of this exact request or a second vote.
-	// ON CONFLICT waited for any concurrent insert to commit, so the row that
-	// won is visible here.
-	var prior VoteEvent
-	err = p.pool.QueryRow(ctx, `
-		SELECT id, question_id, option_id, voter_hash, accepted_at FROM votes
-		WHERE voter_hash = $1 AND idem_key = $2`, v.VoterHash, idempotencyKey,
-	).Scan(&prior.ID, &prior.QuestionID, &prior.OptionID, &prior.VoterHash, &prior.AcceptedAt)
-	switch {
-	case errors.Is(err, pgx.ErrNoRows):
-		return VoteEvent{}, ErrDuplicateVote
-	case err != nil:
+	br := p.pool.SendBatch(ctx, batch)
+	defer br.Close()
+	if b.DeviceKey != "" {
+		if _, err := br.Exec(); err != nil {
+			return VoteEvent{}, err
+		}
+	}
+	var insertedID string
+	inserted := true
+	if err := br.QueryRow().Scan(&insertedID); errors.Is(err, pgx.ErrNoRows) {
+		inserted = false
+	} else if err != nil {
 		return VoteEvent{}, err
-	case prior.QuestionID != v.QuestionID || prior.OptionID != v.OptionID:
+	}
+	for _, queued := range []bool{b.Answer != nil, b.Rating != nil} {
+		if !queued {
+			continue
+		}
+		if _, err := br.Exec(); err != nil {
+			return VoteEvent{}, err
+		}
+	}
+	var forgotten bool
+	var prior struct {
+		id, questionID, optionID, voterHash *string
+		acceptedAt                          *time.Time
+	}
+	if err := br.QueryRow().Scan(&forgotten, &prior.id, &prior.questionID, &prior.optionID, &prior.voterHash, &prior.acceptedAt); err != nil {
+		return VoteEvent{}, err
+	}
+	if err := br.Close(); err != nil {
+		return VoteEvent{}, err
+	}
+	switch {
+	case inserted:
+		return e, nil
+	case forgotten:
+		return VoteEvent{}, ErrDeviceForgotten
+	case prior.id == nil:
+		// A conflict on the dedupe key: a second vote. ON CONFLICT waited for
+		// any concurrent insert to commit, so the row that won is visible.
+		return VoteEvent{}, ErrDuplicateVote
+	case *prior.questionID != b.QuestionID || *prior.optionID != b.OptionID:
 		return VoteEvent{}, ErrIdempotencyKeyReuse
 	default:
-		return prior, nil
+		return VoteEvent{ID: *prior.id, QuestionID: *prior.questionID, OptionID: *prior.optionID, VoterHash: *prior.voterHash, AcceptedAt: prior.acceptedAt.UTC()}, nil
 	}
 }
 
@@ -160,6 +273,6 @@ func (p *pgStore) DeleteTalliedBefore(ctx context.Context, cutoff time.Time) (in
 }
 
 func (p *pgStore) truncateForTests(ctx context.Context) error {
-	_, err := p.pool.Exec(ctx, `TRUNCATE votes, vote_tallies, mirror_answers, mirror_steps, mirror_weeks, mirror_folds`)
+	_, err := p.pool.Exec(ctx, `TRUNCATE votes, vote_tallies, mirror_answers, mirror_steps, mirror_weeks, mirror_folds, forgotten_devices`)
 	return err
 }

@@ -397,28 +397,170 @@ func TestMirrorRatingsAndMood(t *testing.T) {
 	}
 }
 
+func forget(t *testing.T, s *Server, path, device string) ForgetResult {
+	t.Helper()
+	w := do(t, s, withDevice(s, httptest.NewRequest(http.MethodDelete, path, nil), device))
+	expectStatus(t, w, http.StatusOK)
+	if cc := w.Header().Get("Cache-Control"); cc != "no-store" {
+		t.Fatalf("expected no-store, got %q", cc)
+	}
+	return decode[ForgetResult](t, w)
+}
+
+func dataKept(t *testing.T, s *Server, device string) DataKept {
+	t.Helper()
+	w := do(t, s, withDevice(s, httptest.NewRequest(http.MethodGet, "/api/device/data", nil), device))
+	expectStatus(t, w, http.StatusOK)
+	if cc := w.Header().Get("Cache-Control"); !strings.Contains(cc, "no-store") || !strings.Contains(cc, "private") {
+		t.Fatalf("expected a private, uncached response, got %q", cc)
+	}
+	return decode[DataKept](t, w)
+}
+
+// Acceptance tests for "Delete everything" and "What I keep" (review of
+// 2026-10-15): delete takes the votes too, and the phone can see what the
+// server holds for it.
 func TestMirrorForget(t *testing.T) {
-	s := mirrorServer(mon)
-	answer(t, s, "a", mon, "tidy", "now")
-	expectStatus(t, postStep(t, s, "a", StepRequest{QuestionID: mon + "-tidy", OptionID: "now", Status: "started", Date: mon}), http.StatusOK)
+	t.Run("what the server keeps for a phone, and for how long", func(t *testing.T) {
+		s := mirrorServer(mon)
+		if k := dataKept(t, s, "a"); k.Kept != (Kept{}) {
+			t.Fatalf("expected nothing kept for a new phone, got %+v", k.Kept)
+		}
+		answer(t, s, "a", mon, "tidy", "now")
+		answer(t, s, "a", mon, "night", "b")
+		expectStatus(t, postStep(t, s, "a", StepRequest{QuestionID: mon + "-tidy", OptionID: "now", Status: "started", Date: mon}), http.StatusOK)
+		answer(t, s, "b", mon, "call", "call")
 
-	expectError(t, do(t, s, httptest.NewRequest(http.MethodDelete, "/api/mirror", nil)), http.StatusUnauthorized, "invalid_device")
-	w := do(t, s, withDevice(s, httptest.NewRequest(http.MethodDelete, "/api/mirror", nil), "a"))
-	expectStatus(t, w, http.StatusNoContent)
+		k := dataKept(t, s, "a")
+		if want := (Kept{Answers: 2, Private: 1, Steps: 1, Votes: 2, FirstAnswer: mon}); k.Kept != want {
+			t.Fatalf("expected %+v, got %+v", want, k.Kept)
+		}
+		if k.KeptFor.VotesDays != 7 || k.KeptFor.AnswersDays < 35 || k.KeptFor.WeeklyNotesDays < 365 {
+			t.Fatalf("unexpected retention %+v", k.KeptFor)
+		}
+		expectError(t, do(t, s, httptest.NewRequest(http.MethodGet, "/api/device/data", nil)), http.StatusUnauthorized, "invalid_device")
+	})
 
-	if m := getMirror(t, s, "a", mon); m.Stats.Answers != 0 || len(m.Steps) != 0 {
-		t.Fatalf("expected an empty mirror after delete, got %+v", m)
-	}
-	if n := totalVotes(t, s, mon+"-tidy"); n != 1 {
-		t.Fatalf("the anonymous vote count stays, got %d", n)
-	}
+	t.Run("delete everything takes the answers, steps and raw votes, and says how many", func(t *testing.T) {
+		s := mirrorServer(mon)
+		answer(t, s, "a", mon, "tidy", "now")
+		answer(t, s, "a", mon, "call", "text")
+		expectStatus(t, postStep(t, s, "a", StepRequest{QuestionID: mon + "-tidy", OptionID: "now", Status: "started", Date: mon}), http.StatusOK)
+		answer(t, s, "b", mon, "tidy", "pile")
+		aggregate(t, s) // tidy's vote is counted before the delete; the totals keep it, anonymously
+		answer(t, s, "a", mon, "queue", "boil")
+
+		expectError(t, do(t, s, httptest.NewRequest(http.MethodDelete, "/api/device/data", nil)), http.StatusUnauthorized, "invalid_device")
+		got := forget(t, s, "/api/device/data", "a")
+		if want := (Forgotten{Answers: 3, Steps: 1, Votes: 3}); got.Deleted != want {
+			t.Fatalf("expected %+v deleted, got %+v", want, got.Deleted)
+		}
+		if m := getMirror(t, s, "a", mon); m.Stats.Answers != 0 || len(m.Steps) != 0 {
+			t.Fatalf("expected an empty mirror after delete, got %+v", m)
+		}
+		if k := dataKept(t, s, "a"); k.Kept != (Kept{}) {
+			t.Fatalf("expected nothing kept after delete, got %+v", k.Kept)
+		}
+		s.resultCache.clear()
+		if n := totalVotes(t, s, mon+"-tidy"); n != 2 {
+			t.Fatalf("counted totals stay, anonymously: expected 2, got %d", n)
+		}
+		if n := totalVotes(t, s, mon+"-queue"); n != 0 {
+			t.Fatalf("a vote not yet counted goes with the delete, got %d", n)
+		}
+		// Another phone's rows are untouched.
+		if k := dataKept(t, s, "b"); k.Kept.Answers != 1 || k.Kept.Votes != 1 {
+			t.Fatalf("expected the other phone's answer kept, got %+v", k.Kept)
+		}
+	})
+
+	t.Run("the old pass takes no more answers, so a late retry cannot bring anything back", func(t *testing.T) {
+		s := mirrorServer(mon)
+		answer(t, s, "a", mon, "tidy", "now")
+		forget(t, s, "/api/device/data", "a")
+		v := VoteRequest{QuestionID: mon + "-tidy", OptionID: "now", VoterID: "a"}
+		expectError(t, postVote(t, s, v, "a-"+mon+"-tidy"), http.StatusGone, "device_forgotten") // the same request, retried
+		v.QuestionID = mon + "-call"
+		v.OptionID = "call"
+		expectError(t, postVote(t, s, v, "fresh"), http.StatusGone, "device_forgotten")
+		expectError(t, postStep(t, s, "a", StepRequest{QuestionID: mon + "-tidy", OptionID: "now", Status: stepHelped, Date: mon}), http.StatusNotFound, "unknown_answer")
+		if k := dataKept(t, s, "a"); k.Kept != (Kept{}) {
+			t.Fatalf("a retry brought rows back: %+v", k.Kept)
+		}
+		// A new pass starts afresh.
+		answer(t, s, "a2", mon, "tidy", "now")
+		if k := dataKept(t, s, "a2"); k.Kept.Answers != 1 {
+			t.Fatalf("expected the new pass to work, got %+v", k.Kept)
+		}
+		// Deleting twice is harmless.
+		if again := forget(t, s, "/api/device/data", "a"); again.Deleted != (Forgotten{}) {
+			t.Fatalf("expected nothing left to delete, got %+v", again.Deleted)
+		}
+	})
+
+	t.Run("works with a pass signed by a key the server no longer has", func(t *testing.T) {
+		s := mirrorServer(mon)
+		answer(t, s, "a", mon, "tidy", "now")
+		oldPass := tokenFor(s, "a")
+		// The token secret was rotated twice, so the pass no longer verifies;
+		// the data secret, which keys the stored rows, never changes.
+		rotated, err := newKeyring(KeyConfig{TokenSecret: []byte("a-completely-different-token-secret-0123"), DataSecret: deriveKey(testSecret, "local data secret")})
+		if err != nil {
+			t.Fatal(err)
+		}
+		s.devices = rotated
+		req := httptest.NewRequest(http.MethodDelete, "/api/device/data", nil)
+		req.Header.Set("Authorization", "Device "+oldPass)
+		w := do(t, s, req)
+		expectStatus(t, w, http.StatusOK)
+		if got := decode[ForgetResult](t, w); got.Deleted.Answers != 1 || got.Deleted.Votes != 1 {
+			t.Fatalf("expected the old pass's rows deleted, got %+v", got.Deleted)
+		}
+		// Reading still needs a pass the server signed.
+		req = httptest.NewRequest(http.MethodGet, "/api/device/data", nil)
+		req.Header.Set("Authorization", "Device "+oldPass)
+		expectError(t, do(t, s, req), http.StatusUnauthorized, "invalid_device")
+	})
+
+	t.Run("the old address still works", func(t *testing.T) {
+		s := mirrorServer(mon)
+		answer(t, s, "a", mon, "tidy", "now")
+		if got := forget(t, s, "/api/mirror", "a"); got.Deleted.Answers != 1 {
+			t.Fatalf("expected the answer deleted, got %+v", got.Deleted)
+		}
+	})
+
+	t.Run("is limited per network address", func(t *testing.T) {
+		s := mirrorServer(mon)
+		for range forgetsPerAddressPerHour {
+			forget(t, s, "/api/device/data", "a")
+		}
+		w := do(t, s, withDevice(s, httptest.NewRequest(http.MethodDelete, "/api/device/data", nil), "a"))
+		expectError(t, w, http.StatusTooManyRequests, "rate_limited")
+	})
+
+	t.Run("finds votes from the oldest edition still kept and from tomorrow somewhere", func(t *testing.T) {
+		s := mirrorServer(mon)
+		hashes := map[string]bool{}
+		for _, h := range s.deviceVoteHashes("device") {
+			hashes[h] = true
+		}
+		for _, d := range []string{mustDate(mon).AddDate(0, 0, -8).Format(dateLayout), mon, mustDate(mon).AddDate(0, 0, 1).Format(dateLayout)} {
+			for _, q := range []string{"tidy", "night"} {
+				id := d + "-" + q
+				if !hashes[s.devices.voterHash("device", id)] || !hashes[s.devices.voterHash("device", ratingKey(id))] {
+					t.Fatalf("delete would miss the vote or rating on %s", id)
+				}
+			}
+		}
+	})
 }
 
 func TestMirrorRetention(t *testing.T) {
 	ctx := context.Background()
 	st := testStore().(MirrorStore)
-	old := MirrorAnswer{DeviceKey: "k", QuestionID: "q-old", Date: "2026-09-01", Theme: "habits", OptionID: "now", Depth: 1, AnsweredAt: mirrorDay("2026-09-01")}
-	recent := MirrorAnswer{DeviceKey: "k", QuestionID: "q-new", Date: mon, Theme: "habits", OptionID: "now", Depth: 1, AnsweredAt: mirrorDay(mon)}
+	old := MirrorAnswer{DeviceKey: "k", QuestionID: "q-old", Date: "2026-09-01", Theme: "habits", OptionID: "now", Depth: 1, Evening: true}
+	recent := MirrorAnswer{DeviceKey: "k", QuestionID: "q-new", Date: mon, Theme: "habits", OptionID: "now", Depth: 1}
 	for _, a := range []MirrorAnswer{old, recent} {
 		if err := st.SaveAnswer(ctx, a); err != nil {
 			t.Fatal(err)

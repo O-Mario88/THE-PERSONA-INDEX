@@ -1,0 +1,203 @@
+import type { Mirror, Period, PeriodMirror, PeriodTrait, TraitRead } from './api'
+import { TRAIT_ADVICE, adviceFor } from './advice'
+import { AREA_NAMES, PERIOD_CLOSE, TRAITS, archetype, periodSummary, summary, tagline } from './mirrorText'
+
+// The voice rules (Edwin, 2026-10-15), applied to the words the mirror and the
+// day's close show: never measure you against other people, guess at most once
+// a sentence or line, no tag questions, and UK English without "ok" or
+// "okay". The question bank is held to the same rules by backend/voice.go;
+// keep the patterns here in step with it. (JavaScript has lookaround, so the
+// two exceptions Go handles in code, "a few people" and "are we all right?",
+// are written into the patterns here.)
+
+const COMPARISON = new RegExp(
+  [
+    String.raw`\bthan (for |to |with |off |in )?(most|many|anyone|anybody|everyone|everybody|others|other people|people|friends|someone|somebody|those|the people|average)\b`,
+    String.raw`\bthan (they|it|we) (do|does|did|would) for\b`,
+    String.raw`\bthan (\w+ )?(colleagues|classmates|peers|siblings|neighbours|strangers)\b`,
+    String.raw`\bthan we (fear|think|expect|plan|imagine|realise)\b`,
+    String.raw`\bthan [^.,;!?]*\b(anyone|anybody|everyone|everybody) else\b`,
+    String.raw`\bthan (it|they|he|she) \w+ (the people|other people|others|most people)\b`,
+    String.raw`\bthan \w+er (people|folk)\b`,
+    String.raw`\b(most|many|some|plenty of|lots of) (people|partners|couples|adults|grown-ups|players|guests)\b`,
+    String.raw`(?<!\ba )\bfew people\b`,
+    String.raw`\b(most|many|some|few|all|none) of us\b`,
+    String.raw`\bwe all\b(?! right\b)`,
+    String.raw`\bwe (tend|compare)\b`,
+    String.raw`\b(nearly|almost) (everyone|everybody)\b`,
+    String.raw`\bnot (everyone|everybody)\b`,
+    String.raw`\b(people|folk|\w+ers) like (you|us)\b`,
+    String.raw`\b(people|anyone|those) who [^.!?;,]*\b(like this|like you|this way|for this)\b`,
+    String.raw`\bunlike (most|many|others|other people|everyone|anyone|people)\b`,
+    String.raw`\b(everyone|everybody) else\b`,
+    String.raw`\bthe rest of us\b`,
+    String.raw`\bbefore (anyone|anybody|everyone|everybody) else('s\b|\s+(does|do|is|has|thinks|notices|sees|and)\b|\s*[.,;!?]|\s*$)`,
+    String.raw`\b(while|whilst|when|where|before) (others|other people|most people)\b`,
+    String.raw`\b(others|other people) (still |often |usually |just |all |simply )?(miss|missed|overlook|overlooked|skip|drop|dread|swallow|shrug off|rush past|walk past|give up|forget|forgot|forgotten|would|call|stopped|only|drift|grab|panic|stall|scramble|talk themselves|feel too)\b`,
+    String.raw`\bdoes for (others|other people|most people|everyone else)\b`,
+    String.raw`\b(nobody|no one) else (would|could|will|can|does|did|sees|saw|notices|noticed|spots|thinks|thought)\b`,
+    String.raw`\bone of the (most|least|best|worst|first|last|few|\w+est)\b`,
+    String.raw`\bthe (most|least) \w+ (person|one|people)\b`,
+    String.raw`\b(first|last) (one )?to (notice|see|spot|sense|show up|be asked|be heard|speak up|help|offer|arrive|step in)\b`,
+    String.raw`(?<!\b(ask|invite|asking|inviting) )\bthe (most \w+|least \w+|\w+est) (\w+ )?in (the|any|every) (room|team|group|office|class|family)\b`,
+    String.raw`\brarer than\b`,
+    String.raw`\brarest\b`,
+    String.raw`\b(is|that's|it's|that is|it is) (\w+ )?rare\b`,
+    String.raw`\b(a|an) (rare|unusual|uncommon) (skill|gift|quality|trait|talent|knack|ability|strength|kind|patience|calm|ease)\b`,
+    String.raw`\bsomething rare\b`,
+  ].join('|'),
+  'i',
+)
+
+const HEDGE =
+  /\b(probably|likely|tends? to|tended to|may|might|perhaps|maybe|chances are|odds are|there's a good chance|it wouldn't be surprising)\b/gi
+const GUESS_OPENER = /\b(chances|odds) are\b|(^|[.!?:;]\s+)no doubt\b/i
+const TAG_QUESTION =
+  /,\s*((isn't|aren't|wasn't|weren't|doesn't|don't|didn't|hasn't|haven't|hadn't|won't|wouldn't|can't|couldn't|shouldn't|is|are|was|were|does|do|did|has|have|had|will|would|can|could|should)\s+(it|you|they|we|he|she|there|that|i)|right|eh)\s*\?/i
+const OKAY = /\b(ok|okay)\b/i
+const US_SPELLING = new RegExp(
+  String.raw`\b(` +
+    [
+      'colors?|colored|colorful|favors?|favored|favoring|favorites?|flavors?|flavored|honors?|honored|humor|humored|labors?|labored',
+      'neighbors?|neighborhoods?|neighborly|rumors?|behaviors?|behavioral|harbors?|savor|savored|endeavors?|odors?|armor|parlor|vapor',
+      'centers?|centered|theaters?|fibers?|liters?|somber|meager',
+      'traveled|traveling|travelers?|canceled|canceling|labeled|labeling|modeled|modeling|fueled|fueling|jeweler|marvelous|signaled|dialed|dialing|leveled|quarreled|woolen',
+      String.raw`\w+yz(e|es|ed|ing)`,
+      'defense|offense|pretense|catalog|gray|moms?|math|toward|afterward|pajamas|cozy|aluminum|skeptic(al|ism)?|jewelry|plow|mold|moldy|mustache',
+      'practicing|practiced|fulfill|fulfillment|enroll|enrollment|installment|skillful|willful|judgment|acknowledgment|aging|gotten',
+    ].join('|') +
+    String.raw`)\b`,
+  'i',
+)
+const US_IZE = /\b[a-z]+iz(e|es|ed|ing|ation|ations)\b/gi
+const NOT_IZE = new Set(
+  'size sizes sized sizing resize resized downsize downsized downsizing oversize oversized outsize outsized prize prizes prized seize seizes seized seizing capsize capsized capsizing'.split(
+    ' ',
+  ),
+)
+
+// voiceProblems lists every rule s breaks, as short notes for a failure message.
+function voiceProblems(s: string): string[] {
+  const out: string[] = []
+  const comparison = s.match(COMPARISON)
+  if (comparison) out.push(`compares you with other people ("${comparison[0]}")`)
+  const hedges = s.match(HEDGE) ?? []
+  if (hedges.length > 1) out.push(`hedges ${hedges.length} times (${hedges.join(', ')})`)
+  const guess = s.match(GUESS_OPENER)
+  if (guess) out.push(`guesses with "${guess[0].trim()}"`)
+  const tag = s.match(TAG_QUESTION)
+  if (tag) out.push(`ends on a tag question ("${tag[0]}")`)
+  const okay = s.match(OKAY)
+  if (okay) out.push(`says "${okay[0]}"`)
+  const us = s.match(US_SPELLING)?.[0] ?? (s.match(US_IZE) ?? []).find((w) => !NOT_IZE.has(w.toLowerCase()))
+  if (us) out.push(`uses the US spelling "${us}"`)
+  return out
+}
+
+// Trait reads, and mirrors that lean on them: summary and periodSummary only
+// read the stats and traits.
+const read = (trait: string, score: number) => ({ trait, score }) as TraitRead
+const periodRead = (trait: string, score: number) => ({ trait, score }) as PeriodTrait
+const weekMirror = (answers: number, daysSoFar: number, weeksActive: number, traits: TraitRead[]) =>
+  ({ weeksActive, stats: { daysActive: 1, answers, daysSoFar }, traits }) as Mirror
+const periodMirror = (period: Period, answers: number, over: boolean, traits: PeriodTrait[]) =>
+  ({
+    period,
+    weeksTotal: 1,
+    weeks: [{ daysSoFar: over ? 6 : 2 }],
+    stats: { answers, daysActive: 1, weeksActive: 1 },
+    traits,
+  }) as PeriodMirror
+
+// shownWords is every sentence and phrase from mirrorText.ts and advice.ts
+// that reaches the screen, with where it came from. The research lines and
+// sources are kept for accuracy but not shown, so they are left out.
+function shownWords(): [string, string][] {
+  const out: [string, string][] = []
+  const traits = Object.keys(TRAITS)
+  for (const [trait, t] of Object.entries(TRAITS)) {
+    out.push([`${trait}.name`, t.name], [`${trait}.science`, t.science])
+    for (const [side, s] of [
+      ['high', t.high],
+      ['low', t.low],
+    ] as const) {
+      for (const key of ['adj', 'noun', 'quality', 'with', 'headline', 'prediction', 'cost'] as const) {
+        out.push([`${trait}.${side}.${key}`, s[key]])
+      }
+    }
+  }
+  for (const [trait, a] of Object.entries(TRAIT_ADVICE)) {
+    for (const [side, advice] of Object.entries(a)) {
+      out.push([`advice ${trait}.${side}.strength`, advice.strength], [`advice ${trait}.${side}.grow`, advice.grow])
+    }
+  }
+  for (const [area, name] of Object.entries(AREA_NAMES)) out.push([`area ${area}`, name])
+  for (const [period, line] of Object.entries(PERIOD_CLOSE)) out.push([`close ${period}`, line])
+
+  // The sentences built from those words, for every leaning.
+  out.push(
+    ['summary, quiet week', summary(weekMirror(0, 3, 2, []))],
+    ['summary, first week', summary(weekMirror(0, 3, 0, []))],
+    ['summary, balanced', summary(weekMirror(5, 6, 1, [read(traits[0], 50)]))],
+    ['day close, balanced', adviceFor([]).headline],
+  )
+  for (const period of ['month', 'quarter', 'year'] as const) {
+    out.push([`${period} summary, empty`, periodSummary(periodMirror(period, 0, false, []))])
+  }
+  for (const trait of traits) {
+    for (const score of [80, 20]) {
+      const traitsRead = [read(trait, score)]
+      out.push(
+        [`summary ${trait} ${score}`, summary(weekMirror(1, 6, 1, traitsRead))],
+        [`summary so far ${trait} ${score}`, summary(weekMirror(4, 3, 1, traitsRead))],
+        [`month summary ${trait} ${score}`, periodSummary(periodMirror('month', 9, true, [periodRead(trait, score)]))],
+        [`quarter summary so far ${trait} ${score}`, periodSummary(periodMirror('quarter', 9, false, [periodRead(trait, score)]))],
+        [`archetype ${trait} ${score}`, archetype(traitsRead) ?? ''],
+        [`tagline ${trait} ${score}`, tagline(traitsRead) ?? ''],
+        [`day close ${trait} ${score}`, adviceFor([{ traits: { [trait]: score > 50 ? 2 : -2 } }]).headline],
+      )
+    }
+  }
+  return out
+}
+
+describe('the voice of the mirror and the day close', () => {
+  it('catches what the rules are for', () => {
+    expect(voiceProblems('You finish what you start, more than most.')).toEqual(['compares you with other people ("than most")'])
+    expect(voiceProblems('Few people keep the peace like you.')).toEqual(['compares you with other people ("Few people")'])
+    expect(voiceProblems('A loose end bugs you more than it bugs anyone else.')).toEqual([
+      'compares you with other people ("than it bugs anyone else")',
+    ])
+    expect(voiceProblems('Peacekeepers like you sense tension early.')).toEqual([
+      'compares you with other people ("Peacekeepers like you")',
+    ])
+    expect(voiceProblems('You probably plan ahead, and you likely enjoy it.')).toEqual(['hedges 2 times (probably, likely)'])
+    expect(voiceProblems('Chances are you plan ahead.')[0]).toMatch(/hedges|guesses/)
+    expect(voiceProblems('Odds are you plan ahead.')).toContain('guesses with "Odds are"')
+    expect(voiceProblems("A plan helps, doesn't it?")).toEqual([`ends on a tag question (", doesn't it?")`])
+    expect(voiceProblems("That's okay.")).toEqual(['says "okay"'])
+    expect(voiceProblems('A pull toward people.')).toEqual(['uses the US spelling "toward"'])
+    expect(voiceProblems('You realize it later.')).toEqual(['uses the US spelling "realize"'])
+  })
+
+  it('lets their look-alikes through', () => {
+    for (const s of [
+      'A few people know you well, and you probably like it that way.',
+      "After a row you ask 'are we all right?' and mean it.",
+      'You judge yourself before anyone else can.',
+      'Ask the quietest person in the room what they think.',
+      'You realise a prize is worth less than its size suggests, and you lean towards colour.',
+      'What would actually help?',
+    ]) {
+      expect(voiceProblems(s), s).toEqual([])
+    }
+  })
+
+  it('keeps every word it shows in the voice', () => {
+    const words = shownWords()
+    expect(words.length).toBeGreaterThan(300)
+    for (const [where, s] of words) {
+      expect(voiceProblems(s), `${where}: ${s}`).toEqual([])
+    }
+  })
+})

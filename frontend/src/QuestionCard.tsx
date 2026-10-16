@@ -2,28 +2,38 @@ import { useEffect, useState } from 'react'
 import {
   ApiError,
   castVote,
+  CLOSED,
+  dropVoteKey,
+  earlierAnswer,
   MAX_WORDS,
   OWN_WORDS,
+  PRIVATE_OPTION,
   rateCard,
   recalledChoice,
+  recalledDraft,
   recalledWords,
+  rememberAnswered,
   rememberChoice,
   rememberRated,
   rememberSkip,
   rememberWords,
-  saveStep,
+  saveDraft,
   SKIPPED,
+  UNKNOWN,
   voteKey,
   wasRated,
   type Insight,
   type Option,
   type OwnWords,
   type Question,
+  type Sitting,
 } from './api'
 import { isEvening } from './day'
 import { moveFor, startMove } from './moves'
+import { DEFAULT_WORDS_DAYS } from './prefs'
 import { recordAnswer, recordSkip } from './profile'
 import { splitReveal } from './reveal'
+import { onOtherTab } from './storage'
 import { themeName, themeStyle, themeVars } from './themes'
 
 export type Done = 'answered' | 'skipped'
@@ -31,12 +41,11 @@ export type Done = 'answered' | 'skipped'
 type Props = {
   question: Question
   date: string
+  sitting?: Sitting
+  wordsDays?: number
   onDone?: (questionId: string, done: Done) => void
   onNext: () => void
 }
-
-// Stored when the server says this device already voted but we don't know which option.
-export const UNKNOWN_CHOICE = '?'
 
 // How the card is being answered: by tapping an option, by writing in one's
 // own words, or by picking the option closest to those words.
@@ -46,48 +55,93 @@ type Mode = 'options' | 'writing' | 'closest'
 // words, and the same screen turns into what it says about you: the
 // insight, one small step to try and a way to say whether it landed. Never
 // what anyone else answered, and no score.
-export function QuestionCard({ question, date, onDone, onNext }: Props) {
+export function QuestionCard({ question, date, sitting, wordsDays = DEFAULT_WORDS_DAYS, onDone, onNext }: Props) {
   const [choice, setChoice] = useState<string | null>(() => recalledChoice(question.id))
   const [words, setWords] = useState<OwnWords | null>(() => recalledWords(question.id))
-  const [mode, setMode] = useState<Mode>('options')
-  const [draft, setDraft] = useState('')
+  const [draft, setDraft] = useState(() => (recalledChoice(question.id) ? '' : recalledDraft(question.id)))
+  const [mode, setMode] = useState<Mode>(() => (draft ? 'writing' : 'options'))
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Set when the server already had an earlier answer from this phone.
+  const [kept, setKept] = useState(false)
   const theme = themeStyle(question.theme)
+  const intimate = question.care === 'intimate'
 
   // Report a finished card, including one restored from storage.
   useEffect(() => {
     if (choice) onDone?.(question.id, choice === SKIPPED ? 'skipped' : 'answered')
   }, [choice, question.id, onDone])
 
+  // Another tab on this phone may answer the same question: follow it, so
+  // the person is never asked twice.
+  useEffect(() => {
+    const sync = () => {
+      setChoice(recalledChoice(question.id))
+      const w = recalledWords(question.id)
+      setWords((was) => (JSON.stringify(was) === JSON.stringify(w) ? was : w))
+    }
+    // Once now as well, for anything another tab wrote between the first
+    // render and this listener starting.
+    sync()
+    return onOtherTab(sync)
+  }, [question.id])
+
+  function editDraft(text: string) {
+    setDraft(text)
+    saveDraft(question.id, text)
+  }
+
   // keep saves someone's own words on this phone, with the option that came
   // closest, if one did. Nothing here is sent.
   function keep(text: string, closest?: string) {
     const w: OwnWords = { questionId: question.id, date, prompt: question.prompt, words: text }
     if (question.theme) w.theme = question.theme
-    if (question.care === 'intimate') w.private = true
+    if (intimate) w.private = true
     if (closest) w.closest = closest
-    rememberWords(w)
+    rememberWords(w, wordsDays)
+    saveDraft(question.id, '')
     setWords(w)
   }
 
-  // vote sends the tapped option. typed carries the person's own words when
-  // they picked it as the closest; the words stay here.
+  function accepted(o: Option, typed?: string) {
+    rememberChoice(question.id, o.id)
+    recordAnswer(question, o.id, date)
+    if (typed) keep(typed, o.label)
+    setChoice(o.id)
+  }
+
+  // vote sends the tapped option; for an intimacy question only that it was
+  // answered. typed carries the person's own words when they picked it as
+  // the closest; the words stay here.
   async function vote(o: Option, typed?: string) {
     setSending(true)
     setError(null)
+    const sent = intimate ? PRIVATE_OPTION : o.id
+    const send = () => castVote(question.id, sent, voteKey(question.id, sent), sitting)
     try {
-      await castVote(question.id, o.id, voteKey(question.id))
-      rememberChoice(question.id, o.id)
-      recordAnswer(question, o.id, date)
-      if (typed) keep(typed, o.label)
-      setChoice(o.id)
+      try {
+        await send()
+      } catch (e) {
+        // A key from an older version of the app may belong to another
+        // answer: take a new one and send once more.
+        if (!(e instanceof ApiError && e.code === 'idempotency_key_reused')) throw e
+        dropVoteKey(question.id)
+        await send()
+      }
+      accepted(o, typed)
     } catch (e) {
       if (e instanceof ApiError && e.code === 'duplicate_vote') {
-        // This device already answered, but not necessarily with this option.
-        if (typed) keep(typed)
-        rememberChoice(question.id, UNKNOWN_CHOICE)
-        setChoice(UNKNOWN_CHOICE)
+        // This phone's answer is already counted. When it was an earlier
+        // try that seemed to fail, that answer is the one kept.
+        const earlier = intimate ? null : question.options.find((x) => x.id === earlierAnswer(question.id))
+        if (earlier) {
+          accepted(earlier)
+          setKept(true)
+        } else {
+          if (typed) keep(typed)
+          rememberAnswered(question.id)
+          setChoice(recalledChoice(question.id))
+        }
       } else {
         setError('Your answer did not go through. Please try again.')
       }
@@ -166,7 +220,7 @@ export function QuestionCard({ question, date, onDone, onNext }: Props) {
             rows={4}
             autoFocus
             placeholder="Say it the way it really is for you."
-            onChange={(e) => setDraft(e.target.value)}
+            onChange={(e) => editDraft(e.target.value)}
           />
           <p className="own-meta">
             <span>
@@ -222,10 +276,21 @@ export function QuestionCard({ question, date, onDone, onNext }: Props) {
         </>
       )}
 
-      {choice === UNKNOWN_CHOICE && (
+      {choice === UNKNOWN && (
         <>
           {words && <YourWords words={words} />}
           <p className="muted">You already answered this one on this phone.</p>
+          <button type="button" className="next" onClick={onNext}>
+            Next
+          </button>
+        </>
+      )}
+
+      {choice === CLOSED && (
+        <>
+          <p className="muted">
+            You answered this one before you deleted everything. It stays closed today, so it isn't counted twice.
+          </p>
           <button type="button" className="next" onClick={onNext}>
             Next
           </button>
@@ -245,6 +310,11 @@ export function QuestionCard({ question, date, onDone, onNext }: Props) {
         </div>
       )}
 
+      {chosen && kept && (
+        <p className="muted" role="status">
+          Your first answer had already reached me, so that's the one I kept.
+        </p>
+      )}
       {chosen && <Answer question={question} option={chosen} words={words} date={date} onNext={onNext} />}
 
       {error && (
@@ -297,7 +367,7 @@ function Answer({
       )}
       {insight && <InsightPanel insight={insight} />}
       {insight?.step && <TryThis question={question} option={option} step={insight.step} date={date} />}
-      {insight && <Rate questionId={question.id} optionId={option.id} />}
+      {insight && <Rate questionId={question.id} optionId={question.care === 'intimate' ? PRIVATE_OPTION : option.id} />}
       <button type="button" className="next" onClick={onNext}>
         Next
       </button>
@@ -317,21 +387,20 @@ function InsightPanel({ insight }: { insight: Insight }) {
 }
 
 // One small step from the card. "I'll try it" keeps it as one of today's
-// moves: the evening asks how a morning move went, and the mirror keeps them all.
+// small steps: the evening asks how a morning step went, and the mirror keeps them all.
 function TryThis({ question, option, step, date }: { question: Question; option: Option; step: string; date: string }) {
   const [state, setState] = useState<'open' | 'started' | 'later'>(() => (moveFor(question.id) ? 'started' : 'open'))
   const [evening] = useState(() => isEvening())
   function start() {
-    startMove(date, question.id, option.id, step)
     setState('started')
-    saveStep(question.id, option.id, 'started', date).catch(() => {
-      // kept on the phone; the mirror just won't count it
+    startMove(date, question.id, option.id, step).catch(() => {
+      // kept on the phone, and sent again when the app next opens
     })
   }
   return (
-    <div className="try" role="group" aria-label="Try this">
+    <div className="try" role="group" aria-label="Small step">
       <p>
-        <strong>Try this:</strong> {step}
+        <strong>Small step:</strong> {step}
       </p>
       {state === 'open' && (
         <div className="try-buttons">
@@ -346,8 +415,8 @@ function TryThis({ question, option, step, date }: { question: Question; option:
       {state === 'started' && (
         <p className="muted">
           {evening
-            ? 'Added to your moves. Give it a go tomorrow; your mirror will ask how it went.'
-            : "Added to today's moves. I'll ask how it went this evening."}
+            ? "Added to your small steps. Give it a go tomorrow, and I'll ask how it went in your mirror."
+            : "Added to today's small steps. I'll ask how it went this evening."}
         </p>
       )}
     </div>

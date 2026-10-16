@@ -25,6 +25,7 @@ import (
 
 type question struct {
 	ID      string `json:"id"`
+	Care    string `json:"care"`
 	Options []struct {
 		ID string `json:"id"`
 	} `json:"options"`
@@ -51,6 +52,9 @@ func main() {
 	if len(qs) == 0 {
 		qs = set.Questions
 	}
+	// An intimate question's results are never served, so its votes could
+	// not be checked against the tally.
+	qs = slices.DeleteFunc(qs, func(q question) bool { return q.Care == "intimate" })
 	if len(qs) < 3 {
 		log.Fatal("need at least 3 questions today")
 	}

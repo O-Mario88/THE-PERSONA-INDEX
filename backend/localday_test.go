@@ -3,7 +3,6 @@ package main
 import (
 	"net/http"
 	"reflect"
-	"strings"
 	"testing"
 	"time"
 )
@@ -130,49 +129,6 @@ func TestLocalDayVotes(t *testing.T) {
 		s.clock = func() time.Time { return time.Date(2026, 10, 14, 11, 0, 0, 0, time.UTC) }
 		if n := totalVotes(t, s, "2026-10-12-q-dishes"); n != 1 {
 			t.Fatalf("expected 1 vote, got %d", n)
-		}
-	})
-}
-
-func TestEveningFollowUps(t *testing.T) {
-	b := shippedBank(t)
-
-	t.Run("every question of every edition carries an evening follow-up", func(t *testing.T) {
-		for d := range 60 {
-			set, _ := b.GetSet(fixedNow.AddDate(0, 0, d).Format("2006-01-02"))
-			for _, q := range set.Pool {
-				f := q.FollowUp
-				if f == nil || f.Prompt == "" || len(f.Options) < 3 {
-					t.Fatalf("%s: no evening follow-up", q.ID)
-				}
-				for _, o := range f.Options {
-					if o.ID == "" || o.Label == "" || o.Reflection == "" {
-						t.Fatalf("%s/%s: follow-up option is incomplete: %+v", q.ID, o.ID, o)
-					}
-				}
-			}
-		}
-	})
-
-	t.Run("the follow-up reaches the phone with the edition", func(t *testing.T) {
-		s := NewServer(func() time.Time { return fixedNow }, b, newMemoryStore(), newDeviceSigner(testSecret))
-		w := get(t, s, "/api/editions/"+today)
-		expectStatus(t, w, http.StatusOK)
-		if !strings.Contains(w.Body.String(), `"followUp":{"prompt":`) {
-			t.Fatalf("expected followUp in the payload: %.300s", w.Body.String())
-		}
-	})
-
-	t.Run("evening answers are not votes: a follow-up option id is not a ballot", func(t *testing.T) {
-		s := NewServer(func() time.Time { return fixedNow }, b, newMemoryStore(), newDeviceSigner(testSecret))
-		set, _ := b.GetSet(today)
-		q := set.Questions[0]
-		for _, fo := range q.FollowUp.Options {
-			if hasOption(q, fo.ID) {
-				continue // the same id as a morning option; that one is a morning vote
-			}
-			v := VoteRequest{QuestionID: q.ID, OptionID: fo.ID, VoterID: "voter-a"}
-			expectError(t, postVote(t, s, v, "k-"+fo.ID), http.StatusBadRequest, "unknown_option")
 		}
 	})
 }

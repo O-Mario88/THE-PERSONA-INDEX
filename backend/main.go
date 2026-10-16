@@ -24,7 +24,9 @@ const (
 	// aggregationInterval is how often each instance's tally worker drains new votes.
 	aggregationInterval = time.Second
 	// Raw votes are deleted this long after they are tallied; tallies stay.
-	defaultRetention = 30 * 24 * time.Hour
+	// Seven days, the shortest the one-vote rule allows (decision recommended
+	// in the 2026-10-15 proposal): less kept is less to protect.
+	defaultRetention = 7 * 24 * time.Hour
 	// minRetention keeps raw votes well past the last moment any question
 	// accepts votes (its day plus rolloverGrace), so deleting them can never
 	// reopen a question to a device that already voted.
@@ -47,15 +49,23 @@ func newHTTPServer(addr string, h http.Handler) *http.Server {
 
 // Configuration (environment):
 //
-//	DATABASE_URL            Postgres URL. Without it votes live in memory and are lost on restart.
-//	DATABASE_MAX_CONNS      pool size per instance (default 20).
-//	DEVICE_TOKEN_SECRET     32+ bytes; signs device tokens. Required with DATABASE_URL.
-//	TRUST_CF_CONNECTING_IP  "1" when the only route in is through Cloudflare.
-//	RUN_TALLY_WORKER        "0" to stop this instance tallying (default on; safe on every instance).
-//	VOTE_RETENTION_DAYS     raw-vote retention (default 30, minimum 7).
-//	PORT                    listen port (default 8080).
+//	DATABASE_URL                  Postgres URL. Without it votes live in memory and are lost on restart.
+//	DATABASE_MAX_CONNS            pool size per instance (default 20).
+//	DEVICE_TOKEN_SECRET           32+ bytes; signs device tokens. Required with DATABASE_URL.
+//	DEVICE_TOKEN_SECRET_PREVIOUS  optional; the token secret before a rotation, still accepted.
+//	DATA_KEY_SECRET               32+ bytes, different from the token secrets; keys every stored
+//	                              hash. Required with DATABASE_URL. Never rotated (docs/operations.md).
+//	TRUST_CF_CONNECTING_IP        "1" when the only route in is through Cloudflare.
+//	RUN_TALLY_WORKER              "0" to stop this instance tallying (default on; safe on every instance).
+//	VOTE_RETENTION_DAYS           raw-vote retention (default 7, minimum 7).
+//	PORT                          listen port (default 8080).
+//
+// `go run . schedule` maintains the frozen schedule instead of serving (schedule.go).
 func main() {
-	bank, err := loadContentBank(questionsJSON)
+	if len(os.Args) > 1 && os.Args[1] == "schedule" {
+		os.Exit(runScheduleCommand(os.Args[2:], time.Now(), os.Stdout, os.Stderr))
+	}
+	bank, err := loadShippedBank()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -63,34 +73,49 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	var votes VoteStore
-	secret := []byte(os.Getenv("DEVICE_TOKEN_SECRET"))
+	keys := KeyConfig{
+		TokenSecret: []byte(os.Getenv("DEVICE_TOKEN_SECRET")),
+		DataSecret:  []byte(os.Getenv("DATA_KEY_SECRET")),
+	}
+	if prev := os.Getenv("DEVICE_TOKEN_SECRET_PREVIOUS"); prev != "" {
+		keys.PreviousTokenSecret = []byte(prev)
+	}
+	var store Store
 	if url := os.Getenv("DATABASE_URL"); url != "" {
-		if len(secret) < 32 {
-			log.Fatal("DEVICE_TOKEN_SECRET must be set (32+ bytes) when DATABASE_URL is set")
+		if len(keys.TokenSecret) < minSecretBytes || len(keys.DataSecret) < minSecretBytes {
+			log.Fatal("DEVICE_TOKEN_SECRET and DATA_KEY_SECRET must both be set (32+ bytes) when DATABASE_URL is set")
 		}
 		st, err := openPGStore(ctx, url, int32(envInt("DATABASE_MAX_CONNS", 20)))
 		if err != nil {
 			log.Fatal(err)
 		}
 		defer st.Close()
-		votes = st
+		store = st
 	} else {
 		log.Println("WARNING: DATABASE_URL not set; votes are kept in memory and lost on restart")
-		votes = newMemoryStore()
-		if len(secret) < 32 {
-			log.Println("WARNING: DEVICE_TOKEN_SECRET not set; using a random one, so device tokens reset on restart")
-			secret = make([]byte, 32)
-			rand.Read(secret)
+		store = newMemoryStore()
+		for _, k := range []*[]byte{&keys.TokenSecret, &keys.DataSecret} {
+			if len(*k) < minSecretBytes {
+				log.Println("WARNING: a key secret is not set; using a random one, so device tokens reset on restart")
+				*k = make([]byte, 32)
+				rand.Read(*k)
+			}
 		}
 	}
+	devices, err := newKeyring(keys)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	srv := NewServer(time.Now, bank, votes, newDeviceSigner(secret))
+	srv := NewServer(time.Now, bank, store, devices)
 	srv.trustCF = os.Getenv("TRUST_CF_CONNECTING_IP") == "1"
+	srv.voteRetention = max(time.Duration(envInt("VOTE_RETENTION_DAYS", int(defaultRetention.Hours()/24)))*24*time.Hour, minRetention)
+	if days := bank.scheduledUntil().Sub(time.Now()).Hours() / 24; days < scheduleWarnDays {
+		log.Printf("WARNING: the frozen schedule ends in %.0f days; run `cd backend && go run . schedule` and ship the result", days)
+	}
 
 	if os.Getenv("RUN_TALLY_WORKER") != "0" {
-		retention := max(time.Duration(envInt("VOTE_RETENTION_DAYS", 30))*24*time.Hour, minRetention)
-		go runWorker(ctx, srv, retention)
+		go runWorker(ctx, srv, srv.voteRetention)
 	}
 
 	httpSrv := newHTTPServer(":"+strconv.Itoa(envInt("PORT", 8080)), srv.Routes())

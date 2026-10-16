@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"context"
 	"encoding/json"
+	"errors"
 	"log"
 	"math"
 	"net/http"
@@ -178,21 +179,101 @@ func (s *Server) MirrorWeek(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, m)
 }
 
-// ForgetMirror is DELETE /api/mirror: everything kept for this phone goes.
-// Anonymous vote counts stay; they cannot be traced back to it.
-func (s *Server) ForgetMirror(w http.ResponseWriter, r *http.Request) {
+// deviceVoteHashes lists every key a phone's raw votes and ratings can be
+// stored under: one per question of every edition whose votes may still be
+// kept, with a day either side for phones far from UTC.
+func (s *Server) deviceVoteHashes(deviceID string) []string {
+	now := s.clock().UTC()
+	first := now.Add(-s.voteRetention-time.Hour-westmostOffset).AddDate(0, 0, -2)
+	last := now.Add(eastmostOffset).AddDate(0, 0, 1)
+	var out []string
+	for d := first; !d.After(last); d = d.AddDate(0, 0, 1) {
+		set, ok := s.bank.GetSet(d.Format(dateLayout))
+		if !ok {
+			continue
+		}
+		qs := set.Pool
+		if len(qs) == 0 {
+			qs = set.Questions
+		}
+		for _, q := range qs {
+			out = append(out, s.devices.voterHash(deviceID, q.ID), s.devices.voterHash(deviceID, ratingKey(q.ID)))
+		}
+	}
+	return out
+}
+
+// ForgetResult is the 200 body of DELETE /api/device/data.
+type ForgetResult struct {
+	Deleted Forgotten `json:"deleted"`
+}
+
+// ForgetDevice is DELETE /api/device/data ("Delete everything"): every row
+// kept for this phone goes, in one step: its answers, steps and weekly notes,
+// and its raw votes and ratings. Totals already counted stay; they are
+// anonymous numbers that cannot be traced back to it. The phone's pass then
+// takes no more writes, and the phone gets a new one.
+//
+// Any well-formed pass is accepted, signed or not (deviceSigner.Holder), so
+// a phone whose pass was signed by a retired key can still delete.
+func (s *Server) ForgetDevice(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-store")
+	token, _ := strings.CutPrefix(r.Header.Get("Authorization"), "Device ")
+	deviceID, ok := s.devices.Holder(token)
+	if !ok {
+		writeError(w, http.StatusUnauthorized, "invalid_device")
+		return
+	}
+	if ok, retry := s.forgetLimit.Allow(clientAddress(r, s.trustCF), s.clock()); !ok {
+		rateLimited(w, retry)
+		return
+	}
+	f, err := s.mirror.ForgetDevice(r.Context(), s.devices.mirrorKey(deviceID), s.deviceVoteHashes(deviceID), s.clock().UTC().Format(dateLayout))
+	if err != nil {
+		log.Printf("forget: %v", err)
+		writeError(w, http.StatusServiceUnavailable, "unavailable")
+		return
+	}
+	writeJSON(w, http.StatusOK, ForgetResult{Deleted: f})
+}
+
+// DataKept is the response of GET /api/device/data: what the server holds
+// for this phone and how long each kind is kept, for its "What I keep" screen.
+type DataKept struct {
+	Kept    Kept      `json:"kept"`
+	KeptFor Retention `json:"keptFor"`
+}
+
+// Retention says, in days, how long each kind of row is kept.
+type Retention struct {
+	AnswersDays     int `json:"answersDays"`
+	WeeklyNotesDays int `json:"weeklyNotesDays"`
+	VotesDays       int `json:"votesDays"`
+}
+
+func (s *Server) retention() Retention {
+	days := func(d time.Duration) int { return int(d.Hours() / 24) }
+	return Retention{AnswersDays: days(mirrorRetention), WeeklyNotesDays: days(weekSummaryRetention), VotesDays: days(s.voteRetention)}
+}
+
+func (s *Server) DeviceData(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "private, no-store")
 	deviceID, ok := s.deviceFromHeader(r)
 	if !ok {
 		writeError(w, http.StatusUnauthorized, "invalid_device")
 		return
 	}
-	if err := s.mirror.ForgetDevice(r.Context(), s.devices.mirrorKey(deviceID)); err != nil {
-		log.Printf("forget: %v", err)
+	if ok, retry := s.voteLimit.Allow(deviceID, s.clock()); !ok {
+		rateLimited(w, retry)
+		return
+	}
+	k, err := s.mirror.DeviceData(r.Context(), s.devices.mirrorKey(deviceID), s.deviceVoteHashes(deviceID))
+	if err != nil {
+		log.Printf("device data: %v", err)
 		writeError(w, http.StatusServiceUnavailable, "unavailable")
 		return
 	}
-	w.WriteHeader(http.StatusNoContent)
+	writeJSON(w, http.StatusOK, DataKept{Kept: k, KeptFor: s.retention()})
 }
 
 // SaveStep is POST /api/steps: start the small step on an answered card, or
@@ -232,8 +313,11 @@ func (s *Server) SaveStep(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "unknown_answer")
 		return
 	}
-	st := MirrorStep{DeviceKey: key, QuestionID: req.QuestionID, OptionID: req.OptionID, Started: req.Date, Status: req.Status, UpdatedAt: s.clock()}
-	if err := s.mirror.SaveStep(r.Context(), st); err != nil {
+	st := MirrorStep{DeviceKey: key, QuestionID: req.QuestionID, OptionID: req.OptionID, Started: req.Date, Status: req.Status, UpdatedAt: s.voteTime()}
+	if err := s.mirror.SaveStep(r.Context(), st); errors.Is(err, ErrDeviceForgotten) {
+		writeError(w, http.StatusGone, "device_forgotten")
+		return
+	} else if err != nil {
 		log.Printf("step: %v", err)
 		writeError(w, http.StatusServiceUnavailable, "unavailable")
 		return
@@ -241,16 +325,17 @@ func (s *Server) SaveStep(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "saved"})
 }
 
-// rememberAnswer keeps an accepted vote for the phone's mirror. A private
-// (intimate) answer keeps only that it was given.
-func (s *Server) rememberAnswer(ctx context.Context, deviceID string, q Question, date, optionID string) error {
-	a := MirrorAnswer{DeviceKey: s.devices.mirrorKey(deviceID), QuestionID: q.ID, Date: date, Theme: q.Theme, OptionID: optionID, AnsweredAt: s.clock()}
+// answerFor is what the phone's mirror keeps of a vote: its question, date,
+// sitting, option and depth. A private (intimate) answer keeps only that it
+// was given, under a keyed hash in place of its question id.
+func (s *Server) answerFor(deviceID string, q Question, date, optionID string, evening bool) MirrorAnswer {
+	a := MirrorAnswer{DeviceKey: s.devices.mirrorKey(deviceID), QuestionID: q.ID, Date: date, Theme: q.Theme, OptionID: optionID, Evening: evening}
 	if q.Care == careIntimate {
 		a.QuestionID, a.OptionID = s.devices.privateQuestionID(q.ID), ""
 	} else if o := optionOf(q, optionID); o != nil {
 		a.Depth = o.Depth
 	}
-	return s.mirror.SaveAnswer(ctx, a)
+	return a
 }
 
 func optionOf(q Question, id string) *Option {
@@ -269,7 +354,17 @@ type questionCache struct {
 	byDate map[string]map[string]Question
 }
 
+// questionFinder is a bank that finds a question by its dated id alone.
+type questionFinder interface {
+	Question(id string) (Question, bool)
+}
+
 func (s *Server) question(date, id string) (Question, bool) {
+	if f, ok := s.bank.(questionFinder); ok {
+		if q, ok := f.Question(id); ok && strings.HasPrefix(id, date+"-") {
+			return q, true
+		}
+	}
 	c := &s.questions
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -442,7 +537,7 @@ func (s *Server) buildMirror(ctx context.Context, key, date string) (Mirror, err
 		if c := strings.Compare(x.Date, y.Date); c != 0 {
 			return c
 		}
-		if c := x.AnsweredAt.Compare(y.AnsweredAt); c != 0 {
+		if c := boolCompare(x.Evening, y.Evening); c != 0 {
 			return c
 		}
 		return cmp.Compare(s.poolIndex(x), s.poolIndex(y))
