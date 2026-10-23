@@ -7,18 +7,35 @@ How the backend runs in production, and the decisions behind it.
 | Variable | Meaning |
 | --- | --- |
 | `DATABASE_URL` | Postgres URL. Without it votes live in memory and are lost on restart (local dev only). |
-| `DATABASE_MAX_CONNS` | Pool size per instance, default 20. Instances × pool must stay under the database's connection limit (or go through a pooler such as PgBouncer in transaction mode). |
+| `DATABASE_MAX_CONNS` | Pool size per instance, default 20. Instances × pool must stay under the database's connection limit. Connect directly, not through a pooler in transaction mode ([deploy.md](deploy.md)). At 4,000 votes/s the pool was the limit ([load-test.md](load-test.md)). |
 | `DEVICE_TOKEN_SECRET` | 32+ random bytes that sign device passes. Required with `DATABASE_URL`. Same value on every instance. Can be rotated without signing anyone out; see "Keys" below. |
 | `DEVICE_TOKEN_SECRET_PREVIOUS` | Optional: the token secret before a rotation. Passes it signed keep working. |
 | `DATA_KEY_SECRET` | 32+ random bytes, different from both token secrets. Keys every hash the server stores. Required with `DATABASE_URL`. Same value on every instance. Never rotated; see "Keys" below. |
-| `TRUST_CF_CONNECTING_IP` | `1` only when every request reaches the API through Cloudflare. |
+| `TRUST_CF_CONNECTING_IP` | `1` only when every request reaches the API through Cloudflare, which `EDGE_SECRET` makes sure of. The server warns at start when this is on without it. |
+| `EDGE_SECRET` | 32+ bytes. When set, every request must carry it in `X-Edge-Secret` (Cloudflare adds it; [deploy.md](deploy.md#cloudflare)), or gets `403 edge_only`. `/api/health` and `/api/ready` are open, for the host's checks. |
 | `RUN_TALLY_WORKER` | `0` to stop an instance tallying. Safe to leave on everywhere. |
 | `VOTE_RETENTION_DAYS` | Raw-vote retention after counting, default 7, minimum 7. Tallies are kept for good. |
 | `PORT` | Listen port, default 8080. |
+| `STATIC_DIR` | Serve the built site (`frontend/dist`) from this folder, beside the API, with the headers in its `_headers` file. Set in the image. Must hold `index.html`. |
+| `METRICS_ADDR` | Serve `/metrics` on this private address too, such as `:9090`. Must differ from `PORT`. ([monitoring.md](monitoring.md)) |
+| `METRICS_TOKEN` | 32+ bytes. Serve `/metrics` on the public port to requests with `Authorization: Bearer <token>`. |
+| `LOG_FORMAT` | `json` (the default with `DATABASE_URL`) or `text` (the default without). |
+| `ACCESS_LOG` | `errors` (default: 5xx and requests taking 1 s or more), `all` or `off`. Never logs a path, query, address or pass. |
+
+The server reads every setting when it starts, names every problem at once and refuses to start until they are fixed (`backend/config.go`). Flags take `1`, `0`, `true`, `false`, `yes`, `no`, `on` or `off`.
 
 Migrations in `backend/migrations/` run at start, in file order, under an advisory lock, so instances starting together wait for each other. Each file runs once and is recorded in `schema_migrations`; the files are also written so that running one again changes nothing. A migration never edits a file that has shipped; a change is a new file.
 
 Without `DATABASE_URL` the server keeps everything in memory and makes up random secrets if they are missing, which is for local development only.
+
+Commands besides serving, all in the same binary:
+
+- `go run . check` (needs only `DATABASE_URL`): checks a database's schema, tally backlog, retention and frozen schedule, and counts its rows. Exit 0, 1 for a problem, 2 if it could not run. Daily in production ([monitoring.md](monitoring.md#daily-check)) and after every restore ([backups.md](backups.md)).
+- `go run . cards` (needs only `DATABASE_URL`): the insight cards people say do not fit them (below).
+- `go run . schedule`: the frozen schedule (below).
+- `api healthcheck`: exits 0 when the instance on `PORT` answers `/api/ready`; the image's health check.
+
+The hourly retention jobs delete in batches of 5,000 rows, so a day of votes at scale never runs into the 10-second statement timeout, and they run beside the tally worker rather than holding it up (`backend/worker.go`).
 
 What each table and phone key holds, and for how long, is in [data-map.md](data-map.md). Change that page with any change to retention or to what is stored.
 
@@ -84,10 +101,10 @@ Tallies already counted stay, because nothing links them to the phone.
 
 ## The static site: the app, the read pages and offline
 
-`frontend/` builds to plain files (`npm run build`), served by any static host in front of the API:
+`frontend/` builds to plain files (`npm run build`). The image serves them beside the API (`STATIC_DIR`); they can equally go on any static host in front of it. `frontend/public/_headers` sets each path's safety and cache headers, in the format Cloudflare Pages reads, and the Go server applies the same file, so the headers are the same either way: the app may load scripts, styles and fonts only from the site itself; the read pages may run no script at all; nothing may frame either. Tests on both sides (`backend/static_test.go`, `frontend/src/pwa/headers.test.ts`) check the file against what the pages need.
 
 - `/` is the app. `/read/` and `/read/<slug>/index.html` are the public read pages, written by the build from `src/reads/reads.json` (`src/reads/site.ts`), with `/read/sitemap.txt`. The build stops if any read fails its gate. Reads on intimacy are in the app only. Serve `/read/<slug>/` from its `index.html`.
-- `/sw.js` is the service worker the build writes with that build's file list (`src/pwa/serviceWorker.ts`). It keeps the app's page, script, styles, Latin fonts and icons so the app opens offline, goes to the network first for pages, and never touches `/api/`. **Serve `/sw.js` with `Cache-Control: no-cache`** so a deploy reaches phones on their next visit; files under `/assets/` can be cached for a year (their names change with their content). Serve `/manifest.webmanifest` as `application/manifest+json`.
+- `/sw.js` is the service worker the build writes with that build's file list (`src/pwa/serviceWorker.ts`). It keeps the app's page, script, styles, Latin fonts and icons so the app opens offline, goes to the network first for pages, and never touches `/api/`. `_headers` serves `/sw.js` and the pages with `Cache-Control: no-cache`, so a deploy reaches phones on their next visit, and files under `/assets/` for a year (their names change with their content). `/manifest.webmanifest` goes out as `application/manifest+json`.
 - **Ads** (Edwin chose AdSense only, 2026-10-15): they go on the public read pages only, after the third paragraph and at the foot, never personalised. Never inside the app: not beside questions, cards, intimacy, sad moments, the notebook, the night screen or practices. No slot exists yet; it waits for the AdSense account.
 
 ## The frozen schedule
@@ -109,12 +126,14 @@ Time zones run from UTC-12 to UTC+14, so a date is today somewhere for about 50 
 
 ## Edge rules (Cloudflare)
 
-The API has its own per-instance limits (30 votes per device per minute, 20 new devices per address per hour). At the edge, add:
+The API has its own per-instance limits (30 votes, ratings, steps and data requests per device a minute; 20 new passes and 20 deletes per address an hour), which hold whatever the Cloudflare plan. The origin takes requests only from Cloudflare (`EDGE_SECRET`, [deploy.md](deploy.md#cloudflare)), so the edge's rules cannot be skipped.
 
-- Rate limit `POST /api/device`: 20 requests per IP per hour, block for 1 hour.
-- Rate limit `POST /api/votes`: 60 requests per IP per minute, managed challenge.
+Cloudflare's rate-limiting rules depend on the plan (its documentation, read 2026-10-23): Free has one rule, counted per IP over 10 seconds; Pro has two, counted over up to a minute and blocking for up to an hour. Neither plan can match on the method, and both count per IP, where many phones on one mobile network can share an address. Starting points, to adjust from the edge's analytics:
+
+- Free: one rule for paths starting `/api/`: 50 requests per IP per 10 seconds, block for 10 seconds. A sitting is a handful of requests a minute.
+- Pro: add a second rule for `/api/device`: 10 requests per IP per minute, block for an hour.
 - Cache `GET /api/editions/*`, `GET /api/questions/today` and `GET /api/questions/*/results` by respecting origin `Cache-Control` (`s-maxage`). Never cache `POST`, `PUT` or `DELETE` routes, `/api/mirror*`, `/api/device/*` or `/api/vault`; they send `no-store`.
-- Bot Fight Mode on for `/api/*`.
+- Bot Fight Mode on.
 
 ## Insight card ratings
 

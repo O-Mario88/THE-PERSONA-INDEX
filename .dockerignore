@@ -1,0 +1,12 @@
+# Only what the image build needs goes to the builder.
+.git
+.github
+.claude
+**/node_modules
+**/dist
+**/coverage
+**/*.tsbuildinfo
+backend/backend
+backend/*.test
+**/.env*
+docs

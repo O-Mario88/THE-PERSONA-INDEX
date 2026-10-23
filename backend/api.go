@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"slices"
 	"strconv"
+	"sync/atomic"
 	"time"
 )
 
@@ -131,7 +132,7 @@ type Server struct {
 	voteRetention time.Duration
 
 	resultCache resultCache
-	questions   questionCache
+	questions   questionIndex  // each date's questions by id (questionindex.go)
 	voteLimit   *windowLimiter // per device
 	deviceLimit *windowLimiter // per network address
 	forgetLimit *windowLimiter // per network address
@@ -140,6 +141,15 @@ type Server struct {
 	// network address, so no one can go looking for backups.
 	vaultMissLimit *windowLimiter
 	trustCF        bool // read the client address from CF-Connecting-IP
+
+	// The layers around the API (middleware.go): its metrics, the edge
+	// secret, the access log setting, the static site and the metrics token.
+	metrics      *metrics
+	edgeSecret   string
+	accessLog    string // errors | all | off
+	static       http.Handler
+	metricsToken string
+	draining     atomic.Bool // set when shutdown begins; /api/ready answers 503
 }
 
 // NewServer wires the API to one store, which keeps the votes and the
@@ -158,12 +168,15 @@ func NewServer(clock func() time.Time, bank QuestionBank, store Store, devices *
 		forgetLimit:    newWindowLimiter(forgetsPerAddressPerHour, time.Hour),
 		vaultLimit:     newWindowLimiter(vaultsPerKeyPerHour, time.Hour),
 		vaultMissLimit: newWindowLimiter(vaultMissesPerAddrPerHr, time.Hour),
+		metrics:        newMetrics(clock()),
+		accessLog:      "errors",
 	}
 }
 
 func (s *Server) Routes() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/health", HealthCheckHandler)
+	mux.HandleFunc("GET /api/ready", s.Ready)
 	mux.HandleFunc("GET /api/questions/today", s.TodayQuestions)
 	mux.HandleFunc("GET /api/editions/{date}", s.Edition)
 	mux.HandleFunc("POST /api/device", s.IssueDevice)
@@ -309,18 +322,8 @@ func (s *Server) untilRollover() time.Duration {
 // which date's edition it belongs to.
 func (s *Server) findQuestion(id string, window questionWindow) (Question, string, bool) {
 	for _, day := range s.openDates(window) {
-		set, ok := s.bank.GetSet(day)
-		if !ok {
-			continue
-		}
-		qs := set.Pool
-		if len(qs) == 0 {
-			qs = set.Questions
-		}
-		for _, q := range qs {
-			if q.ID == id {
-				return q, day, true
-			}
+		if q, ok := s.questions.lookup(s.bank, day, id); ok {
+			return q, day, true
 		}
 	}
 	return Question{}, "", false

@@ -3,6 +3,11 @@
 //
 //	go run ./cmd/loadgen -url http://localhost:8080 -rate 1000 -duration 60s
 //
+// With -ratings and -mirrors it sends the rest of a real sitting as well: the
+// "That's me / Partly / Not me" tap after an answer, and a read of the weekly
+// mirror after a phone's third answer. Both go through the same database as
+// the votes, so they show whether the vote path holds up beside them.
+//
 // The server must run with TRUST_CF_CONNECTING_IP=1 so the simulated phones,
 // which each send their own CF-Connecting-IP, are not all treated as one
 // network address by the device-issue limit. Point it only at a server you run.
@@ -13,6 +18,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"math/rand/v2"
 	"net/http"
@@ -37,11 +43,17 @@ func main() {
 	duration := flag.Duration("duration", 30*time.Second, "how long to send votes")
 	workers := flag.Int("workers", 256, "concurrent connections")
 	settle := flag.Duration("settle", 10*time.Second, "how long to wait for the tally to catch up")
+	ratings := flag.Float64("ratings", 0, "share of answers followed by a That's me / Partly / Not me tap (0 to 1)")
+	mirrors := flag.Float64("mirrors", 0, "share of phones that read their weekly mirror after their third answer (0 to 1)")
 	flag.Parse()
+	if *ratings < 0 || *ratings > 1 || *mirrors < 0 || *mirrors > 1 {
+		log.Fatal("-ratings and -mirrors are shares between 0 and 1")
+	}
 
 	client := &http.Client{Timeout: 10 * time.Second, Transport: &http.Transport{MaxIdleConnsPerHost: *workers}}
 
 	var set struct {
+		Date      string     `json:"date"`
 		Questions []question `json:"questions"`
 		Pool      []question `json:"pool"`
 	}
@@ -72,6 +84,9 @@ func main() {
 	var accepted, failed, dup atomic.Int64
 	var mu sync.Mutex
 	var latencies []time.Duration
+	// The extra requests of a sitting, each kind with its own count and times.
+	var rated, mirrored extra
+	verdicts := []string{"me", "partly", "not_me"}
 	perQuestion := map[string]*atomic.Int64{}
 	for _, q := range qs {
 		perQuestion[q.ID] = &atomic.Int64{}
@@ -104,8 +119,22 @@ func main() {
 					perQuestion[j.q.ID].Add(1)
 				case http.StatusConflict:
 					dup.Add(1)
+					continue
 				default:
 					failed.Add(1)
+					continue
+				}
+				if rand.Float64() < *ratings {
+					body, _ := json.Marshal(map[string]string{"questionId": j.q.ID, "optionId": opt, "verdict": verdicts[rand.IntN(3)], "voterId": j.token})
+					req, _ := http.NewRequest(http.MethodPost, *base+"/api/ratings", bytes.NewReader(body))
+					req.Header.Set("Content-Type", "application/json")
+					req.Header.Set("Idempotency-Key", fmt.Sprintf("lr-%d", j.n))
+					rated.do(client, req, http.StatusAccepted)
+				}
+				if j.n%3 == 2 && rand.Float64() < *mirrors {
+					req, _ := http.NewRequest(http.MethodGet, *base+"/api/mirror?date="+set.Date, nil)
+					req.Header.Set("Authorization", "Device "+j.token)
+					mirrored.do(client, req, http.StatusOK)
 				}
 			}
 			mu.Lock()
@@ -183,11 +212,55 @@ func main() {
 	fmt.Printf("accepted %d · duplicates %d · failed %d\n", accepted.Load(), dup.Load(), failed.Load())
 	fmt.Printf("latency p50 %s · p95 %s · p99 %s · max %s\n", pct(.50), pct(.95), pct(.99), pct(1))
 	fmt.Printf("acknowledged but not counted after %s: %d\n", *settle, lost)
-	if failed.Load() > 0 || lost > 0 || pct(.95) > 300*time.Millisecond {
+	if *ratings > 0 {
+		rated.print("ratings")
+	}
+	if *mirrors > 0 {
+		mirrored.print("mirror reads")
+	}
+	if failed.Load() > 0 || lost > 0 || pct(.95) > 300*time.Millisecond || rated.failed.Load() > 0 || mirrored.failed.Load() > 0 {
 		fmt.Println("GATE FAILED (needs 0 failed, 0 lost, p95 <= 300ms)")
 		os.Exit(1)
 	}
 	fmt.Println("GATE PASSED")
+}
+
+// extra counts one kind of request sent beside the votes.
+type extra struct {
+	ok, failed atomic.Int64
+	mu         sync.Mutex
+	latencies  []time.Duration
+}
+
+func (e *extra) do(c *http.Client, req *http.Request, want int) {
+	start := time.Now()
+	res, err := c.Do(req)
+	el := time.Since(start)
+	if err != nil {
+		e.failed.Add(1)
+		return
+	}
+	io.Copy(io.Discard, res.Body)
+	res.Body.Close()
+	if res.StatusCode != want {
+		e.failed.Add(1)
+		return
+	}
+	e.ok.Add(1)
+	e.mu.Lock()
+	e.latencies = append(e.latencies, el)
+	e.mu.Unlock()
+}
+
+func (e *extra) print(name string) {
+	slices.Sort(e.latencies)
+	p := func(q float64) time.Duration {
+		if len(e.latencies) == 0 {
+			return 0
+		}
+		return e.latencies[min(len(e.latencies)-1, int(float64(len(e.latencies))*q))]
+	}
+	fmt.Printf("%s: %d sent · failed %d · p50 %s · p95 %s · p99 %s\n", name, e.ok.Load()+e.failed.Load(), e.failed.Load(), p(.50), p(.95), p(.99))
 }
 
 func getJSON(c *http.Client, url string, v any) error {

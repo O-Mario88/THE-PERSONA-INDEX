@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"slices"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -428,13 +427,6 @@ func optionOf(q Question, id string) *Option {
 	return nil
 }
 
-// questionCache keeps each date's questions by id, so reading many phones'
-// answers does not rebuild the same editions.
-type questionCache struct {
-	mu     sync.Mutex
-	byDate map[string]map[string]Question
-}
-
 // questionFinder is a bank that finds a question by its dated id alone.
 type questionFinder interface {
 	Question(id string) (Question, bool)
@@ -446,24 +438,7 @@ func (s *Server) question(date, id string) (Question, bool) {
 			return q, true
 		}
 	}
-	c := &s.questions
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	qs, ok := c.byDate[date]
-	if !ok {
-		qs = map[string]Question{}
-		if set, found := s.bank.GetSet(date); found {
-			for _, q := range append(append([]Question{}, set.Questions...), set.Pool...) {
-				qs[q.ID] = q
-			}
-		}
-		if c.byDate == nil || len(c.byDate) > 64 {
-			c.byDate = map[string]map[string]Question{}
-		}
-		c.byDate[date] = qs
-	}
-	q, ok := qs[id]
-	return q, ok
+	return s.questions.lookup(s.bank, date, id)
 }
 
 func (s *Server) stepText(a MirrorAnswer) string {

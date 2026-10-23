@@ -9,6 +9,12 @@ on:
       duration:
         description: how long to send votes
         default: 60s
+      ratings:
+        description: share of answers followed by a That's me / Partly / Not me tap
+        default: "1"
+      mirrors:
+        description: share of phones that read their weekly mirror after their third answer
+        default: "0.2"
 
 jobs:
   load:
@@ -39,6 +45,12 @@ jobs:
           DATA_KEY_SECRET: ci-only-data-key-0123456789abcdef0123
           TRUST_CF_CONNECTING_IP: "1"
       - run: for i in $(seq 30); do curl -sf localhost:8080/api/health && break; sleep 1; done
-      - run: ./loadgen -url http://localhost:8080 -rate "${{ inputs.rate }}" -duration "${{ inputs.duration }}"
+      # Inputs reach the shell as variables, never pasted into the script.
+      - run: ./loadgen -url http://localhost:8080 -rate "$RATE" -duration "$DURATION" -ratings "$RATINGS" -mirrors "$MIRRORS"
+        env:
+          RATE: ${{ inputs.rate }}
+          DURATION: ${{ inputs.duration }}
+          RATINGS: ${{ inputs.ratings }}
+          MIRRORS: ${{ inputs.mirrors }}
       - if: always()
         run: tail -50 api.log

@@ -1,29 +1,37 @@
-# THE-PERSONA-INDEX
-Build The Persona Index as a simple, engaging, trustworthy daily behavioral discovery platform that can grow toward 1 million DAU without sacrificing performance, privacy, vote integrity, maintainability, or financial sustainability.
+# The Persona Index
+
+A private daily companion: three questions in the morning and three in the
+evening, an insight with every answer, and weekly, monthly, quarterly and
+yearly mirrors built from a person's own answers. No accounts, no comparing
+with other people, and what the server keeps about a phone is shown on one
+screen and deleted with one tap.
 
 ## Development
 
-Requires Go 1.22+ and Node 22+.
+Requires Go 1.24+ and Node 22+.
 
 ```bash
-cd backend && go test ./...                # backend acceptance tests
-cd frontend && npm ci && npm test          # frontend smoke test
+cd backend && go test ./...                # backend tests (in memory)
+cd frontend && npm ci && npm test          # frontend tests
 cd backend && go run .                     # API on :8080
-cd frontend && npm run dev                 # UI on :5173 (proxies /api to :8080)
+cd frontend && npm run dev                 # app on :5173 (proxies /api to :8080)
+docker compose up --build                  # the production image with Postgres, on :8080
 ```
 
-The acceptance tests in `backend/api_test.go` define the core API (today's
-3 questions, idempotent voting, community results) and were written before the
-implementation. See `CLAUDE.md` for the working rules.
+Set `PERSONA_TEST_DATABASE_URL` to run the backend tests against Postgres.
+See `CLAUDE.md` for the working rules.
 
-## How voting works today
+## Documentation
 
-- `POST /api/votes` validates the vote and appends it to the vote store before
-  answering 202. A retry with the same `Idempotency-Key` returns the same event.
-- The duplicate-vote rule is in `backend/voterule.go`: one vote per question per
-  anonymous device id (a random id the browser keeps in local storage).
-- An aggregation worker (in-process, every second) folds new vote events into
-  result snapshots from a cursor, so reruns never double count. Results are
-  served from those snapshots, with real zeros before anyone votes.
-- The vote store is in memory and questions come from a small rotating
-  editorial list in `backend/questions.go`. Both move to Postgres later.
+- [docs/operations.md](docs/operations.md): settings, keys, the vote
+  pipeline, the mirrors, deleting data, the static site, the frozen schedule
+  and the edge rules.
+- [docs/data-map.md](docs/data-map.md): everything kept about a person,
+  where, for how long, and how it is deleted.
+- [docs/deploy.md](docs/deploy.md): the image, Cloudflare, and the
+  checklist for every deploy.
+- [docs/monitoring.md](docs/monitoring.md): health checks, metrics, alerts
+  and logs.
+- [docs/backups.md](docs/backups.md): backup retention, restoring and the
+  restore drill.
+- [docs/load-test.md](docs/load-test.md): the load gate and its results.

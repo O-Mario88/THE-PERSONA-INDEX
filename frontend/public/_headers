@@ -1,0 +1,29 @@
+# Response headers for the whole site, in the format Cloudflare Pages reads.
+# The API server applies this same file when it serves the build itself
+# (STATIC_DIR, backend/static.go), so these are the site's headers wherever
+# it runs: change them here and nowhere else. backend/static_test.go and
+# src/pwa/headers.test.ts check what they must say.
+#
+# The app runs only its own script and styles and talks only to its own
+# server. The read pages run no script at all; when ads come they get their
+# own rule here, and nothing changes for the app.
+
+/*
+  Strict-Transport-Security: max-age=31536000
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+  X-Frame-Options: DENY
+  Cross-Origin-Opener-Policy: same-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), browsing-topics=(), publickey-credentials-get=(self), publickey-credentials-create=(self)
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+  Cache-Control: no-cache
+
+# Built files carry their content's hash in their names, so they never change.
+/assets/*
+  ! Cache-Control
+  Cache-Control: public, max-age=31536000, immutable
+
+# The public read pages: plain pages with their styles inline and no script.
+/read/*
+  ! Content-Security-Policy
+  Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'

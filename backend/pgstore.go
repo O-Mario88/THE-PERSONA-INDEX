@@ -38,8 +38,23 @@ const (
 )
 
 // openPGStore connects with a bounded pool, so a traffic spike queues inside
-// the pool instead of exhausting database connections, then migrates.
+// the pool instead of exhausting database connections, then brings the
+// schema up to date.
 func openPGStore(ctx context.Context, url string, maxConns int32) (*pgStore, error) {
+	st, err := connectPG(ctx, url, maxConns)
+	if err != nil {
+		return nil, err
+	}
+	if err := st.migrate(ctx); err != nil {
+		st.Close()
+		return nil, err
+	}
+	return st, nil
+}
+
+// connectPG connects without touching the schema, for `go run . check`,
+// which must see a restored database as it is.
+func connectPG(ctx context.Context, url string, maxConns int32) (*pgStore, error) {
 	cfg, err := pgxpool.ParseConfig(url)
 	if err != nil {
 		return nil, fmt.Errorf("parse database url: %w", err)
@@ -57,18 +72,30 @@ func openPGStore(ctx context.Context, url string, maxConns int32) (*pgStore, err
 	if err != nil {
 		return nil, fmt.Errorf("connect: %w", err)
 	}
-	st := &pgStore{pool: pool}
-	if err := st.migrate(ctx); err != nil {
-		pool.Close()
-		return nil, err
-	}
-	return st, nil
+	return &pgStore{pool: pool}, nil
 }
 
 func (p *pgStore) Close() { p.pool.Close() }
 
 // Ping checks the database answers, for the readiness check.
 func (p *pgStore) Ping(ctx context.Context) error { return p.pool.Ping(ctx) }
+
+// Backlog counts accepted votes not tallied yet (the votes_untallied partial
+// index keeps it cheap), for the metrics.
+func (p *pgStore) Backlog(ctx context.Context) (int64, error) {
+	var n int64
+	err := p.pool.QueryRow(ctx, `SELECT count(*) FROM votes WHERE tallied_at IS NULL`).Scan(&n)
+	return n, err
+}
+
+// PoolStats reports the connection pool, for the metrics.
+func (p *pgStore) PoolStats() PoolStats {
+	st := p.pool.Stat()
+	return PoolStats{
+		Max: st.MaxConns(), Total: st.TotalConns(), Idle: st.IdleConns(), InUse: st.AcquiredConns(),
+		Waits: st.EmptyAcquireCount(), AcquireTime: st.AcquireDuration(),
+	}
+}
 
 // migrate applies, in name order, every embedded migration not yet recorded
 // in schema_migrations, each in its own transaction, under an advisory lock
@@ -268,8 +295,34 @@ func (p *pgStore) Counts(ctx context.Context, questionID string) (map[string]int
 }
 
 func (p *pgStore) DeleteTalliedBefore(ctx context.Context, cutoff time.Time) (int, error) {
-	tag, err := p.pool.Exec(ctx, `DELETE FROM votes WHERE tallied_at IS NOT NULL AND accepted_at < $1`, cutoff)
-	return int(tag.RowsAffected()), err
+	return p.deleteInBatches(ctx, `DELETE FROM votes WHERE id IN (
+		SELECT id FROM votes WHERE tallied_at IS NOT NULL AND accepted_at < $1 LIMIT $2)`, cutoff)
+}
+
+// retentionBatch is how many rows one retention DELETE removes. A day of
+// votes at a million people is millions of rows: one statement would run
+// past the statement timeout and hold its locks for minutes, so retention
+// deletes in short batches, each its own transaction.
+var retentionBatch = 5000
+
+// deleteInBatches runs sql, a DELETE whose last parameter is the batch size
+// (as a LIMIT in a subquery), until a batch comes back short.
+func (p *pgStore) deleteInBatches(ctx context.Context, sql string, args ...any) (int, error) {
+	total := 0
+	for {
+		tag, err := p.pool.Exec(ctx, sql, append(args, retentionBatch)...)
+		if err != nil {
+			return total, err
+		}
+		n := int(tag.RowsAffected())
+		total += n
+		if n < retentionBatch {
+			return total, nil
+		}
+		if err := ctx.Err(); err != nil {
+			return total, err
+		}
+	}
 }
 
 func (p *pgStore) truncateForTests(ctx context.Context) error {
