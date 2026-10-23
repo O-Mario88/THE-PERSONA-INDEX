@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { keepStorage } from './pwa/install'
 import {
   ApiError,
   castVote,
@@ -451,6 +452,7 @@ function KeepThis({ question, option, words, date }: { question: Question; optio
       ...(insight.step ? { step: insight.step } : {}),
       ...(verdict && verdict !== 'rated' ? { verdict } : {}),
     })
+    keepStorage()
     setKept(true)
   }
   function undo() {

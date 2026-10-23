@@ -1,7 +1,10 @@
 /// <reference types="vitest/config" />
+import { createHash } from 'node:crypto'
+import { readdirSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { defineConfig, runnerImport, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
+import { precacheList, serviceWorker } from './src/pwa/serviceWorker.ts'
 
 const root = fileURLToPath(new URL('.', import.meta.url))
 
@@ -43,8 +46,27 @@ function readPages(): Plugin {
   }
 }
 
+// The service worker (src/pwa/serviceWorker.ts), written as /sw.js with this
+// build's files, so each deploy is a new version and the old one is dropped.
+function offlineWorker(): Plugin {
+  return {
+    name: 'persona-service-worker',
+    apply: 'build',
+    generateBundle(_, bundle) {
+      const publicDir = `${root}public/`
+      const publicFiles = readdirSync(publicDir)
+      const files = [...Object.keys(bundle), ...publicFiles]
+      const hash = createHash('sha256')
+      for (const name of Object.keys(bundle).sort()) hash.update(name)
+      for (const name of publicFiles.sort()) hash.update(name).update(readFileSync(publicDir + name))
+      const version = hash.digest('hex').slice(0, 12)
+      this.emitFile({ type: 'asset', fileName: 'sw.js', source: serviceWorker(version, precacheList(files)) })
+    },
+  }
+}
+
 export default defineConfig({
-  plugins: [react(), readPages()],
+  plugins: [react(), readPages(), offlineWorker()],
   server: {
     proxy: { '/api': 'http://localhost:8080' },
   },

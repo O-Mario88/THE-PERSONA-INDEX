@@ -23,6 +23,7 @@ import { KeptScreen } from './Kept'
 import { NotebookScreen } from './Notebook'
 import { pruneNotebook } from './notebook'
 import { PracticeScreen } from './Practice'
+import { InstallInvite } from './pwa/InstallInvite'
 import { ReadScreen, TodaysRead } from './Read'
 import { OpenRead } from './readContext'
 import type { Read } from './reads/types'
@@ -374,6 +375,7 @@ function App() {
             <div className="today-side">
               {!set.review && <DayPlan sitting={sitting} morning={morning} evening={evening} />}
               <TodaysRead date={set.date} themes={themesOf([...morningQs, ...eveningQs])} intimacy={intimacyOn(prefs)} />
+            <InstallInvite today={set.date} />
               <PrivacyLine onOpenKept={() => open('kept')} onOpenSettings={() => open('settings')} />
               {prefs.adult === true && (
                 <label className="switch">

@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { keepStorage } from './pwa/install'
 import { onChange } from './storage'
 import {
   newPhrase,
@@ -104,6 +105,7 @@ export function BackupSettings() {
             setBusy(true)
             try {
               await turnOn(mode.phrase, mode.words)
+              keepStorage()
               setMode({ kind: 'idle' })
             } finally {
               setBusy(false)
