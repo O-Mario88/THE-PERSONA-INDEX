@@ -1845,6 +1845,12 @@
   text-wrap: pretty;
 }
 
+/* The backup line under the server's list lines up with it. */
+.kept-list + p {
+  padding-left: 18px;
+  line-height: 1.5;
+}
+
 .kept-actions {
   display: flex;
   flex-direction: column;
