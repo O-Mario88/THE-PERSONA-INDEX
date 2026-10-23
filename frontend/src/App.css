@@ -2171,3 +2171,67 @@ fieldset.notice legend {
 .m-who-card {
   gap: 10px;
 }
+
+/* Reads (Phase 3): a read in the app, and the day's offer. */
+.read {
+  gap: 16px;
+}
+
+.read-topic {
+  color: var(--muted);
+  font-size: 0.85rem;
+  border-left: 3px solid var(--t-from, var(--accent));
+  padding-left: 10px;
+}
+
+.read-summary {
+  color: var(--muted);
+  font-size: 1.1rem;
+  line-height: 1.55;
+}
+
+.read-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  font-size: 1.05rem;
+  line-height: 1.7;
+  max-width: 38rem;
+}
+
+.read-try {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--t-from, var(--accent));
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.read-more ul {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.read-more .text-button {
+  text-align: left;
+}
+
+.read-offer {
+  border-left: 4px solid var(--t-from, var(--accent));
+}
+
+.read-offer-title {
+  font-family: var(--display);
+  font-size: 1.15rem;
+  line-height: 1.25;
+}
+
+.read-link {
+  margin-top: 4px;
+  text-align: left;
+}

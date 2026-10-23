@@ -38,6 +38,7 @@ import { addDays } from './storage'
 import { THEMES, themeName, themeStyle, themeVars } from './themes'
 import { honestLine, TRAITS } from './traits'
 import { LEANING_REPLIES, STEP_STATUS_WORDS } from './words'
+import { ReadLink } from './Read'
 
 type Span = 'week' | Period
 type State =
@@ -642,6 +643,7 @@ function Who({
             <strong>The honest part:</strong> {honestLine(l.side, date, 'mirror').text}
           </p>
           <PlanOffer trait={l.read.trait} high={l.high} date={date} />
+          <ReadLink side={`${l.read.trait}.${l.high ? 'high' : 'low'}`} />
           {l.read.evidence && l.read.evidence.length > 0 && (
             <p className="m-who-evidence">You said: {l.read.evidence.map((e) => `“${e}”`).join(', ')}</p>
           )}
