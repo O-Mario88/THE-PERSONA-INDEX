@@ -200,7 +200,6 @@
 .option:focus-visible {
   border-color: var(--accent);
   background: var(--panel-2);
-  outline: none;
 }
 
 .option:active:not(:disabled) {
@@ -399,7 +398,6 @@
 .chip:hover,
 .chip:focus-visible {
   border-color: var(--accent);
-  outline: none;
 }
 
 .closer {
@@ -698,7 +696,7 @@
 }
 
 .own-box::placeholder {
-  color: #717792;
+  color: #8d93ab;
 }
 
 .own-box:focus {
@@ -2234,4 +2232,37 @@ fieldset.notice legend {
 .read-link {
   margin-top: 4px;
   text-align: left;
+}
+
+/* Accessibility (Phase 3): one clear focus ring everywhere a keyboard can
+   land, in the mirror's indigo on its light page; a view's title can take
+   focus when the view opens (App.tsx); and no movement for anyone who has
+   asked their phone for less. */
+:where(button, a, input, textarea, select, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.mirror :where(button, a, input, textarea, select, summary, [tabindex]):focus-visible {
+  outline-color: var(--m-indigo);
+}
+
+.mirror .text-button {
+  color: var(--m-muted);
+}
+
+h2[tabindex='-1']:focus,
+main > section[tabindex='-1']:focus {
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

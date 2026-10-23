@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ApiError,
   cacheEdition,
@@ -124,6 +124,21 @@ function App() {
   // after they happen (vault.ts).
   useEffect(() => startBackups(), [])
 
+  // When the view changes, its title takes focus, so a screen reader says
+  // where the person now is and the keyboard starts from there.
+  const firstView = useRef(true)
+  useEffect(() => {
+    if (firstView.current) {
+      firstView.current = false
+      return
+    }
+    // The mirror's title arrives with its data, so it starts on its region.
+    const title = document.querySelector<HTMLElement>('main h2') ?? document.querySelector<HTMLElement>('main > section')
+    if (!title) return
+    if (!title.hasAttribute('tabindex')) title.tabIndex = -1
+    title.focus({ preventScroll: true })
+  }, [tab])
+
   // Another tab on this phone answered, changed a setting or deleted
   // everything: catch up.
   useEffect(
@@ -210,7 +225,7 @@ function App() {
     <OpenRead.Provider value={openRead}>
       <main className={tab === 'mirror' ? 'page mirror-page' : 'page today-page'}>
         <header className="masthead">
-          <p className="brand">The Persona Index</p>
+          <h1 className="brand">The Persona Index</h1>
           {set && (
             <nav className="tabs" aria-label="Sections">
               <button type="button" aria-pressed={tab === 'today'} onClick={() => setTab('today')}>

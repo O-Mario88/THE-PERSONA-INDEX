@@ -1983,6 +1983,22 @@ describe("today's read", () => {
   })
 })
 
+describe('accessibility', () => {
+  it('has one page title, and moves focus to the title of each view it opens', async () => {
+    stubApi({})
+    render(<App />)
+    await screen.findByRole('button', { name: 'Settings' })
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1)
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('The Persona Index')
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }))
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('heading', { level: 2, name: 'Settings' })))
+    fireEvent.click(screen.getByRole('button', { name: '← Back' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Notebook' }))
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('heading', { level: 2, name: 'My notebook' })))
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1)
+  })
+})
+
 describe('settings', () => {
   it('changes the 18+ answer and how long your own words stay on this phone', async () => {
     localStorage.setItem('pi.prefs.v1', JSON.stringify({ adult: true, mild: false }))
