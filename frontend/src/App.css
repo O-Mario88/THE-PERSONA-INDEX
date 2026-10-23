@@ -2270,6 +2270,7 @@ main > section[tabindex='-1']:focus {
 /* The lock screen (pwa/Lock.tsx). */
 .lock-screen {
   min-height: 70vh;
+  width: 100%;
   max-width: 28rem;
   margin: 0 auto;
   display: flex;
@@ -2281,4 +2282,13 @@ main > section[tabindex='-1']:focus {
 
 .lock-screen .brand {
   margin-bottom: 8px;
+}
+
+.lock-screen > .text-button {
+  align-self: flex-start;
+  padding-left: 0;
+}
+
+.lock-screen > .notice {
+  align-self: stretch;
 }
