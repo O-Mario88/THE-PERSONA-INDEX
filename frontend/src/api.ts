@@ -146,7 +146,10 @@ export type TraitRead = {
   evidence: string[]
   theme?: string
   edition?: number
+  behind?: BehindAnswer[] // the answers the read rests on, newest first ("Why do you say that?")
 }
+// One of the person's own answers behind a read: which way it pointed on the trait.
+export type BehindAnswer = { date: string; theme: string; question: string; answer: string; leans: 'high' | 'low' | 'middle' }
 export type ThemeRead = { theme: string; area: string; answers: number; depth: Depth }
 export type Mirror = {
   date: string
@@ -169,6 +172,8 @@ export type Mirror = {
     stepsStarted: number
     stepsTried: number
     stepsHelped: number
+    plansDid?: number // plan checks this week; the plans stay on the phone
+    plansNotYet?: number
   }
   days: { date: string; edition: number; answers: { theme: string; depth: Depth }[] }[]
   traits: TraitRead[]
@@ -273,10 +278,46 @@ export function getPeriodMirror(period: Period, date: string): Promise<PeriodMir
 // What the server keeps for this phone, for the "What I keep" screen.
 // Shapes mirror backend/mirror.go.
 export type Kept = {
-  kept: { answers: number; privateAnswers: number; steps: number; weeklyNotes: number; votes: number; firstAnswer?: string }
-  keptFor: { answersDays: number; weeklyNotesDays: number; votesDays: number }
+  kept: {
+    answers: number
+    privateAnswers: number
+    steps: number
+    planChecks?: number
+    weeklyNotes: number
+    votes: number
+    firstAnswer?: string
+  }
+  keptFor: { answersDays: number; weeklyNotesDays: number; votesDays: number; backupDays?: number }
 }
-export type Deleted = { answers: number; steps: number; weeklyNotes: number; votes: number }
+export type Deleted = { answers: number; steps: number; planChecks?: number; weeklyNotes: number; votes: number }
+
+// Everything the server holds for this phone, written out, for "Download my
+// book". Shapes mirror backend/keep.go.
+export type ServerExport = {
+  made: string
+  about: string
+  keptFor: Kept['keptFor']
+  answers: {
+    date: string
+    sitting: 'morning' | 'evening'
+    theme: string
+    question: string
+    answer: string
+    depth?: number
+    verdict?: Verdict
+    private?: boolean
+  }[]
+  steps: { started: string; question: string; step: string; status: StepStatus }[]
+  planChecks: { date: string; status: 'did' | 'not_yet' }[]
+  weeklyNotes: { week: string; summary: Record<string, unknown> }[]
+  votes: { hour: string; kind: 'answer' | 'rating'; question: string; answer: string }[]
+}
+
+// getExport fetches the server's copy. A phone with no pass has none there.
+export async function getExport(): Promise<ServerExport | null> {
+  if (!load(deviceKey)) return null
+  return withDevice((token) => request<ServerExport>('/api/device/export', { headers: deviceHeader(token) }))
+}
 
 // getKept asks the server what it holds for this phone. A phone with no pass
 // yet has nothing there, so it asks nothing.

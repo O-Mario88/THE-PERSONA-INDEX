@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { DownloadButtons } from './Book'
 import { longDate, weekRange } from './mirrorText'
 import {
   allGoodThings,
@@ -14,14 +15,13 @@ import {
 } from './notebook'
 import { THEMES, themeName, themeStyle, themeVars } from './themes'
 import { TRAITS } from './traits'
-import { REVISIT_WORDS } from './words'
+import { REVISIT_WORDS, VERDICT_WORDS } from './words'
 
 // My notebook (the review of 2026-10-15, "Yours to keep"): the cards a
 // person kept, grouped by life area, and what they wrote themselves: three
 // good things, their Sunday sentences, their plans and the names they gave
 // their weeks. All of it lives on this phone only; no ads ever sit here.
 
-const VERDICT_WORDS = { me: "You said: that's me.", partly: 'You said: partly.', not_me: 'You said: not me.' } as const
 const AREA_ORDER = ['everyday', 'people', 'inner', 'desire']
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
@@ -38,7 +38,7 @@ function byArea(cards: KeptCard[]): [string, KeptCard[]][] {
   return [...groups.entries()].sort((a, b) => rank(a[0]) - rank(b[0]))
 }
 
-export function NotebookScreen({ mild, onBook }: { mild: boolean; onBook?: () => void }) {
+export function NotebookScreen({ mild, today }: { mild: boolean; today: string }) {
   // Reading the notebook happens on every render; a removal asks for one.
   const [, setVersion] = useState(0)
   const refresh = () => setVersion((v) => v + 1)
@@ -164,11 +164,7 @@ export function NotebookScreen({ mild, onBook }: { mild: boolean; onBook?: () =>
         </section>
       )}
 
-      {onBook && !empty && (
-        <button type="button" className="option" onClick={onBook}>
-          Download my book
-        </button>
-      )}
+      {!empty && <DownloadButtons today={today} mild={mild} />}
       <p className="insight-note">For self-reflection, not a diagnosis.</p>
     </section>
   )

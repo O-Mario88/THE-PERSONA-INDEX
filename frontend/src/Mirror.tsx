@@ -37,7 +37,7 @@ import { leaningVerdict, notMeSides, rememberLeaning } from './profile'
 import { addDays } from './storage'
 import { THEMES, themeName, themeStyle, themeVars } from './themes'
 import { honestLine, TRAITS } from './traits'
-import { LEANING_REPLIES } from './words'
+import { LEANING_REPLIES, STEP_STATUS_WORDS } from './words'
 
 type Span = 'week' | Period
 type State =
@@ -173,7 +173,7 @@ function MirrorPage({
       key: 'steps',
       title: 'Your small steps',
       body: <Steps m={m} today={today} reload={reload} />,
-      show: m.steps.length > 0 || m.stepRecord.started > 0,
+      show: m.steps.length > 0 || m.stepRecord.started > 0 || (m.stats.plansDid ?? 0) + (m.stats.plansNotYet ?? 0) > 0,
     },
     {
       key: 'revisit',
@@ -423,6 +423,7 @@ function Traits({ m }: { m: MirrorData }) {
                   <span className="m-scale-dot" style={{ left: `${t.score}%` }} />
                 </span>
                 <p className="m-trait-meta">{levelMeta(t)}</p>
+                <WhyThis t={t} name={text.name} />
               </li>
             )
           })}
@@ -561,6 +562,60 @@ function AllOfYou({ themes: read }: { themes: ThemeRead[] }) {
 
 const DEPTH_WORDS = { light: 'light', deeper: 'deeper', deep: 'deep', private: 'private' } as const
 
+// The week's plan checks. The plans themselves stay on the phone; the server
+// only counts "did it" and "not yet".
+function PlanRecord({ did, notYet }: { did: number; notYet: number }) {
+  if (did + notYet === 0) return null
+  const times = (n: number) => (n === 1 ? 'once' : n === 2 ? 'twice' : `${n} times`)
+  return (
+    <div className="m-card">
+      <p className="m-eyebrow">Your plans this week</p>
+      <p>
+        {did > 0 ? `You did what you planned ${times(did)}` : 'You checked in on your plans'}
+        {notYet > 0 ? `, and said "not yet" ${times(notYet)}.` : '.'}{' '}
+        {notYet > did ? 'A plan that keeps slipping may need a smaller "I will".' : 'Plans tied to a moment are the ones that last.'}
+      </p>
+    </div>
+  )
+}
+
+// "Why do you say that?": the person's own answers a read rests on, from the
+// server's copy of them, newest first. Each says which way it pointed, so a
+// read that rests on mixed answers shows it.
+function WhyThis({ t, name }: { t: MirrorData['traits'][number]; name: string }) {
+  const [open, setOpen] = useState(false)
+  if (!t.behind || t.behind.length === 0) return null
+  const high = t.score >= 50
+  const way = (l: 'high' | 'low' | 'middle') =>
+    l === 'middle' ? 'in between' : (l === 'high') === high ? 'points this way' : 'points the other way'
+  const id = `why-${t.trait}`
+  return (
+    <div className="m-why">
+      <button type="button" className="text-button" aria-expanded={open} aria-controls={id} onClick={() => setOpen(!open)}>
+        {open ? 'Hide the answers' : 'Why do you say that?'}
+      </button>
+      {open && (
+        <div id={id}>
+          <p className="m-note">
+            {`Your read on ${name.toLowerCase()} comes from ${t.answers === 1 ? 'one answer' : `${t.answers} answers`} over ${
+              t.weeks === 1 ? 'one week' : `${t.weeks} weeks`
+            }.`}
+            {t.behind.length < t.answers ? ` Here are the newest ${t.behind.length}.` : ' Here they are, newest first.'}
+          </p>
+          <ul className="m-why-list">
+            {t.behind.map((b, i) => (
+              <li key={`${b.date}-${i}`}>
+                <span className="m-why-date">{longDate(b.date)}</span> {b.question} You said “{b.answer}”.{' '}
+                <span className="m-why-way">({way(b.leans)})</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // The leanings that have earned a name, each with its honest part and
 // whether the person says it is them. Used by the week and the longer spans.
 function Who({
@@ -661,12 +716,7 @@ function OwnWordsList({ words }: { words: OwnWords[] }) {
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
 
-const STATUS_WORDS: Record<StepStatus, string> = {
-  started: 'In progress',
-  helped: 'Helped',
-  no_change: 'No change yet',
-  not_tried: "Didn't try",
-}
+const STATUS_WORDS = STEP_STATUS_WORDS
 
 // Open steps pile up when they're never marked, so the list starts short.
 const STEPS_SHOWN = 4
@@ -731,6 +781,7 @@ function Steps({ m, today, reload }: { m: MirrorData; today: string; reload: () 
             : 'Every try teaches you something, including the ones that change nothing.'}
         </p>
       </div>
+      <PlanRecord did={m.stats.plansDid ?? 0} notYet={m.stats.plansNotYet ?? 0} />
     </>
   )
 }

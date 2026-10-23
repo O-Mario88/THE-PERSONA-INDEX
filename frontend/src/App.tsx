@@ -30,6 +30,7 @@ import { openThisWeek, sendUnsent } from './moves'
 import { forgetPick, todaysPick, type Half } from './profile'
 import { intimacyOn, loadPrefs, savePrefs, type Prefs } from './prefs'
 import { onOtherTab } from './storage'
+import { startBackups } from './vault'
 import './App.css'
 
 type State =
@@ -113,6 +114,10 @@ function App() {
     sendUnrated()
     sendPlanChecks()
   }, [date])
+
+  // While backup is on, changes worth keeping are sealed and sent a little
+  // after they happen (vault.ts).
+  useEffect(() => startBackups(), [])
 
   // Another tab on this phone answered, changed a setting or deleted
   // everything: catch up.
@@ -212,9 +217,9 @@ function App() {
         </p>
       )}
 
-      {tab === 'kept' && <KeptScreen today={date} onBack={() => setTab(back)} />}
+      {tab === 'kept' && <KeptScreen today={date} mild={!intimacyOn(prefs)} onBack={() => setTab(back)} />}
 
-      {tab === 'notebook' && <NotebookScreen mild={!intimacyOn(prefs)} />}
+      {tab === 'notebook' && <NotebookScreen mild={!intimacyOn(prefs)} today={date} />}
 
       {tab === 'practice' && practice && <PracticeScreen practice={practice} date={date} onBack={() => setTab(back)} />}
 

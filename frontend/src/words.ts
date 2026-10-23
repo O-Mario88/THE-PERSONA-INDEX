@@ -18,6 +18,21 @@ export const STEP_REPLIES: Record<Exclude<StepStatus, 'started'>, string> = {
   not_tried: "That's fine. The day had other plans. It'll still be there tomorrow.",
 }
 
+// How a small step went, in the mirror and the book.
+export const STEP_STATUS_WORDS: Record<StepStatus, string> = {
+  started: 'In progress',
+  helped: 'Helped',
+  no_change: 'No change yet',
+  not_tried: "Didn't try",
+}
+
+// The tap under a card, as the notebook and the book repeat it.
+export const VERDICT_WORDS: Record<Verdict, string> = {
+  me: "You said: that's me.",
+  partly: 'You said: partly.',
+  not_me: 'You said: not me.',
+}
+
 // Under a card, after the tap.
 export const VERDICT_REPLIES: Record<Exclude<Verdict, 'not_me'> | 'rated', string> = {
   me: "Noted. I'll keep building on it.",
