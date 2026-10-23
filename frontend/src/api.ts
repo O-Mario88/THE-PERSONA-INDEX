@@ -1,5 +1,6 @@
 // Client for the backend API. Shapes mirror backend/api.go.
 
+import { markCheckSent, unsentChecks } from './notebook'
 import { addDays, dateOf, daysBetween, keys, load, loadJSON, remove, save, saveJSON } from './storage'
 
 // The card shown right after an option is chosen. The server also sends the
@@ -370,6 +371,26 @@ export async function sendUnrated() {
   }
 }
 
+// A plan's check (Keep.tsx): only "did it" or "not yet" and the day, never
+// the plan's words, sent under the check's own key. A check the server
+// refuses outright is not sent again; anything else waits for the next try.
+export async function sendPlanChecks() {
+  for (const { planId, check } of unsentChecks()) {
+    try {
+      await withDevice((voterId) =>
+        request('/api/plans/checks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Idempotency-Key': check.key },
+          body: JSON.stringify({ status: check.status, date: check.date, voterId }),
+        }),
+      )
+      markCheckSent(planId, check.key)
+    } catch (e) {
+      if (e instanceof ApiError && e.status < 500 && e.status !== 429) markCheckSent(planId, check.key)
+    }
+  }
+}
+
 export function rememberRated(questionId: string, verdict: Verdict) {
   save(`pi.rated.${questionId}`, verdict)
 }
@@ -418,6 +439,8 @@ export function pruneLocal(today: string, wordsDays: number) {
     }
     // Which three questions each sitting showed (profile.ts), only needed on their day.
     if (k.startsWith(pickPrefix) && k.slice(pickPrefix.length, pickPrefix.length + 10) < addDays(today, -1)) remove(k)
+    // The midday step check's "not yet" (DayClose.tsx), only needed on its day.
+    if (k.startsWith('pi.midday.') && k.slice('pi.midday.'.length) < today) remove(k)
     // A verdict on a mirror leaning (profile.ts), after its five weeks.
     if (k.startsWith(leaningPrefix)) {
       const v = loadJSON(k) as { date?: unknown } | null

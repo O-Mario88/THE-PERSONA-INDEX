@@ -1237,9 +1237,10 @@ describe('the weekly mirror', () => {
       "03 How you've moved",
       '04 All of you',
       '05 Who you were this week',
-      '06 Your small steps',
-      '07 Next week',
-      '08 The road ahead',
+      '06 One line for your week',
+      '07 Your small steps',
+      '08 Next week',
+      '09 The road ahead',
     ])
 
     expect(within(page).getByRole('listitem', { name: /^Monday:/ })).toHaveAccessibleName(

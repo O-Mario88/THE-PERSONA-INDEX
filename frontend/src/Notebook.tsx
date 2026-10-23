@@ -1,0 +1,270 @@
+import { useState } from 'react'
+import { longDate, weekRange } from './mirrorText'
+import {
+  allGoodThings,
+  keptCards,
+  names,
+  plans,
+  removePlan,
+  sentencesBetween,
+  unkeepCard,
+  type KeptCard,
+  type Plan,
+  type Revisit,
+} from './notebook'
+import { THEMES, themeName, themeStyle, themeVars } from './themes'
+import { TRAITS } from './traits'
+import { REVISIT_WORDS } from './words'
+
+// My notebook (the review of 2026-10-15, "Yours to keep"): the cards a
+// person kept, grouped by life area, and what they wrote themselves: three
+// good things, their Sunday sentences, their plans and the names they gave
+// their weeks. All of it lives on this phone only; no ads ever sit here.
+
+const VERDICT_WORDS = { me: "You said: that's me.", partly: 'You said: partly.', not_me: 'You said: not me.' } as const
+const AREA_ORDER = ['everyday', 'people', 'inner', 'desire']
+
+const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
+
+// Life areas in the app's order (themes.ts), each with its kept cards.
+function byArea(cards: KeptCard[]): [string, KeptCard[]][] {
+  const groups = new Map<string, KeptCard[]>()
+  for (const c of cards) groups.set(c.theme, [...(groups.get(c.theme) ?? []), c])
+  const rank = (theme: string) => {
+    const t = THEMES[theme]
+    const i = Object.keys(THEMES).indexOf(theme)
+    return t ? AREA_ORDER.indexOf(t.area) * 100 + i : 10_000
+  }
+  return [...groups.entries()].sort((a, b) => rank(a[0]) - rank(b[0]))
+}
+
+export function NotebookScreen({ mild, onBook }: { mild: boolean; onBook?: () => void }) {
+  // Reading the notebook happens on every render; a removal asks for one.
+  const [, setVersion] = useState(0)
+  const refresh = () => setVersion((v) => v + 1)
+  const cards = keptCards()
+  const hidden = mild ? cards.filter((c) => c.private).length : 0
+  const shown = mild ? cards.filter((c) => !c.private) : cards
+  const good = allGoodThings()
+  const lines = sentencesBetween('0000-01-01', '9999-12-31').reverse()
+  const planList = plans()
+  const named = names()
+  const empty = cards.length + good.length + lines.length + planList.length + named.length === 0
+
+  return (
+    <section className="screen notebook" aria-labelledby="notebook-title">
+      <h2 id="notebook-title" className="done-title">
+        My notebook
+      </h2>
+      <p className="muted">
+        What you chose to keep, and what you wrote yourself. It lives on this phone only, until you remove it.
+      </p>
+
+      {empty && (
+        <div className="notice">
+          <p>
+            Nothing here yet. Tap <strong>Keep this</strong> under any card and it lands here, with the day, your answer and
+            what it said.
+          </p>
+        </div>
+      )}
+
+      {shown.length > 0 && (
+        <section className="nb-section" aria-labelledby="nb-cards">
+          <h3 id="nb-cards" className="eyebrow">
+            Cards you kept · {shown.length}
+          </h3>
+          {byArea(shown).map(([theme, list]) => (
+            <div key={theme} className="nb-area" role="group" aria-label={themeName(theme)}>
+              <p className="nb-area-name" style={themeVars(theme)}>
+                <span aria-hidden="true">{themeStyle(theme).icon}</span> {theme ? themeName(theme) : 'Today'}
+              </p>
+              <ul className="nb-list">
+                {list.map((c) => (
+                  <li key={c.questionId}>
+                    <CardEntry card={c} onRemove={refresh} />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </section>
+      )}
+      {hidden > 0 && (
+        <p className="muted">
+          {plural(hidden, 'private card')} hidden while "Keep it mild" is on.
+        </p>
+      )}
+
+      {lines.length > 0 && (
+        <section className="nb-section" aria-labelledby="nb-sentences">
+          <h3 id="nb-sentences" className="eyebrow">
+            What you learned, week by week
+          </h3>
+          <ul className="nb-list">
+            {lines.map((s) => (
+              <li key={s.week} className="nb-entry">
+                <p className="nb-meta">{weekRange(s.week)}</p>
+                <p className="nb-line">{s.text}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {good.length > 0 && (
+        <section className="nb-section" aria-labelledby="nb-good">
+          <h3 id="nb-good" className="eyebrow">
+            Three good things
+          </h3>
+          <ul className="nb-list">
+            {good.map((g) => (
+              <li key={g.date} className="nb-entry">
+                <p className="nb-meta">{longDate(g.date)}</p>
+                <ul className="nb-good">
+                  {g.lines.map((l, i) => (
+                    <li key={i}>{l}</li>
+                  ))}
+                </ul>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {planList.length > 0 && (
+        <section className="nb-section" aria-labelledby="nb-plans">
+          <h3 id="nb-plans" className="eyebrow">
+            Your plans
+          </h3>
+          <ul className="nb-list">
+            {planList.map((p) => (
+              <li key={p.id}>
+                <PlanEntry plan={p} onRemove={refresh} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {named.length > 0 && (
+        <section className="nb-section" aria-labelledby="nb-names">
+          <h3 id="nb-names" className="eyebrow">
+            The names you gave your weeks
+          </h3>
+          <ul className="nb-list">
+            {named.map((n) => (
+              <li key={n.week} className="nb-entry">
+                <p className="nb-meta">{weekRange(n.week)}</p>
+                <p className="nb-line">{n.name}</p>
+                <p className="muted">I suggested {n.suggested}.</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {onBook && !empty && (
+        <button type="button" className="option" onClick={onBook}>
+          Download my book
+        </button>
+      )}
+      <p className="insight-note">For self-reflection, not a diagnosis.</p>
+    </section>
+  )
+}
+
+function CardEntry({ card: c, onRemove }: { card: KeptCard; onRemove: () => void }) {
+  const [open, setOpen] = useState(!c.private)
+  const [asking, setAsking] = useState(false)
+  return (
+    <article className="nb-entry nb-card" style={themeVars(c.theme)} aria-label={c.prompt}>
+      <p className="nb-meta">
+        {longDate(c.date)}
+        {c.private && ' · private'}
+      </p>
+      <p className="nb-prompt">{c.prompt}</p>
+      {!open ? (
+        <button type="button" className="text-button nb-show" onClick={() => setOpen(true)}>
+          Show this private card
+        </button>
+      ) : (
+        <>
+          {c.words ? (
+            <p className="nb-answer">
+              In your words: “{c.words}”<span className="muted"> · closest to {c.answer}</span>
+            </p>
+          ) : (
+            <p className="nb-answer">You chose: {c.answer}</p>
+          )}
+          <p className="nb-headline">{c.headline}</p>
+          {c.body && <p>{c.body}</p>}
+          {c.otherSide && (
+            <p className="nb-other">
+              <span className="eyebrow">The other side</span> {c.otherSide}
+            </p>
+          )}
+          {c.step && <p className="muted">Small step: {c.step}</p>}
+          {c.verdict && <p className="nb-verdict">{VERDICT_WORDS[c.verdict]}</p>}
+          {(c.revisits ?? []).map((r: Revisit) => (
+            <p key={r.date} className="nb-verdict">
+              {longDate(r.date)}: {REVISIT_WORDS[r.verdict]}
+            </p>
+          ))}
+        </>
+      )}
+      {asking ? (
+        <div className="confirm">
+          <button
+            type="button"
+            className="chip"
+            onClick={() => {
+              unkeepCard(c.questionId)
+              onRemove()
+            }}
+          >
+            Yes, remove it
+          </button>
+          <button type="button" className="text-button" onClick={() => setAsking(false)}>
+            Keep it
+          </button>
+        </div>
+      ) : (
+        <button type="button" className="text-button nb-remove" onClick={() => setAsking(true)}>
+          Remove
+        </button>
+      )}
+    </article>
+  )
+}
+
+function PlanEntry({ plan: p, onRemove }: { plan: Plan; onRemove: () => void }) {
+  const did = p.checks.filter((c) => c.status === 'did').length
+  const notYet = p.checks.filter((c) => c.status === 'not_yet').length
+  const side = TRAITS[p.trait] ? (p.high ? TRAITS[p.trait].high : TRAITS[p.trait].low) : null
+  const record =
+    did + notYet === 0 ? 'Not checked yet.' : `Did it ${plural(did, 'time')}, not yet ${plural(notYet, 'time')}.`
+  return (
+    <article className="nb-entry" aria-label="Plan">
+      <p className="nb-meta">
+        {longDate(p.made)}
+        {side && ` · ${side.lean}`}
+        {p.closed && ' · finished'}
+      </p>
+      <p className="nb-line">
+        When {p.when}, I will {p.will}.
+      </p>
+      <p className="muted">{record}</p>
+      <button
+        type="button"
+        className="text-button nb-remove"
+        onClick={() => {
+          removePlan(p.id)
+          onRemove()
+        }}
+      >
+        Remove
+      </button>
+    </article>
+  )
+}

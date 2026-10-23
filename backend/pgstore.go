@@ -273,6 +273,6 @@ func (p *pgStore) DeleteTalliedBefore(ctx context.Context, cutoff time.Time) (in
 }
 
 func (p *pgStore) truncateForTests(ctx context.Context) error {
-	_, err := p.pool.Exec(ctx, `TRUNCATE votes, vote_tallies, mirror_answers, mirror_steps, mirror_weeks, mirror_folds, forgotten_devices`)
+	_, err := p.pool.Exec(ctx, `TRUNCATE votes, vote_tallies, mirror_answers, mirror_steps, mirror_weeks, mirror_folds, forgotten_devices, mirror_plan_checks, vaults`)
 	return err
 }

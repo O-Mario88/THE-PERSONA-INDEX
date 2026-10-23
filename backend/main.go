@@ -61,6 +61,7 @@ func newHTTPServer(addr string, h http.Handler) *http.Server {
 //	PORT                          listen port (default 8080).
 //
 // `go run . schedule` maintains the frozen schedule instead of serving (schedule.go).
+// `go run . cards` lists the insight cards people say do not fit them, from DATABASE_URL (cards.go).
 func main() {
 	if len(os.Args) > 1 && os.Args[1] == "schedule" {
 		os.Exit(runScheduleCommand(os.Args[2:], time.Now(), os.Stdout, os.Stderr))
@@ -72,6 +73,20 @@ func main() {
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
+
+	if len(os.Args) > 1 && os.Args[1] == "cards" {
+		url := os.Getenv("DATABASE_URL")
+		if url == "" {
+			log.Fatal("cards: set DATABASE_URL to the database whose taps to read")
+		}
+		st, err := openPGStore(ctx, url, 2)
+		if err != nil {
+			log.Fatal(err)
+		}
+		code := runCardsCommand(ctx, os.Args[2:], st, bank, os.Stdout, os.Stderr)
+		st.Close()
+		os.Exit(code)
+	}
 
 	keys := KeyConfig{
 		TokenSecret: []byte(os.Getenv("DEVICE_TOKEN_SECRET")),
@@ -168,6 +183,11 @@ func runWorker(ctx context.Context, srv *Server, retention time.Duration) {
 				log.Printf("mirror retention: %v", err)
 			} else if n > 0 {
 				log.Printf("mirror retention: deleted %d rows", n)
+			}
+			if n, err := srv.vaults.DeleteVaultsBefore(ctx, time.Now().Add(-vaultRetention).UTC().Format(dateLayout)); err != nil {
+				log.Printf("backup retention: %v", err)
+			} else if n > 0 {
+				log.Printf("backup retention: deleted %d backups", n)
 			}
 		}
 	}

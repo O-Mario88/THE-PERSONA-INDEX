@@ -5,7 +5,9 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"maps"
 	"slices"
+	"strings"
 	"sync"
 	"time"
 )
@@ -71,6 +73,7 @@ var (
 type Store interface {
 	VoteStore
 	MirrorStore
+	VaultStore
 }
 
 // VoteStore is the durable boundary: a vote is acknowledged only after Accept
@@ -94,6 +97,10 @@ type VoteStore interface {
 	// DeleteTalliedBefore removes raw votes accepted before cutoff that are
 	// already tallied. Tallies are kept forever; raw votes are not.
 	DeleteTalliedBefore(ctx context.Context, cutoff time.Time) (int, error)
+	// RatingTallies returns the counted taps under every card: rating key
+	// (ratingKey) -> "<option>/<verdict>" -> count. They are anonymous
+	// totals, the same numbers Counts gives one question at a time.
+	RatingTallies(ctx context.Context) (map[string]map[string]int, error)
 }
 
 type memoryStore struct {
@@ -102,14 +109,17 @@ type memoryStore struct {
 	byIdemKey map[string]int // scoped idempotency key -> index into events
 	byDedupe  map[string]int // voteDedupeKey -> index into events
 	counts    map[string]map[string]int
-	mirror    memoryMirror // see mirrorstore.go
+	mirror    memoryMirror           // see mirrorstore.go
+	vaults    map[string]memoryVault // see vault.go
 }
 
 func newMemoryStore() *memoryStore {
 	return &memoryStore{
 		byIdemKey: map[string]int{}, byDedupe: map[string]int{}, counts: map[string]map[string]int{},
 		mirror: memoryMirror{answers: map[string]map[string]MirrorAnswer{}, steps: map[string]map[string]MirrorStep{},
-			weeks: map[string]map[string]WeekSummary{}, folds: map[string]bool{}, forgotten: map[string]string{}},
+			weeks: map[string]map[string]WeekSummary{}, folds: map[string]bool{}, forgotten: map[string]string{},
+			checks: map[string]map[string]PlanCheck{}},
+		vaults: map[string]memoryVault{},
 	}
 }
 
@@ -199,6 +209,18 @@ func (m *memoryStore) Counts(_ context.Context, questionID string) (map[string]i
 	out := make(map[string]int, len(m.counts[questionID]))
 	for k, v := range m.counts[questionID] {
 		out[k] = v
+	}
+	return out, nil
+}
+
+func (m *memoryStore) RatingTallies(_ context.Context) (map[string]map[string]int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	out := map[string]map[string]int{}
+	for q, byOption := range m.counts {
+		if strings.HasPrefix(q, "rating/") {
+			out[q] = maps.Clone(byOption)
+		}
 	}
 	return out, nil
 }

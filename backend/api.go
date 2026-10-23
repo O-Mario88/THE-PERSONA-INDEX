@@ -102,7 +102,8 @@ type QuestionResults struct {
 
 // APIError codes: no_questions_today, no_edition, invalid_request, missing_idempotency_key, unknown_question,
 // unknown_option, unknown_answer, duplicate_vote, idempotency_key_reused, invalid_device, device_forgotten,
-// private_question, rate_limited, unavailable.
+// private_question, rate_limited, unavailable; for the backup (vault.go) invalid_vault_key, no_backup,
+// version_conflict, precondition_required, too_large.
 type APIError struct {
 	Error string `json:"error"`
 }
@@ -123,6 +124,7 @@ type Server struct {
 	bank    QuestionBank
 	votes   VoteStore
 	mirror  MirrorStore // each phone's kept answers and steps (mirrorstore.go)
+	vaults  VaultStore  // the sealed backups (vault.go)
 	devices *deviceSigner
 	// voteRetention is how long raw votes are kept (main.go), so "Delete
 	// everything" knows how far back a phone's votes can reach.
@@ -133,22 +135,29 @@ type Server struct {
 	voteLimit   *windowLimiter // per device
 	deviceLimit *windowLimiter // per network address
 	forgetLimit *windowLimiter // per network address
-	trustCF     bool           // read the client address from CF-Connecting-IP
+	vaultLimit  *windowLimiter // per backup
+	// vaultMissLimit counts requests for backups that are not there, per
+	// network address, so no one can go looking for backups.
+	vaultMissLimit *windowLimiter
+	trustCF        bool // read the client address from CF-Connecting-IP
 }
 
 // NewServer wires the API to one store, which keeps the votes and the
 // phones' mirrors in the same database.
 func NewServer(clock func() time.Time, bank QuestionBank, store Store, devices *deviceSigner) *Server {
 	return &Server{
-		clock:         clock,
-		bank:          bank,
-		votes:         store,
-		mirror:        store,
-		devices:       devices,
-		voteRetention: defaultRetention,
-		voteLimit:     newWindowLimiter(votesPerDevicePerMinute, time.Minute),
-		deviceLimit:   newWindowLimiter(devicesPerAddressPerHour, time.Hour),
-		forgetLimit:   newWindowLimiter(forgetsPerAddressPerHour, time.Hour),
+		clock:          clock,
+		bank:           bank,
+		votes:          store,
+		mirror:         store,
+		vaults:         store,
+		devices:        devices,
+		voteRetention:  defaultRetention,
+		voteLimit:      newWindowLimiter(votesPerDevicePerMinute, time.Minute),
+		deviceLimit:    newWindowLimiter(devicesPerAddressPerHour, time.Hour),
+		forgetLimit:    newWindowLimiter(forgetsPerAddressPerHour, time.Hour),
+		vaultLimit:     newWindowLimiter(vaultsPerKeyPerHour, time.Hour),
+		vaultMissLimit: newWindowLimiter(vaultMissesPerAddrPerHr, time.Hour),
 	}
 }
 
@@ -167,6 +176,11 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("DELETE /api/device/data", s.ForgetDevice)
 	mux.HandleFunc("DELETE /api/mirror", s.ForgetDevice) // the older name, kept for phones still using it
 	mux.HandleFunc("POST /api/steps", s.SaveStep)
+	mux.HandleFunc("POST /api/plans/checks", s.SavePlanCheck)
+	mux.HandleFunc("GET /api/device/export", s.ExportDevice)
+	mux.HandleFunc("PUT /api/vault", s.PutVault)
+	mux.HandleFunc("GET /api/vault", s.GetVault)
+	mux.HandleFunc("DELETE /api/vault", s.DeleteVault)
 	return mux
 }
 

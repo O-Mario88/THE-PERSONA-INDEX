@@ -42,6 +42,20 @@ export function title(traits: Read[], notMe: string[] = []): string | null {
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
+// The starter for the Sunday sentence: the week's clearest leaning, for the
+// person to finish or change.
+export const sentenceStarter = (lean?: string) =>
+  lean ? `This week I learned that I lean towards ${lean}, and ` : 'This week I learned that I '
+
+// identityName is the name the identity card suggests for a span, from the
+// same two leanings as its title: "The Steady Noticer" (Edwin's mockups).
+export function identityName(traits: Read[], notMe: string[] = []): string | null {
+  const l = leanings(traits, notMe)
+  if (l.length === 0) return null
+  const words = `${l[0].side.adj} ${(l[1] ?? l[0]).side.noun}`.split(' ').map(cap).join(' ')
+  return `The ${words}`
+}
+
 // tagline: one leaning gives "{Q1}, with {w1}."; two "{Q1}, with {w2}.";
 // three "{Q1} and {q2}, with {w3}."; four or more "{Q1} and {q2}, with {w3} and {w4}."
 export function tagline(traits: Read[], notMe: string[] = []): string | null {
@@ -80,6 +94,12 @@ export function levelLine(r: { level: Level; answers: number; days: number; week
     default:
       return `Only a hint so far, from ${plural(r.answers, 'answer', 'answers')}.`
   }
+}
+
+// "15 October": the day first, whatever the phone's locale.
+export const longDate = (iso: string) => {
+  const d = new Date(`${iso}T00:00:00Z`)
+  return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`
 }
 
 // weekRange is the question days of a week: "12 to 17 October", or "28

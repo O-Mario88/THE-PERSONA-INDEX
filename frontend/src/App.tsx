@@ -7,6 +7,7 @@ import {
   pruneLocal,
   pruneWords,
   recalledChoice,
+  sendPlanChecks,
   sendUnrated,
   SKIPPED,
   type DailySet,
@@ -17,7 +18,12 @@ import { QuestionCard, type Done } from './QuestionCard'
 import { DayClose, StepCheck } from './DayClose'
 import { DayPlan, NightScreen, PauseScreen, PrivacyLine, Upcoming, type Progress } from './Sittings'
 import { Mirror } from './Mirror'
+import { GoodThings } from './Keep'
 import { KeptScreen } from './Kept'
+import { NotebookScreen } from './Notebook'
+import { pruneNotebook } from './notebook'
+import { PracticeScreen } from './Practice'
+import type { Practice } from './practices'
 import { SettingsScreen } from './Settings'
 import { themeVars } from './themes'
 import { openThisWeek, sendUnsent } from './moves'
@@ -34,7 +40,10 @@ type State =
   | { kind: 'empty' }
   | { kind: 'error' }
 
-type View = 'today' | 'mirror' | 'kept' | 'settings'
+type View = 'today' | 'mirror' | 'notebook' | 'kept' | 'settings' | 'practice'
+// The views reached from the tabs, which Back returns to.
+type Tab = 'today' | 'mirror' | 'notebook'
+const isTab = (v: View): v is Tab => v === 'today' || v === 'mirror' || v === 'notebook'
 
 const themesOf = (qs: Question[]) => qs.map((q) => q.theme).filter((t): t is string => !!t)
 
@@ -47,8 +56,9 @@ function App() {
   const [state, setState] = useState<State>({ kind: 'loading' })
   const [attempt, setAttempt] = useState(0)
   const [tab, setTab] = useState<View>('today')
-  // Where Back goes from What I keep and Settings.
-  const [back, setBack] = useState<View>('today')
+  // Where Back goes from What I keep, Settings and a practice.
+  const [back, setBack] = useState<Tab>('today')
+  const [practice, setPractice] = useState<Practice | null>(null)
   const [prefs, setPrefs] = useState<Prefs>(loadPrefs)
   const [pickVersion, setPickVersion] = useState(0)
   // What is answered lives on the phone; a finished card only asks for a
@@ -98,8 +108,10 @@ function App() {
   // small step or card tap the server did not get.
   useEffect(() => {
     pruneLocal(date, loadPrefs().wordsDays)
+    pruneNotebook(date)
     sendUnsent(date)
     sendUnrated()
+    sendPlanChecks()
   }, [date])
 
   // Another tab on this phone answered, changed a setting or deleted
@@ -164,10 +176,15 @@ function App() {
     setAttempt((n) => n + 1)
   }
 
-  function open(view: 'kept' | 'settings') {
-    if (tab === 'today' || tab === 'mirror') setBack(tab)
+  function open(view: 'kept' | 'settings' | 'practice') {
+    if (isTab(tab)) setBack(tab)
     setTab(view)
     window.scrollTo?.({ top: 0 })
+  }
+
+  function openPractice(p: Practice) {
+    setPractice(p)
+    open('practice')
   }
 
   return (
@@ -182,6 +199,9 @@ function App() {
             <button type="button" aria-pressed={tab === 'mirror'} onClick={() => setTab('mirror')}>
               Your mirror
             </button>
+            <button type="button" aria-pressed={tab === 'notebook'} onClick={() => setTab('notebook')}>
+              Notebook
+            </button>
           </nav>
         )}
       </header>
@@ -193,6 +213,10 @@ function App() {
       )}
 
       {tab === 'kept' && <KeptScreen today={date} onBack={() => setTab(back)} />}
+
+      {tab === 'notebook' && <NotebookScreen mild={!intimacyOn(prefs)} />}
+
+      {tab === 'practice' && practice && <PracticeScreen practice={practice} date={date} onBack={() => setTab(back)} />}
 
       {tab === 'settings' && (
         <SettingsScreen prefs={prefs} onChange={changePrefs} onOpenKept={() => open('kept')} onBack={() => setTab(back)} />
@@ -256,10 +280,11 @@ function App() {
                   Open your mirror
                 </button>
                 <StepCheck date={set.date} label="This week's small steps" pick={() => openThisWeek(set.date)} />
+                <GoodThings date={set.date} label="Three good things from today" />
               </section>
             )}
 
-            {!set.review && sitting === 'night' && <NightScreen morningThemes={themesOf(morningQs)} />}
+            {!set.review && sitting === 'night' && <NightScreen date={set.date} morningThemes={themesOf(morningQs)} />}
 
             {!set.review && sitting === 'pause' && (
               <PauseScreen morning={morning} eveningThemes={hasEvening ? themesOf(eveningQs) : null} />
@@ -305,6 +330,7 @@ function App() {
                       questions={eveningQs}
                       morning={morningQs}
                       tomorrowThemes={set.tomorrowThemes ?? []}
+                      onPractice={openPractice}
                     />
                   ) : (
                     steps.length > 0 && (

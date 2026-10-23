@@ -8,6 +8,25 @@ export const PREFIX = 'pi.'
 // Values that could not be written to local storage this visit.
 const memory = new Map<string, string>()
 
+// Listeners told of every key this tab writes or removes (the backup in
+// vault.ts uses it to know when there is something new to back up).
+const changed = new Set<(key: string) => void>()
+
+export function onChange(fn: (key: string) => void): () => void {
+  changed.add(fn)
+  return () => changed.delete(fn)
+}
+
+function tell(key: string) {
+  for (const fn of changed) {
+    try {
+      fn(key)
+    } catch {
+      // a listener's trouble is never the writer's
+    }
+  }
+}
+
 function store(): Storage | null {
   try {
     return typeof localStorage === 'undefined' ? null : localStorage
@@ -32,21 +51,25 @@ export function save(key: string, value: string) {
     if (s) {
       s.setItem(key, value)
       memory.delete(key)
+      tell(key)
       return
     }
   } catch {
     // full or blocked: keep it for this visit
   }
   memory.set(key, value)
+  tell(key)
 }
 
 export function remove(key: string) {
+  const had = load(key) !== null
   memory.delete(key)
   try {
     store()?.removeItem(key)
   } catch {
     // nothing to do
   }
+  if (had) tell(key)
 }
 
 // keys lists every key kept under prefix, in local storage or memory.

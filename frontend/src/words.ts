@@ -33,6 +33,20 @@ export const LEANING_REPLIES: Record<Verdict, string> = {
   not_me: NOT_ME_REPLY,
 }
 
+// A kept card brought back once a month: "Still true?"
+export const REVISIT_WORDS = { still: 'still you', changing: 'changing', not_anymore: 'not you any more' } as const
+export const REVISIT_REPLIES = {
+  still: "Noted. It's held for a month now, so it's earned its place.",
+  changing: "Noted. Change is the point; I'll watch which way it goes.",
+  not_anymore: "Noted. You've moved on from this one, and your notebook keeps the record of it.",
+} as const
+
+// After a plan is checked.
+export const PLAN_REPLIES = {
+  did: "You did it. That's the plan becoming a habit, one go at a time.",
+  not_yet: "That's fine. The moment will come round again, and the plan will be ready.",
+} as const
+
 export const FIXED_WORDS: [string, string][] = [
   ['Sunday line', SUNDAY_LINE],
   ['quiet day', QUIET_DAY],
@@ -42,4 +56,6 @@ export const FIXED_WORDS: [string, string][] = [
   ...Object.entries(STEP_REPLIES).map(([k, v]): [string, string] => [`step reply ${k}`, v]),
   ...Object.entries(VERDICT_REPLIES).map(([k, v]): [string, string] => [`card reply ${k}`, v]),
   ...Object.entries(LEANING_REPLIES).map(([k, v]): [string, string] => [`leaning reply ${k}`, v]),
+  ...Object.entries(REVISIT_REPLIES).map(([k, v]): [string, string] => [`revisit reply ${k}`, v]),
+  ...Object.entries(PLAN_REPLIES).map(([k, v]): [string, string] => [`plan reply ${k}`, v]),
 ]

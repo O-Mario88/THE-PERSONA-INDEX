@@ -71,10 +71,11 @@ func (s MirrorStep) Tried() bool { return s.Status == stepHelped || s.Status == 
 
 // Forgotten counts what one "Delete everything" removed from the server.
 type Forgotten struct {
-	Answers int `json:"answers"`
-	Steps   int `json:"steps"`
-	Weeks   int `json:"weeklyNotes"`
-	Votes   int `json:"votes"` // raw votes and ratings; anonymous totals already counted stay
+	Answers    int `json:"answers"`
+	Steps      int `json:"steps"`
+	PlanChecks int `json:"planChecks"`
+	Weeks      int `json:"weeklyNotes"`
+	Votes      int `json:"votes"` // raw votes and ratings; anonymous totals already counted stay
 }
 
 // Kept counts what the server holds for one device.
@@ -82,6 +83,7 @@ type Kept struct {
 	Answers     int    `json:"answers"` // private ones included
 	Private     int    `json:"privateAnswers"`
 	Steps       int    `json:"steps"`
+	PlanChecks  int    `json:"planChecks"`
 	Weeks       int    `json:"weeklyNotes"`
 	Votes       int    `json:"votes"`
 	FirstAnswer string `json:"firstAnswer,omitempty"` // the oldest answer's date
@@ -104,16 +106,27 @@ type MirrorStore interface {
 	// EachDevice calls fn once per device with an answer dated in [from, to],
 	// with that device's answers in the range and its steps started in it.
 	EachDevice(ctx context.Context, from, to string, fn func(deviceKey string, answers []MirrorAnswer, steps []MirrorStep) error) error
+	// SavePlanCheck keeps one "did it" or "not yet" for a plan on the phone.
+	// Saving the same key again changes nothing. A device that deleted
+	// everything gets ErrDeviceForgotten.
+	SavePlanCheck(ctx context.Context, c PlanCheck) error
+	// PlanChecks returns one device's plan checks dated in [from, to],
+	// oldest first.
+	PlanChecks(ctx context.Context, deviceKey, from, to string) ([]PlanCheck, error)
 	// ForgetDevice deletes everything kept for one device, in one step: its
-	// answers, steps and weekly notes, and the raw votes and ratings stored
+	// answers, steps, plan checks and weekly notes, and the raw votes and ratings stored
 	// under any of voterHashes (the device's per-question keys). From then on
 	// the device's old pass takes no more writes. today is the date the
 	// marker for that is kept from.
 	ForgetDevice(ctx context.Context, deviceKey string, voterHashes []string, today string) (Forgotten, error)
 	// DeviceData counts what is kept for one device, for its "What I keep" screen.
 	DeviceData(ctx context.Context, deviceKey string, voterHashes []string) (Kept, error)
-	// DeleteMirrorBefore deletes answers dated, steps started and markers of
-	// deleted devices kept from before date, and reports how many rows went.
+	// DeviceVotes returns the raw votes and ratings stored under any of
+	// voterHashes, for the phone's export, oldest first.
+	DeviceVotes(ctx context.Context, voterHashes []string) ([]VoteEvent, error)
+	// DeleteMirrorBefore deletes answers dated, steps started, plan checks
+	// dated and markers of deleted devices kept from before date, and
+	// reports how many rows went.
 	DeleteMirrorBefore(ctx context.Context, date string) (int, error)
 
 	// SaveWeekSummaries writes week summaries; writing one again replaces it.
@@ -188,6 +201,7 @@ type memoryMirror struct {
 	weeks     map[string]map[string]WeekSummary // device key -> Monday -> summary
 	folds     map[string]bool                   // folded Mondays
 	forgotten map[string]string                 // device key -> date it deleted everything
+	checks    map[string]map[string]PlanCheck   // device key -> check key -> check
 }
 
 func (m *memoryStore) SaveAnswer(_ context.Context, a MirrorAnswer) error {
@@ -216,6 +230,41 @@ func (m *memoryStore) SaveStep(_ context.Context, s MirrorStep) error {
 	}
 	byQ[s.QuestionID] = s
 	return nil
+}
+
+func (m *memoryStore) SavePlanCheck(_ context.Context, c PlanCheck) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.mirror.forgotten[c.DeviceKey] != "" {
+		return ErrDeviceForgotten
+	}
+	byKey := m.mirror.checks[c.DeviceKey]
+	if byKey == nil {
+		byKey = map[string]PlanCheck{}
+		m.mirror.checks[c.DeviceKey] = byKey
+	}
+	if _, ok := byKey[c.Key]; !ok {
+		byKey[c.Key] = c
+	}
+	return nil
+}
+
+func (m *memoryStore) PlanChecks(_ context.Context, deviceKey, from, to string) ([]PlanCheck, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var out []PlanCheck
+	for _, c := range m.mirror.checks[deviceKey] {
+		if c.Date >= from && c.Date <= to {
+			out = append(out, c)
+		}
+	}
+	slices.SortFunc(out, func(x, y PlanCheck) int {
+		if c := strings.Compare(x.Date, y.Date); c != 0 {
+			return c
+		}
+		return strings.Compare(x.Key, y.Key)
+	})
+	return out, nil
 }
 
 func (m *memoryStore) DeviceHistory(_ context.Context, deviceKey, from, to string) ([]MirrorAnswer, []MirrorStep, error) {
@@ -279,9 +328,11 @@ func (m *memoryStore) EachDevice(_ context.Context, from, to string, fn func(str
 func (m *memoryStore) ForgetDevice(_ context.Context, deviceKey string, voterHashes []string, today string) (Forgotten, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	f := Forgotten{Answers: len(m.mirror.answers[deviceKey]), Steps: len(m.mirror.steps[deviceKey]), Weeks: len(m.mirror.weeks[deviceKey])}
+	f := Forgotten{Answers: len(m.mirror.answers[deviceKey]), Steps: len(m.mirror.steps[deviceKey]),
+		PlanChecks: len(m.mirror.checks[deviceKey]), Weeks: len(m.mirror.weeks[deviceKey])}
 	delete(m.mirror.answers, deviceKey)
 	delete(m.mirror.steps, deviceKey)
+	delete(m.mirror.checks, deviceKey)
 	delete(m.mirror.weeks, deviceKey)
 	hashes := map[string]bool{}
 	for _, h := range voterHashes {
@@ -297,7 +348,7 @@ func (m *memoryStore) ForgetDevice(_ context.Context, deviceKey string, voterHas
 func (m *memoryStore) DeviceData(_ context.Context, deviceKey string, voterHashes []string) (Kept, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	k := Kept{Steps: len(m.mirror.steps[deviceKey]), Weeks: len(m.mirror.weeks[deviceKey])}
+	k := Kept{Steps: len(m.mirror.steps[deviceKey]), PlanChecks: len(m.mirror.checks[deviceKey]), Weeks: len(m.mirror.weeks[deviceKey])}
 	for _, a := range m.mirror.answers[deviceKey] {
 		k.Answers++
 		if a.Private() {
@@ -319,6 +370,23 @@ func (m *memoryStore) DeviceData(_ context.Context, deviceKey string, voterHashe
 	return k, nil
 }
 
+func (m *memoryStore) DeviceVotes(_ context.Context, voterHashes []string) ([]VoteEvent, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	hashes := map[string]bool{}
+	for _, h := range voterHashes {
+		hashes[h] = true
+	}
+	var out []VoteEvent
+	for _, e := range m.events {
+		if hashes[e.VoterHash] {
+			out = append(out, e)
+		}
+	}
+	slices.SortStableFunc(out, func(x, y VoteEvent) int { return x.AcceptedAt.Compare(y.AcceptedAt) })
+	return out, nil
+}
+
 func (m *memoryStore) DeleteMirrorBefore(_ context.Context, date string) (int, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -335,6 +403,14 @@ func (m *memoryStore) DeleteMirrorBefore(_ context.Context, date string) (int, e
 		for q, s := range byQ {
 			if s.Started < date {
 				delete(byQ, q)
+				n++
+			}
+		}
+	}
+	for _, byKey := range m.mirror.checks {
+		for k, c := range byKey {
+			if c.Date < date {
+				delete(byKey, k)
 				n++
 			}
 		}

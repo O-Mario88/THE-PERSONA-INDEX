@@ -13,6 +13,7 @@ import { honestLine, TRAITS, type Slot } from './traits'
 
 export type Point = {
   trait: string
+  high: boolean // which side of the trait the answers leaned to
   name: string
   lean: string
   earned: Earned
@@ -45,6 +46,7 @@ export function adviceFor(answers: AnswerRecord[], h: History, today: string, sl
       const e = earned(h, today, t, s > 0)
       return {
         trait: t,
+        high: s > 0,
         name: TRAITS[t].name,
         lean: side.lean,
         earned: e,
