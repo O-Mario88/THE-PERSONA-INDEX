@@ -1,5 +1,6 @@
 // Client for the backend API. Shapes mirror backend/api.go.
 
+import { markCheckSent, unsentChecks } from './notebook'
 import { addDays, dateOf, daysBetween, keys, load, loadJSON, remove, save, saveJSON } from './storage'
 
 // The card shown right after an option is chosen. The server also sends the
@@ -145,7 +146,10 @@ export type TraitRead = {
   evidence: string[]
   theme?: string
   edition?: number
+  behind?: BehindAnswer[] // the answers the read rests on, newest first ("Why do you say that?")
 }
+// One of the person's own answers behind a read: which way it pointed on the trait.
+export type BehindAnswer = { date: string; theme: string; question: string; answer: string; leans: 'high' | 'low' | 'middle' }
 export type ThemeRead = { theme: string; area: string; answers: number; depth: Depth }
 export type Mirror = {
   date: string
@@ -168,6 +172,8 @@ export type Mirror = {
     stepsStarted: number
     stepsTried: number
     stepsHelped: number
+    plansDid?: number // plan checks this week; the plans stay on the phone
+    plansNotYet?: number
   }
   days: { date: string; edition: number; answers: { theme: string; depth: Depth }[] }[]
   traits: TraitRead[]
@@ -272,10 +278,46 @@ export function getPeriodMirror(period: Period, date: string): Promise<PeriodMir
 // What the server keeps for this phone, for the "What I keep" screen.
 // Shapes mirror backend/mirror.go.
 export type Kept = {
-  kept: { answers: number; privateAnswers: number; steps: number; weeklyNotes: number; votes: number; firstAnswer?: string }
-  keptFor: { answersDays: number; weeklyNotesDays: number; votesDays: number }
+  kept: {
+    answers: number
+    privateAnswers: number
+    steps: number
+    planChecks?: number
+    weeklyNotes: number
+    votes: number
+    firstAnswer?: string
+  }
+  keptFor: { answersDays: number; weeklyNotesDays: number; votesDays: number; backupDays?: number }
 }
-export type Deleted = { answers: number; steps: number; weeklyNotes: number; votes: number }
+export type Deleted = { answers: number; steps: number; planChecks?: number; weeklyNotes: number; votes: number }
+
+// Everything the server holds for this phone, written out, for "Download my
+// book". Shapes mirror backend/keep.go.
+export type ServerExport = {
+  made: string
+  about: string
+  keptFor: Kept['keptFor']
+  answers: {
+    date: string
+    sitting: 'morning' | 'evening'
+    theme: string
+    question: string
+    answer: string
+    depth?: number
+    verdict?: Verdict
+    private?: boolean
+  }[]
+  steps: { started: string; question: string; step: string; status: StepStatus }[]
+  planChecks: { date: string; status: 'did' | 'not_yet' }[]
+  weeklyNotes: { week: string; summary: Record<string, unknown> }[]
+  votes: { hour: string; kind: 'answer' | 'rating'; question: string; answer: string }[]
+}
+
+// getExport fetches the server's copy. A phone with no pass has none there.
+export async function getExport(): Promise<ServerExport | null> {
+  if (!load(deviceKey)) return null
+  return withDevice((token) => request<ServerExport>('/api/device/export', { headers: deviceHeader(token) }))
+}
 
 // getKept asks the server what it holds for this phone. A phone with no pass
 // yet has nothing there, so it asks nothing.
@@ -370,6 +412,26 @@ export async function sendUnrated() {
   }
 }
 
+// A plan's check (Keep.tsx): only "did it" or "not yet" and the day, never
+// the plan's words, sent under the check's own key. A check the server
+// refuses outright is not sent again; anything else waits for the next try.
+export async function sendPlanChecks() {
+  for (const { planId, check } of unsentChecks()) {
+    try {
+      await withDevice((voterId) =>
+        request('/api/plans/checks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Idempotency-Key': check.key },
+          body: JSON.stringify({ status: check.status, date: check.date, voterId }),
+        }),
+      )
+      markCheckSent(planId, check.key)
+    } catch (e) {
+      if (e instanceof ApiError && e.status < 500 && e.status !== 429) markCheckSent(planId, check.key)
+    }
+  }
+}
+
 export function rememberRated(questionId: string, verdict: Verdict) {
   save(`pi.rated.${questionId}`, verdict)
 }
@@ -418,6 +480,8 @@ export function pruneLocal(today: string, wordsDays: number) {
     }
     // Which three questions each sitting showed (profile.ts), only needed on their day.
     if (k.startsWith(pickPrefix) && k.slice(pickPrefix.length, pickPrefix.length + 10) < addDays(today, -1)) remove(k)
+    // The midday step check's "not yet" (DayClose.tsx), only needed on its day.
+    if (k.startsWith('pi.midday.') && k.slice('pi.midday.'.length) < today) remove(k)
     // A verdict on a mirror leaning (profile.ts), after its five weeks.
     if (k.startsWith(leaningPrefix)) {
       const v = loadJSON(k) as { date?: unknown } | null

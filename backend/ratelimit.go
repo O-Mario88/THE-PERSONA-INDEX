@@ -60,6 +60,18 @@ func (l *windowLimiter) Allow(key string, now time.Time) (ok bool, retryAfter ti
 	return true, 0
 }
 
+// Blocked reports, without counting an event, whether key is over the limit
+// in its current window.
+func (l *windowLimiter) Blocked(key string, now time.Time) (bool, time.Duration) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	c, ok := l.counts[key]
+	if !ok || now.Sub(c.start) >= l.window || c.n < l.limit {
+		return false, 0
+	}
+	return true, c.start.Add(l.window).Sub(now)
+}
+
 // clientAddress is the address the device limit is keyed on. It is held in
 // memory for at most an hour and never stored. Behind Cloudflare, set
 // TRUST_CF_CONNECTING_IP=1 so the real client address is used.

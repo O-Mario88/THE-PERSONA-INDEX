@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import App from './App'
 import type { DailySet, Mirror, PeriodMirror, Question } from './api'
+import { READS } from './reads/reads'
 import { honestLine, TRAITS } from './traits'
 
 const today: DailySet = {
@@ -1237,9 +1238,10 @@ describe('the weekly mirror', () => {
       "03 How you've moved",
       '04 All of you',
       '05 Who you were this week',
-      '06 Your small steps',
-      '07 Next week',
-      '08 The road ahead',
+      '06 One line for your week',
+      '07 Your small steps',
+      '08 Next week',
+      '09 The road ahead',
     ])
 
     expect(within(page).getByRole('listitem', { name: /^Monday:/ })).toHaveAccessibleName(
@@ -1284,6 +1286,33 @@ describe('the weekly mirror', () => {
     expect(within(page).queryByRole('list', { name: 'Sources' })).not.toBeInTheDocument()
     expect(within(page).queryAllByRole('link')).toEqual([])
     expect(document.body.textContent).not.toMatch(noClinicianWords)
+  })
+
+  it('shows the answers behind a reading, and offers a read on a leaning', async () => {
+    const behind = [
+      { date: '2026-10-16', theme: 'habits', question: 'When do you wash the dishes?', answer: 'Right after eating', leans: 'high' as const },
+      { date: '2026-10-14', theme: 'rest', question: 'A free evening?', answer: 'Catch up on chores', leans: 'high' as const },
+      { date: '2026-10-13', theme: 'home', question: 'The laundry pile?', answer: 'Leave it for Sunday', leans: 'low' as const },
+    ]
+    const traits = mirror.traits.map((t) => (t.trait === 'conscientiousness' ? { ...t, behind } : t))
+    await openMirror({ mirror: { status: 200, body: { ...mirror, traits } } })
+    const page = screen.getByRole('region', { name: 'Your weekly mirror' })
+    const why = await within(page).findByRole('button', { name: 'Why do you say that?' })
+    expect(why).toHaveAttribute('aria-expanded', 'false')
+    fireEvent.click(why)
+    expect(why).toHaveAttribute('aria-expanded', 'true')
+    const list = document.getElementById(why.getAttribute('aria-controls')!)!
+    expect(list).toHaveTextContent('Your read on getting things done comes from 14 answers over 3 weeks. Here are the newest 3.')
+    expect(list).toHaveTextContent('16 October When do you wash the dishes? You said “Right after eating”. (points this way)')
+    expect(list).toHaveTextContent('13 October The laundry pile? You said “Leave it for Sunday”. (points the other way)')
+    fireEvent.click(within(page).getByRole('button', { name: 'Hide the answers' }))
+
+    const read = READS.find((r) => r.kind === 'trait' && r.key === 'conscientiousness.high')!
+    fireEvent.click(await within(page).findByRole('button', { name: `A read on this: ${read.title}` }))
+    const article = screen.getByRole('article', { name: read.title })
+    expect(article).toHaveTextContent('Getting things done ·')
+    fireEvent.click(within(article).getByRole('button', { name: '← Back' }))
+    expect(await screen.findByRole('region', { name: 'Your weekly mirror' })).toBeInTheDocument()
   })
 
   it('leaves a leaning marked "Not me" out of the title and the one line', async () => {
@@ -1925,6 +1954,48 @@ describe('what I keep', () => {
     expect(localStorage.getItem('pi.device.v1')).toBe('v2.mine.pass')
     expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'DELETE')).toBe(false)
     expect(within(page).getByRole('group', { name: 'On this phone' })).toHaveTextContent('0 small steps')
+  })
+})
+
+describe("today's read", () => {
+  it('offers a read on one of the day’s life areas, opens it, and remembers it was read', async () => {
+    stubApi({})
+    render(<App />)
+    const eyebrow = await screen.findByText(/^Today's read · \d+ min$/)
+    const offer = eyebrow.closest('section')!
+    const title = within(offer).getByRole('heading', { level: 3 }).textContent!
+    const read = READS.find((r) => r.title === title)!
+    expect(read.kind === 'theme' && ['habits', 'money'].includes(read.key)).toBe(true)
+    fireEvent.click(within(offer).getByRole('button', { name: 'Read it' }))
+
+    const page = screen.getByRole('article', { name: title })
+    expect(within(page).getByRole('heading', { level: 2, name: title })).toBeInTheDocument()
+    expect(page).toHaveTextContent(read.paragraphs[0])
+    expect(within(page).getByRole('complementary', { name: 'Something to try' })).toHaveTextContent(read.try)
+    expect(page).toHaveTextContent('For self-reflection, not a diagnosis.')
+    for (const src of read.sources) expect(page).not.toHaveTextContent(src.title)
+    expect(localStorage.getItem(`pi.read.${read.slug}`)).toBe('2026-10-12')
+
+    fireEvent.click(within(page).getByRole('button', { name: '← Back' }))
+    const again = (await screen.findByText(/^Today's read/)).closest('section')!
+    expect(within(again).getByRole('heading', { level: 3 })).toHaveTextContent(title)
+    expect(within(again).getByRole('button', { name: 'Read it again' })).toBeInTheDocument()
+  })
+})
+
+describe('accessibility', () => {
+  it('has one page title, and moves focus to the title of each view it opens', async () => {
+    stubApi({})
+    render(<App />)
+    await screen.findByRole('button', { name: 'Settings' })
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1)
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('The Persona Index')
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }))
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('heading', { level: 2, name: 'Settings' })))
+    fireEvent.click(screen.getByRole('button', { name: '← Back' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Notebook' }))
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('heading', { level: 2, name: 'My notebook' })))
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1)
   })
 })
 

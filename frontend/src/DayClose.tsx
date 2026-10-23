@@ -1,10 +1,14 @@
 import { useState } from 'react'
 import { recalledChoice, SKIPPED, type Question, type StepStatus } from './api'
 import { adviceFor, levelLine } from './advice'
-import { isSaturday, opensAt } from './day'
+import { isMidday, isSaturday, opensAt, sittingStart } from './day'
 import { Helpline } from './Helpline'
+import { GoodThings, PlanCheckCard, PlanOffer } from './Keep'
 import { movesOn, setMoveStatus, startedInEvening, type Move } from './moves'
+import { planToCheck } from './notebook'
+import type { Practice } from './practices'
 import { isHeavy, loadHistory, type AnswerRecord, type History } from './profile'
+import { loadJSON, saveJSON } from './storage'
 import { Upcoming } from './Sittings'
 import { themeName, themeStyle, themeVars } from './themes'
 import { NO_STEP, QUIET_DAY, STEP_REPLIES as REPLIES, SUNDAY_LINE } from './words'
@@ -20,6 +24,7 @@ type Props = {
   date: string
   questions: Question[] // this sitting's questions
   tomorrowThemes: string[]
+  onPractice?: (p: Practice) => void
 } & (
   | { sitting: 'morning'; eveningThemes: string[] | null } // null: no evening sitting today
   | { sitting: 'evening'; morning: Question[] }
@@ -39,9 +44,11 @@ const answersIn = (h: History, questions: Question[], date: string): AnswerRecor
   })
 
 export function DayClose(props: Props) {
-  const { date, questions, tomorrowThemes, sitting } = props
+  const { date, questions, tomorrowThemes, sitting, onPractice } = props
   const headingId = `close-${sitting}-${date}`
   const [history] = useState(loadHistory)
+  // A plan made before this sitting began is asked about at its close.
+  const [due] = useState(() => planToCheck(date, sittingStart(date, sitting)))
   const mine = answersIn(history, questions, date)
   const eveningThemes = props.sitting === 'morning' ? props.eveningThemes : null
   const endsDay = !eveningThemes
@@ -67,6 +74,8 @@ export function DayClose(props: Props) {
 
       {heavy && <Helpline />}
 
+      {due && <PlanCheckCard plan={due} date={date} />}
+
       {props.sitting === 'morning' ? (
         <>
           <Thread answers={mine} history={history} date={date} />
@@ -82,9 +91,16 @@ export function DayClose(props: Props) {
       ) : (
         <>
           <MoveCheck date={date} />
-          <ForTomorrow answers={[...answersIn(history, props.morning, date), ...mine]} history={history} date={date} />
+          <ForTomorrow
+            answers={[...answersIn(history, props.morning, date), ...mine]}
+            history={history}
+            date={date}
+            onPractice={onPractice}
+          />
         </>
       )}
+
+      {(endsDay || sitting === 'evening') && <GoodThings date={date} />}
 
       {endsDay && (
         <>
@@ -127,7 +143,7 @@ function Tiles({ label, questions }: { label: string; questions: Question[] }) {
   )
 }
 
-type Read = { answers: History['answers']; history: History; date: string }
+type Read = { answers: History['answers']; history: History; date: string; onPractice?: (p: Practice) => void }
 
 function Thread({ answers, history, date }: Read) {
   if (answers.length === 0) return null
@@ -146,6 +162,7 @@ function Thread({ answers, history, date }: Read) {
               <strong>The honest part:</strong> {p.honest}
             </p>
           )}
+          {p.honest && <PlanOffer trait={p.trait} high={p.high} date={date} dark />}
           <p>
             <strong>For the rest of today:</strong> {p.grow}
           </p>
@@ -155,25 +172,74 @@ function Thread({ answers, history, date }: Read) {
   )
 }
 
+// The morning's small steps. Around lunch each open one gets one quick
+// check, "Did you try it yet?" (the review of 2026-10-15): an answer is kept
+// like the evening's, and "not yet" leaves it for the evening to ask.
 function MorningMoves({ date }: { date: string }) {
-  const moves = movesOn(date)
+  const [moves, setMoves] = useState(() => movesOn(date))
+  const [later, setLater] = useState<string[]>(() => middayLater(date))
+  const [midday] = useState(() => isMidday())
+  if (moves.length === 0) {
+    return (
+      <div className="moves" role="group" aria-label="Small steps you'll try">
+        <p className="eyebrow">Small steps you'll try</p>
+        <p className="muted">{NO_STEP}</p>
+      </div>
+    )
+  }
+  const asks = (m: Move) => midday && m.status === 'started' && !startedInEvening(m) && !later.includes(m.questionId)
+  function answer(m: Move, status: StepStatus) {
+    setMoveStatus(m.questionId, status, date).catch(() => {
+      // kept on the phone, and sent again when the app next opens
+    })
+    setMoves(moves.map((x) => (x.questionId === m.questionId ? { ...x, status } : x)))
+  }
+  function notYet(m: Move) {
+    const next = [...later, m.questionId]
+    saveJSON(`pi.midday.${date}`, next)
+    setLater(next)
+  }
   return (
     <div className="moves" role="group" aria-label="Small steps you'll try">
       <p className="eyebrow">Small steps you'll try</p>
-      {moves.length > 0 ? (
-        <ul>
-          {moves.map((m) => (
-            <li key={m.questionId}>
+      <ul className="move-checks">
+        {moves.map((m) => (
+          <li key={m.questionId}>
+            <p className="move-step">
               <span className="move-dot" aria-hidden="true" />
               {m.step}
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="muted">{NO_STEP}</p>
-      )}
+            </p>
+            {m.status !== 'started' && <p className="move-reply">{REPLIES[m.status]}</p>}
+            {m.status === 'started' && later.includes(m.questionId) && (
+              <p className="muted">No rush. I'll ask again this evening.</p>
+            )}
+            {asks(m) && (
+              <>
+                <p className="muted">Did you try it yet?</p>
+                <div className="move-buttons">
+                  <button type="button" className="option" onClick={() => answer(m, 'helped')}>
+                    Yes, it helped
+                  </button>
+                  <button type="button" className="option" onClick={() => answer(m, 'no_change')}>
+                    Yes, no change yet
+                  </button>
+                  <button type="button" className="option" onClick={() => notYet(m)}>
+                    Not yet
+                  </button>
+                </div>
+              </>
+            )}
+          </li>
+        ))}
+      </ul>
     </div>
   )
+}
+
+// The steps answered "not yet" at midday, for the day.
+function middayLater(date: string): string[] {
+  const v = loadJSON(`pi.midday.${date}`)
+  return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : []
 }
 
 // How each of the morning's small steps went. One picked this evening has had
@@ -232,7 +298,7 @@ export function StepCheck({ date, label, pick }: { date: string; label: string; 
 // The day's clearest leaning, from the morning's and the evening's answers:
 // one thing to carry into tomorrow. Its honest part comes only once the
 // leaning is a pattern.
-function ForTomorrow({ answers, history, date }: Read) {
+function ForTomorrow({ answers, history, date, onPractice }: Read) {
   const top = adviceFor(answers, history, date, 'evening').points[0]
   return (
     <div className="thread" role="note" aria-label="For tomorrow">
@@ -244,6 +310,7 @@ function ForTomorrow({ answers, history, date }: Read) {
           <strong>The honest part:</strong> {top.honest}
         </p>
       )}
+      {top?.honest && <PlanOffer trait={top.trait} high={top.high} date={date} onPractice={onPractice} dark />}
       <p>{top ? top.grow : QUIET_DAY}</p>
     </div>
   )

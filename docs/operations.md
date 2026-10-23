@@ -67,10 +67,28 @@ Answers go after five weeks, so the longer mirrors (`GET /api/mirror/{month|quar
 ## Deleting a phone's data
 
 - `GET /api/device/data` (header `Authorization: Device <pass>`, `private, no-store`) returns what the server keeps for the phone, counted live, and how many days each kind is kept. The app's "What I keep" screen shows it.
-- `DELETE /api/device/data` (same header; `DELETE /api/mirror` is the older name) deletes, in one transaction under the phone's advisory lock, its mirror answers, steps and weekly notes and every raw vote and rating under its voter hashes, then marks the phone forgotten for 35 days. It answers `200` with the counts deleted. It accepts any well-formed pass, even one whose signing key has been retired, because holding the random id is proof of owning its rows. Limited to 20 an hour per address.
+- `DELETE /api/device/data` (same header; `DELETE /api/mirror` is the older name) deletes, in one transaction under the phone's advisory lock, its mirror answers, steps, plan checks and weekly notes and every raw vote and rating under its voter hashes, then marks the phone forgotten for 35 days. It answers `200` with the counts deleted. It accepts any well-formed pass, even one whose signing key has been retired, because holding the random id is proof of owning its rows. Limited to 20 an hour per address.
 - While the mark stands, the old pass gets `410 device_forgotten` on votes, ratings and steps, so a retry cannot bring an answer back; the phone fetches a new pass. Weekly notes are not folded for a forgotten phone.
 
 Tallies already counted stay, because nothing links them to the phone.
+
+## Yours to keep: plan checks, the server's copy and the backup
+
+- `POST /api/plans/checks` (body `{status, date, voterId}`, header `Idempotency-Key`) keeps that a plan was done ("did") or not yet ("not_yet") on a date, for the mirror's steps. The plan's words never leave the phone; the idempotency key is a fresh random key per check, so a resend counts once and two checks of one plan share nothing. Same limits and `410 device_forgotten` as votes.
+- `GET /api/device/export` (header `Authorization: Device <pass>`, `private, no-store`, sent as a file) writes out every row the server holds for the phone: answers (a private one reads "A private question" / "A private answer"), steps, plan checks, weekly notes and the raw votes still kept. "Download my book" uses it.
+- **The backup**, `PUT`/`GET`/`DELETE /api/vault` (`vault.go`). The phone turns its 12-word phrase (BIP39, `@scure/bip39` pinned) into two keys: one seals the backup with AES-GCM and never leaves the phone; the other, sent as `Authorization: Vault <key>`, is the backup's address, and the server stores only its SHA-256. So the server can neither open a backup nor tie it to a phone, and losing the phrase loses the backup: there is no reset.
+  - Writes are versioned: `If-None-Match: *` makes it, `If-Match: "<n>"` replaces version *n*; a stale version gets `412 version_conflict` with the current version, and the phone reads, merges entry by entry and writes again. Without either header, `428`.
+  - At most 2 MiB a backup (`413 too_large`); 120 reads and writes per backup an hour; 30 requests for a backup that does not exist per address an hour, so phrases cannot be guessed at speed (the 12 words carry 128 bits anyway). Uploads and downloads get 90 seconds.
+  - A backup goes 400 days after a phone last wrote or read it (the worker's hourly sweep). "Delete everywhere" deletes it first.
+- `go run . cards` (needs `DATABASE_URL`) lists the insight cards people say do not fit them, from the anonymous rating tallies: a card is flagged once it has 20 taps (`-min` to change) and at least half say "Not me", or "Partly" outnumbers "That's me". Rewrite the flagged cards' `reveal` and `step` in place, then run the gate.
+
+## The static site: the app, the read pages and offline
+
+`frontend/` builds to plain files (`npm run build`), served by any static host in front of the API:
+
+- `/` is the app. `/read/` and `/read/<slug>/index.html` are the public read pages, written by the build from `src/reads/reads.json` (`src/reads/site.ts`), with `/read/sitemap.txt`. The build stops if any read fails its gate. Reads on intimacy are in the app only. Serve `/read/<slug>/` from its `index.html`.
+- `/sw.js` is the service worker the build writes with that build's file list (`src/pwa/serviceWorker.ts`). It keeps the app's page, script, styles, Latin fonts and icons so the app opens offline, goes to the network first for pages, and never touches `/api/`. **Serve `/sw.js` with `Cache-Control: no-cache`** so a deploy reaches phones on their next visit; files under `/assets/` can be cached for a year (their names change with their content). Serve `/manifest.webmanifest` as `application/manifest+json`.
+- **Ads** (Edwin chose AdSense only, 2026-10-15): they go on the public read pages only, after the third paragraph and at the foot, never personalised. Never inside the app: not beside questions, cards, intimacy, sad moments, the notebook, the night screen or practices. No slot exists yet; it waits for the AdSense account.
 
 ## The frozen schedule
 
@@ -95,7 +113,7 @@ The API has its own per-instance limits (30 votes per device per minute, 20 new 
 
 - Rate limit `POST /api/device`: 20 requests per IP per hour, block for 1 hour.
 - Rate limit `POST /api/votes`: 60 requests per IP per minute, managed challenge.
-- Cache `GET /api/editions/*`, `GET /api/questions/today` and `GET /api/questions/*/results` by respecting origin `Cache-Control` (`s-maxage`). Never cache `POST` or `DELETE` routes, `/api/mirror*` or `/api/device/data`; they send `no-store`.
+- Cache `GET /api/editions/*`, `GET /api/questions/today` and `GET /api/questions/*/results` by respecting origin `Cache-Control` (`s-maxage`). Never cache `POST`, `PUT` or `DELETE` routes, `/api/mirror*`, `/api/device/*` or `/api/vault`; they send `no-store`.
 - Bot Fight Mode on for `/api/*`.
 
 ## Insight card ratings

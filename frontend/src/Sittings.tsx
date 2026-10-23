@@ -1,4 +1,8 @@
+import { useState } from 'react'
 import { opensAt, type Sitting } from './day'
+import { GoodThings } from './Keep'
+import { goodThings } from './notebook'
+import { addDays } from './storage'
 import { themeName, themeStyle, themeVars } from './themes'
 
 // The shape of the day around the questions: what comes next and when, the
@@ -28,8 +32,11 @@ export function Upcoming({ label, themes, note }: { label: string; themes: strin
   )
 }
 
-// The night, until 5 am: nothing to answer, just what the morning holds.
-export function NightScreen({ morningThemes }: { morningThemes: string[] }) {
+// The night, until 5 am: nothing to answer, just what the morning holds, and
+// three good things from the day just gone, if they are not written yet.
+export function NightScreen({ date, morningThemes }: { date: string; morningThemes: string[] }) {
+  const yesterday = addDays(date, -1)
+  const [ask] = useState(() => !goodThings(yesterday))
   return (
     <section className="screen rest" aria-labelledby="night-title">
       <p className="rest-mark" aria-hidden="true">
@@ -40,6 +47,7 @@ export function NightScreen({ morningThemes }: { morningThemes: string[] }) {
       </h2>
       <p className="muted">Your morning three open at {opensAt('morning')}. Nothing to do until then but rest.</p>
       <Upcoming label={`Your morning three · ${opensAt('morning')}`} themes={morningThemes} />
+      {ask && <GoodThings date={yesterday} label="Before you sleep: three good things from your day" />}
     </section>
   )
 }

@@ -1,8 +1,11 @@
+import { BackupSettings } from './Backup'
+import { LockSettings } from './pwa/Lock'
 import { WORDS_DAYS, type Prefs, type WordsDays } from './prefs'
 
 // Settings (review of 2026-10-15): the few choices a person can change
 // later. The 18+ answer was a one-time tap; here it can be changed, and how
-// long one's own words stay on the phone.
+// long one's own words stay on the phone, the backup (Backup.tsx) and the
+// lock (pwa/Lock.tsx).
 
 const WORDS_NAMES: Record<WordsDays, string> = { 7: 'One week', 35: 'Five weeks', 90: 'Three months' }
 
@@ -59,7 +62,9 @@ export function SettingsScreen({
 
       <fieldset className="notice">
         <legend className="eyebrow">Your own words</legend>
-        <p className="muted">They never leave this phone. Choose how long they stay on it.</p>
+        <p className="muted">
+          They stay on this phone, and go in your backup only if you choose that below. Choose how long they stay.
+        </p>
         {WORDS_DAYS.map((d) => (
           <label key={d} className="switch">
             <input
@@ -72,6 +77,10 @@ export function SettingsScreen({
           </label>
         ))}
       </fieldset>
+
+      <BackupSettings />
+
+      <LockSettings />
 
       <button type="button" className="option" onClick={onOpenKept}>
         What I keep, and how to delete it

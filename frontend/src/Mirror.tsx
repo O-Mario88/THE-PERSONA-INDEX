@@ -13,15 +13,20 @@ import {
   type Verdict,
   wordsBetween,
 } from './api'
+import { IdentityCard, PlanOffer, RevisitCard, SundaySentence } from './Keep'
 import { setMoveStatus, startMove } from './moves'
+import { revisitDue, sentencesBetween } from './notebook'
 import {
   AREA_NAMES,
+  identityName,
   leanings,
   levelLine,
   levelMeta,
+  longDate,
   PERIOD_CLOSE,
   periodName,
   periodSummary,
+  sentenceStarter,
   summary,
   tagline,
   title,
@@ -29,9 +34,11 @@ import {
   type Lean,
 } from './mirrorText'
 import { leaningVerdict, notMeSides, rememberLeaning } from './profile'
+import { addDays } from './storage'
 import { THEMES, themeName, themeStyle, themeVars } from './themes'
 import { honestLine, TRAITS } from './traits'
-import { LEANING_REPLIES } from './words'
+import { LEANING_REPLIES, STEP_STATUS_WORDS } from './words'
+import { ReadLink } from './Read'
 
 type Span = 'week' | Period
 type State =
@@ -132,8 +139,14 @@ function MirrorPage({
   // Leanings the person said are not them stay out of the title (profile.ts).
   const [notMe, setNotMe] = useState(() => notMeSides(today))
   const name = title(m.traits, notMe)
+  const suggested = identityName(m.traits, notMe)
   const line = tagline(m.traits, notMe)
   const lean = leanings(m.traits)
+  // Sunday asks for one line about the week, and once a month brings back a
+  // card from the notebook.
+  const sunday = new Date(`${today}T00:00:00Z`).getUTCDay() === 0
+  const [revisit] = useState(() => (sunday ? revisitDue(today) : null))
+  const starter = sentenceStarter(leanings(m.traits, notMe)[0]?.side.lean)
   const moved = m.traits.some((t) => t.history.filter((h) => h.score !== undefined).length >= 2)
   // Own words live on this phone only; the server never sees them.
   const words = wordsBetween(m.from, m.to)
@@ -150,12 +163,24 @@ function MirrorPage({
       body: <Who leans={lean} date={today} span="week" onVerdict={() => setNotMe(notMeSides(today))} />,
       show: lean.length > 0,
     },
+    {
+      key: 'sentence',
+      title: 'One line for your week',
+      body: <SundaySentence week={m.from} starter={starter} />,
+      show: (sunday && m.stats.answers > 0) || sentencesBetween(m.from, m.from).length > 0,
+    },
     { key: 'words', title: 'In your own words', body: <OwnWordsList words={words} />, show: words.length > 0 },
     {
       key: 'steps',
       title: 'Your small steps',
       body: <Steps m={m} today={today} reload={reload} />,
-      show: m.steps.length > 0 || m.stepRecord.started > 0,
+      show: m.steps.length > 0 || m.stepRecord.started > 0 || (m.stats.plansDid ?? 0) + (m.stats.plansNotYet ?? 0) > 0,
+    },
+    {
+      key: 'revisit',
+      title: 'Still true?',
+      body: revisit && <RevisitCard card={revisit} today={today} />,
+      show: !!revisit,
     },
     {
       key: 'next',
@@ -196,6 +221,7 @@ function MirrorPage({
         </div>
       )}
 
+      {suggested && <IdentityCard key={`${m.from}-${suggested}`} week={m.from} suggested={suggested} />}
       <OneLine m={m} notMe={notMe} />
       <StatTiles m={m} />
       {sections}
@@ -398,6 +424,7 @@ function Traits({ m }: { m: MirrorData }) {
                   <span className="m-scale-dot" style={{ left: `${t.score}%` }} />
                 </span>
                 <p className="m-trait-meta">{levelMeta(t)}</p>
+                <WhyThis t={t} name={text.name} />
               </li>
             )
           })}
@@ -536,6 +563,60 @@ function AllOfYou({ themes: read }: { themes: ThemeRead[] }) {
 
 const DEPTH_WORDS = { light: 'light', deeper: 'deeper', deep: 'deep', private: 'private' } as const
 
+// The week's plan checks. The plans themselves stay on the phone; the server
+// only counts "did it" and "not yet".
+function PlanRecord({ did, notYet }: { did: number; notYet: number }) {
+  if (did + notYet === 0) return null
+  const times = (n: number) => (n === 1 ? 'once' : n === 2 ? 'twice' : `${n} times`)
+  return (
+    <div className="m-card">
+      <p className="m-eyebrow">Your plans this week</p>
+      <p>
+        {did > 0 ? `You did what you planned ${times(did)}` : 'You checked in on your plans'}
+        {notYet > 0 ? `, and said "not yet" ${times(notYet)}.` : '.'}{' '}
+        {notYet > did ? 'A plan that keeps slipping may need a smaller "I will".' : 'Plans tied to a moment are the ones that last.'}
+      </p>
+    </div>
+  )
+}
+
+// "Why do you say that?": the person's own answers a read rests on, from the
+// server's copy of them, newest first. Each says which way it pointed, so a
+// read that rests on mixed answers shows it.
+function WhyThis({ t, name }: { t: MirrorData['traits'][number]; name: string }) {
+  const [open, setOpen] = useState(false)
+  if (!t.behind || t.behind.length === 0) return null
+  const high = t.score >= 50
+  const way = (l: 'high' | 'low' | 'middle') =>
+    l === 'middle' ? 'in between' : (l === 'high') === high ? 'points this way' : 'points the other way'
+  const id = `why-${t.trait}`
+  return (
+    <div className="m-why">
+      <button type="button" className="text-button" aria-expanded={open} aria-controls={id} onClick={() => setOpen(!open)}>
+        {open ? 'Hide the answers' : 'Why do you say that?'}
+      </button>
+      {open && (
+        <div id={id}>
+          <p className="m-note">
+            {`Your read on ${name.toLowerCase()} comes from ${t.answers === 1 ? 'one answer' : `${t.answers} answers`} over ${
+              t.weeks === 1 ? 'one week' : `${t.weeks} weeks`
+            }.`}
+            {t.behind.length < t.answers ? ` Here are the newest ${t.behind.length}.` : ' Here they are, newest first.'}
+          </p>
+          <ul className="m-why-list">
+            {t.behind.map((b, i) => (
+              <li key={`${b.date}-${i}`}>
+                <span className="m-why-date">{longDate(b.date)}</span> {b.question} You said “{b.answer}”.{' '}
+                <span className="m-why-way">({way(b.leans)})</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // The leanings that have earned a name, each with its honest part and
 // whether the person says it is them. Used by the week and the longer spans.
 function Who({
@@ -561,6 +642,8 @@ function Who({
           <p className="m-who-honest">
             <strong>The honest part:</strong> {honestLine(l.side, date, 'mirror').text}
           </p>
+          <PlanOffer trait={l.read.trait} high={l.high} date={date} />
+          <ReadLink side={`${l.read.trait}.${l.high ? 'high' : 'low'}`} />
           {l.read.evidence && l.read.evidence.length > 0 && (
             <p className="m-who-evidence">You said: {l.read.evidence.map((e) => `“${e}”`).join(', ')}</p>
           )}
@@ -635,12 +718,7 @@ function OwnWordsList({ words }: { words: OwnWords[] }) {
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
 
-const STATUS_WORDS: Record<StepStatus, string> = {
-  started: 'In progress',
-  helped: 'Helped',
-  no_change: 'No change yet',
-  not_tried: "Didn't try",
-}
+const STATUS_WORDS = STEP_STATUS_WORDS
 
 // Open steps pile up when they're never marked, so the list starts short.
 const STEPS_SHOWN = 4
@@ -705,6 +783,7 @@ function Steps({ m, today, reload }: { m: MirrorData; today: string; reload: () 
             : 'Every try teaches you something, including the ones that change nothing.'}
         </p>
       </div>
+      <PlanRecord did={m.stats.plansDid ?? 0} notYet={m.stats.plansNotYet ?? 0} />
     </>
   )
 }
@@ -810,12 +889,6 @@ function Footer({ onOpenKept }: { onOpenKept: () => void }) {
   )
 }
 
-// "15 October": the day first, whatever the phone's locale.
-const longDate = (iso: string) => {
-  const d = new Date(`${iso}T00:00:00Z`)
-  return `${d.getUTCDate()} ${d.toLocaleDateString('en', { month: 'long', timeZone: 'UTC' })}`
-}
-
 // The month, quarter or year: this phone's weeks added up, set only against
 // its own earlier weeks and the period before.
 function PeriodPage({ p, onOpenKept }: { p: PeriodMirror; onOpenKept: () => void }) {
@@ -825,6 +898,9 @@ function PeriodPage({ p, onOpenKept }: { p: PeriodMirror; onOpenKept: () => void
   const line = tagline(p.traits, notMe)
   const lean = leanings(p.traits)
   const moved = noun !== 'year' && p.traits.some((t) => t.weekly.filter((w) => w.score !== undefined).length >= 2)
+  // The Sunday sentences of the weeks in this span (a week belongs to the
+  // span that holds its Thursday), from this phone only.
+  const lines = sentencesBetween(addDays(p.from, -3), addDays(p.to, -3))
   const parts: Part[] = [
     { key: 'weeks', title: 'Week by week', body: <WeekByWeek p={p} />, show: true },
     { key: 'traits', title: 'Your trait read', body: <PeriodTraits p={p} />, show: true },
@@ -836,6 +912,7 @@ function PeriodPage({ p, onOpenKept }: { p: PeriodMirror; onOpenKept: () => void
       body: <Who leans={lean} date={p.date} span={noun} onVerdict={() => setNotMe(notMeSides(p.date))} />,
       show: lean.length > 0,
     },
+    { key: 'lines', title: 'In your own words, week by week', body: <WeekLines lines={lines} />, show: lines.length > 0 },
     { key: 'all', title: 'All of you', body: <AllOfYou themes={p.themes} />, show: p.themes.length > 0 },
     { key: 'steps', title: 'Your small steps', body: <PeriodSteps p={p} />, show: p.stats.stepsStarted > 0 },
   ]
@@ -864,6 +941,22 @@ function PeriodPage({ p, onOpenKept }: { p: PeriodMirror; onOpenKept: () => void
       {numbered(parts)}
       <p className="m-text m-close">{PERIOD_CLOSE[noun]}</p>
       <Footer onOpenKept={onOpenKept} />
+    </>
+  )
+}
+
+function WeekLines({ lines }: { lines: { week: string; text: string }[] }) {
+  return (
+    <>
+      <ul className="m-words">
+        {lines.map((l) => (
+          <li key={l.week} className="m-card m-word">
+            <p className="m-step-meta">{weekRange(l.week)}</p>
+            <blockquote className="m-word-text">“{l.text}”</blockquote>
+          </li>
+        ))}
+      </ul>
+      <p className="m-note">Only on this phone. These lines were never sent anywhere.</p>
     </>
   )
 }

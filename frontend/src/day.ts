@@ -52,6 +52,20 @@ export function morningEnd(date: string): number {
   return new Date(y, m - 1, d, 0, MORNING_CLOSES).getTime()
 }
 
+// sittingStart is the moment the morning (5 am) or the evening (5 pm) of
+// date began, in ms.
+export function sittingStart(date: string, sitting: 'morning' | 'evening'): number {
+  const [y, m, d] = date.split('-').map(Number)
+  return new Date(y, m - 1, d, 0, sitting === 'morning' ? MORNING_OPENS : EVENING_OPENS).getTime()
+}
+
+// isMidday says whether it is around lunch, from 11:30 am until the morning
+// closes at 4:30 pm: the time for the small-step check.
+export function isMidday(now = new Date()): boolean {
+  const m = minutesOf(now)
+  return m >= 11 * 60 + 30 && m < MORNING_CLOSES
+}
+
 export type Day = { date: string; sitting: Sitting }
 
 export function dayAt(now: Date): Day {

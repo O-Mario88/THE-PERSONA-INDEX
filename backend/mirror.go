@@ -127,6 +127,8 @@ type MirrorStats struct {
 	StepsStarted       int `json:"stepsStarted"`
 	StepsTried         int `json:"stepsTried"`
 	StepsHelped        int `json:"stepsHelped"`
+	PlansDid           int `json:"plansDid"` // plan checks this week: "did it"
+	PlansNotYet        int `json:"plansNotYet"`
 }
 
 type MirrorDay struct {
@@ -153,7 +155,23 @@ type TraitRead struct {
 	Evidence []string    `json:"evidence"`         // this week's answers that leaned this way most
 	Theme    string      `json:"theme,omitempty"`  // where the first of them came from
 	Edition  int         `json:"edition,omitempty"`
+	// Behind is the answers the read rests on, newest first, for "Why do
+	// you say that?": every answer of the read's three weeks that could show
+	// the trait, up to maxBehind.
+	Behind []BehindAnswer `json:"behind"`
 }
+
+// BehindAnswer is one of the person's own answers behind a read.
+type BehindAnswer struct {
+	Date     string `json:"date"`
+	Theme    string `json:"theme"`
+	Question string `json:"question"`
+	Answer   string `json:"answer"`
+	Leans    string `json:"leans"` // high | low | middle: which way this answer pointed on the trait
+}
+
+// maxBehind is how many answers "Why do you say that?" lists.
+const maxBehind = 12
 
 type WeekScore struct {
 	Week  int  `json:"week"`
@@ -307,14 +325,16 @@ type DataKept struct {
 
 // Retention says, in days, how long each kind of row is kept.
 type Retention struct {
-	AnswersDays     int `json:"answersDays"`
+	AnswersDays     int `json:"answersDays"` // answers, steps and plan checks
 	WeeklyNotesDays int `json:"weeklyNotesDays"`
 	VotesDays       int `json:"votesDays"`
+	BackupDays      int `json:"backupDays"` // a backup no phone has written or read for this long
 }
 
 func (s *Server) retention() Retention {
 	days := func(d time.Duration) int { return int(d.Hours() / 24) }
-	return Retention{AnswersDays: days(mirrorRetention), WeeklyNotesDays: days(weekSummaryRetention), VotesDays: days(s.voteRetention)}
+	return Retention{AnswersDays: days(mirrorRetention), WeeklyNotesDays: days(weekSummaryRetention), VotesDays: days(s.voteRetention),
+		BackupDays: days(vaultRetention)}
 }
 
 func (s *Server) DeviceData(w http.ResponseWriter, r *http.Request) {
@@ -683,6 +703,7 @@ func (s *Server) buildMirror(ctx context.Context, key, date string) (Mirror, err
 			r.Change = &c
 		}
 		r.Evidence, r.Theme, r.Edition = evidence(week, trait, r.Score >= 50)
+		r.Behind = behind(all, trait, sunday.AddDate(0, 0, 1-traitWindowDays).Format(dateLayout), sun)
 		m.Traits = append(m.Traits, r)
 	}
 	slices.SortFunc(m.Traits, func(x, y TraitRead) int {
@@ -776,6 +797,19 @@ func (s *Server) buildMirror(ctx context.Context, key, date string) (Mirror, err
 		m.NextSteps = append(m.NextSteps, StepOffer{QuestionID: a.QuestionID, OptionID: a.OptionID, Theme: a.Theme, Step: text, Edition: editionNumber(a.Date)})
 	}
 
+	// Plan checks this week. The plans themselves stay on the phone.
+	checks, err := s.mirror.PlanChecks(ctx, key, mon, sun)
+	if err != nil {
+		return m, err
+	}
+	for _, c := range checks {
+		if c.Status == planDid {
+			m.Stats.PlansDid++
+		} else {
+			m.Stats.PlansNotYet++
+		}
+	}
+
 	// What comes next, and the support note.
 	for i := 1; i <= 3 && len(m.ComingUp) < 4; i++ {
 		set, ok := s.bank.GetSet(d.AddDate(0, 0, i).Format(dateLayout))
@@ -864,6 +898,34 @@ func evidence(week []answered, trait string, higher bool) ([]string, string, int
 		return labels, "", 0
 	}
 	return labels, leans[0].a.Theme, editionNumber(leans[0].a.Date)
+}
+
+// behind lists the answers dated in [from, to] that a read of trait rests
+// on, newest first: the same answers traitSums counts.
+func behind(all []answered, trait, from, to string) []BehindAnswer {
+	out := []BehindAnswer{}
+	for i := len(all) - 1; i >= 0 && len(out) < maxBehind; i-- {
+		a := all[i]
+		if !a.reads() || a.Date < from || a.Date > to {
+			continue
+		}
+		p, ok := traitPosition(a.q, a.OptionID, trait)
+		if !ok {
+			continue
+		}
+		b := BehindAnswer{Date: a.Date, Theme: a.Theme, Question: a.q.Prompt, Leans: "middle"}
+		if o := optionOf(a.q, a.OptionID); o != nil {
+			b.Answer = o.Label
+		}
+		switch {
+		case p > 0.5:
+			b.Leans = "high"
+		case p < 0.5:
+			b.Leans = "low"
+		}
+		out = append(out, b)
+	}
+	return out
 }
 
 // poolIndex orders answers given at the same moment by their place in the edition.

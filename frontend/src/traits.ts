@@ -345,6 +345,9 @@ export type TraitSide = {
   // this leaning can cost, each from its own source.
   honest: [Line, Line, Line]
   edge: string // the cost in a clause: "This week, you were {adj} {noun}, and {edge}."
+  // An example plan for the honest part, shown faintly in the empty boxes of
+  // "When ___, I will ___" (Keep.tsx): the person writes their own.
+  plan: { when: string; will: string }
 }
 
 export type Trait = {
@@ -392,6 +395,7 @@ export const TRAITS: Record<string, Trait> = {
         },
       ],
       edge: 'you may let rest wait too long',
+      plan: { when: 'I sit down for the evening', will: 'leave one job for tomorrow on purpose' },
     },
     low: {
       lean: 'keeping plans loose',
@@ -423,6 +427,7 @@ export const TRAITS: Record<string, Trait> = {
         },
       ],
       edge: 'small jobs can pile up',
+      plan: { when: 'I finish lunch', will: 'do the one task I keep moving' },
     },
   },
   agreeableness: {
@@ -460,6 +465,7 @@ export const TRAITS: Record<string, Trait> = {
         },
       ],
       edge: 'you may say yes when you mean no',
+      plan: { when: "someone asks a favour I can't fit in", will: "say I'll check and answer tomorrow" },
     },
     low: {
       lean: 'saying what you think',
@@ -490,6 +496,7 @@ export const TRAITS: Record<string, Trait> = {
         },
       ],
       edge: 'bluntness can cost you closeness',
+      plan: { when: "I'm about to disagree with someone", will: 'ask one question first' },
     },
   },
   openness: {
@@ -527,6 +534,7 @@ export const TRAITS: Record<string, Trait> = {
         },
       ],
       edge: 'you may move on before things settle',
+      plan: { when: 'a new idea grabs me', will: "note it down and finish today's one first" },
     },
     low: {
       lean: 'sticking with what works',
@@ -557,6 +565,7 @@ export const TRAITS: Record<string, Trait> = {
         },
       ],
       edge: 'new ideas may be slow to come',
+      plan: { when: 'I plan my weekend', will: "add one small thing I haven't tried" },
     },
   },
   extraversion: {
@@ -593,6 +602,7 @@ export const TRAITS: Record<string, Trait> = {
         },
       ],
       edge: 'the rush may carry a little risk',
+      plan: { when: 'my week fills up', will: 'keep one evening free for myself' },
     },
     low: {
       lean: 'time on your own',
@@ -623,6 +633,7 @@ export const TRAITS: Record<string, Trait> = {
         },
       ],
       edge: 'you may skip company that would lift you',
+      plan: { when: 'a low-key invitation comes', will: 'say yes to the next one' },
     },
   },
   neuroticism: {
@@ -660,6 +671,7 @@ export const TRAITS: Record<string, Trait> = {
         },
       ],
       edge: 'a sharp word may stay with you',
+      plan: { when: 'a worry pops up during the day', will: 'note it and save it for my worry time' },
     },
     low: {
       lean: 'staying calm',
@@ -691,6 +703,7 @@ export const TRAITS: Record<string, Trait> = {
         },
       ],
       edge: 'you may miss when someone is still shaken',
+      plan: { when: 'a hard moment has passed', will: 'ask how the others are doing' },
     },
   },
   honesty_humility: {
@@ -727,6 +740,7 @@ export const TRAITS: Record<string, Trait> = {
         },
       ],
       edge: 'a smooth story may slip past you',
+      plan: { when: 'my work goes well', will: 'say out loud what my part in it was' },
     },
     low: {
       lean: 'bending the rules',
@@ -758,6 +772,7 @@ export const TRAITS: Record<string, Trait> = {
         },
       ],
       edge: 'a shortcut can cost you trust',
+      plan: { when: "I'm tempted by a shortcut", will: 'picture who pays for it before I take it' },
     },
   },
   attachment_anxiety: {
@@ -796,6 +811,7 @@ export const TRAITS: Record<string, Trait> = {
         },
       ],
       edge: 'you may read too much into silence',
+      plan: { when: "a reply takes longer than I'd like", will: 'wait an hour, then ask simply' },
     },
     low: {
       lean: 'trusting the quiet',
@@ -826,6 +842,7 @@ export const TRAITS: Record<string, Trait> = {
         },
       ],
       edge: 'reassurance may go unsaid',
+      plan: { when: "I haven't heard from someone close for a while", will: 'send a short message first' },
     },
   },
   attachment_avoidance: {
@@ -863,6 +880,7 @@ export const TRAITS: Record<string, Trait> = {
         },
       ],
       edge: 'you may hold back from asking for help',
+      plan: { when: 'something is bothering me', will: 'tell one person I trust' },
     },
     low: {
       lean: 'letting people in',
@@ -893,6 +911,7 @@ export const TRAITS: Record<string, Trait> = {
         },
       ],
       edge: 'closeness may leave little room for you',
+      plan: { when: 'I plan my week', will: 'keep one hour just for me' },
     },
   },
   present_bias: {
@@ -929,6 +948,7 @@ export const TRAITS: Record<string, Trait> = {
         },
       ],
       edge: 'now may cost you later',
+      plan: { when: "I'm about to buy something I hadn't planned", will: 'wait ten minutes first' },
     },
     low: {
       lean: 'waiting for better',
@@ -960,6 +980,7 @@ export const TRAITS: Record<string, Trait> = {
         },
       ],
       edge: "today's pleasures may wait too long",
+      plan: { when: 'Friday comes', will: 'spend a little on something just for fun' },
     },
   },
   rumination: {
@@ -997,6 +1018,7 @@ export const TRAITS: Record<string, Trait> = {
         },
       ],
       edge: 'you may replay hard moments too long',
+      plan: { when: 'a conversation starts replaying', will: 'get up and walk for five minutes' },
     },
     low: {
       lean: 'letting things go',
@@ -1028,6 +1050,7 @@ export const TRAITS: Record<string, Trait> = {
         },
       ],
       edge: 'the lesson may slip by',
+      plan: { when: 'a big moment is over', will: "take a minute to ask what I'd do differently" },
     },
   },
   materialism: {
@@ -1065,6 +1088,7 @@ export const TRAITS: Record<string, Trait> = {
         },
       ],
       edge: 'a new thing may not satisfy for long',
+      plan: { when: "I'm about to buy something", will: 'ask what it will let me do' },
     },
     low: {
       lean: 'doing over owning',
@@ -1095,6 +1119,7 @@ export const TRAITS: Record<string, Trait> = {
         },
       ],
       edge: 'a let-down may sting for a while',
+      plan: { when: 'I book something fun', will: 'check the bills are covered first' },
     },
   },
 }

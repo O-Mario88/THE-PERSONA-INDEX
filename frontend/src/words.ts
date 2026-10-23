@@ -18,6 +18,21 @@ export const STEP_REPLIES: Record<Exclude<StepStatus, 'started'>, string> = {
   not_tried: "That's fine. The day had other plans. It'll still be there tomorrow.",
 }
 
+// How a small step went, in the mirror and the book.
+export const STEP_STATUS_WORDS: Record<StepStatus, string> = {
+  started: 'In progress',
+  helped: 'Helped',
+  no_change: 'No change yet',
+  not_tried: "Didn't try",
+}
+
+// The tap under a card, as the notebook and the book repeat it.
+export const VERDICT_WORDS: Record<Verdict, string> = {
+  me: "You said: that's me.",
+  partly: 'You said: partly.',
+  not_me: 'You said: not me.',
+}
+
 // Under a card, after the tap.
 export const VERDICT_REPLIES: Record<Exclude<Verdict, 'not_me'> | 'rated', string> = {
   me: "Noted. I'll keep building on it.",
@@ -33,6 +48,20 @@ export const LEANING_REPLIES: Record<Verdict, string> = {
   not_me: NOT_ME_REPLY,
 }
 
+// A kept card brought back once a month: "Still true?"
+export const REVISIT_WORDS = { still: 'still you', changing: 'changing', not_anymore: 'not you any more' } as const
+export const REVISIT_REPLIES = {
+  still: "Noted. It's held for a month now, so it's earned its place.",
+  changing: "Noted. Change is the point; I'll watch which way it goes.",
+  not_anymore: "Noted. You've moved on from this one, and your notebook keeps the record of it.",
+} as const
+
+// After a plan is checked.
+export const PLAN_REPLIES = {
+  did: "You did it. That's the plan becoming a habit, one go at a time.",
+  not_yet: "That's fine. The moment will come round again, and the plan will be ready.",
+} as const
+
 export const FIXED_WORDS: [string, string][] = [
   ['Sunday line', SUNDAY_LINE],
   ['quiet day', QUIET_DAY],
@@ -42,4 +71,6 @@ export const FIXED_WORDS: [string, string][] = [
   ...Object.entries(STEP_REPLIES).map(([k, v]): [string, string] => [`step reply ${k}`, v]),
   ...Object.entries(VERDICT_REPLIES).map(([k, v]): [string, string] => [`card reply ${k}`, v]),
   ...Object.entries(LEANING_REPLIES).map(([k, v]): [string, string] => [`leaning reply ${k}`, v]),
+  ...Object.entries(REVISIT_REPLIES).map(([k, v]): [string, string] => [`revisit reply ${k}`, v]),
+  ...Object.entries(PLAN_REPLIES).map(([k, v]): [string, string] => [`plan reply ${k}`, v]),
 ]

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { keepStorage } from './pwa/install'
 import {
   ApiError,
   castVote,
@@ -34,6 +35,7 @@ import {
 import { isEvening } from './day'
 import { Helpline } from './Helpline'
 import { moveFor, startMove } from './moves'
+import { keepCard, keptCard, noteVerdict, unkeepCard } from './notebook'
 import { inOrder } from './order'
 import { DEFAULT_WORDS_DAYS } from './prefs'
 import { isHeavy, loadHistory, recalledAnswer, recordAnswer, recordSkip, recordVerdict, threadLine } from './profile'
@@ -386,6 +388,7 @@ function Answer({
         </p>
       )}
       {insight && <InsightPanel reveal={insight.reveal} otherSide={insight.otherSide} thread={notMe ? null : thread} />}
+      {insight && <KeepThis question={question} option={option} words={words} date={date} />}
       {isHeavy(question.theme, option.depth) && <Helpline />}
       {insight?.step && <TryThis question={question} option={option} step={insight.step} date={date} />}
       {insight && (
@@ -422,6 +425,56 @@ function InsightPanel({ reveal, otherSide, thread }: { reveal: string; otherSide
         </p>
       )}
       <p className="insight-note">For self-reflection, not a diagnosis.</p>
+    </div>
+  )
+}
+
+// "Keep this" puts the card in My notebook, on this phone only: the day, the
+// question, the answer or the person's own words, the card and, once given,
+// whether it is them. Kept until they remove it.
+function KeepThis({ question, option, words, date }: { question: Question; option: Option; words: OwnWords | null; date: string }) {
+  const [kept, setKept] = useState(() => !!keptCard(question.id))
+  function keep() {
+    const insight = option.insight!
+    const { headline, body } = splitReveal(insight.reveal)
+    const verdict = recalledVerdict(question.id)
+    keepCard({
+      date,
+      questionId: question.id,
+      theme: question.theme ?? '',
+      ...(question.care === 'intimate' ? { private: true as const } : {}),
+      prompt: question.prompt,
+      answer: words?.closest ?? option.label,
+      ...(words ? { words: words.words } : {}),
+      headline,
+      ...(body ? { body } : {}),
+      ...(insight.otherSide ? { otherSide: insight.otherSide } : {}),
+      ...(insight.step ? { step: insight.step } : {}),
+      ...(verdict && verdict !== 'rated' ? { verdict } : {}),
+    })
+    keepStorage()
+    setKept(true)
+  }
+  function undo() {
+    unkeepCard(question.id)
+    setKept(false)
+  }
+  return (
+    <div className="keep" role="group" aria-label="Keep this card">
+      {kept ? (
+        <>
+          <p className="keep-done">
+            <span aria-hidden="true">✓ </span>Kept in your notebook, on this phone only.
+          </p>
+          <button type="button" className="text-button" onClick={undo}>
+            Undo
+          </button>
+        </>
+      ) : (
+        <button type="button" className="chip keep-button" onClick={keep}>
+          <span aria-hidden="true">＋ </span>Keep this
+        </button>
+      )}
     </div>
   )
 }
@@ -487,6 +540,7 @@ function Rate({
     onVerdict(v)
     rememberRated(question.id, v)
     recordVerdict(question.id, v)
+    noteVerdict(question.id, v)
     const sent = question.care === 'intimate' ? PRIVATE_OPTION : option.id
     rateCard(question.id, sent, v).catch(() => {
       // a lost tap is not worth bothering anyone about

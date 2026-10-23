@@ -166,6 +166,7 @@ func (p *pgStore) ForgetDevice(ctx context.Context, deviceKey string, voterHashe
 	batch.Queue(`SELECT pg_advisory_xact_lock($1, hashtext($2))`, deviceLockSpace, deviceKey)
 	batch.Queue(`DELETE FROM mirror_answers WHERE device_key = $1`, deviceKey)
 	batch.Queue(`DELETE FROM mirror_steps WHERE device_key = $1`, deviceKey)
+	batch.Queue(`DELETE FROM mirror_plan_checks WHERE device_key = $1`, deviceKey)
 	batch.Queue(`DELETE FROM mirror_weeks WHERE device_key = $1`, deviceKey)
 	batch.Queue(`DELETE FROM votes WHERE voter_hash = ANY($1)`, voterHashes)
 	batch.Queue(`INSERT INTO forgotten_devices (device_key, forgotten_on) VALUES ($1, $2)
@@ -176,7 +177,7 @@ func (p *pgStore) ForgetDevice(ctx context.Context, deviceKey string, voterHashe
 	if _, err := br.Exec(); err != nil {
 		return f, err
 	}
-	for _, n := range []*int{&f.Answers, &f.Steps, &f.Weeks, &f.Votes} {
+	for _, n := range []*int{&f.Answers, &f.Steps, &f.PlanChecks, &f.Weeks, &f.Votes} {
 		tag, err := br.Exec()
 		if err != nil {
 			return Forgotten{}, err
@@ -197,9 +198,10 @@ func (p *pgStore) DeviceData(ctx context.Context, deviceKey string, voterHashes 
 		       (SELECT count(*) FROM mirror_answers WHERE device_key = $1 AND option_id IS NULL),
 		       (SELECT min(edition_date)::text FROM mirror_answers WHERE device_key = $1),
 		       (SELECT count(*) FROM mirror_steps WHERE device_key = $1),
+		       (SELECT count(*) FROM mirror_plan_checks WHERE device_key = $1),
 		       (SELECT count(*) FROM mirror_weeks WHERE device_key = $1),
 		       (SELECT count(*) FROM votes WHERE voter_hash = ANY($2))`, deviceKey, voterHashes,
-	).Scan(&k.Answers, &k.Private, &first, &k.Steps, &k.Weeks, &k.Votes)
+	).Scan(&k.Answers, &k.Private, &first, &k.Steps, &k.PlanChecks, &k.Weeks, &k.Votes)
 	if first != nil {
 		k.FirstAnswer = *first
 	}
@@ -211,6 +213,7 @@ func (p *pgStore) DeleteMirrorBefore(ctx context.Context, date string) (int, err
 	for _, sql := range []string{
 		`DELETE FROM mirror_answers WHERE edition_date < $1`,
 		`DELETE FROM mirror_steps WHERE started_on < $1`,
+		`DELETE FROM mirror_plan_checks WHERE checked_on < $1`,
 		`DELETE FROM forgotten_devices WHERE forgotten_on < $1`,
 	} {
 		tag, err := p.pool.Exec(ctx, sql, date)
