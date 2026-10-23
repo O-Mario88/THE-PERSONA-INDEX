@@ -2266,3 +2266,19 @@ main > section[tabindex='-1']:focus {
     scroll-behavior: auto !important;
   }
 }
+
+/* The lock screen (pwa/Lock.tsx). */
+.lock-screen {
+  min-height: 70vh;
+  max-width: 28rem;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.lock-screen .brand {
+  margin-bottom: 8px;
+}
