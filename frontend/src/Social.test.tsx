@@ -56,7 +56,7 @@ describe('signing in', () => {
     expect(await screen.findByText(/isn’t switched on here yet/)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Continue with/ })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Send code' })).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Not now · keep it on this phone' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Not now — keep it on this phone' })).toBeInTheDocument()
   })
 
   it('signs in with a code, brings this phone’s pass along and takes the account’s, then asks for a name', async () => {

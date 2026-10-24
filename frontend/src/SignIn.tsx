@@ -27,10 +27,14 @@ type Step = { at: 'start' } | { at: 'code'; address: string; kind: 'email' | 'ph
 
 export function SignInSheet({
   title = 'Keep it on every device.',
-  lead = 'Signing in syncs your Notebook across devices and unlocks your Circle Mirror. No password: one tap or a 6-digit code.',
+  lead = 'Signing in syncs your Notebook across devices and unlocks your Circle Mirror. No password — one tap or a 6-digit code.',
   onDone,
   onNotNow,
+  overlay,
+  card,
 }: {
+  overlay?: boolean // full screen over the close, as in the design (M04)
+  card?: { area: string; line: string } // the sitting's first card, shown above the sheet
   title?: string
   lead?: string
   onDone: (me: AccountView) => void
@@ -105,7 +109,7 @@ export function SignInSheet({
   const none = methods && !codes && !methods.google && !methods.apple
   const placeholder = methods?.email && methods.phone ? 'ama@example.com or +256…' : methods?.phone ? '+256 …' : 'ama@example.com'
 
-  return (
+  const sheet = (
     <section className="sheet signin" aria-labelledby="signin-title">
       {step.at === 'start' && (
         <>
@@ -205,11 +209,27 @@ export function SignInSheet({
       )}
       {onNotNow && step.at === 'start' && (
         <button type="button" className="link-button strong" onClick={onNotNow}>
-          Not now · keep it on this phone
+          Not now — keep it on this phone
         </button>
       )}
-      <p className="muted small center">We keep a display name, a handle and your encrypted Notebook. Nothing else.</p>
+      <p className="muted small center signin-keep">We keep a display name, a handle and your encrypted Notebook. Nothing else.</p>
     </section>
+  )
+  if (!overlay) return sheet
+  return (
+    <div className="signin-overlay">
+      <div className="signin-stack" aria-hidden="true">
+        <span className="signin-stack-back" />
+        <span className="signin-stack-mid" />
+        {card && (
+          <span className="signin-stack-card">
+            <span className="signin-stack-area">{card.area}</span>
+            <span className="signin-stack-line">{card.line}</span>
+          </span>
+        )}
+      </div>
+      {sheet}
+    </div>
   )
 }
 

@@ -932,3 +932,423 @@
 .flow:has(.screen.question.answered) .flow-foot {
   display: none;
 }
+
+/* ---- the close of a sitting (M03) ---- */
+.flow:has(.screen.close) .flow-top,
+.flow:has(.screen.close) .dashes {
+  display: none;
+}
+.screen.done.close {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.close-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 24px;
+  border-radius: 24px;
+  background: var(--ink);
+  color: #f6f5f0;
+}
+@media (max-width: 899px) {
+  .close-hero {
+    margin: calc(-1 * var(--top)) -24px 2px;
+    padding: var(--top) 24px 24px;
+    border-radius: 0;
+  }
+}
+.app.is-dark .close-hero {
+  background: #141414;
+}
+.close-hero-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.close-hero-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--deep-ink);
+}
+.close-hero-pill {
+  font-size: 12px;
+  font-weight: 600;
+  color: #f6f5f0;
+  background: var(--deep-2);
+  border-radius: 999px;
+  padding: 6px 10px;
+}
+.close-hero .tapestry {
+  gap: 5px;
+}
+.close-hero .tapestry li {
+  border-radius: 4px;
+}
+.close-hero-words {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.close-hero-title {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 1.25;
+  color: #f6f5f0;
+  text-wrap: balance;
+}
+.close-hero-sub {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--deep-ink);
+}
+.screen.close .thread {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  border: 0;
+  color: var(--ink);
+}
+.screen.close .thread .eyebrow {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--label-morning);
+}
+.app.is-dark .screen.close .thread .eyebrow {
+  color: var(--tint, #e0a55a);
+}
+.screen.close .thread-headline {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 1.35;
+  color: var(--ink);
+}
+.screen.close .thread-point {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 0 0;
+  border-top: 1px solid var(--hair);
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ink-muted);
+}
+.screen.close .thread-point p {
+  margin: 0;
+}
+.screen.close .thread-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.screen.close .thread-level {
+  font-size: 12px;
+}
+.screen.close .moves {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  border: 0;
+}
+.screen.close .moves .eyebrow {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink-muted);
+}
+.screen.close .move-checks {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.screen.close .move-step {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+  min-height: 60px;
+  box-sizing: border-box;
+  padding: 14px 18px;
+  border: 1.5px solid var(--deep);
+  border-radius: 20px;
+  background: var(--panel, #ffffff);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--ink);
+}
+.app.is-dark .screen.close .move-step {
+  border-color: #f2f2f2;
+}
+.move-check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--deep);
+  color: #ffffff;
+}
+.app.is-dark .move-check {
+  background: #f2f2f2;
+  color: #000000;
+}
+.screen.close .moves > .muted {
+  margin: 0;
+  padding: 14px 18px;
+  border-radius: 20px;
+  background: var(--panel, #ffffff);
+  box-shadow: var(--card-shadow);
+  font-size: 15px;
+  line-height: 1.4;
+  color: var(--ink-muted);
+}
+.screen.close .move-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.screen.close .move-buttons .option {
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--hair);
+  border-radius: 12px;
+  background: transparent;
+  box-shadow: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+.screen.close .insight-note {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+.close-cta {
+  min-height: 52px;
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+/* ---- the sign-in sheet over the close (M04) ---- */
+.signin-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow-y: auto;
+  background: var(--deep);
+}
+.app.is-dark .signin-overlay {
+  background: #000000;
+}
+.signin-stack {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: max(90px, calc(env(safe-area-inset-top, 0px) + 40px)) 44px 24px;
+}
+.signin-stack-back,
+.signin-stack-mid {
+  display: block;
+  height: 120px;
+  border-radius: 18px;
+}
+.signin-stack-back {
+  width: 240px;
+  background: var(--deep-2);
+  opacity: 0.8;
+  transform: rotate(-6deg);
+}
+.signin-stack-mid {
+  width: 260px;
+  margin-top: -96px;
+  background: var(--deep-sub);
+  opacity: 0.55;
+  transform: rotate(3deg);
+}
+.signin-stack-card {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 280px;
+  max-width: 100%;
+  box-sizing: border-box;
+  margin-top: -92px;
+  padding: 18px 20px;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 20px 40px rgb(0 0 0 / 0.3);
+}
+.signin-stack-area {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--label-morning);
+}
+.signin-stack-line {
+  font-family: var(--display);
+  font-size: 19px;
+  line-height: 1.25;
+  color: #1e2a26;
+}
+.signin-overlay .sheet.signin {
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  box-sizing: border-box;
+  border-radius: 28px 28px 44px 44px;
+  padding: 26px 24px max(30px, env(safe-area-inset-bottom, 0px));
+  box-shadow: none;
+}
+.sheet.signin {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
+  background: #ffffff;
+}
+.app.is-dark .sheet.signin {
+  background: #141414;
+}
+.sheet.signin .title {
+  margin: 0;
+  font-size: 27px;
+  line-height: 1.22;
+  letter-spacing: -0.01em;
+}
+.sheet.signin > .muted:not(.small) {
+  margin: -10px 0 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ink-muted);
+}
+.sheet.signin .btn.wide {
+  min-height: 52px;
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 600;
+}
+.sheet.signin .btn.wide + .btn.wide {
+  margin-top: -8px;
+}
+.signin-code {
+  gap: 8px !important;
+}
+.signin-code label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+.signin-code .row-gap {
+  display: flex;
+  gap: 8px;
+}
+.signin-code .field {
+  flex: 1;
+  min-width: 0;
+  min-height: 48px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--soft-fill);
+  font-size: 15px;
+}
+.signin-code .btn.terracotta {
+  min-height: 48px;
+  padding: 0 16px;
+  border-radius: 12px;
+  background: #c4603a;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.sheet.signin .link-button.strong {
+  min-height: 44px;
+  margin-bottom: -14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+.signin-keep {
+  margin: 0;
+  padding: 0 !important;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink-muted);
+  text-align: center;
+}
+
+/* What opens next, on a close (M03 rhythm: label, then the content). */
+.screen.close .upcoming {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+.screen.close .upcoming .eyebrow {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink-muted);
+}
+.screen.close .upcoming-themes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.screen.close .upcoming-theme {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--hair);
+  border-radius: 12px;
+  background: var(--panel, #ffffff);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.screen.close .upcoming .muted {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink-muted);
+}

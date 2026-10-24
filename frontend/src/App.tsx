@@ -15,7 +15,7 @@ import {
 } from './api'
 import { left, useDay, WINDOW_INFO, windowCloses, type OpenWindow, type Sitting } from './day'
 import { QuestionCard, type Done } from './QuestionCard'
-import { DayClose, StepCheck } from './DayClose'
+import { closeCard, DayClose, hasOpenStep, StepCheck } from './DayClose'
 import { GoodThings } from './Keep'
 import { PrivacyLine, RestScreen, Upcoming } from './Sittings'
 import { Mirror } from './Mirror'
@@ -572,6 +572,8 @@ function App() {
             ))}
           {closing && steps.length > 0 && !me && !askedSignIn && (
             <SignInSheet
+              overlay
+              card={closeCard(flow === 'evening' ? eveningQs : morningQs)}
               title={`Your ${steps.length === 3 ? 'three cards are' : 'cards are'} on this phone. Keep them everywhere.`}
               onDone={(acc) => {
                 saveKey(SIGNIN_ASKED, '1')
@@ -588,8 +590,10 @@ function App() {
             <CountryAsk onAnswer={(country) => changePrefs({ ...prefs, country })} />
           )}
           {closing && steps.length > 0 && (
-            <button type="button" className="btn wide" onClick={closeFlow}>
-              Back to today
+            <button type="button" className="btn wide close-cta" onClick={closeFlow}>
+              {flow === 'morning' && hasEvening && hasOpenStep(set.date) && new Date().getHours() < 12
+                ? "I'll try it · we'll check in at lunch"
+                : 'Back to today'}
             </button>
           )}
           <PrivacyLine onOpenKept={() => open('kept')} onOpenSettings={() => open('settings')} />

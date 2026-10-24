@@ -8,11 +8,14 @@ import { movesOn, setMoveStatus, startedInEvening, type Move } from './moves'
 import { planToCheck } from './notebook'
 import type { Practice } from './practices'
 import { heavyPause, isLowMood, loadHistory, recordRoute, type AnswerRecord, type History, type Route } from './profile'
-import { NEED_PHRASES } from './needs'
+import { NEED_PHRASES, type Need } from './needs'
+import { TapestryGrid } from './Tapestry'
+import { season } from './tapestry'
 import { routeToAsk } from './reaching'
 import { loadJSON, saveJSON } from './storage'
 import { Upcoming } from './Sittings'
 import { themeName, themeStyle, themeVars } from './themes'
+import { splitReveal } from './reveal'
 import {
   NO_STEP,
   QUIET_DAY,
@@ -69,18 +72,38 @@ export function DayClose(props: Props) {
   const [paused] = useState(() => heavyPause(history, date))
 
   let title = "That's your day."
-  let lead = "Here's what your answers add up to this evening."
   if (props.sitting === 'morning') {
     title = eveningThemes ? 'Morning done.' : "That's your day."
-    lead = "Here's what your answers add up to this morning."
   }
 
+  const s = season(date)
+  const answered = questions.filter((q) => {
+    const c = recalledChoice(q.id)
+    return !!c && c !== SKIPPED
+  }).length
+
   return (
-    <section className={endsDay ? 'screen done evening-done' : 'screen done'} aria-labelledby={headingId}>
-      <h2 id={headingId} className="done-title">
-        {title}
-      </h2>
-      <p className="muted">{lead}</p>
+    <section className={endsDay ? 'screen done close evening-done' : 'screen done close'} aria-labelledby={headingId}>
+      <div className="close-hero">
+        <div className="close-hero-top">
+          <span className="close-hero-label">
+            {sitting === 'morning' ? 'Morning close' : 'Evening close'} · day {s.day} of 90
+          </span>
+          {questions.length > 0 && (
+            <span className="close-hero-pill">
+              {answered} of {questions.length}
+            </span>
+          )}
+        </div>
+        <TapestryGrid s={s} dark cols={15} weaving />
+        <div className="close-hero-words">
+          <h2 id={headingId} className="sr-only">
+            {title}
+          </h2>
+          <p className="close-hero-title">{summaryLine(mine, sitting)}</p>
+          <p className="close-hero-sub">Today's tile weaves in as you watch. A missed day stays open, and nothing resets.</p>
+        </div>
+      </div>
 
       {questions.length > 0 && (
         <Tiles label={sitting === 'morning' ? "This morning's answers" : "This evening's answers"} questions={questions} />
@@ -137,11 +160,40 @@ export function DayClose(props: Props) {
   )
 }
 
+// The card shown above the sign-in sheet: the first card of the sitting, by
+// its area and headline. Never a private one.
+export function closeCard(questions: Question[]): { area: string; line: string } | undefined {
+  for (const q of questions) {
+    if (q.care === 'intimate') continue
+    const o = q.options.find((x) => x.id === recalledChoice(q.id))
+    if (o?.insight) return { area: q.theme ? themeName(q.theme) : 'Today', line: splitReveal(o.insight.reveal).headline }
+  }
+  return undefined
+}
+
+// A step picked this sitting and not yet tried.
+export const hasOpenStep = (date: string) => movesOn(date).some((m) => m.status === 'started')
+
+const COUNT = ['No', 'One', 'Two', 'Three', 'Four', 'Five', 'Six']
+
+// The serif line under the tapestry: how many threads were woven, and what
+// they reached for when the answers agree. Only what the answers say.
+function summaryLine(answers: AnswerRecord[], sitting: 'morning' | 'evening'): string {
+  const n = answers.length
+  const when = sitting === 'morning' ? 'this morning' : 'this evening'
+  if (n === 0) return `Nothing woven ${when}, and that's fine.`
+  const head = `${COUNT[n] ?? n} new ${n === 1 ? 'thread' : 'threads'}`
+  const needs = answers.map((a) => a.need).filter((x): x is Need => !!x)
+  if (needs.length === n && needs.every((x) => x === needs[0]))
+    return n === 1 ? `${head}, reaching for ${NEED_PHRASES[needs[0]]}.` : `${head}, all reaching for ${NEED_PHRASES[needs[0]]}.`
+  return `${head} woven in ${when}.`
+}
+
 // One tile per question of the sitting: its theme, and whether it was
 // answered, skipped or kept private. Never the answer itself.
 function Tiles({ label, questions }: { label: string; questions: Question[] }) {
   return (
-    <ul className="tiles" aria-label={label}>
+    <ul className="tiles sr-only" aria-label={label}>
       {questions.map((q) => {
         const c = recalledChoice(q.id)
         const status = !c || c === SKIPPED ? 'skipped' : q.care === 'intimate' ? 'private' : 'answered'
@@ -201,10 +253,11 @@ function MorningMoves({ date }: { date: string }) {
   const [moves, setMoves] = useState(() => movesOn(date))
   const [later, setLater] = useState<string[]>(() => middayLater(date))
   const [midday] = useState(() => isMidday())
+  const label = moves.length > 1 ? 'Small steps for today' : 'One small step for today'
   if (moves.length === 0) {
     return (
-      <div className="moves" role="group" aria-label="Small steps you'll try">
-        <p className="eyebrow">Small steps you'll try</p>
+      <div className="moves" role="group" aria-label={label}>
+        <p className="eyebrow">{label}</p>
         <p className="muted">{NO_STEP}</p>
       </div>
     )
@@ -222,14 +275,18 @@ function MorningMoves({ date }: { date: string }) {
     setLater(next)
   }
   return (
-    <div className="moves" role="group" aria-label="Small steps you'll try">
-      <p className="eyebrow">Small steps you'll try</p>
+    <div className="moves" role="group" aria-label={label}>
+      <p className="eyebrow">{label}</p>
       <ul className="move-checks">
         {moves.map((m) => (
           <li key={m.questionId}>
             <p className="move-step">
-              <span className="move-dot" aria-hidden="true" />
-              {m.step}
+              <span>{m.step}</span>
+              <span className="move-check" aria-hidden="true">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M5 12l5 5L20 7" />
+                </svg>
+              </span>
             </p>
             {m.status !== 'started' && <p className="move-reply">{REPLIES[m.status]}</p>}
             {m.status === 'started' && later.includes(m.questionId) && (

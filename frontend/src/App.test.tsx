@@ -676,7 +676,7 @@ describe('the daily questions', () => {
     expect(thread).toHaveTextContent('For the rest of today:')
     // One answer is a hint: the honest part waits for a pattern.
     expect(thread).not.toHaveTextContent('The honest part')
-    const moves = within(done).getByRole('group', { name: "Small steps you'll try" })
+    const moves = within(done).getByRole('group', { name: 'One small step for today' })
     expect(moves).toHaveTextContent('Tonight, set one alarm fewer')
     // Something to look forward to: the evening's three themes, and when.
     const later = within(done).getByRole('group', { name: 'Your evening three · 5 pm' })
@@ -2642,7 +2642,7 @@ describe('Stage 5 in the day', () => {
     await answer('Several')
     next()
     expect(await screen.findByRole('heading', { name: 'Your three cards are on this phone. Keep them everywhere.' })).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Not now · keep it on this phone' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Not now — keep it on this phone' }))
     expect(screen.queryByRole('heading', { name: /Keep them everywhere/ })).not.toBeInTheDocument()
     expect(calls(fetchMock, '/api/auth/code')).toHaveLength(0)
     unmount()
