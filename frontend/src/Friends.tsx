@@ -88,7 +88,7 @@ export function FriendQuestion({
   return (
     <section className="card friend-q" aria-labelledby="friend-q-title">
       <p className="friend-q-head">
-        <Avatar name={f.name} size={28} />
+        <Avatar name={f.name} size={32} />
         <span>
           <strong>Today’s friend · {f.name}</strong> · {f.tag} · one question
         </span>
@@ -166,10 +166,9 @@ export function NodPicker({ date }: { date: string }) {
   }
   return (
     <section className="nod-picker" aria-labelledby="nod-title">
-      <h3 id="nod-title" className="title">
-        Send a quiet nod before bed?
+      <h3 id="nod-title" className="nod-title">
+        Send a quiet nod before bed? <span className="muted">No reply needed.</span>
       </h3>
-      <p className="muted small">Optional · no reply needed, nothing to keep up.</p>
       <div className="chips" role="group" aria-label="To">
         {friends.map((f) => (
           <button
@@ -180,7 +179,7 @@ export function NodPicker({ date }: { date: string }) {
             disabled={already.includes(f.id)}
             onClick={() => setTo(to === f.id ? null : f.id)}
           >
-            <Avatar name={f.name} size={22} /> {f.name}
+            <Avatar name={f.name} size={36} /> {f.name}
             {already.includes(f.id) && ' · sent'}
           </button>
         ))}
@@ -260,7 +259,7 @@ export function TogetherAsk({ question }: { question: Question }) {
               )
             }
           >
-            <Avatar name={f.name} size={22} /> {f.name}
+            <Avatar name={f.name} size={36} /> {f.name}
           </button>
         ))}
       </div>

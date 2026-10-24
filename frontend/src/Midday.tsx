@@ -46,9 +46,9 @@ export function StepNudge({ date, evening, onAnswered }: { date: string; evening
   }
   if (evening) {
     return (
-      <div className="nudge" role="group" aria-label="This morning's step">
+      <div className="nudge evening" role="group" aria-label="This morning's step">
         <p className="nudge-text">
-          This morning's step: <span className="nudge-step">{open.step}</span> Did it help?
+          This morning's step — <strong>{open.step}</strong> Did it help?
         </p>
         <div className="nudge-buttons">
           <button type="button" className="btn small amber" onClick={() => answer(open, 'helped')}>
@@ -81,7 +81,7 @@ export function StepNudge({ date, evening, onAnswered }: { date: string; evening
       ) : (
         <>
           <p className="nudge-text">
-            Your morning step, tried it yet? <span className="nudge-step">{open.step}</span>
+            <strong>Your morning step</strong> — tried it yet? <span className="sr-only">{open.step}</span>
           </p>
           <div className="nudge-buttons">
             <button type="button" className="btn small sage" onClick={() => setTried(open.questionId)}>
@@ -116,11 +116,15 @@ export function MiddayScreen({
     <section className="flow-body midday" aria-label="Midday">
       <StepNudge date={date} onAnswered={onDone} />
       {morningOpen && (
-        <div className="card soft row-between">
-          <p>Your morning three are still open until 17:00.</p>
-          <button type="button" className="btn small" onClick={onMorning}>
-            Answer them
-          </button>
+        <div className="nudge" role="group" aria-label="Your morning three">
+          <p className="nudge-text">
+            <strong>Your morning three</strong> — still open until 17:00.
+          </p>
+          <div className="nudge-buttons">
+            <button type="button" className="btn small sage" onClick={onMorning}>
+              Answer them
+            </button>
+          </div>
         </div>
       )}
       {friend}

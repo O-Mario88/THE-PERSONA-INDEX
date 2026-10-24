@@ -606,12 +606,17 @@ function App() {
           live
           label={`Midday · closes in ${left(windowCloses(set.date, 'midday') - Date.now()).text}`}
           onClose={closeFlow}
-          footer={<p className="muted small">Then nothing until 14:30.</p>}
+          footer={
+            <div className="window-foot">
+              {set && <TodaysRead compact date={set.date} themes={themesOf([...morningQs, ...eveningQs])} intimacy={intimacyOn(prefs)} />}
+              <span>Then nothing until 14:30</span>
+            </div>
+          }
         >
           <MiddayScreen
             date={set.date}
             friend={<FriendQuestion date={set.date} today={friendDay} onCircle={() => setTab('circle')} onAnswered={refreshFriend} />}
-            read={read}
+            read={null}
             morningOpen={morning !== 'done' && clockSitting === 'morning'}
             onMorning={() => setFlow('morning')}
             onDone={() => markWindow(set.date, 'midday')}
@@ -620,10 +625,20 @@ function App() {
       )
     } else if (flow === 'afternoon') {
       body = (
-        <Flow tone="afternoon" live label={pulse ? 'Live · afternoon pulse' : 'Afternoon'} onClose={closeFlow}>
+        <Flow
+          tone="afternoon"
+          live
+          label={pulse ? 'Live · afternoon pulse' : 'Afternoon'}
+          onClose={closeFlow}
+          footer={
+            <div className="window-foot">
+              {set && <TodaysRead compact date={set.date} themes={themesOf([...morningQs, ...eveningQs])} intimacy={intimacyOn(prefs)} />}
+              <span>Then the evening at 17:00</span>
+            </div>
+          }
+        >
           {prefs.pulse === undefined && <PulseAsk onAnswer={(on) => changePrefs({ ...prefs, pulse: on })} />}
           {pulse && <PulseScreen questions={morningQs.filter((q) => recalledChoice(q.id))} />}
-          {read}
         </Flow>
       )
     } else if (flow === 'night') {

@@ -24,7 +24,10 @@ export function Flow({
 }) {
   const top = useRef<HTMLDivElement>(null)
   useEffect(() => {
-    top.current?.scrollIntoView?.({ block: 'start' })
+    // To the very top, so the page's own top padding (58px) shows, as designed.
+    const y = top.current ? top.current.getBoundingClientRect().top + window.scrollY : 0
+    if (y < 120) window.scrollTo?.({ top: 0 })
+    else top.current?.scrollIntoView?.({ block: 'start' })
   }, [])
   return (
     <div className={`flow${tone ? ` flow-${tone}` : ''}`} ref={top}>
