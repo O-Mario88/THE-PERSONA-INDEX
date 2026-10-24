@@ -37,7 +37,30 @@ import { changesBetween, changeWords, leaningVerdict, loadHistory, notMeSides, r
 import { addDays } from './storage'
 import { THEMES, themeName, themeStyle, themeVars } from './themes'
 import { honestLine, TRAITS } from './traits'
-import { CHANGES_NOTE, LEANING_REPLIES, STEP_STATUS_WORDS } from './words'
+import {
+  CHANGES_NOTE,
+  LEANING_REPLIES,
+  REACHED_NOTE,
+  reachedLine,
+  ROUTES_NOT,
+  ROUTES_WORKED,
+  SAFETY_ASK,
+  SAFETY_REPLIES,
+  SAFETY_WORDS,
+  STEP_STATUS_WORDS,
+  SUCCESS_TWO,
+} from './words'
+import { NEED_NAMES, NEED_PHRASES } from './needs'
+import {
+  needsBetween,
+  reachedFor,
+  rememberSafety,
+  safetyAnswer,
+  safetyLed,
+  UNCERTAIN,
+  type NeedRead,
+  type Uncertain,
+} from './reaching'
 import { ReadLink } from './Read'
 
 type Span = 'week' | Period
@@ -149,6 +172,12 @@ function MirrorPage({
   // Change against the person's own past, from this phone's history, and the
   // one thing they are working on.
   const [changes] = useState(() => changesBetween(loadHistory(), m.from, m.to).slice(-3))
+  // What the week's answers reached for, and whether those routes got there
+  // in the person's own words (reaching.ts). Also from this phone only.
+  const [needs] = useState(() => {
+    const h = loadHistory()
+    return { top: reachedFor(h, m.from, m.to), all: needsBetween(h, m.from, m.to), safety: safetyLed(h, m.from, m.to) }
+  })
   const [focus] = useState(focusPlan)
   const starter = sentenceStarter(leanings(m.traits, notMe)[0]?.side.lean)
   const moved = m.traits.some((t) => t.history.filter((h) => h.score !== undefined).length >= 2)
@@ -161,6 +190,12 @@ function MirrorPage({
     { key: 'traits', title: 'Your trait read', body: <Traits m={m} />, show: true },
     { key: 'moved', title: "How you've moved", body: <Moved m={m} />, show: moved },
     { key: 'changed', title: 'What changed', body: <Changes changes={changes} />, show: changes.length > 0 },
+    {
+      key: 'reached',
+      title: 'What you reached for',
+      body: <Reached top={needs.top} all={needs.all} safety={needs.safety} week={m.from} />,
+      show: needs.top.length > 0,
+    },
     { key: 'all', title: 'All of you', body: <AllOfYou themes={m.themes} />, show: m.themes.length > 0 },
     {
       key: 'who',
@@ -485,6 +520,77 @@ function Changes({ changes }: { changes: Change[] }) {
   )
 }
 
+// What you reached for: the week's two needs that drove most choices, once
+// each is a pattern, and the routes the person said got them there (the
+// evening's question). Doing well and being respected are kept apart. When
+// feeling safe has come first three weeks running, the mirror asks, never
+// tells, whether something else feels uncertain.
+function Reached({ top, all, safety, week }: { top: NeedRead[]; all: NeedRead[]; safety: boolean; week: string }) {
+  const [first, second] = top
+  const has = (n: NeedRead['need']) => all.some((r) => r.need === n)
+  return (
+    <div className="m-card m-reached">
+      <p className="m-text">{reachedLine(NEED_PHRASES[first.need], second && NEED_PHRASES[second.need])}</p>
+      {top.map((r) => (
+        <Routes key={r.need} read={r} />
+      ))}
+      {has('competence') && has('respect') && <p className="m-note">{SUCCESS_TWO}</p>}
+      {safety && <SafetyAsk week={week} />}
+      <p className="m-note">{REACHED_NOTE}</p>
+    </div>
+  )
+}
+
+function Routes({ read }: { read: NeedRead }) {
+  const worked = read.routes.filter((r) => r.route !== 'no')
+  const not = read.routes.filter((r) => r.route === 'no')
+  if (worked.length === 0 && not.length === 0) return null
+  const list = (rs: NeedRead['routes']) => rs.map((r) => `“${r.label}”`).join(', ')
+  return (
+    <div className="m-routes" role="group" aria-label={NEED_NAMES[read.need]}>
+      <p className="m-trait-name">{NEED_NAMES[read.need]}</p>
+      {worked.length > 0 && (
+        <p>
+          {ROUTES_WORKED}: {list(worked)}.
+        </p>
+      )}
+      {not.length > 0 && (
+        <p>
+          {ROUTES_NOT}: {list(not)}.
+        </p>
+      )}
+    </div>
+  )
+}
+
+function SafetyAsk({ week }: { week: string }) {
+  const [answer, setAnswer] = useState<Uncertain | null>(() => safetyAnswer(week))
+  return (
+    <div className="m-safety" role="group" aria-label="Is something else uncertain?">
+      <p className="m-text">{SAFETY_ASK}</p>
+      {answer ? (
+        <p className="m-note">{SAFETY_REPLIES[answer]}</p>
+      ) : (
+        <div className="m-verdict">
+          {UNCERTAIN.map((u) => (
+            <button
+              key={u}
+              type="button"
+              className="m-chip"
+              onClick={() => {
+                rememberSafety(week, u)
+                setAnswer(u)
+              }}
+            >
+              {SAFETY_WORDS[u]}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function Moved({ m }: { m: MirrorData }) {
   const rows = m.traits.filter((t) => TRAITS[t.trait] && t.history.filter((h) => h.score !== undefined).length >= 2)
   return (
@@ -786,7 +892,7 @@ function Steps({ m, today, reload }: { m: MirrorData; today: string; reload: () 
                   No change yet
                 </button>
                 <button type="button" className="m-chip" onClick={() => mark(s, 'not_tried')}>
-                  Didn't get to it
+                  Not today
                 </button>
               </div>
             )}

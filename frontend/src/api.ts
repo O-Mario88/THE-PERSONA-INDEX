@@ -1,5 +1,6 @@
 // Client for the backend API. Shapes mirror backend/api.go.
 
+import type { Need } from './needs'
 import { markCheckSent, unsentChecks } from './notebook'
 import { addDays, dateOf, daysBetween, keys, load, loadJSON, remove, save, saveJSON } from './storage'
 
@@ -14,12 +15,14 @@ export type Insight = {
   sourceUrl?: string
   strength?: 'strong' | 'moderate' | 'early'
   step: string
+  needStep?: string // a second step, serving what the answer reached for (since 2026-10-24)
 }
 export type Option = {
   id: string
   label: string
   depth?: number
   heavy?: boolean // a heavy answer: its card points to people instead of an insight (since 2026-10-24)
+  need?: Need // what the answer reaches for (needs.ts, since 2026-10-24)
   traits?: Record<string, number>
   insight?: Insight
 }
@@ -346,12 +349,20 @@ export async function deleteEverywhere(today: string): Promise<Deleted> {
 }
 
 // saveStep starts the small step on an answered card, or says how it went.
-export function saveStep(questionId: string, optionId: string, status: StepStatus, date: string): Promise<unknown> {
+// needStep: the person picked the card's second step, the one serving what
+// the answer reached for, so the server's mirror shows those words.
+export function saveStep(
+  questionId: string,
+  optionId: string,
+  status: StepStatus,
+  date: string,
+  needStep = false,
+): Promise<unknown> {
   return withDevice((voterId) =>
     request('/api/steps', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ questionId, optionId, status, date, voterId }),
+      body: JSON.stringify({ questionId, optionId, status, date, voterId, ...(needStep ? { needStep } : {}) }),
     }),
   )
 }
@@ -483,6 +494,8 @@ export function pruneLocal(today: string, wordsDays: number) {
     if (k.startsWith(pickPrefix) && k.slice(pickPrefix.length, pickPrefix.length + 10) < addDays(today, -1)) remove(k)
     // The midday step check's "not yet" (DayClose.tsx), only needed on its day.
     if (k.startsWith('pi.midday.') && k.slice('pi.midday.'.length) < today) remove(k)
+    // What felt uncertain, when the mirror asked (reaching.ts), after five weeks.
+    if (k.startsWith('pi.safety.') && daysBetween(k.slice('pi.safety.'.length), today) > 35) remove(k)
     // A verdict on a mirror leaning (profile.ts), after its five weeks.
     if (k.startsWith(leaningPrefix)) {
       const v = loadJSON(k) as { date?: unknown } | null

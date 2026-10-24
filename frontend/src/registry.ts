@@ -37,6 +37,7 @@ export const REGISTRY: Entry[] = [
   { key: 'pi.rated.', what: 'Whether a card was you, for a week', backup: 'always', merge: 'local', download: true },
   { key: 'pi.pick.', what: 'Which three questions each sitting showed, for the day', backup: 'always', merge: 'local', download: false },
   { key: 'pi.leaning.', what: 'Whether a leaning in your mirror was you, for five weeks', backup: 'always', merge: 'local', download: true },
+  { key: 'pi.safety.', what: 'What you said felt uncertain, when your mirror asked, for five weeks', backup: 'always', merge: 'local', download: true },
   { key: 'pi.nb.', what: 'Your notebook: cards you kept, good things, Sunday sentences, plans and names', backup: 'always', merge: 'newest', download: true },
   { key: 'pi.read.', what: 'Which reads you opened, so they are not offered twice', backup: 'always', merge: 'local', download: false },
   { key: 'pi.words.', what: 'Answers in your own words', backup: 'words', merge: 'local', download: true },

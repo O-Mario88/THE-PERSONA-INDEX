@@ -248,7 +248,16 @@ export function mergeHistory(a: History | null, b: History | null): History {
   const byQ = new Map<string, AnswerRecord>()
   for (const r of [...x.answers, ...y.answers]) {
     const had = byQ.get(r.questionId)
-    if (!had || (!had.verdict && r.verdict)) byQ.set(r.questionId, had ? { ...had, verdict: r.verdict, closer: r.closer } : r)
+    if (!had) {
+      byQ.set(r.questionId, r)
+      continue
+    }
+    // A tap made on either phone joins the answer: the verdict with its
+    // closer reading, and the evening's word on the route with its label.
+    const next = { ...had }
+    if (!had.verdict && r.verdict) Object.assign(next, { verdict: r.verdict, closer: r.closer })
+    if (!had.route && r.route) Object.assign(next, { route: r.route, label: r.label })
+    byQ.set(r.questionId, next)
   }
   const skips = new Map<string, { date: string; theme: string }>()
   for (const s of [...x.skips, ...y.skips]) skips.set(`${s.date}|${s.theme}`, s)

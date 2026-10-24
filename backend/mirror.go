@@ -215,6 +215,9 @@ type StepRequest struct {
 	Status     string `json:"status"`
 	Date       string `json:"date"` // the phone's date
 	VoterID    string `json:"voterId"`
+	// NeedStep says the person picked the step that serves the answer's need
+	// (needs.go) rather than the card's own. Kept from the first save.
+	NeedStep bool `json:"needStep,omitempty"`
 }
 
 // deviceFromHeader reads "Authorization: Device <token>".
@@ -389,11 +392,11 @@ func (s *Server) SaveStep(w http.ResponseWriter, r *http.Request) {
 	i := slices.IndexFunc(answers, func(a MirrorAnswer) bool {
 		return a.QuestionID == req.QuestionID && a.OptionID == req.OptionID && !a.Private()
 	})
-	if i < 0 || s.stepText(answers[i]) == "" {
+	if i < 0 || s.stepFor(answers[i], req.NeedStep) == "" {
 		writeError(w, http.StatusNotFound, "unknown_answer")
 		return
 	}
-	st := MirrorStep{DeviceKey: key, QuestionID: req.QuestionID, OptionID: req.OptionID, Started: req.Date, Status: req.Status, UpdatedAt: s.voteTime()}
+	st := MirrorStep{DeviceKey: key, QuestionID: req.QuestionID, OptionID: req.OptionID, Started: req.Date, Status: req.Status, UpdatedAt: s.voteTime(), NeedStep: req.NeedStep}
 	if err := s.mirror.SaveStep(r.Context(), st); errors.Is(err, ErrDeviceForgotten) {
 		writeError(w, http.StatusGone, "device_forgotten")
 		return
@@ -441,7 +444,12 @@ func (s *Server) question(date, id string) (Question, bool) {
 	return s.questions.lookup(s.bank, date, id)
 }
 
-func (s *Server) stepText(a MirrorAnswer) string {
+// stepText is the card's own step for an answer.
+func (s *Server) stepText(a MirrorAnswer) string { return s.stepFor(a, false) }
+
+// stepFor is the text of a step started on an answer: the card's own, or with
+// needStep the one that serves the need the answer reached for (needs.go).
+func (s *Server) stepFor(a MirrorAnswer, needStep bool) string {
 	if a.Private() {
 		return ""
 	}
@@ -449,10 +457,14 @@ func (s *Server) stepText(a MirrorAnswer) string {
 	if !ok {
 		return ""
 	}
-	if o := optionOf(q, a.OptionID); o != nil && o.Insight != nil {
-		return o.Insight.Step
+	o := optionOf(q, a.OptionID)
+	if o == nil || o.Insight == nil {
+		return ""
 	}
-	return ""
+	if needStep {
+		return needSteps[o.Need]
+	}
+	return o.Insight.Step
 }
 
 // answered is a kept answer with its question, when the bank still has it.
@@ -753,7 +765,7 @@ func (s *Server) buildMirror(ctx context.Context, key, date string) (Mirror, err
 		if !ok {
 			continue
 		}
-		m.Steps = append(m.Steps, StepRead{QuestionID: st.QuestionID, OptionID: st.OptionID, Theme: a.Theme, Step: s.stepText(a.MirrorAnswer),
+		m.Steps = append(m.Steps, StepRead{QuestionID: st.QuestionID, OptionID: st.OptionID, Theme: a.Theme, Step: s.stepFor(a.MirrorAnswer, st.NeedStep),
 			Started: st.Started, Status: st.Status, Edition: editionNumber(a.Date)})
 	}
 	slices.SortStableFunc(m.Steps, func(x, y StepRead) int { return strings.Compare(y.Started, x.Started) })

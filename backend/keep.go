@@ -203,7 +203,7 @@ func (s *Server) buildExport(r *http.Request, deviceID string) (DeviceExport, er
 	for _, st := range steps {
 		x := ExportStep{Started: st.Started, Status: st.Status, Question: cmp.Or(prompts[st.QuestionID], unknownQuestionText)}
 		if a, ok := byQuestion[st.QuestionID]; ok {
-			x.Step = s.stepText(a)
+			x.Step = s.stepFor(a, st.NeedStep)
 		}
 		e.Steps = append(e.Steps, x)
 	}

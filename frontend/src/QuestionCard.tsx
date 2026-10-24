@@ -42,6 +42,7 @@ import { loadPeople, namesLine } from './people'
 import { PeopleEditor } from './People'
 import { DEFAULT_WORDS_DAYS } from './prefs'
 import { isLowMood, loadHistory, recalledAnswer, recordAnswer, recordSkip, recordVerdict, threadLine } from './profile'
+import { isNeed, reachingLine, type Need } from './needs'
 import { splitReveal } from './reveal'
 import { onOtherTab } from './storage'
 import { themeName, themeStyle, themeVars } from './themes'
@@ -431,13 +432,16 @@ function Answer({
         <InsightPanel
           reveal={insight.reveal}
           otherSide={insight.otherSide}
+          reach={notMe || !isNeed(option.need) ? null : option.need}
           thread={notMe ? null : thread}
           focus={notMe ? null : focus}
         />
       )}
       {insight && <KeepThis question={question} option={option} words={words} date={date} />}
       {insight && isLowMood(question.theme, option.depth) && <Helpline />}
-      {insight?.step && <TryThis question={question} option={option} step={insight.step} date={date} />}
+      {insight?.step && (
+        <TryThis question={question} option={option} step={insight.step} needStep={insight.needStep} date={date} />
+      )}
       {insight && (
         <Rate
           question={question}
@@ -500,11 +504,13 @@ function HeavyCard() {
 function InsightPanel({
   reveal,
   otherSide,
+  reach,
   thread,
   focus,
 }: {
   reveal: string
   otherSide?: string
+  reach: Need | null // what the answer reached for: one soft line (needs.ts)
   thread: string | null
   focus: Plan | null
 }) {
@@ -513,6 +519,7 @@ function InsightPanel({
     <div className="insight" role="note" aria-label="What your answer may say">
       <p className="insight-headline">{headline}</p>
       {body && <p className="insight-body">{body}</p>}
+      {reach && <p className="insight-reach">{reachingLine(reach)}</p>}
       {otherSide && (
         <p className="insight-other">
           <span className="eyebrow">The other side</span> {otherSide}
@@ -591,22 +598,57 @@ function KeepThis({ question, option, words, date }: { question: Question; optio
 // the evening asks how a morning step went, and the mirror keeps them all.
 // "My own idea" lets the person put it their own way, as their one plan,
 // kept on this phone.
-function TryThis({ question, option, step, date }: { question: Question; option: Option; step: string; date: string }) {
+function TryThis({
+  question,
+  option,
+  step,
+  needStep,
+  date,
+}: {
+  question: Question
+  option: Option
+  step: string
+  needStep?: string // the second step, serving what the answer reached for
+  date: string
+}) {
   const [state, setState] = useState<'open' | 'started' | 'later' | 'own' | 'planned'>(() =>
     moveFor(question.id) ? 'started' : 'open',
   )
   const [evening] = useState(() => isEvening())
+  // Two steps to pick from when the card has a second one (Stage 2 of the
+  // proposal of 2026-10-24: the person chooses), the card's own first.
+  const choices = needStep && needStep !== step ? [step, needStep] : [step]
+  const [pick, setPick] = useState(0)
+  const started = state === 'started' ? (moveFor(question.id)?.step ?? choices[pick]) : null
   function start() {
     setState('started')
-    startMove(date, question.id, option.id, step).catch(() => {
+    startMove(date, question.id, option.id, choices[pick], Date.now(), pick === 1).catch(() => {
       // kept on the phone, and sent again when the app next opens
     })
   }
   return (
     <div className="try" role="group" aria-label="Something to try">
-      <p>
-        <strong>Something you could try:</strong> {step}
-      </p>
+      {started ? (
+        <p>
+          <strong>Something you'll try:</strong> {started}
+        </p>
+      ) : choices.length === 1 ? (
+        <p>
+          <strong>Something you could try:</strong> {step}
+        </p>
+      ) : (
+        <fieldset className="try-choices">
+          <legend>
+            <strong>Something you could try:</strong> pick one.
+          </legend>
+          {choices.map((c, i) => (
+            <label key={i} className="try-choice">
+              <input type="radio" name={`try-${question.id}`} checked={pick === i} onChange={() => setPick(i)} />
+              <span>{c}</span>
+            </label>
+          ))}
+        </fieldset>
+      )}
       {state === 'open' && (
         <div className="try-buttons">
           <button type="button" className="pill-button" onClick={start}>

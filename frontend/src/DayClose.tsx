@@ -7,11 +7,22 @@ import { GoodThings, PlanCheckCard, PlanOffer } from './Keep'
 import { movesOn, setMoveStatus, startedInEvening, type Move } from './moves'
 import { planToCheck } from './notebook'
 import type { Practice } from './practices'
-import { heavyPause, isLowMood, loadHistory, type AnswerRecord, type History } from './profile'
+import { heavyPause, isLowMood, loadHistory, recordRoute, type AnswerRecord, type History, type Route } from './profile'
+import { NEED_PHRASES } from './needs'
+import { routeToAsk } from './reaching'
 import { loadJSON, saveJSON } from './storage'
 import { Upcoming } from './Sittings'
 import { themeName, themeStyle, themeVars } from './themes'
-import { NO_STEP, QUIET_DAY, STEP_REPLIES as REPLIES, SUNDAY_LINE } from './words'
+import {
+  NO_STEP,
+  QUIET_DAY,
+  ROUTE_ASK,
+  ROUTE_REPLIES,
+  ROUTE_WORDS,
+  routeLead,
+  STEP_REPLIES as REPLIES,
+  SUNDAY_LINE,
+} from './words'
 
 // The close of each sitting. The morning's: what the answers add up to,
 // honestly, the small steps picked and what opens at 5 pm. The evening's: how
@@ -94,6 +105,7 @@ export function DayClose(props: Props) {
       ) : (
         <>
           <MoveCheck date={date} />
+          {!paused && <RouteCheck date={date} morning={props.morning} />}
           <ForTomorrow
             answers={[...answersIn(history, props.morning, date), ...mine]}
             history={history}
@@ -293,7 +305,7 @@ export function StepCheck({ date, label, pick }: { date: string; label: string; 
                     No change yet
                   </button>
                   <button type="button" className="option" onClick={() => answer(m, 'not_tried')}>
-                    Didn't get to it
+                    Not today
                   </button>
                 </div>
               </>
@@ -301,6 +313,41 @@ export function StepCheck({ date, label, pick }: { date: string; label: string; 
           </li>
         ))}
       </ul>
+    </div>
+  )
+}
+
+// One morning choice, asked about at the close of the evening: does that
+// route usually get the person what they were after? This is how the app
+// learns which routes work for this person, from the person (Stage 2 of the
+// proposal of 2026-10-24). The answer stays on this phone.
+function RouteCheck({ date, morning }: { date: string; morning: Question[] }) {
+  const [ask] = useState(() => routeToAsk(loadHistory(), morning, date))
+  const [route, setRoute] = useState<Route | null>(ask?.record.route ?? null)
+  if (!ask) return null
+  function tap(r: Route) {
+    if (!ask) return
+    recordRoute(ask.question.id, r, ask.label)
+    setRoute(r)
+  }
+  return (
+    <div className="moves route" role="group" aria-label="This morning's choice">
+      <p className="eyebrow">This morning's choice</p>
+      <p>{routeLead(ask.label, NEED_PHRASES[ask.record.need])}</p>
+      {route ? (
+        <p className="move-reply">{ROUTE_REPLIES[route]}</p>
+      ) : (
+        <>
+          <p className="muted">{ROUTE_ASK}</p>
+          <div className="move-buttons">
+            {(Object.keys(ROUTE_WORDS) as Route[]).map((r) => (
+              <button key={r} type="button" className="option" onClick={() => tap(r)}>
+                {ROUTE_WORDS[r]}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   )
 }

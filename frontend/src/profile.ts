@@ -18,6 +18,7 @@
 //   are kept) carry trait weights but no depth, so they never move interest.
 
 import type { Question, Verdict } from './api'
+import { isNeed, type Need } from './needs'
 import { addDays, loadJSON, remove, saveJSON } from './storage'
 import { TRAITS, type TraitSide } from './traits'
 
@@ -34,7 +35,12 @@ export type AnswerRecord = {
   closer?: { optionId: string; traits: Record<string, number> } // after "Not me": the reading picked as closer
   evening?: true
   heavy?: true // a heavy answer (since 2026-10-24)
+  need?: Need // what the answer reached for (since 2026-10-24)
+  route?: Route // the evening's "Does that route usually get you there?"
+  label?: string // the option's label, kept once a route is tapped, for the mirror
 }
+// How well a route gets the person to what they were after, in their words.
+export type Route = 'yes' | 'bit' | 'no'
 export type History = { answers: AnswerRecord[]; skips: { date: string; theme: string }[] }
 
 const DAY = 86400_000
@@ -72,8 +78,20 @@ export function recordAnswer(q: Question, optionId: string, date: string) {
     traits: o.traits ?? {},
     optionId,
     ...(o.heavy ? { heavy: true as const } : {}),
+    ...(isNeed(o.need) ? { need: o.need } : {}),
   })
   saveHistory(h, date)
+}
+
+// recordRoute keeps the person's word on whether an answer's route usually
+// gets them what they were after, with the answer's label for the mirror.
+export function recordRoute(questionId: string, route: Route, label: string) {
+  const h = loadHistory()
+  const a = h.answers.find((x) => x.questionId === questionId)
+  if (!a) return
+  a.route = route
+  a.label = label
+  saveHistory(h, a.date)
 }
 
 // recordVerdict keeps the tap under a card with its answer, and after "Not
@@ -246,7 +264,7 @@ export function earned(h: History, today: string, trait: string, high: boolean):
   return { level, answers, days: dates.size, weeks: mondays.size }
 }
 
-function mondayOf(date: string): string {
+export function mondayOf(date: string): string {
   const day = new Date(`${date}T00:00:00Z`).getUTCDay()
   return addDays(date, -((day + 6) % 7))
 }

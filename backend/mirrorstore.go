@@ -65,6 +65,7 @@ type MirrorStep struct {
 	Started    string // YYYY-MM-DD, the phone's date when the step was first saved
 	Status     string
 	UpdatedAt  time.Time
+	NeedStep   bool // the step that serves the answer's need, not the card's own (needs.go)
 }
 
 func (s MirrorStep) Tried() bool { return s.Status == stepHelped || s.Status == stepNoChange }
@@ -226,7 +227,7 @@ func (m *memoryStore) SaveStep(_ context.Context, s MirrorStep) error {
 		m.mirror.steps[s.DeviceKey] = byQ
 	}
 	if prev, ok := byQ[s.QuestionID]; ok {
-		s.Started = prev.Started
+		s.Started, s.NeedStep = prev.Started, prev.NeedStep
 	}
 	byQ[s.QuestionID] = s
 	return nil

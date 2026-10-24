@@ -1003,7 +1003,7 @@ describe('the evening, from 5 pm', () => {
     expect(within(moves).getAllByRole('button').map((b) => b.textContent)).toEqual([
       'It helped',
       'No change yet',
-      "Didn't get to it",
+      'Not today',
     ])
     fireEvent.click(within(moves).getByRole('button', { name: 'It helped' }))
     expect(moves).toHaveTextContent('Glad it helped.')
@@ -2326,5 +2326,124 @@ describe('Sunday', () => {
     expect(steps).toHaveTextContent('Glad it helped.')
     await waitFor(() => expect(calls(fetchMock, '/api/steps')).toHaveLength(1))
     expect(bodyOf(calls(fetchMock, '/api/steps')[0])).toMatchObject({ questionId: 'q1', status: 'helped', date: '2026-10-18' })
+  })
+})
+
+// Stage 2 of the proposal of 2026-10-24 ("What you're reaching for"): every
+// answer names the need it reached for, in one soft line; the card offers a
+// second step for that need; the evening asks whether the morning's route
+// usually gets the person there; and the mirror shows what the week reached
+// for. All of it read from this phone, never sent.
+const calmStep = "If something knocks you back today, talk to yourself the way you'd talk to a good friend."
+const [dishes, ...restOfMorning] = today.questions
+const reaching: DailySet = {
+  ...today,
+  questions: [
+    {
+      ...dishes,
+      options: [
+        { ...dishes.options[0], depth: 1, need: 'calm', insight: { ...dishes.options[0].insight!, needStep: calmStep } },
+        dishes.options[1],
+      ],
+    },
+    ...restOfMorning,
+  ],
+}
+const seedHistory = (answers: object[]) => localStorage.setItem('pi.history.v1', JSON.stringify({ answers, skips: [] }))
+const needAnswer = (date: string, need: string, more: object = {}) => ({
+  date,
+  questionId: `${date}-${need}-${Math.random().toString(36).slice(2, 7)}`,
+  theme: 'work-career',
+  depth: 2,
+  traits: {},
+  need,
+  ...more,
+})
+
+describe("what you're reaching for", () => {
+  it('names what an answer reached for, and lets the person pick the step that serves it', async () => {
+    const fetchMock = stubApi({ edition: { status: 200, body: reaching } })
+    render(<App />)
+    await answer('Right after eating')
+    expect(screen.getByText('Sounds like feeling settled mattered most here.')).toBeInTheDocument()
+
+    const tryIt = screen.getByRole('group', { name: 'Something to try' })
+    expect(within(tryIt).getByRole('radio', { name: 'Next time a small task appears, notice the itch to finish it.' })).toBeChecked()
+    fireEvent.click(within(tryIt).getByRole('radio', { name: calmStep }))
+    fireEvent.click(within(tryIt).getByRole('button', { name: "I'll try it" }))
+    expect(tryIt).toHaveTextContent(`Something you'll try: ${calmStep}`)
+    await waitFor(() => expect(calls(fetchMock, '/api/steps')).toHaveLength(1))
+    expect(bodyOf(calls(fetchMock, '/api/steps')[0])).toMatchObject({
+      questionId: 'q-dishes',
+      optionId: 'right-away',
+      status: 'started',
+      needStep: true,
+    })
+    expect(JSON.parse(localStorage.getItem('pi.moves.v1')!)[0]).toMatchObject({ step: calmStep, needStep: true })
+    expect(JSON.parse(localStorage.getItem('pi.history.v1')!).answers[0]).toMatchObject({ questionId: 'q-dishes', need: 'calm' })
+  })
+
+  it('offers one step, and no line, when the answer names no need', async () => {
+    stubApi({})
+    render(<App />)
+    await answer('Right after eating')
+    expect(screen.queryByText(/mattered most here/)).not.toBeInTheDocument()
+    expect(within(screen.getByRole('group', { name: 'Something to try' })).queryByRole('radio')).not.toBeInTheDocument()
+  })
+
+  it("asks in the evening whether the morning's route usually gets you there, and keeps the answer on the phone", async () => {
+    answeredThisMorning()
+    localStorage.setItem('pi.pick.2026-10-12', JSON.stringify(['q-dishes', 'q-bill', 'q-alarm']))
+    seedHistory([{ date: '2026-10-12', questionId: 'q-dishes', theme: 'habits', depth: 1, traits: {}, optionId: 'right-away', need: 'calm' }])
+    vi.setSystemTime(at(19))
+    const fetchMock = stubApi({ edition: { status: 200, body: reaching } })
+    render(<App />)
+    const day = await screen.findByRole('region', { name: "That's your day." })
+    const choice = within(day).getByRole('group', { name: "This morning's choice" })
+    expect(choice).toHaveTextContent('This morning you chose “Right after eating”. It sounded like feeling settled mattered there.')
+    expect(choice).toHaveTextContent('Does that route usually get you there?')
+    expect(within(choice).getAllByRole('button').map((b) => b.textContent)).toEqual(['Yes', 'A bit', 'Not really'])
+    fireEvent.click(within(choice).getByRole('button', { name: 'A bit' }))
+    expect(choice).toHaveTextContent('Noted. Part of the way there still counts.')
+    expect(within(choice).queryByRole('button')).not.toBeInTheDocument()
+    expect(JSON.parse(localStorage.getItem('pi.history.v1')!).answers[0]).toMatchObject({ route: 'bit', label: 'Right after eating' })
+    for (const [, init] of fetchMock.mock.calls) expect(String(init?.body ?? '')).not.toContain('route')
+  })
+
+  it('shows in the mirror what the week reached for, with the routes the person named', async () => {
+    seedHistory([
+      needAnswer('2026-10-12', 'respect', { route: 'no', label: 'Say nothing and stew' }),
+      needAnswer('2026-10-13', 'respect'),
+      needAnswer('2026-10-13', 'respect'),
+      needAnswer('2026-10-13', 'competence', { route: 'yes', label: 'Make a list first' }),
+      needAnswer('2026-10-14', 'competence'),
+      needAnswer('2026-10-15', 'competence'),
+      needAnswer('2026-10-15', 'calm', { theme: 'intimacy' }), // never counted
+    ])
+    await openMirror()
+    const page = screen.getByRole('region', { name: 'Your weekly mirror' })
+    const section = (await within(page).findByRole('heading', { name: /What you reached for/ })).closest('section')!
+    expect(section).toHaveTextContent('Most of your choices this week reached for doing well and being respected.')
+    expect(within(section).getByRole('group', { name: 'Doing well' })).toHaveTextContent('What got you there: “Make a list first”.')
+    expect(within(section).getByRole('group', { name: 'Being respected' })).toHaveTextContent("What didn't: “Say nothing and stew”.")
+    expect(section).toHaveTextContent('Doing well and being respected are kept apart here')
+    expect(section).toHaveTextContent('Counted from your own answers this week, nothing else.')
+    expect(section).not.toHaveTextContent('feeling settled')
+    expect(within(section).queryByRole('group', { name: 'Is something else uncertain?' })).not.toBeInTheDocument()
+  })
+
+  it('asks, never tells, when feeling safe has come first three weeks running', async () => {
+    seedHistory(
+      ['2026-09-28', '2026-09-29', '2026-10-01', '2026-10-05', '2026-10-06', '2026-10-06', '2026-10-12', '2026-10-13', '2026-10-14'].map(
+        (d) => needAnswer(d, 'security'),
+      ),
+    )
+    await openMirror()
+    const ask = await screen.findByRole('group', { name: 'Is something else uncertain?' })
+    expect(ask).toHaveTextContent('Feeling safe came first again. Is something else feeling uncertain right now?')
+    fireEvent.click(within(ask).getByRole('button', { name: 'Money' }))
+    expect(ask).toHaveTextContent('Thanks for saying.')
+    expect(within(ask).queryByRole('button')).not.toBeInTheDocument()
+    expect(JSON.parse(localStorage.getItem('pi.safety.2026-10-12')!)).toBe('money')
   })
 })

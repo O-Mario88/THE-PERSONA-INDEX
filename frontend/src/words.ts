@@ -4,6 +4,7 @@
 import type { StepStatus, Verdict } from './api'
 import { BALANCED } from './advice'
 import { HELPLINE_LINE } from './Helpline'
+import { NEEDS, reachingLine } from './needs'
 
 // Saturday looks ahead to Sunday, the review day.
 export const SUNDAY_LINE = 'Tomorrow is Sunday: no new questions, just your week in the mirror.'
@@ -86,6 +87,34 @@ export const CHANGES_NOTE = 'Set against your own earlier answers only.'
 export const SWAP_NOTE = 'This takes the place of your current plan. The old one stays in your notebook.'
 export const SAME_FOCUS = "You're already working on this one."
 
+// What you're reaching for (Stage 2 of the proposal of 2026-10-24). The
+// evening asks about one morning choice; the mirror shows the needs that
+// came up most and the routes that got there (reaching.ts).
+export const routeLead = (label: string, phrase: string) =>
+  `This morning you chose “${label}”. It sounded like ${phrase} mattered there.`
+export const ROUTE_ASK = 'Does that route usually get you there?'
+export const ROUTE_WORDS = { yes: 'Yes', bit: 'A bit', no: 'Not really' } as const
+export const ROUTE_REPLIES = {
+  yes: 'Good to know. A route that works is worth knowing by name.',
+  bit: 'Noted. Part of the way there still counts.',
+  no: 'Worth knowing. Next time it comes up, you might notice what else could get you there.',
+} as const
+export const reachedLine = (a: string, b?: string) =>
+  b ? `Most of your choices this week reached for ${a} and ${b}.` : `Most of your choices this week reached for ${a}.`
+export const ROUTES_WORKED = 'What got you there'
+export const ROUTES_NOT = "What didn't"
+export const REACHED_NOTE = 'Counted from your own answers this week, nothing else.'
+export const SUCCESS_TWO = 'Doing well and being respected are kept apart here: one is about the work itself, the other about how it is seen.'
+export const SAFETY_ASK = 'Feeling safe came first again. Is something else feeling uncertain right now?'
+export const SAFETY_WORDS = { money: 'Money', people: 'People', work: 'Work', health: 'Health', nothing: 'Nothing really' } as const
+export const SAFETY_REPLIES = {
+  money: 'Thanks for saying. Money worries pull everything towards safety. If it helps, look at one money matter this week. Just look.',
+  people: 'Thanks for saying. When things with people feel unsure, safety comes first. One message to someone steady is a start.',
+  work: "Thanks for saying. When work feels unsure, the rest can feel less safe too. You've named it, and that counts.",
+  health: 'Thanks for saying. Health worries are heavy to carry alone. Telling one person can make them lighter.',
+  nothing: "Then feeling safe may simply be what steadies you. That's allowed.",
+} as const
+
 // After a plan is checked.
 export const PLAN_REPLIES = {
   did: "You did it. That's the plan becoming a habit, one go at a time.",
@@ -121,4 +150,16 @@ export const FIXED_WORDS: [string, string][] = [
   ['swap note', SWAP_NOTE],
   ['same focus', SAME_FOCUS],
   ...Object.entries(PLAN_REPLIES).map(([k, v]): [string, string] => [`plan reply ${k}`, v]),
+  ...NEEDS.map((n): [string, string] => [`reaching line ${n}`, reachingLine(n)]),
+  ['route lead', routeLead('Call a friend', 'being close to people')],
+  ['route ask', ROUTE_ASK],
+  ...Object.entries(ROUTE_REPLIES).map(([k, v]): [string, string] => [`route reply ${k}`, v]),
+  ['reached line', reachedLine('feeling settled', 'being close to people')],
+  ['reached line one', reachedLine('doing well')],
+  ['routes worked', ROUTES_WORKED],
+  ['routes not', ROUTES_NOT],
+  ['reached note', REACHED_NOTE],
+  ['success two', SUCCESS_TWO],
+  ['safety ask', SAFETY_ASK],
+  ...Object.entries(SAFETY_REPLIES).map(([k, v]): [string, string] => [`safety reply ${k}`, v]),
 ]

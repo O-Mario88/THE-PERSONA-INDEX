@@ -46,6 +46,26 @@ Four findings shape how the app talks about them:
 
 Personality decides which need shouts loudest, not whether it matters.
 
+### Tagging an answer option
+
+Every option in the bank carries one `need`, and the gate refuses an option without one. The ids are `freedom` (choosing for yourself), `belonging` (being close to people), `respect` (being respected), `competence` (doing well), `security` (feeling safe, having enough), `calm` (feeling settled) and `understood` (being understood).
+
+Tag by these rules, in order:
+
+1. **Tag what the choice reaches for in that moment:** what the person would get if the choice worked. Read the label first, then the card's reveal, which usually names it.
+2. **One need per option.** If two fit, take the one the reveal leans on. If they are still tied, take the one closest to the moment in the question.
+3. **Options of one question may share a need.** They differ in route, not always in need. Don't spread tags out for variety.
+4. **Avoiding something is tagged by what it protects:** money or safety is `security`, inner peace or rest is `calm`, a relationship is `belonging`, face or image is `respect`.
+5. **Pleasing people:** to stay close is `belonging`; to avoid looking bad is `respect`.
+6. **Your own way:** saying no, your own pace, not being told, privacy, novelty and treats you picked for yourself are `freedom`.
+7. **Success is two needs.** Doing it well, learning or finishing is `competence`. Being seen, praised or looking good is `respect`.
+8. **Money:** saving, a safety net or avoiding risk is `security`; spending for comfort or rest is `calm`; spending on people is `belonging`; spending to be seen is `respect`.
+9. **Honesty about yourself,** being heard or being seen as you are is `understood`.
+10. **A heavy option is tagged by what is missing:** left out or forgotten is `belonging`, controlled is `freedom`, worthless is `respect`, frightened or in debt is `security`, and worn out or hopeless is `calm`.
+11. **A light or "I didn't" option** is tagged by what not doing it kept: ease is `calm`, privacy or your own pace is `freedom`.
+
+The card shows the need as one soft line after the reveal ("Sounds like feeling settled mattered most here"). The evening asks whether the morning's route usually gets the person there, and the weekly mirror shows the two needs that came up most and the routes that worked. A need is shown, never scored, and intimacy answers stay out of the mirror's count.
+
 ## Questions and answer options
 
 Rules:
@@ -188,5 +208,8 @@ The app never shows a source, but every card's research must be accurate:
 | Heavy only on a deep answer outside intimacy | `backend/content.go` |
 | Heavy cards show people and a helpline, never an insight | `frontend/src/QuestionCard.tsx`, tested in `App.test.tsx` |
 | Change shown only against your own past | `frontend/src/profile.ts` (`changeAt`), tested in `profile.test.ts` |
+| Every answer option names one of the seven needs | `backend/content.go` (gate), ids kept in step with `frontend/src/needs.ts` by `needs_test.go` |
+| Need steps follow the voice rules | `backend/voice.go`, `backend/content.go` (length) |
+| What a week reached for counts only your own answers, never intimacy, heavy or "Not me" | `frontend/src/reaching.ts`, tested in `reaching.test.ts` |
 
 Run `cd backend && go test ./...` and `cd frontend && npm test` after any change to the bank or the app's words.

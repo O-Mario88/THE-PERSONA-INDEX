@@ -33,6 +33,9 @@ type Insight struct {
 	SourceURL   string `json:"sourceUrl,omitempty"`
 	Strength    string `json:"strength,omitempty"` // strong | moderate | early; absent when there is no research
 	Step        string `json:"step"`
+	// NeedStep is the second step on offer: one that serves the need the
+	// answer reached for (needs.go). The person picks one, or writes their own.
+	NeedStep string `json:"needStep,omitempty"`
 }
 
 type bankFile struct {
@@ -58,6 +61,9 @@ type bankOption struct {
 	// of the insight (the proposal of 2026-10-24, "Heavy answers point to
 	// people"). Set by content review, never inferred.
 	Heavy bool `json:"heavy,omitempty"`
+	// Need is what the answer reaches for, one of the seven in needs.go,
+	// tagged by the fixed rules in docs/writing-guide.md.
+	Need string `json:"need"`
 }
 
 type bankInsight struct {
@@ -231,6 +237,9 @@ func validateBank(b bankFile) []error {
 			if o.Heavy && (o.Depth < 3 || themes[q.Theme].care == careIntimate) {
 				fail("%s: only a deep answer outside intimacy can be heavy", ow)
 			}
+			if !validNeed(o.Need) {
+				fail("%s: need %q is not one of the seven in needs.go", ow, o.Need)
+			}
 			if len(o.Traits) > 2 {
 				fail("%s: at most 2 trait weights", ow)
 			}
@@ -303,6 +312,10 @@ func validateBank(b bankFile) []error {
 		if src.Strength != "strong" && src.Strength != "moderate" && src.Strength != "early" {
 			fail("%s: strength %q is not strong, moderate or early", where, src.Strength)
 		}
+	}
+
+	for need, step := range needSteps {
+		checkText(fail, "need step "+need, step, 20, 160)
 	}
 
 	for name := range themes {
@@ -586,11 +599,11 @@ func shuffled(n int, area string, cycle int) []int {
 func (contentBank) dailyQuestion(q bankQuestion, date string) Question {
 	out := Question{ID: date + "-" + q.ID, Theme: q.Theme, Care: themes[q.Theme].care, Prompt: q.Prompt}
 	for _, o := range q.Options {
-		in := &Insight{Reveal: o.Insight.Reveal, OtherSide: o.Insight.OtherSide, Step: o.Insight.Step}
+		in := &Insight{Reveal: o.Insight.Reveal, OtherSide: o.Insight.OtherSide, Step: o.Insight.Step, NeedStep: needSteps[o.Need]}
 		if src, ok := sources[o.Insight.Source]; ok {
 			in.Research, in.SourceTitle, in.SourceURL, in.Strength = o.Insight.Research, src.Title, src.URL, o.Insight.Strength
 		}
-		out.Options = append(out.Options, Option{ID: o.ID, Label: o.Label, Depth: o.Depth, Heavy: o.Heavy, Traits: o.Traits, Insight: in})
+		out.Options = append(out.Options, Option{ID: o.ID, Label: o.Label, Depth: o.Depth, Heavy: o.Heavy, Need: o.Need, Traits: o.Traits, Insight: in})
 	}
 	return out
 }
