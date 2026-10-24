@@ -32,6 +32,7 @@ import { SettingsScreen } from './Settings'
 import { themeVars } from './themes'
 import { openThisWeek, sendUnsent } from './moves'
 import { forgetPick, loadHistory, todaysPick, writeFirstOf, type Half } from './profile'
+import { CountryAsk } from './Country'
 import { intimacyOn, loadPrefs, savePrefs, type Prefs } from './prefs'
 import { onOtherTab } from './storage'
 import { startBackups } from './vault'
@@ -389,6 +390,9 @@ function App() {
                         />
                       )
                     ))}
+                  {flow.at >= steps.length && steps.length > 0 && prefs.country === undefined && (
+                    <CountryAsk onAnswer={(country) => changePrefs({ ...prefs, country })} />
+                  )}
                 </>
               )}
             </div>

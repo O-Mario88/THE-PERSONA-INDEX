@@ -34,13 +34,13 @@ import {
   type Verdict,
 } from './api'
 import { isEvening } from './day'
-import { Helpline, HELPLINE_URL } from './Helpline'
+import { Helpline } from './Helpline'
 import { moveFor, startMove } from './moves'
 import { focusPlan, keepCard, keptCard, makePlan, noteVerdict, unkeepCard, type Plan } from './notebook'
 import { inOrder } from './order'
 import { loadPeople, namesLine } from './people'
 import { PeopleEditor } from './People'
-import { DEFAULT_WORDS_DAYS } from './prefs'
+import { DEFAULT_WORDS_DAYS, helplineHere } from './prefs'
 import { isLowMood, loadHistory, recalledAnswer, recordAnswer, recordSkip, recordVerdict, threadLine } from './profile'
 import { isNeed, reachingLine, type Need } from './needs'
 import { splitReveal } from './reveal'
@@ -492,7 +492,7 @@ function HeavyCard() {
       <Helpline />
       <p className="helpline">
         {CRISIS_LINE}{' '}
-        <a href={HELPLINE_URL} target="_blank" rel="noreferrer">
+        <a href={helplineHere()} target="_blank" rel="noreferrer">
           Talk to someone now
         </a>
       </p>

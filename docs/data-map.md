@@ -30,7 +30,7 @@ Every key is named in one registry, `frontend/src/registry.ts`, which also says 
 | Per-question notes: the option tapped, a vote waiting to send, when it was answered, the card's "That's me", "Partly" or "Not me" and that tap while it waits to send | `pi.choice.`, `pi.pending.`, `pi.at.`, `pi.rated.`, `pi.unrated.` + question id | Eight days past the question's day (`NOTES_KEPT_DAYS`), longer than any question takes votes | A waiting vote or card tap is sent again with its original key; the rest never |
 | The three questions each sitting showed | `pi.pick.<date>` and `pi.pick.<date>.pm` | Yesterday and today | Never |
 | The day's questions, for opening offline | `pi.edition.<date>` | Yesterday, today and tomorrow | Public content, nothing personal |
-| Settings: 18+ answer, keep it mild, how long own words stay | `pi.prefs.v1` | Until deleted | Only sealed in the backup |
+| Settings: 18+ answer, keep it mild, how long own words stay, and the country the person said they live in (or "Prefer not to say"), guessed only from the phone's own time zone, on the phone | `pi.prefs.v1` | Until deleted | Only sealed in the backup. The country is never sent; tapping "Find a helpline" opens that country's page on Find A Helpline, so that site sees it only then |
 
 Everything marked *always* in the registry, and own words when switched on, also leaves the phone sealed, in the backup (below), if the person turns the backup on. Nothing else in this table is sent as it is.
 

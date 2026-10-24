@@ -1,0 +1,47 @@
+import { beforeEach, describe, expect, it } from 'vitest'
+import { COUNTRY_CODES, countriesByName, countryName, guessCountry, helplineFor, isCountry } from './country'
+import { countryOf, helplineHere, loadPrefs, savePrefs } from './prefs'
+import { saveJSON } from './storage'
+
+beforeEach(() => localStorage.clear())
+
+describe('where someone lives', () => {
+  it("guesses from the phone's own time zone, old names included", () => {
+    expect(guessCountry('Africa/Lagos')).toBe('NG')
+    expect(guessCountry('Africa/Nairobi')).toBe('KE')
+    expect(guessCountry('Asia/Kolkata')).toBe('IN')
+    expect(guessCountry('Asia/Calcutta')).toBe('IN')
+    expect(guessCountry('America/Lima')).toBe('PE')
+    expect(guessCountry('Europe/London')).toBe('GB')
+    expect(guessCountry('UTC')).toBeNull()
+    expect(guessCountry('Nowhere/Special')).toBeNull()
+  })
+
+  it('lists every country with a time zone, by its everyday name', () => {
+    expect(COUNTRY_CODES.length).toBeGreaterThan(240)
+    expect(countryName('KE')).toBe('Kenya')
+    const names = countriesByName().map((c) => c.name)
+    expect(names).toContain('Ghana')
+    expect([...names].sort((a, b) => a.localeCompare(b, 'en-GB'))).toEqual(names)
+    expect(isCountry('ZZ')).toBe(false)
+  })
+
+  it("points help to the person's own country, or to the directory's front page", () => {
+    expect(helplineFor('KE')).toBe('https://findahelpline.com/countries/ke')
+    expect(helplineFor(null)).toBe('https://findahelpline.com')
+    expect(helplineFor('ZZ')).toBe('https://findahelpline.com')
+  })
+
+  it('is kept in the settings on this phone, "Prefer not to say" included', () => {
+    expect(loadPrefs().country).toBeUndefined()
+    savePrefs({ ...loadPrefs(), country: 'GH' })
+    expect(countryOf(loadPrefs())).toBe('GH')
+    expect(helplineHere()).toBe('https://findahelpline.com/countries/gh')
+    savePrefs({ ...loadPrefs(), country: 'none' })
+    expect(loadPrefs().country).toBe('none')
+    expect(countryOf(loadPrefs())).toBeNull()
+    expect(helplineHere()).toBe('https://findahelpline.com')
+    saveJSON('pi.prefs.v1', { adult: null, mild: false, wordsDays: 35, country: 'Narnia' })
+    expect(loadPrefs().country).toBeUndefined()
+  })
+})

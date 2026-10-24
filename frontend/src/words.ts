@@ -115,6 +115,13 @@ export const SAFETY_REPLIES = {
   nothing: "Then feeling safe may simply be what steadies you. That's allowed.",
 } as const
 
+// Where someone lives (country.ts): asked once, after a sitting, and in Settings.
+export const COUNTRY_ASK = 'Where do you live now?'
+export const COUNTRY_WHY = 'So your questions, and the help I point to, fit where you are. It stays on this phone.'
+export const COUNTRY_SETTING = 'It picks the helpline I point to on a heavy day. It stays on this phone, and goes in your backup only if you turn the backup on.'
+export const COUNTRY_KEEP = 'Keep this'
+export const COUNTRY_NONE = 'Prefer not to say'
+
 // After a plan is checked.
 export const PLAN_REPLIES = {
   did: "You did it. That's the plan becoming a habit, one go at a time.",
@@ -161,5 +168,7 @@ export const FIXED_WORDS: [string, string][] = [
   ['reached note', REACHED_NOTE],
   ['success two', SUCCESS_TWO],
   ['safety ask', SAFETY_ASK],
+  ['country why', COUNTRY_WHY],
+  ['country setting', COUNTRY_SETTING],
   ...Object.entries(SAFETY_REPLIES).map(([k, v]): [string, string] => [`safety reply ${k}`, v]),
 ]

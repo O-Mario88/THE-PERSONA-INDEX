@@ -28,7 +28,7 @@ export type Entry = {
 
 export const REGISTRY: Entry[] = [
   { key: 'pi.device.v1', what: 'Your pass: the anonymous id the server signs, so you are counted once', backup: 'always', merge: 'local', download: false },
-  { key: 'pi.prefs.v1', what: 'Your settings', backup: 'always', merge: 'local', download: true },
+  { key: 'pi.prefs.v1', what: 'Your settings, including the country you said you live in', backup: 'always', merge: 'local', download: true },
   { key: 'pi.seed', what: 'The order your answers are shown in', backup: 'always', merge: 'local', download: false },
   { key: 'pi.history.v1', what: 'Your answers of the last 60 days: theme, depth and whether the card was you', backup: 'always', merge: 'history', download: true },
   { key: 'pi.moves.v1', what: 'Your small steps and how they went', backup: 'always', merge: 'moves', download: true },

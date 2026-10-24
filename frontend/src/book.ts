@@ -9,7 +9,7 @@
 // that came from the person or the server is escaped.
 
 import { getExport, wordsBetween, type OwnWords, type ServerExport } from './api'
-import { HELPLINE_LINE, HELPLINE_URL } from './Helpline'
+import { HELPLINE_LINE } from './Helpline'
 import {
   allGoodThings,
   keptCards,
@@ -27,6 +27,7 @@ import {
 } from './notebook'
 import { PRACTICES, type PracticeId } from './practices'
 import { entryFor } from './registry'
+import { helplineHere } from './prefs'
 import { keys, load } from './storage'
 import { THEMES, themeName } from './themes'
 import { TRAITS } from './traits'
@@ -250,7 +251,7 @@ ${empty ? '<p>Nothing kept yet. Tap “Keep this” under any card in the app an
 <footer>
 ${notes.map((n) => `<p class="meta">${esc(n)}</p>`).join('\n')}
 <p class="note">For self-reflection, not a diagnosis.</p>
-<p class="meta">${esc(HELPLINE_LINE)} ${esc(HELPLINE_URL.replace(/^https:\/\//, ''))}</p>
+<p class="meta">${esc(HELPLINE_LINE)} ${esc(helplineHere().replace(/^https:\/\//, ''))}</p>
 </footer>
 </main>
 </body>

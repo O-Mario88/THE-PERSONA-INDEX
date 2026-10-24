@@ -61,6 +61,7 @@ import {
   type NeedRead,
   type Uncertain,
 } from './reaching'
+import { helplineHere } from './prefs'
 import { ReadLink } from './Read'
 
 type Span = 'week' | Period
@@ -261,7 +262,7 @@ function MirrorPage({
             A few of your answers this week sounded heavy. If things feel hard, talking to someone you trust, or to a
             helpline, can help.
           </p>
-          <a href="https://findahelpline.com" target="_blank" rel="noreferrer">
+          <a href={helplineHere()} target="_blank" rel="noreferrer">
             Find a helpline in your country
           </a>
         </div>

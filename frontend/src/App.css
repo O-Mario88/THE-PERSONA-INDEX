@@ -2008,7 +2008,8 @@ fieldset.notice legend {
   color: var(--muted);
 }
 .field input,
-.field textarea {
+.field textarea,
+.field select {
   width: 100%;
   min-height: 48px;
   padding: 10px 14px;
@@ -2022,7 +2023,8 @@ fieldset.notice legend {
   resize: vertical;
 }
 .field input:focus-visible,
-.field textarea:focus-visible {
+.field textarea:focus-visible,
+.field select:focus-visible {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);

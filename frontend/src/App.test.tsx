@@ -2447,3 +2447,63 @@ describe("what you're reaching for", () => {
     expect(JSON.parse(localStorage.getItem('pi.safety.2026-10-12')!)).toBe('money')
   })
 })
+
+// Where someone lives (the research of 2026-10-24, "Tailor the setting, never
+// the person"): asked once after a sitting, kept on the phone, never sent; it
+// points heavy moments to that country's help.
+describe('where you live', () => {
+  async function finishMorning() {
+    await answer('Right after eating')
+    next()
+    await skip()
+    await answer('One')
+    next()
+    return screen.findByRole('region', { name: "That's your day." })
+  }
+
+  it('is asked once after a sitting, kept on this phone, and never sent', async () => {
+    const fetchMock = stubApi({})
+    render(<App />)
+    await finishMorning()
+    const ask = screen.getByRole('region', { name: 'Where do you live now?' })
+    expect(ask).toHaveTextContent('It stays on this phone.')
+    expect(within(ask).getByRole('button', { name: 'Keep this' })).toBeDisabled() // no guess from this phone's clock
+    fireEvent.change(within(ask).getByRole('combobox', { name: 'Country' }), { target: { value: 'KE' } })
+    fireEvent.click(within(ask).getByRole('button', { name: 'Keep this' }))
+    expect(screen.queryByRole('region', { name: 'Where do you live now?' })).not.toBeInTheDocument()
+    expect(JSON.parse(localStorage.getItem('pi.prefs.v1')!)).toMatchObject({ country: 'KE' })
+    for (const [url, init] of fetchMock.mock.calls) {
+      expect(String(url)).not.toMatch(/KE|country/i)
+      expect(String(init?.body ?? '')).not.toMatch(/"KE"|country/i)
+    }
+  })
+
+  it('can be left unsaid, and is not asked again', async () => {
+    stubApi({})
+    const { unmount } = render(<App />)
+    await finishMorning()
+    fireEvent.click(within(screen.getByRole('region', { name: 'Where do you live now?' })).getByRole('button', { name: 'Prefer not to say' }))
+    expect(JSON.parse(localStorage.getItem('pi.prefs.v1')!)).toMatchObject({ country: 'none' })
+    unmount()
+    render(<App />)
+    await screen.findByRole('region', { name: "That's your day." })
+    expect(screen.queryByRole('region', { name: 'Where do you live now?' })).not.toBeInTheDocument()
+  })
+
+  it("points a heavy answer to that country's helplines, and can be changed in Settings", async () => {
+    localStorage.setItem('pi.prefs.v1', JSON.stringify({ adult: null, mild: false, wordsDays: 35, country: 'GH' }))
+    stubApi({ today: { status: 200, body: withQuiet } })
+    render(<App />)
+    await answer('I wonder if people have forgotten me')
+    const heavy = screen.getByRole('note', { name: 'That sounds really hard' })
+    expect(within(heavy).getByRole('link', { name: 'Find a helpline' })).toHaveAttribute('href', 'https://findahelpline.com/countries/gh')
+    expect(within(heavy).getByRole('link', { name: 'Talk to someone now' })).toHaveAttribute('href', 'https://findahelpline.com/countries/gh')
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Settings' }))
+    const where = screen.getByRole('group', { name: 'Where you live' })
+    const select = within(where).getByRole('combobox', { name: 'Country' })
+    expect(select).toHaveValue('GH')
+    fireEvent.change(select, { target: { value: 'none' } })
+    expect(JSON.parse(localStorage.getItem('pi.prefs.v1')!)).toMatchObject({ country: 'none' })
+  })
+})
