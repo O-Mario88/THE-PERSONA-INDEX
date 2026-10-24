@@ -43,12 +43,10 @@ export function TapestryCard({ today, onOpen, cols = 18 }: { today: string; onOp
         <h2 id="tapestry-title" className="label">
           Season tapestry · day {s.day} of 90
         </h2>
-        {onOpen ? (
+        {onOpen && (
           <button type="button" className="link-button" onClick={onOpen}>
             Open
           </button>
-        ) : (
-          <span className="label muted-ink">Each tile is one day you showed up. Days off stay plain.</span>
         )}
       </div>
       <TapestryGrid s={s} cols={cols} />

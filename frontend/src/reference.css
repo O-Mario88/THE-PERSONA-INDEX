@@ -1,0 +1,934 @@
+/* The design reference, measured: "The Persona Index — Stage 5 UI Screens"
+   (M01-M21 phone, D01-D06 desktop). Loaded last, so these sizes win. Every
+   number here is copied from the reference; the ground stays white
+   (Edwin, 2026-10-24: "no cream color just green and white"). */
+
+:root {
+  --ink: #1e2a26;
+  --ink-muted: #5c6663;
+  --ink-link: #3f6448;
+  --hair: #e2e4dd;
+  --soft-fill: #ecede6;
+  --tile-empty: #dddfd6;
+  --deep: #1f3a33;
+  --deep-2: #35564c;
+  --deep-ink: #b9d0c6;
+  --deep-sub: #d5e2db;
+  --sage-wash: #dfeadf;
+  --label-morning: #a3481f;
+  --cta: #1e2a26;
+  --card-shadow: 0 1px 0 rgb(30 42 38 / 0.04), 0 10px 24px rgb(31 58 51 / 0.06);
+
+  --text: var(--ink);
+  --soft: var(--ink);
+  --muted: var(--ink-muted);
+  --muted-cool: var(--ink-muted);
+  --line: var(--hair);
+  --panel-2: var(--soft-fill);
+  --accent: var(--cta);
+  --shadow: var(--card-shadow);
+  --radius: 20px;
+  --radius-control: 12px;
+  --top: max(58px, calc(env(safe-area-inset-top, 0px) + 14px));
+}
+
+.app.is-dark {
+  --ink: #f2f2f2;
+  --ink-muted: #b8b8b8;
+  --hair: #262626;
+  --soft-fill: #141414;
+  --tile-empty: #262626;
+  --panel: #141414;
+  --panel-2: #141414;
+  --line: #262626;
+  --line-strong: #333333;
+  --text: #f2f2f2;
+  --soft: #f2f2f2;
+  --muted: #b8b8b8;
+  --muted-cool: #b8b8b8;
+  --card-shadow: none;
+}
+.app[data-window='evening'] {
+  --tint: #e0a55a;
+  --ink-link: #e0a55a;
+}
+.app[data-window='night'],
+.app[data-window='rest'] {
+  --tint: #a9a8ee;
+  --ink-link: #a9a8ee;
+}
+.app[data-window='morning'] {
+  --tint: var(--label-morning);
+}
+.app[data-window='midday'] {
+  --tint: #4f7357;
+}
+.app[data-window='afternoon'] {
+  --tint: #8f6c12;
+}
+
+/* ---- the page column and the bottom bar (M05) ---- */
+@media (max-width: 899px) {
+  .page {
+    padding: var(--top) max(24px, env(safe-area-inset-right, 0px)) 120px max(24px, env(safe-area-inset-left, 0px));
+    gap: 20px;
+  }
+  .app.in-flow .page {
+    padding-bottom: 30px;
+  }
+  .tabs {
+    padding: 10px 12px max(24px, env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--hair);
+    background: #ffffff;
+    backdrop-filter: none;
+    box-shadow: 0 -10px 30px rgb(31 58 51 / 0.04);
+  }
+  .app.is-dark .tabs {
+    background: #000000;
+    border-top-color: #262626;
+    box-shadow: none;
+  }
+  .tabs .tab {
+    flex: 0 0 auto;
+    min-width: 64px;
+    min-height: 44px;
+    gap: 4px;
+    padding: 0;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ink-muted);
+  }
+  .tabs .tab[aria-pressed='true'] {
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .tabs .tab .icon {
+    width: 22px;
+    height: 22px;
+  }
+}
+
+/* ---- type ---- */
+.label {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--ink-muted);
+}
+.display {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 30px;
+  line-height: 1.12;
+  letter-spacing: -0.015em;
+}
+.title {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 22px;
+  line-height: 1.25;
+}
+.small {
+  font-size: 13px;
+}
+
+/* ---- surfaces and controls ---- */
+.card,
+.notice {
+  gap: 12px;
+  padding: 20px;
+  border-radius: 20px;
+  background: var(--panel);
+  box-shadow: var(--card-shadow);
+}
+.card.soft {
+  background: var(--soft-fill);
+}
+.btn {
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 14px;
+  background: var(--cta);
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 600;
+}
+.btn.wide {
+  min-height: 52px;
+  font-size: 15px;
+}
+.btn.small {
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 12px;
+  font-size: 13px;
+}
+.btn.ghost,
+.btn.outline {
+  background: transparent;
+  color: var(--ink-muted);
+  box-shadow: inset 0 0 0 1px var(--hair);
+}
+.btn.outline.strong,
+.btn.secondary {
+  color: var(--deep);
+  box-shadow: inset 0 0 0 1.5px var(--deep);
+}
+.is-dark .btn {
+  background: #f2f2f2;
+  color: #000000;
+}
+.is-dark .btn.ghost,
+.is-dark .btn.outline {
+  background: transparent;
+  color: #f2f2f2;
+  box-shadow: inset 0 0 0 1px #333333;
+}
+.link-button {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-link);
+}
+.icon-button {
+  width: 44px;
+  height: 44px;
+  color: var(--ink-muted);
+}
+.icon-button .icon {
+  width: 18px;
+  height: 18px;
+}
+.chip {
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ink-muted);
+  box-shadow: inset 0 0 0 1px var(--hair);
+  font-size: 13px;
+  font-weight: 600;
+}
+.chip-toggle {
+  min-height: 36px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.field {
+  min-height: 48px;
+  padding: 0 16px;
+  border-radius: 12px;
+  background: var(--soft-fill);
+  box-shadow: none;
+  font-size: 15px;
+}
+
+/* ---- Today (M05) ---- */
+.home {
+  gap: 20px;
+}
+.home-head > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.home-head .label {
+  font-size: 13px;
+}
+.avatar-button .avatar {
+  font-size: 15px !important;
+  font-weight: 600;
+}
+.hero-card {
+  margin-top: 2px;
+  gap: 16px;
+  padding: 18px 18px 18px 16px;
+  border-radius: 20px;
+  background: var(--deep);
+  color: #f4eee3;
+  box-shadow: 0 18px 40px rgb(31 58 51 / 0.2);
+}
+.is-dark .hero-card {
+  background: #141414;
+  box-shadow: none;
+}
+.hero-words {
+  gap: 4px;
+}
+.hero-eyebrow {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--deep-ink);
+}
+.hero-title {
+  font-family: var(--body);
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+.hero-sub {
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--deep-sub);
+}
+.hero-go {
+  color: var(--deep-ink);
+}
+.hero-go .icon {
+  width: 20px;
+  height: 20px;
+}
+.ring-track {
+  stroke: var(--deep-2);
+  stroke-width: 6;
+}
+.ring-fill {
+  stroke: var(--deep-ink);
+  stroke-width: 6;
+}
+.is-dark .ring-track {
+  stroke: #262626;
+}
+.is-dark .ring-fill {
+  stroke: var(--tint);
+}
+.ring-big {
+  font-size: 16px;
+  font-weight: 700;
+}
+.ring-small {
+  font-size: 10px;
+  font-weight: 600;
+  opacity: 1;
+  color: var(--deep-ink);
+}
+.since {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 2px;
+}
+.since .label {
+  margin: 0;
+}
+.since ul {
+  gap: 0;
+}
+.since-row {
+  min-height: 44px;
+  padding: 0;
+  gap: 12px;
+  border: 0;
+}
+.since-row .avatar {
+  width: 32px !important;
+  height: 32px !important;
+  font-size: 12px !important;
+  font-weight: 600;
+}
+.since-icon {
+  width: 32px;
+  height: 32px;
+  background: #e8e9e2;
+  color: var(--ink-link);
+}
+.since-text {
+  font-size: 14px;
+  line-height: 1.4;
+}
+.since-aside,
+.since-aside button,
+.since-aside a {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-link);
+}
+.tapestry-card {
+  gap: 10px;
+  padding: 16px;
+  border-radius: 20px;
+  background: var(--soft-fill);
+}
+.tapestry-card .row-between {
+  align-items: flex-start;
+}
+.tapestry-card .label {
+  font-size: 12px;
+}
+.tapestry {
+  gap: 4px;
+}
+.tapestry li {
+  border-radius: 3px;
+  background: var(--tile-empty);
+}
+.tapestry li.tile-ahead {
+  background: var(--tile-empty);
+}
+.tapestry li.tile-linen {
+  background: var(--tile-empty);
+}
+.tapestry li.is-today {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+}
+.tapestry.dark li,
+.tapestry.dark li.tile-ahead,
+.tapestry.dark li.tile-linen {
+  background: var(--deep-2);
+  border-radius: 4px;
+}
+.tapestry.dark li.is-today {
+  outline: 0;
+  box-shadow: 0 0 0 2px #f6f5f0, 0 0 16px rgb(243 233 218 / 0.7);
+}
+.dayline ol {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0;
+}
+.dayline-item {
+  width: 60px;
+  gap: 6px;
+}
+.dayline-dot {
+  width: 12px;
+  height: 12px;
+  border: 1.5px dashed #9aa09c;
+  box-sizing: border-box;
+}
+.dayline-item.is-done .dayline-dot {
+  background: #4f7357;
+  border: 0;
+}
+.dayline-item.is-now .dayline-dot {
+  background: var(--deep);
+  border: 0;
+  box-shadow: 0 0 0 4px var(--sage-wash);
+}
+.is-dark .dayline-item.is-now .dayline-dot {
+  background: var(--tint);
+  box-shadow: 0 0 0 4px #262626;
+}
+.dayline-item.is-open .dayline-dot {
+  border: 1.5px solid var(--tint);
+}
+.dayline-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+.dayline-item.is-done .dayline-name,
+.dayline-item.is-now .dayline-name,
+.dayline-item.is-open .dayline-name {
+  color: var(--ink);
+}
+.dayline-sub {
+  font-size: 11px;
+  color: var(--ink-muted);
+}
+.dayline-item.is-now .dayline-sub {
+  color: var(--ink-link);
+  font-weight: 600;
+}
+
+/* ---- a window opened from Today (M01, M06, M07, M08, M09) ---- */
+.flow {
+  gap: 0;
+  min-height: calc(100vh - var(--top) - 30px);
+}
+.flow {
+  position: relative;
+}
+.flow-top {
+  min-height: 44px;
+}
+.flow-label {
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+.flow-top .icon-button {
+  margin-right: -13px;
+}
+.live-dot {
+  width: 8px;
+  height: 8px;
+}
+.dashes {
+  gap: 6px;
+  padding-top: 10px;
+}
+.dash {
+  height: 3px;
+  border-radius: 2px;
+  background: var(--hair);
+}
+.dash.answered,
+.dash[aria-current='step'] {
+  background: var(--deep);
+}
+.is-dark .dash {
+  background: #262626;
+}
+.is-dark .dash.answered,
+.is-dark .dash[aria-current='step'] {
+  background: var(--tint);
+}
+.flow-main {
+  gap: 0;
+  padding-top: 0;
+}
+.flow-foot {
+  margin-top: auto;
+  padding-top: 24px;
+  padding-right: 36px;
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+/* A question (M01, M08). */
+.screen.question {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.screen.question .theme-chip {
+  margin-top: 48px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tint);
+}
+.is-dark .screen.question .theme-chip {
+  margin-top: 24px;
+}
+.screen.question .prompt {
+  margin-top: 16px;
+}
+.prompt {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 31px;
+  line-height: 1.22;
+  letter-spacing: -0.01em;
+}
+.is-dark .prompt {
+  font-size: 28px;
+}
+.screen.question .options {
+  margin-top: 36px;
+}
+.is-dark .screen.question .options {
+  margin-top: 22px;
+}
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.option {
+  display: flex;
+  align-items: center;
+  min-height: 60px;
+  padding: 10px 20px;
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: var(--card-shadow);
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.35;
+  text-align: left;
+}
+.is-dark .option {
+  min-height: 58px;
+  background: #141414;
+  color: #f2f2f2;
+}
+.option.own-button {
+  min-height: 52px;
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--hair);
+  color: var(--ink-muted);
+  font-size: 15px;
+}
+.is-dark .option.own-button {
+  box-shadow: inset 0 0 0 1px #333333;
+  color: #b8b8b8;
+}
+.screen.question,
+.screen.question .options {
+  position: static;
+}
+.screen.question .skip {
+  position: absolute;
+  right: 0;
+  bottom: -7px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink-muted);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.screen.question.answered .theme-chip {
+  margin-top: 26px;
+}
+.screen.question.answered .prompt {
+  margin-top: 8px;
+  font-size: 17px;
+  line-height: 1.35;
+  color: var(--ink-muted);
+}
+.edition-line {
+  display: none;
+}
+
+/* The answer and its card (M02). */
+.answer {
+  gap: 14px;
+  margin-top: 20px;
+}
+.answer .card-count {
+  font-size: 13px;
+  font-weight: 600;
+}
+.you-chose .eyebrow {
+  font-size: 12px;
+  font-weight: 600;
+}
+.you-chose .chosen {
+  font-size: 12px;
+  font-family: var(--body);
+  font-weight: 400;
+  color: var(--ink-muted);
+}
+.insight {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 26px 24px 22px;
+  border-radius: 24px;
+  background: #ffffff;
+  box-shadow: 0 12px 32px rgb(31 58 51 / 0.1);
+}
+.is-dark .insight {
+  background: #141414;
+  box-shadow: none;
+}
+.insight-headline {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 30px;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+.insight-body {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--ink);
+}
+.insight-reach,
+.insight-other {
+  position: relative;
+  padding-left: 20px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+.insight-reach {
+  padding-top: 16px;
+  border-top: 1px solid var(--hair);
+}
+.insight-reach::before,
+.insight-other::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #4f7357;
+}
+.insight-reach::before {
+  top: 22px;
+}
+.insight-other::before {
+  top: 6px;
+  background: #c4603a;
+}
+.insight-other .eyebrow {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.insight-other .eyebrow::after {
+  content: ' ·';
+}
+.insight-thread {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink-muted);
+}
+.insight-note {
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+.next {
+  min-height: 52px;
+  border-radius: 14px;
+  background: var(--cta);
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 600;
+}
+.is-dark .next {
+  background: #f2f2f2;
+  color: #000000;
+}
+.pill-button {
+  min-height: 44px;
+  border-radius: 14px;
+  background: var(--cta);
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 600;
+}
+.try {
+  padding: 16px;
+  border-radius: 20px;
+  background: var(--soft-fill);
+}
+.rate-ask,
+.try .eyebrow {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+.text-button {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-muted);
+  text-decoration: none;
+}
+
+/* In a flow the privacy line and its links stay on Today. */
+.app.in-flow .privacy-line {
+  display: none;
+}
+
+/* The answered screen shows the card, not the question again (M02). */
+.screen.question.answered > .theme-chip,
+.screen.question.answered > .prompt {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  margin: 0;
+}
+.screen.question.answered .answer {
+  margin-top: 26px;
+}
+.answer .card-count {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 56px;
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  margin: 0;
+  background: var(--bg);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+.insight-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+}
+.insight-area {
+  font-weight: 600;
+  color: var(--tint);
+}
+.insight-chose {
+  color: var(--ink-muted);
+  text-align: right;
+}
+.insight-reach .eyebrow {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.insight-reach .eyebrow::after {
+  content: ' ·';
+}
+.insight-reach {
+  font-style: normal;
+}
+.screen.question .answer {
+  position: static;
+}
+.flow-foot {
+  display: flex;
+  align-items: center;
+  min-height: 68px;
+}
+.screen.question .skip {
+  bottom: 0;
+}
+.insight-other {
+  border-top: 0;
+  margin-top: -8px;
+}
+.insight-reach .eyebrow,
+.insight-other .eyebrow {
+  display: inline;
+}
+
+/* The small step (M03 "One small step for today"). */
+.try {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+  font-size: 15px;
+}
+.try > p {
+  font-size: 15px;
+  line-height: 1.4;
+}
+.try strong,
+.try legend strong {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+.try-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.try-choices legend {
+  padding: 0;
+  font-size: 0;
+}
+.try-choices legend strong {
+  font-size: 12px;
+}
+.try-choice {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 60px;
+  padding: 14px 18px;
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: inset 0 0 0 1.5px transparent;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.4;
+  cursor: pointer;
+}
+.is-dark .try-choice {
+  background: #141414;
+}
+.try-choice:has(input:checked) {
+  box-shadow: inset 0 0 0 1.5px var(--deep);
+}
+.is-dark .try-choice:has(input:checked) {
+  box-shadow: inset 0 0 0 1.5px var(--tint);
+}
+.try-choice input {
+  order: 2;
+  flex: 0 0 auto;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  margin: 0 0 0 auto;
+  border-radius: 50%;
+  border: 1.5px solid var(--hair);
+  background: transparent;
+}
+.try-choice input:checked {
+  border: 0;
+  background: var(--deep)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12l5 5L20 7'/%3E%3C/svg%3E")
+    center / 12px no-repeat;
+}
+.try-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.try-buttons .pill-button {
+  flex: 1 0 100%;
+  order: 3;
+  min-height: 52px;
+}
+.try-buttons .text-button {
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 12px;
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--hair);
+  color: var(--ink-muted);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+/* "See how others answered?" and the pulse line under the card (M02). */
+.pulse-ask {
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: var(--soft-fill);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.pulse-ask .btn,
+.pulse-ask button {
+  min-height: 36px;
+}
+
+/* Keep, and "does this sound like you?" */
+.keep-button {
+  align-self: center;
+  min-height: 44px;
+  box-shadow: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+.rate {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.rate-buttons {
+  display: flex;
+  gap: 8px;
+}
+.try-choice {
+  box-shadow: var(--card-shadow);
+}
+.flow:has(.screen.question.answered) .flow-foot {
+  display: none;
+}

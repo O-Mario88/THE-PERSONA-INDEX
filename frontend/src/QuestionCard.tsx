@@ -44,7 +44,7 @@ import { loadPeople, namesLine } from './people'
 import { PeopleEditor } from './People'
 import { DEFAULT_WORDS_DAYS, helplineHere } from './prefs'
 import { isLowMood, loadHistory, recalledAnswer, recordAnswer, recordSkip, recordVerdict, threadLine } from './profile'
-import { isNeed, reachingLine, type Need } from './needs'
+import { isNeed, NEED_PHRASES, type Need } from './needs'
 import { splitReveal } from './reveal'
 import { onOtherTab } from './storage'
 import { themeName, themeStyle, themeVars } from './themes'
@@ -251,8 +251,8 @@ export function QuestionCard({
           <button type="button" className="option own-button" disabled={sending} onClick={() => setMode('writing')}>
             <span aria-hidden="true">✎</span> In my own words
           </button>
-          <button type="button" className="text-button skip" disabled={sending} onClick={skip}>
-            Skip this one
+          <button type="button" className="text-button skip" aria-label="Skip this one" disabled={sending} onClick={skip}>
+            Skip
           </button>
         </div>
       )}
@@ -462,14 +462,18 @@ function Answer({
       {words ? (
         <YourWords words={words} />
       ) : (
-        <p className="you-chose">
-          <span className="eyebrow">You chose</span>
-          <span className="chosen">{option.label}</span>
-        </p>
+        !insight && (
+          <p className="you-chose">
+            <span className="eyebrow">You chose</span>
+            <span className="chosen">{option.label}</span>
+          </p>
+        )
       )}
       {option.heavy && <HeavyCard />}
       {insight && (
         <InsightPanel
+          area={question.theme ? themeName(question.theme) : 'Today'}
+          chose={words ? undefined : option.label}
           reveal={insight.reveal}
           otherSide={insight.otherSide}
           reach={notMe || !isNeed(option.need) ? null : option.need}
@@ -596,12 +600,16 @@ function ReachOut({ names }: { names: string[] }) {
 const draftFor = (name: string) => `Hey ${name}, had a heavy day. Free for a 5-minute call later?`
 
 function InsightPanel({
+  area,
+  chose,
   reveal,
   otherSide,
   reach,
   thread,
   focus,
 }: {
+  area: string
+  chose?: string // the option tapped, said small in the card's corner
   reveal: string
   otherSide?: string
   reach: Need | null // what the answer reached for: one soft line (needs.ts)
@@ -611,9 +619,22 @@ function InsightPanel({
   const { headline, body } = splitReveal(reveal)
   return (
     <div className="insight" role="note" aria-label="What your answer may say">
+      <p className="insight-top">
+        <span className="insight-area">{area}</span>
+        {chose && (
+          <span className="insight-chose">
+            <span className="sr-only">You chose: </span>
+            {chose}
+          </span>
+        )}
+      </p>
       <p className="insight-headline beat-1">{headline}</p>
       {body && <p className="insight-body beat-2">{body}</p>}
-      {reach && <p className="insight-reach beat-3">{reachingLine(reach)}</p>}
+      {reach && (
+        <p className="insight-reach beat-3">
+          <span className="eyebrow">What it reached for</span> {NEED_PHRASES[reach]}
+        </p>
+      )}
       {otherSide && (
         <p className="insight-other beat-3">
           <span className="eyebrow">The other side</span> {otherSide}

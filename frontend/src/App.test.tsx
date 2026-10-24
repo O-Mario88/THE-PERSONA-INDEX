@@ -2378,7 +2378,7 @@ describe("what you're reaching for", () => {
     const fetchMock = stubApi({ edition: { status: 200, body: reaching } })
     render(<App />)
     await answer('Right after eating')
-    expect(screen.getByText('Sounds like feeling settled mattered most here.')).toBeInTheDocument()
+    expect(screen.getByText('What it reached for').parentElement).toHaveTextContent('What it reached for feeling settled')
 
     const tryIt = screen.getByRole('group', { name: 'Something to try' })
     expect(within(tryIt).getByRole('radio', { name: 'Next time a small task appears, notice the itch to finish it.' })).toBeChecked()
@@ -2400,7 +2400,7 @@ describe("what you're reaching for", () => {
     stubApi({})
     render(<App />)
     await answer('Right after eating')
-    expect(screen.queryByText(/mattered most here/)).not.toBeInTheDocument()
+    expect(screen.queryByText('What it reached for')).not.toBeInTheDocument()
     expect(within(screen.getByRole('group', { name: 'Something to try' })).queryByRole('radio')).not.toBeInTheDocument()
   })
 
