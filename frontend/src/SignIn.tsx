@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { Icon } from './ui/icons'
 import { ApiError } from './api'
 import { patchAccount, sendCode, signInMethods, signInWithID, verifyCode, type AccountView, type SignInMethods } from './social'
 
@@ -153,30 +154,45 @@ export function SignInSheet({
         </>
       )}
       {step.at === 'code' && (
-        <form onSubmit={verify}>
+        <form onSubmit={verify} className="signin-code-step">
+          <p className="label">{step.kind === 'phone' ? 'Check your messages' : 'Check your email'}</p>
           <h2 id="signin-title" className="title serif">
-            Type the 6-digit code
+            We sent a 6-digit code to {step.address}
           </h2>
-          <p className="muted">
-            We sent it {step.kind === 'phone' ? 'by text' : 'by email'} to {step.address}. It works for 10 minutes.
-          </p>
+          <p className="muted">It works for 10 minutes. Nothing to type back, just the six digits.</p>
           <label htmlFor="signin-code" className="sr-only">
             The code
           </label>
-          <input
-            id="signin-code"
-            className="field code-field"
-            value={code}
-            onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            placeholder="••••••"
-          />
+          <div className="code-boxes">
+            <input
+              id="signin-code"
+              className="code-input"
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={12}
+            />
+            <span className="code-cells" aria-hidden="true">
+              {[0, 1, 2, 3, 4, 5].map((i) => (
+                <span key={i} className={i === Math.min(code.length, 5) ? 'code-cell is-next' : 'code-cell'}>
+                  {code[i] ?? ''}
+                </span>
+              ))}
+            </span>
+          </div>
+          <p className="small muted code-again">
+            Didn’t get it?{' '}
+            <button type="button" className="link-button" onClick={() => setStep({ at: 'start' })}>
+              Use a different address
+            </button>
+          </p>
+          <p className="code-device">
+            <Icon name="lock" size={18} />
+            <span>This device will be added to your account. You can sign it out any time from Account, under Sign-in &amp; devices.</span>
+          </p>
           <button type="submit" className="btn wide" disabled={busy || code.length !== 6}>
-            Sign in
-          </button>
-          <button type="button" className="link-button" onClick={() => setStep({ at: 'start' })}>
-            Use a different address
+            Continue
           </button>
         </form>
       )}
