@@ -231,6 +231,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("PATCH /api/account", s.PatchAccount)
 	mux.HandleFunc("DELETE /api/account", s.DeleteAccount)
 	mux.HandleFunc("POST /api/account/fresh", s.FreshDevice)
+	mux.HandleFunc("GET /api/account/device", s.AccountDevice)
 	mux.HandleFunc("DELETE /api/account/sessions/{id}", s.SignOut)
 	mux.HandleFunc("PUT /api/account/sync", s.PutSync)
 	mux.HandleFunc("GET /api/account/sync", s.GetSync)

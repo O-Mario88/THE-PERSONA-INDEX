@@ -435,6 +435,16 @@ func TestFreshDeviceAfterDeletingEverything(t *testing.T) {
 	if again := signInByCode(t, s, codes, "ama@example.com", ""); again.DeviceToken != fresh {
 		t.Fatal("a later sign-in must use the fresh device id")
 	}
+	t.Run("any phone on the account can fetch its current pass without moving it on", func(t *testing.T) {
+		expectStatus(t, send(t, s, "GET", "/api/account/device", "", nil), http.StatusUnauthorized)
+		for range 2 {
+			w := send(t, s, "GET", "/api/account/device", a.AccountToken, nil)
+			expectStatus(t, w, http.StatusOK)
+			if got := decode[DeviceIssued](t, w).Token; got != fresh {
+				t.Fatalf("current pass %q, want %q", got, fresh)
+			}
+		}
+	})
 }
 
 func TestAddressesAndHints(t *testing.T) {

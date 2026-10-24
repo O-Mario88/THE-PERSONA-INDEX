@@ -36,7 +36,11 @@ import {
 import { changesBetween, changeWords, leaningVerdict, loadHistory, notMeSides, rememberLeaning, type Change } from './profile'
 import { addDays } from './storage'
 import { THEMES, themeName, themeStyle, themeVars } from './themes'
-import { honestLine, TRAITS } from './traits'
+import { honestLine, sideOf, TRAITS } from './traits'
+import { outsideMirror, type OutsideMirror as OutsideMirrorData } from './social'
+import { useAccount } from './useAccount'
+import { Icon } from './ui/icons'
+import { ShareSheet } from './ShareCard'
 import {
   CHANGES_NOTE,
   LEANING_REPLIES,
@@ -84,7 +88,7 @@ const adjOf = (span: Span) => SPANS.find((s) => s.span === span)!.adj
 // speaks of this person alone and only sets them against their own past;
 // the research behind its words stays in mirrorText.ts, out of sight. The
 // week opens first; the month, quarter and year look further back.
-export function Mirror({ today, onOpenKept }: { today: string; onOpenKept: () => void }) {
+export function Mirror({ today, onOpenKept, onCircle }: { today: string; onOpenKept: () => void; onCircle?: () => void }) {
   const [span, setSpan] = useState<Span>('week')
   const [state, setState] = useState<State>({ kind: 'loading' })
   const [attempt, setAttempt] = useState(0)
@@ -143,7 +147,7 @@ export function Mirror({ today, onOpenKept }: { today: string; onOpenKept: () =>
           </button>
         </div>
       )}
-      {state.kind === 'week' && <MirrorPage m={state.m} today={today} reload={reload} onOpenKept={onOpenKept} />}
+      {state.kind === 'week' && <MirrorPage m={state.m} today={today} reload={reload} onOpenKept={onOpenKept} onCircle={onCircle} />}
       {state.kind === 'period' && <PeriodPage p={state.p} onOpenKept={onOpenKept} />}
     </section>
   )
@@ -154,14 +158,21 @@ function MirrorPage({
   today,
   reload,
   onOpenKept,
+  onCircle,
 }: {
   m: MirrorData
   today: string
   reload: () => void
   onOpenKept: () => void
+  onCircle?: () => void
 }) {
+  const signedIn = !!useAccount()
+  const [sharing, setSharing] = useState(false)
   // Leanings the person said are not them stay out of the title (profile.ts).
   const [notMe, setNotMe] = useState(() => notMeSides(today))
+  // The card carries the week's name only: "The Steady Finisher".
+  const top = leanings(m.traits, notMe)
+  const shareName = top.length ? titleCase(`the ${top[0].side.adj} ${(top[1] ?? top[0]).side.noun}`) : null
   const name = title(m.traits, notMe)
   const suggested = identityName(m.traits, notMe)
   const line = tagline(m.traits, notMe)
@@ -203,6 +214,12 @@ function MirrorPage({
       title: 'Who you were this week',
       body: <Who leans={lean} date={today} span="week" onVerdict={() => setNotMe(notMeSides(today))} />,
       show: lean.length > 0,
+    },
+    {
+      key: 'outside',
+      title: 'How your circle experiences you',
+      body: <OutsideMirrorSection m={m} onCircle={onCircle} />,
+      show: signedIn,
     },
     {
       key: 'sentence',
@@ -254,7 +271,15 @@ function MirrorPage({
         </h2>
         {line && <p className="m-tagline">{line}</p>}
         <p className="m-summary">{summary(m, notMe)}</p>
+        {shareName && (
+          <button type="button" className="btn small light" onClick={() => setSharing(true)}>
+            <Icon name="share" size={16} /> Share the card
+          </button>
+        )}
       </header>
+      {sharing && shareName && (
+        <ShareSheet content={{ eyebrow: `Week ${m.week} · My Sunday Mirror`, name: shareName, line: line || undefined }} onClose={() => setSharing(false)} />
+      )}
 
       {m.lowMood && (
         <div className="m-card m-support" role="note" aria-label="Support">
@@ -1314,3 +1339,111 @@ function PeriodSteps({ p }: { p: PeriodMirror }) {
     </>
   )
 }
+
+// How your circle experiences you (Stage 5, the Outside Mirror): where
+// friends, blended, place you on each trait at least three of them spoke
+// to, beside where your own answers place you. Locked, it shows only how
+// many friends have answered, never which.
+function OutsideMirrorSection({ m, onCircle }: { m: MirrorData; onCircle?: () => void }) {
+  const [o, setO] = useState<OutsideMirrorData | null>(null)
+  useEffect(() => {
+    let live = true
+    outsideMirror().then(
+      (x) => live && setO(x),
+      () => {},
+    )
+    return () => {
+      live = false
+    }
+  }, [])
+  if (!o) return null
+  if (!o.open) {
+    const rows = Array.from({ length: o.need }, (_, i) => i < o.friends)
+    return (
+      <div className="m-card outside-locked">
+        <p className="strong">
+          <Icon name="lock" size={16} /> Opens when {o.need} friends have answered
+        </p>
+        <ul className="outside-count" aria-label={`${o.friends} of ${o.need} friends have answered`}>
+          {rows.map((done, i) => (
+            <li key={i} className="row-between">
+              <span>{done ? 'A friend' : i === o.friends ? 'One more friend' : 'Another friend'}</span>
+              {done ? (
+                <span className="small muted">Answered</span>
+              ) : (
+                onCircle && (
+                  <button type="button" className="link-button" onClick={onCircle}>
+                    Invite
+                  </button>
+                )
+              )}
+            </li>
+          ))}
+        </ul>
+        <p className="small muted">
+          With two friends you could work out who said what by elimination. Three keeps every answer anonymous, by
+          arithmetic, not by promise. Answers already given are held until the third friend joins.
+        </p>
+      </div>
+    )
+  }
+  const own = new Map(m.traits.map((t) => [t.trait, t.score]))
+  const rows = o.traits.filter((t) => TRAITS[t.trait])
+  const gaps = rows
+    .filter((t) => own.has(t.trait))
+    .map((t) => ({ t, gap: t.position - (own.get(t.trait) ?? 50) }))
+    .sort((a, b) => Math.abs(a.gap) - Math.abs(b.gap))
+  const shared = gaps[0] && Math.abs(gaps[0].gap) < 15 ? gaps[0] : null
+  const miss = gaps.length && Math.abs(gaps[gaps.length - 1].gap) >= 20 ? gaps[gaps.length - 1] : null
+  return (
+    <>
+      <p className="small muted">
+        Blended from {o.friends} friends over {o.weeks} weeks. No single answer is ever shown.
+      </p>
+      {shared && (
+        <div className="m-card">
+          <p className="label">Shared ground</p>
+          <p>
+            You and your circle both see you near {sideOf(TRAITS[shared.t.trait], shared.t.position >= 50).lean}.
+          </p>
+        </div>
+      )}
+      {miss && (
+        <div className="m-card outside-miss">
+          <p className="label">What your circle notices that you might miss</p>
+          <p>
+            Your circle places you nearer {sideOf(TRAITS[miss.t.trait], miss.gap > 0).lean} than your own answers do.
+            Neither is the truer one: people see the side of you that you show them.
+          </p>
+        </div>
+      )}
+      <ul className="outside-scales">
+        {rows.map((t) => {
+          const tr = TRAITS[t.trait]
+          const mine = own.get(t.trait)
+          return (
+            <li key={t.trait}>
+              <p className="row-between small">
+                <span>{tr.low.lean}</span>
+                <span>{tr.high.lean}</span>
+              </p>
+              <span
+                className="m-scale"
+                role="img"
+                aria-label={`${tr.name}: your circle ${Math.round(t.position)} of 100${mine === undefined ? '' : `, you ${mine}`}`}
+              >
+                {mine !== undefined && <span className="m-scale-dot you" style={{ left: `${mine}%` }} />}
+                <span className="m-scale-dot circle" style={{ left: `${t.position}%` }} />
+              </span>
+            </li>
+          )
+        })}
+      </ul>
+      <p className="small muted">
+        <span className="dot-key you" /> you · <span className="dot-key circle" /> your circle
+      </p>
+    </>
+  )
+}
+
+const titleCase = (s: string) => s.replace(/\b\w/g, (c) => c.toUpperCase())

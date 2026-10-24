@@ -48,6 +48,13 @@ import { Icon, type IconName } from './ui/icons'
 import { Avatar } from './ui/Avatar'
 import { AccountScreen } from './Account'
 import { CircleScreen } from './Circle'
+import { FriendQuestion, NodPicker, TogetherAsk, TogetherCard } from './Friends'
+import { useFriendToday, useNods, useTogethers } from './friendsData'
+import { SignInSheet } from './SignIn'
+import { inviteFromURL } from './social'
+import { pullSync } from './sync'
+import { useAccount } from './useAccount'
+import { load as loadKey, save as saveKey } from './storage'
 import './App.css'
 import './design.css'
 
@@ -112,6 +119,17 @@ function App() {
   // open from 5 am to 5 pm and the evening three from 5 pm to midnight.
   const { date, window: win, sitting: clockSitting } = useDay()
   const wide = useWide()
+  // Stage 5: the account, if the person signed in, and an invite link they
+  // followed (kept until they join or say not now).
+  const me = useAccount()
+  const [invited] = useState(inviteFromURL)
+  useEffect(() => {
+    if (invited && !me) setTab('circle')
+  }, [invited, me])
+  const [friendDay, refreshFriend] = useFriendToday(date)
+  const nods = useNods(date)
+  const [togethers, refreshTogethers] = useTogethers()
+  const [askedSignIn, setAskedSignIn] = useState(() => !!loadKey(SIGNIN_ASKED))
 
   useEffect(() => {
     let live = true
@@ -339,7 +357,15 @@ function App() {
   const dark = blackOn(prefs) && (win === 'evening' || win === 'night' || win === 'rest') && tab === 'today'
 
   const hero = set
-    ? heroFor({ date: set.date, window: win, review: !!set.review, morning, evening, pulse: prefs.pulse !== false })
+    ? heroFor({
+        date: set.date,
+        window: win,
+        review: !!set.review,
+        morning,
+        evening,
+        pulse: prefs.pulse !== false,
+        friend: friendDay?.open && !friendDay.answered ? friendDay.friend?.name : null,
+      })
     : null
 
   const feed: FeedItem[] = []
@@ -355,6 +381,27 @@ function App() {
       aside: win === 'morning' || win === 'midday' ? 'Pulse at 14:30' : undefined,
     })
 
+  // Quiet nods that arrived today, from friends not muted (the server hides
+  // the rest), and Answer Together, newest state first. Never counted.
+  for (const n of nods?.received ?? []) {
+    if (n.date !== set?.date) continue
+    feed.push({
+      key: `nod-${n.from.id}`,
+      who: n.from.name,
+      text: (
+        <>
+          <strong>{n.from.name}</strong> sent you a quiet nod · “{n.text}”
+        </>
+      ),
+      aside: <Icon name="heart" size={18} />,
+    })
+  }
+  for (const t of togethers) {
+    if (t.state === 'revealed' && t.asked)
+      feed.push({ key: `tog-${t.id}`, who: t.with.name, text: <><strong>{t.with.name}</strong> answered your together question</>, aside: 'Revealed below' })
+  }
+  const togetherCards = togethers.filter((t) => t.state !== 'revealed' || t.asked)
+
   let body: ReactNode = null
   if (set && tab === 'today') {
     if (!flow || !hero) {
@@ -368,6 +415,7 @@ function App() {
             else if (hero?.opens) setFlow(hero.opens)
           }}
           onAccount={() => setTab('account')}
+          name={me?.name}
           since={since}
           feed={feed}
           morning={morning}
@@ -404,6 +452,9 @@ function App() {
               <GoodThings date={set.date} label="Three good things from today" />
             </section>
           )}
+          {togetherCards.map((t) => (
+            <TogetherCard key={t.id} t={t} onChange={refreshTogethers} />
+          ))}
           {win === 'rest' && !set.review && <RestScreen date={set.date} morningThemes={themesOf(morningQs)} />}
           {read}
           <InstallInvite today={set.date} />
@@ -496,6 +547,7 @@ function App() {
               onNext={() => flowStep.go(at + 1)}
             />
           )}
+          {current && <TogetherAsk key={`ask-${current.id}`} question={current} />}
           {closing &&
             steps.length > 0 &&
             (flow === 'evening' ? (
@@ -516,6 +568,20 @@ function App() {
                 tomorrowThemes={set.tomorrowThemes ?? []}
               />
             ))}
+          {closing && steps.length > 0 && !me && !askedSignIn && (
+            <SignInSheet
+              title={`Your ${steps.length === 3 ? 'three cards are' : 'cards are'} on this phone. Keep them everywhere.`}
+              onDone={(acc) => {
+                saveKey(SIGNIN_ASKED, '1')
+                setAskedSignIn(true)
+                pullSync(acc.sync).catch(() => {})
+              }}
+              onNotNow={() => {
+                saveKey(SIGNIN_ASKED, '1')
+                setAskedSignIn(true)
+              }}
+            />
+          )}
           {closing && steps.length > 0 && prefs.country === undefined && (
             <CountryAsk onAnswer={(country) => changePrefs({ ...prefs, country })} />
           )}
@@ -538,7 +604,7 @@ function App() {
         >
           <MiddayScreen
             date={set.date}
-            friend={null}
+            friend={<FriendQuestion date={set.date} today={friendDay} onCircle={() => setTab('circle')} onAnswered={refreshFriend} />}
             read={read}
             morningOpen={morning !== 'done' && clockSitting === 'morning'}
             onMorning={() => setFlow('morning')}
@@ -560,6 +626,7 @@ function App() {
           <NightScreen
             date={set.date}
             tomorrowThemes={set.tomorrowThemes ?? []}
+            nod={<NodPicker date={set.date} />}
             onPractice={openPractice}
             onClose={() => markWindow(set.date, 'night')}
           />
@@ -595,7 +662,7 @@ function App() {
             aria-label="Account"
             onClick={() => goTab('account')}
           >
-            <Avatar name="You" tint="#4f7357" size={36} />
+            <Avatar name={me?.name || 'You'} tint="#4f7357" size={36} />
           </button>
         </nav>
         <main className={`page page-${tab}`}>
@@ -611,7 +678,7 @@ function App() {
 
           {tab === 'notebook' && <NotebookScreen mild={!intimacyOn(prefs)} today={date} />}
 
-          {tab === 'circle' && <CircleScreen />}
+          {tab === 'circle' && <CircleScreen onOpenMirror={() => setTab('mirror')} />}
 
           {tab === 'account' && (
             <AccountScreen
@@ -647,7 +714,7 @@ function App() {
             </div>
           )}
 
-          {set && tab === 'mirror' && <Mirror today={set.date} onOpenKept={() => open('kept')} />}
+          {set && tab === 'mirror' && <Mirror today={set.date} onOpenKept={() => open('kept')} onCircle={() => setTab('circle')} />}
 
           {body}
         </main>
@@ -655,6 +722,9 @@ function App() {
     </OpenRead.Provider>
   )
 }
+
+// The sign-in sheet after the first sitting is offered once.
+const SIGNIN_ASKED = 'pi.signin.asked'
 
 function weekday(iso: string): string {
   return new Date(`${iso}T00:00:00Z`).toLocaleDateString('en', { weekday: 'long', timeZone: 'UTC' })

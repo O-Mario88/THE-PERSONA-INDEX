@@ -115,6 +115,7 @@ function stubApi(routes: {
   steps?: Route
   rating?: Route | Route[]
   regional?: Route
+  social?: (url: string, init?: RequestInit) => Route | undefined // Stage 5: accounts and the circle
 }) {
   let devices = 0
   let votes = 0
@@ -126,6 +127,10 @@ function stubApi(routes: {
     if (url === '/api/device' && init?.method === 'POST') {
       devices++
       return json({ status: 201, body: { token: `v1.device${devices}.sig` } })
+    }
+    if (url === '/api/account/device') {
+      devices++
+      return json({ status: 200, body: { token: `v1.device${devices}.sig` } })
     }
     if (url.startsWith('/api/editions/')) {
       return json(routes.edition ?? routes.today ?? { status: 200, body: today })
@@ -158,6 +163,8 @@ function stubApi(routes: {
     if (url === '/api/regional') {
       return json(routes.regional ?? { status: 404, body: { error: 'no_regional' } })
     }
+    const social = routes.social?.(url, init)
+    if (social) return json(social)
     return json({ status: 404, body: { error: 'not_found' } })
   })
   vi.stubGlobal('fetch', fetchMock)
@@ -207,8 +214,10 @@ function answeredThisMorning() {
 const noClinicianWords = /therap|psycholog|psychiatr|counsel/i
 
 // Edwin, 2026-10-15: a quiet companion, "not comparing them with other
-// people", and "it should not feel like game".
-const crowdOrScore = /player|\bcrowd\b|%|\bpts\b|\bpoints\b|bonus|\blevels?\b|\bshare\b|compare with/i
+// people", and "it should not feel like game". Since 2026-10-24 (Stage 5)
+// the week's name may be shared as a card, so "share" is no longer banned;
+// the card itself never carries an answer (ShareCard.test.tsx).
+const crowdOrScore = /player|\bcrowd\b|%|\bpts\b|\bpoints\b|bonus|\blevels?\b|compare with/i
 
 
 describe('the daily questions', () => {
@@ -2604,5 +2613,108 @@ describe('questions about everyday life where you live', () => {
     expect(JSON.parse(localStorage.getItem('pi.pick.2026-10-12')!)).toHaveLength(3)
     expect(JSON.parse(localStorage.getItem('pi.pick.2026-10-12')!)).not.toContain(ID)
     expect(calls(fetchMock, '/api/regional')).toHaveLength(0)
+  })
+})
+
+describe('Stage 5 in the day', () => {
+  const methods = { status: 200, body: { email: true, phone: false, google: false, apple: false } }
+  const signIn = () => {
+    localStorage.setItem('pi.account.v1', 's1.k.sess.sig')
+    localStorage.setItem('pi.account.me', JSON.stringify({ id: 'acc', name: 'Ama', handle: 'ama', suggest: true, connect: true, sync: false }))
+  }
+
+  it('offers signing in once, after the first sitting, and "not now" keeps everything here', async () => {
+    const fetchMock = stubApi({ social: (url) => (url === '/api/auth/methods' ? methods : undefined) })
+    const { unmount } = render(<App />)
+    await answer('Right after eating')
+    next()
+    await answer('Split it evenly')
+    next()
+    await answer('Several')
+    next()
+    expect(await screen.findByRole('heading', { name: 'Your three cards are on this phone. Keep them everywhere.' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Not now · keep it on this phone' }))
+    expect(screen.queryByRole('heading', { name: /Keep them everywhere/ })).not.toBeInTheDocument()
+    expect(calls(fetchMock, '/api/auth/code')).toHaveLength(0)
+    unmount()
+    render(<App />)
+    await screen.findByRole('heading', { name: /Morning/ })
+    expect(screen.queryByRole('heading', { name: /Keep them everywhere/ })).not.toBeInTheDocument()
+  })
+
+  it('greets a signed-in person by name and shows nods that arrived, never a count', async () => {
+    signIn()
+    answeredThisMorning()
+    vi.setSystemTime(at(12))
+    stubApi({
+      social: (url) => {
+        if (url.startsWith('/api/nods?'))
+          return { status: 200, body: { cards: ['Rooting for you this week.'], received: [{ from: { id: 'n', name: 'Nakato', tag: 'family' }, card: 0, text: 'Rooting for you this week.', date: '2026-10-12' }], sentTo: [] } }
+        if (url.startsWith('/api/friends/today')) return { status: 200, body: { open: false, have: 1, need: 3 } }
+        if (url === '/api/together') return { status: 200, body: [] }
+      },
+    })
+    render(<App />)
+    expect(await screen.findByRole('heading', { name: 'Midday, Ama' })).toBeInTheDocument()
+    expect(await screen.findByText('sent you a quiet nod · “Rooting for you this week.”', { exact: false })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Since you last looked' })).not.toHaveTextContent(/\d+ nods?/)
+  })
+
+  it("names today's friend in the midday hero once the circle has three", async () => {
+    signIn()
+    answeredThisMorning()
+    vi.setSystemTime(at(12))
+    stubApi({
+      social: (url) => {
+        if (url.startsWith('/api/friends/today'))
+          return {
+            status: 200,
+            body: {
+              open: true,
+              have: 3,
+              need: 3,
+              friend: { id: 'k', name: 'Kofi', tag: 'work', since: '2026-10-01', active: true, connect: true },
+              question: { id: 'fq-work-01', prompt: 'What does Kofi do first?', options: [{ id: 'a', label: 'Takes the hard part' }] },
+            },
+          }
+        if (url.startsWith('/api/nods?')) return { status: 200, body: { cards: [], received: [], sentTo: [] } }
+        if (url === '/api/together') return { status: 200, body: [] }
+      },
+    })
+    render(<App />)
+    expect(await screen.findByRole('button', { name: "Open: Today's friend is Kofi" })).toBeInTheDocument()
+  })
+
+  it('the Outside Mirror, locked, counts friends who answered and never names them', async () => {
+    signIn()
+    await openMirror({
+      social: (url) => (url === '/api/friends/mirror' ? { status: 200, body: { open: false, friends: 2, need: 3, weeks: 3, traits: [] } } : undefined),
+    })
+    await screen.findByRole('heading', { level: 2, name: weekTitle })
+    const section = await screen.findByRole('region', { name: /How your circle experiences you/ })
+    expect(within(section).getByText('Opens when 3 friends have answered', { exact: false })).toBeInTheDocument()
+    expect(within(section).getByRole('list', { name: '2 of 3 friends have answered' })).toBeInTheDocument()
+    expect(within(section).getAllByText('A friend')).toHaveLength(2)
+    expect(section).not.toHaveTextContent(/Kofi|Nakato/)
+  })
+
+  it('the Outside Mirror, open, sets the circle beside your own read', async () => {
+    signIn()
+    await openMirror({
+      social: (url) =>
+        url === '/api/friends/mirror'
+          ? { status: 200, body: { open: true, friends: 4, need: 3, weeks: 3, traits: [{ trait: 'conscientiousness', position: 30 }] } }
+          : undefined,
+    })
+    const section = await screen.findByRole('region', { name: /How your circle experiences you/ })
+    expect(await within(section).findByText('Blended from 4 friends over 3 weeks. No single answer is ever shown.')).toBeInTheDocument()
+    expect(within(section).getByRole('img', { name: /Getting things done: your circle 30 of 100, you 74/ })).toBeInTheDocument()
+    expect(section).toHaveTextContent('What your circle notices that you might miss')
+  })
+
+  it('is not in the mirror for someone signed out', async () => {
+    await openMirror()
+    await screen.findByRole('heading', { level: 2, name: weekTitle })
+    expect(screen.queryByRole('region', { name: /How your circle experiences you/ })).not.toBeInTheDocument()
   })
 })

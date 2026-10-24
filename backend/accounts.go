@@ -625,6 +625,18 @@ func (s *Server) FreshDevice(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, DeviceIssued{Token: s.devices.tokenFor(s.devices.accountDeviceID(acc))})
 }
 
+// AccountDevice is GET /api/account/device: the account's current pass, for
+// a signed-in phone whose pass was refused (another phone deleted
+// everything) or that restored an older one from a backup.
+func (s *Server) AccountDevice(w http.ResponseWriter, r *http.Request) {
+	acc, _, ok := s.signedIn(w, r)
+	if !ok {
+		return
+	}
+	w.Header().Set("Cache-Control", "no-store")
+	writeJSON(w, http.StatusOK, DeviceIssued{Token: s.devices.tokenFor(s.devices.accountDeviceID(acc))})
+}
+
 // SignOut is DELETE /api/account/sessions/{id}: this phone, or another one
 // from the account screen ("Sign out there").
 func (s *Server) SignOut(w http.ResponseWriter, r *http.Request) {
