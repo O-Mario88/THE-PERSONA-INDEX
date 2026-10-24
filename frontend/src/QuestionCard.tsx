@@ -6,6 +6,7 @@ import {
   CLOSED,
   dropVoteKey,
   earlierAnswer,
+  MAX_FIRST_LINE,
   MAX_WORDS,
   OWN_WORDS,
   PRIVATE_OPTION,
@@ -33,16 +34,28 @@ import {
   type Verdict,
 } from './api'
 import { isEvening } from './day'
-import { Helpline } from './Helpline'
+import { Helpline, HELPLINE_URL } from './Helpline'
 import { moveFor, startMove } from './moves'
-import { keepCard, keptCard, noteVerdict, unkeepCard } from './notebook'
+import { focusPlan, keepCard, keptCard, makePlan, noteVerdict, unkeepCard, type Plan } from './notebook'
 import { inOrder } from './order'
+import { loadPeople, namesLine } from './people'
+import { PeopleEditor } from './People'
 import { DEFAULT_WORDS_DAYS } from './prefs'
-import { isHeavy, loadHistory, recalledAnswer, recordAnswer, recordSkip, recordVerdict, threadLine } from './profile'
+import { isLowMood, loadHistory, recalledAnswer, recordAnswer, recordSkip, recordVerdict, threadLine } from './profile'
 import { splitReveal } from './reveal'
 import { onOtherTab } from './storage'
 import { themeName, themeStyle, themeVars } from './themes'
-import { NOT_ME_REPLY, VERDICT_REPLIES } from './words'
+import {
+  CRISIS_LINE,
+  focusTouch,
+  HEAVY_HEADLINE,
+  HEAVY_THANKS,
+  NO_PEOPLE,
+  NOT_ME_REPLY,
+  peopleAsk,
+  SWAP_NOTE,
+  VERDICT_REPLIES,
+} from './words'
 
 export type Done = 'answered' | 'skipped'
 
@@ -51,6 +64,7 @@ type Props = {
   date: string
   sitting?: Sitting
   wordsDays?: number
+  writeFirst?: boolean // open with a short box for one's own words, the options after
   onDone?: (questionId: string, done: Done) => void
   onNext: () => void
 }
@@ -63,11 +77,22 @@ type Mode = 'options' | 'writing' | 'closest'
 // words, and the same screen turns into what it says about you: the
 // insight, one small step to try and a way to say whether it landed. Never
 // what anyone else answered, and no score.
-export function QuestionCard({ question, date, sitting, wordsDays = DEFAULT_WORDS_DAYS, onDone, onNext }: Props) {
+export function QuestionCard({
+  question,
+  date,
+  sitting,
+  wordsDays = DEFAULT_WORDS_DAYS,
+  writeFirst = false,
+  onDone,
+  onNext,
+}: Props) {
   const [choice, setChoice] = useState<string | null>(() => recalledChoice(question.id))
   const [words, setWords] = useState<OwnWords | null>(() => recalledWords(question.id))
   const [draft, setDraft] = useState(() => (recalledChoice(question.id) ? '' : recalledDraft(question.id)))
-  const [mode, setMode] = useState<Mode>(() => (draft ? 'writing' : 'options'))
+  // A write-first card opens on a box for one line (Edwin, 2026-10-24); the
+  // options follow as "which is closest?", or straight away on "Just tap instead".
+  const [first, setFirst] = useState(() => writeFirst && !recalledChoice(question.id) && draft.length <= MAX_FIRST_LINE)
+  const [mode, setMode] = useState<Mode>(() => (draft || first ? 'writing' : 'options'))
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   // Set when the server already had an earlier answer from this phone.
@@ -181,6 +206,7 @@ export function QuestionCard({ question, date, sitting, wordsDays = DEFAULT_WORD
   const chosen = question.options.find((o) => o.id === choice)
   const answered = !!choice && choice !== SKIPPED
   const typed = draft.trim()
+  const max = first ? MAX_FIRST_LINE : MAX_WORDS
 
   return (
     <section
@@ -220,15 +246,15 @@ export function QuestionCard({ question, date, sitting, wordsDays = DEFAULT_WORD
           }}
         >
           <label htmlFor={wordsId} className="eyebrow">
-            In your own words
+            {first ? 'Say it in one line' : 'In your own words'}
           </label>
           <textarea
             id={wordsId}
             className="own-box"
             value={draft}
-            maxLength={MAX_WORDS}
-            rows={4}
-            autoFocus
+            maxLength={max}
+            rows={first ? 2 : 4}
+            autoFocus={!first}
             placeholder="Say it the way it really is for you."
             onChange={(e) => editDraft(e.target.value)}
           />
@@ -236,14 +262,21 @@ export function QuestionCard({ question, date, sitting, wordsDays = DEFAULT_WORD
             <span>
               <span aria-hidden="true">🔒 </span>Kept on this phone. The app never sends it.
             </span>
-            <span>{MAX_WORDS - draft.length} left</span>
+            <span>{max - draft.length} left</span>
           </p>
           <div className="own-buttons">
             <button type="submit" className="pill-button" disabled={!typed}>
               Keep my words
             </button>
-            <button type="button" className="text-button" onClick={() => setMode('options')}>
-              Back to the options
+            <button
+              type="button"
+              className="text-button"
+              onClick={() => {
+                setFirst(false)
+                setMode('options')
+              }}
+            >
+              {first ? 'Just tap instead' : 'Back to the options'}
             </button>
           </div>
         </form>
@@ -356,7 +389,8 @@ function YourWords({ words }: { words: OwnWords }) {
 // The card, in seven parts (the review of 2026-10-15): the answer or the
 // person's own words; the headline; what it looks like in a day; the other
 // side, what this answer can cost; the thread to earlier answers, when there
-// is a true one; one small step; and whether it is them.
+// is a true one; one small step; and whether it is them. A heavy answer gets
+// none of that: a plain word, the person's own people and a helpline.
 function Answer({
   question,
   option,
@@ -372,10 +406,15 @@ function Answer({
   wordsDays: number
   onNext: () => void
 }) {
-  const insight = option.insight
+  const insight = option.heavy ? undefined : option.insight
   // Worked out once, from the history this answer was just added to, and
   // put away if the person says the card is not them.
   const [thread] = useState(() => threadLine(loadHistory(), question, option.id, date))
+  // The one thing the person is working on, when this answer touches it.
+  const [focus] = useState(() => {
+    const f = focusPlan()
+    return f && (option.traits?.[f.trait] ?? 0) !== 0 ? f : null
+  })
   const [notMe, setNotMe] = useState(() => recalledVerdict(question.id) === 'not_me')
   return (
     <div className="answer">
@@ -387,9 +426,17 @@ function Answer({
           <span className="chosen">{option.label}</span>
         </p>
       )}
-      {insight && <InsightPanel reveal={insight.reveal} otherSide={insight.otherSide} thread={notMe ? null : thread} />}
+      {option.heavy && <HeavyCard />}
+      {insight && (
+        <InsightPanel
+          reveal={insight.reveal}
+          otherSide={insight.otherSide}
+          thread={notMe ? null : thread}
+          focus={notMe ? null : focus}
+        />
+      )}
       {insight && <KeepThis question={question} option={option} words={words} date={date} />}
-      {isHeavy(question.theme, option.depth) && <Helpline />}
+      {insight && isLowMood(question.theme, option.depth) && <Helpline />}
       {insight?.step && <TryThis question={question} option={option} step={insight.step} date={date} />}
       {insight && (
         <Rate
@@ -407,7 +454,60 @@ function Answer({
   )
 }
 
-function InsightPanel({ reveal, otherSide, thread }: { reveal: string; otherSide?: string; thread: string | null }) {
+// The card of a heavy answer (the proposal of 2026-10-24, "Heavy answers
+// point to people"): no reading, no step, no rating. A plain word, the
+// people the person keeps on this phone (or a way to add them) and where to
+// find a helpline, every time.
+function HeavyCard() {
+  const [people, setPeople] = useState(loadPeople)
+  const [adding, setAdding] = useState(false)
+  const names = people?.names ?? []
+  return (
+    <div className="insight heavy" role="note" aria-label="That sounds really hard">
+      <p className="insight-headline">{HEAVY_HEADLINE}</p>
+      <p className="insight-body">{HEAVY_THANKS}</p>
+      {names.length > 0 && <p className="insight-body">{peopleAsk(namesLine(names))}</p>}
+      {people?.helps && <p className="insight-body">What helps, in your words: “{people.helps}”</p>}
+      {names.length === 0 && !adding && (
+        <>
+          <p className="insight-body">{NO_PEOPLE}</p>
+          <button type="button" className="chip" onClick={() => setAdding(true)}>
+            Add your people
+          </button>
+        </>
+      )}
+      {adding && (
+        <PeopleEditor
+          onSaved={() => {
+            setPeople(loadPeople())
+            setAdding(false)
+          }}
+          onCancel={() => setAdding(false)}
+        />
+      )}
+      <Helpline />
+      <p className="helpline">
+        {CRISIS_LINE}{' '}
+        <a href={HELPLINE_URL} target="_blank" rel="noreferrer">
+          Talk to someone now
+        </a>
+      </p>
+      <p className="insight-note">For self-reflection, not a diagnosis.</p>
+    </div>
+  )
+}
+
+function InsightPanel({
+  reveal,
+  otherSide,
+  thread,
+  focus,
+}: {
+  reveal: string
+  otherSide?: string
+  thread: string | null
+  focus: Plan | null
+}) {
   const { headline, body } = splitReveal(reveal)
   return (
     <div className="insight" role="note" aria-label="What your answer may say">
@@ -422,6 +522,12 @@ function InsightPanel({ reveal, otherSide, thread }: { reveal: string; otherSide
         <p className="insight-thread">
           <span aria-hidden="true">↺ </span>
           {thread}
+        </p>
+      )}
+      {focus && (
+        <p className="insight-thread insight-focus">
+          <span aria-hidden="true">→ </span>
+          {focusTouch(focus.when, focus.will)}
         </p>
       )}
       <p className="insight-note">For self-reflection, not a diagnosis.</p>
@@ -479,10 +585,16 @@ function KeepThis({ question, option, words, date }: { question: Question; optio
   )
 }
 
-// One small step from the card. "I'll try it" keeps it as one of today's
-// small steps: the evening asks how a morning step went, and the mirror keeps them all.
+// One thing the person could try, offered, never prescribed (Edwin,
+// 2026-10-24: the app helps people find their own answers rather than
+// handing them out). "I'll try it" keeps it as one of today's small steps:
+// the evening asks how a morning step went, and the mirror keeps them all.
+// "My own idea" lets the person put it their own way, as their one plan,
+// kept on this phone.
 function TryThis({ question, option, step, date }: { question: Question; option: Option; step: string; date: string }) {
-  const [state, setState] = useState<'open' | 'started' | 'later'>(() => (moveFor(question.id) ? 'started' : 'open'))
+  const [state, setState] = useState<'open' | 'started' | 'later' | 'own' | 'planned'>(() =>
+    moveFor(question.id) ? 'started' : 'open',
+  )
   const [evening] = useState(() => isEvening())
   function start() {
     setState('started')
@@ -491,19 +603,28 @@ function TryThis({ question, option, step, date }: { question: Question; option:
     })
   }
   return (
-    <div className="try" role="group" aria-label="Small step">
+    <div className="try" role="group" aria-label="Something to try">
       <p>
-        <strong>Small step:</strong> {step}
+        <strong>Something you could try:</strong> {step}
       </p>
       {state === 'open' && (
         <div className="try-buttons">
           <button type="button" className="pill-button" onClick={start}>
             I'll try it
           </button>
+          <button type="button" className="text-button" onClick={() => setState('own')}>
+            My own idea
+          </button>
           <button type="button" className="text-button" onClick={() => setState('later')}>
             Not now
           </button>
         </div>
+      )}
+      {state === 'own' && (
+        <OwnIdea option={option} date={date} onMade={() => setState('planned')} onCancel={() => setState('open')} />
+      )}
+      {state === 'planned' && (
+        <p className="muted">Your own plan, kept in your notebook. Next time you sit down, I'll ask how it went.</p>
       )}
       {state === 'started' && (
         <p className="muted">
@@ -515,6 +636,55 @@ function TryThis({ question, option, step, date }: { question: Question; option:
     </div>
   )
 }
+
+// OwnIdea: the person's own way of acting on the card, "When ___, I will
+// ___", kept as the one thing they are working on (notebook.ts). Only
+// whether they did it is ever sent.
+function OwnIdea({ option, date, onMade, onCancel }: { option: Option; date: string; onMade: () => void; onCancel: () => void }) {
+  const [when, setWhen] = useState('')
+  const [will, setWill] = useState('')
+  const [focus] = useState(focusPlan)
+  const [trait, w] = Object.entries(option.traits ?? {}).find(([, v]) => v !== 0) ?? ['', 1]
+  const ready = when.trim() && will.trim()
+  return (
+    <form
+      className="plan-offer"
+      aria-label="My own idea"
+      onSubmit={(e) => {
+        e.preventDefault()
+        if (!ready) return
+        makePlan({ made: date, trait, high: w > 0, when: when.trim(), will: will.trim() })
+        onMade()
+      }}
+    >
+      <p className="eyebrow">Your own way, tied to a moment</p>
+      {focus && <p className="muted">{SWAP_NOTE}</p>}
+      <label className="plan-field">
+        <span>When</span>
+        <input className="own-line" value={when} maxLength={MAX_PLAN} onChange={(e) => setWhen(e.target.value)} />
+      </label>
+      <label className="plan-field">
+        <span>I will</span>
+        <input className="own-line" value={will} maxLength={MAX_PLAN} onChange={(e) => setWill(e.target.value)} />
+      </label>
+      <p className="own-meta">
+        <span>
+          <span aria-hidden="true">🔒 </span>Your plan stays on this phone. I only ever send whether you did it.
+        </span>
+      </p>
+      <div className="own-buttons">
+        <button type="submit" className="pill-button" disabled={!ready}>
+          Keep my plan
+        </button>
+        <button type="button" className="text-button" onClick={onCancel}>
+          Cancel
+        </button>
+      </div>
+    </form>
+  )
+}
+
+const MAX_PLAN = 80
 
 // Rate asks whether the card is them: "That's me", "Partly" or "Not me"
 // (chosen 2026-10-16, in place of "I learned something"). The tap is kept

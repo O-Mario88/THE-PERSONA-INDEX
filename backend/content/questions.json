@@ -7468,6 +7468,7 @@
      "id": "heavy-feeling",
      "label": "With a heavy feeling about the day ahead",
      "depth": 4,
+     "heavy": true,
      "traits": {
       "neuroticism": 1,
       "rumination": 1
@@ -7538,6 +7539,7 @@
      "id": "hard-to-say",
      "label": "Honestly, it's hard to say right now",
      "depth": 4,
+     "heavy": true,
      "traits": {
       "neuroticism": 1
      },
@@ -7740,6 +7742,7 @@
      "id": "replay-in-bed",
      "label": "Nothing really, I replay it in bed",
      "depth": 4,
+     "heavy": true,
      "traits": {
       "rumination": 2
      },
@@ -7877,6 +7880,7 @@
      "id": "low-alone",
      "label": "I feel low for days and keep it to myself",
      "depth": 4,
+     "heavy": true,
      "traits": {
       "neuroticism": 1,
       "attachment_avoidance": 1
@@ -7930,6 +7934,7 @@
      "id": "good-news-alone",
      "label": "When good news comes and there's no one to tell",
      "depth": 3,
+     "heavy": true,
      "insight": {
       "reveal": "Loneliness finds you most in your happy moments. For you, sharing is what makes good news feel complete. The pang usually points straight at someone you wish you could call, and that person might be really glad to hear from you.",
       "otherSide": "When there's no one to tell, the pang can take the shine off your good news, just when you deserve to enjoy it.",
@@ -7943,6 +7948,7 @@
      "id": "with-close-people",
      "label": "Sometimes even with my partner or family",
      "depth": 4,
+     "heavy": true,
      "traits": {
       "attachment_anxiety": 1
      },
@@ -8286,6 +8292,7 @@
      "id": "forgotten",
      "label": "I wonder if people have forgotten me",
      "depth": 4,
+     "heavy": true,
      "traits": {
       "attachment_anxiety": 2
      },
@@ -9825,6 +9832,7 @@
      "id": "handle-alone",
      "label": "Honestly, I'd handle it alone",
      "depth": 4,
+     "heavy": true,
      "traits": {
       "attachment_avoidance": 2
      },
@@ -10400,6 +10408,7 @@
      "id": "no-real-talk",
      "label": "Many, but no one I really talk to",
      "depth": 4,
+     "heavy": true,
      "traits": {
       "attachment_avoidance": 1
      },
@@ -14187,7 +14196,7 @@
       "present_bias": 1
      },
      "insight": {
-      "reveal": "You love a clean slate, and Monday always offers one. Fresh beginnings give you real energy: new weeks, new months, new notebooks. The secret is that a Thursday can be a fresh start too, if you let it.",
+      "reveal": "You love a clean slate, and Monday always offers one. Fresh beginnings give you real energy: new weeks, new months, new notebooks. A Thursday can be a fresh start too, if you let it be one.",
       "otherSide": "Waiting for Monday can write off Thursday and Friday, when you still had good days left in the week.",
       "research": "Interest in fresh starts jumps on landmark dates: student gym visits rose 33% at the start of a week.",
       "source": "dai2014",

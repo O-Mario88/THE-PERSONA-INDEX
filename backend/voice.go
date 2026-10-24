@@ -27,8 +27,14 @@ import (
 //   - A few phrases had been used so often that the cards began to sound
 //     alike; each now has a cap across the whole bank.
 //
-// frontend/src/voice.test.ts runs the comparison, hedge, tag-question and
-// spelling rules over the mirror and day-close wording; keep the two in step.
+// The research of 2026-10-24 (docs/research/what-people-crave.md, distilled
+// in docs/writing-guide.md) added the rules below promisePattern: no
+// promises, no forced cheer, no prompt that asks which group someone belongs
+// to or why they are "like this", and (bannedPattern in content.go) no
+// labels for who someone is.
+//
+// frontend/src/voice.ts holds the same rules for the mirror, the day close
+// and the reads (voice.test.ts runs them); keep the two in step.
 
 // comparisonPattern finds the ways a card had of measuring the reader against
 // other people, or of talking about people at large instead of the reader.
@@ -164,6 +170,26 @@ var loadedLabelPattern = regexp.MustCompile(`(?i)\b(calmly|kindly|gently|politel
 // partner. Ask about "a partner", or offer a way out ("or how would you?").
 var partnerPromptPattern = regexp.MustCompile(`(?i)\byour (partner|relationship|spouse|husband|wife|boyfriend|girlfriend|other half)\b`)
 
+// promisePattern finds a promise the evidence cannot keep. Every effect in
+// the research is small, so a card promises noticing and small shifts,
+// never a changed life, a guarantee, happiness or that everything will be
+// all right (the "40% of happiness" figure is disowned by its own authors).
+var promisePattern = regexp.MustCompile(`(?i)\b(change (your|you|their) life|life[- ]changing|transform(s|ed|ing|ation|ative)?|guarantee[sd]?|everything will be (all right|alright|fine)|it will all work out|(will|'ll) (make you|be) happier|unlock (your|the)|rewire[sd]?|fix yourself|the secret (is|to)|40 ?(%|per ?cent) of (your )?happiness)\b`)
+
+// cheerPattern finds forced cheer. Silver linings and affirmations hurt the
+// people who are already low; accepting a feeling protects them.
+var cheerPattern = regexp.MustCompile(`(?i)\b(everything happens for a reason|silver linings?|look on the bright side|stay positive|good vibes( only)?|what doesn't kill you)\b`)
+
+// identityPromptPattern finds a prompt that asks which group someone belongs
+// to. The app asks what people did, never which religion, party, ethnicity
+// or nationality they hold, and never stores it.
+var identityPromptPattern = regexp.MustCompile(`(?i)\b(which|what) (religion|political party|ethnicity|race|nationality|caste|tribe|denomination) (are|do|is|were|did|does)\b|\b(which|what) party do you (vote|support|back)\b`)
+
+// broodingPromptPattern finds the abstract "why am I like this?" that the
+// research ties to brooding in people who are already low. Ask about a
+// moment instead.
+var broodingPromptPattern = regexp.MustCompile(`(?i)\b(why am i like this|why are you like this|what'?s wrong with (you|me))\b`)
+
 // phraseCaps are phrases the cards had leaned on until they all began to
 // sound alike. Each may appear in at most max insight cards (reveal and
 // step together) across the whole bank. Labels are not counted.
@@ -197,6 +223,12 @@ func checkVoice(b bankFile) []error {
 		checkWording(fail, q.ID+" prompt", q.Prompt)
 		if m := partnerPromptPattern.FindString(q.Prompt); m != "" {
 			fail("%s: prompt presumes a partner (%q); ask about \"a partner\" or offer a way out", q.ID, m)
+		}
+		if m := identityPromptPattern.FindString(q.Prompt); m != "" {
+			fail("%s: prompt asks which group someone belongs to (%q); ask what they did instead", q.ID, m)
+		}
+		if m := broodingPromptPattern.FindString(q.Prompt); m != "" {
+			fail("%s: prompt asks an abstract why (%q); ask about a moment instead", q.ID, m)
 		}
 		for _, o := range q.Options {
 			ow := q.ID + "/" + o.ID
@@ -260,6 +292,12 @@ func checkWording(fail func(string, ...any), where, s string) {
 	}
 	if m := usSpelling(s); m != "" {
 		fail("%s: uses the US spelling %q; the bank is UK English", where, m)
+	}
+	if m := promisePattern.FindString(s); m != "" {
+		fail("%s: promises too much (%q); promise noticing and small shifts", where, m)
+	}
+	if m := cheerPattern.FindString(s); m != "" {
+		fail("%s: forced cheer (%q); accept the feeling instead", where, m)
 	}
 }
 

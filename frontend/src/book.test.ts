@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ServerExport } from './api'
 import { bookHTML, dataFile, downloadBook, fullDate, gatherBook } from './book'
-import { checkPlan, keepCard, keepGoodThings, keepSentence, makePlan, notePractice, rename, unkeepCard } from './notebook'
+import { checkPlan, keepCard, keepGoodThings, keepSentence, makePlan, notePractice, rename, reviseSentence, unkeepCard } from './notebook'
 import { REGISTRY } from './registry'
 import { save, saveJSON } from './storage'
 
@@ -82,6 +82,7 @@ describe('the book', () => {
     expect(html).toContain('Closeness starts with words for you.')
     expect(html).toContain('A long walk')
     expect(html).toContain('This week I learned that I rush the last step.')
+    expect(html).not.toContain("What's different now")
     expect(html).toContain('When I sit down, I will leave one job for tomorrow.')
     expect(html).toContain('Did it 1 time, not yet 0 times.')
     expect(html).toContain('The Quiet Starter')
@@ -94,6 +95,13 @@ describe('the book', () => {
     expect(html).toContain('findahelpline.com')
     // A page that stands on its own: nothing fetched, nothing run.
     expect(html).not.toMatch(/<script|<link|src=|@import|url\(/i)
+  })
+
+  it('keeps what Sunday brought back, and what is different now', () => {
+    fillNotebook()
+    reviseSentence('2026-10-19', { date: '2026-11-22', verdict: 'changing', note: 'I slow down <now>' })
+    const html = bookHTML(gatherBook('2026-11-23', false, server))
+    expect(html).toContain("22 November 2026: changing · What's different now: “I slow down &lt;now&gt;”")
   })
 
   it('leaves private entries out while "Keep it mild" is on, and says how many', () => {

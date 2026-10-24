@@ -52,6 +52,12 @@ type bankOption struct {
 	Depth   int            `json:"depth"` // 1 = light answer, 4 = most revealing; ordered shallow to deep
 	Traits  map[string]int `json:"traits,omitempty"`
 	Insight bankInsight    `json:"insight"`
+	// Heavy marks an answer that says the person is hopeless, left out or
+	// alone with something hard. Its card stops being clever: the phone shows
+	// a plain acknowledgement, the person's own people and a helpline instead
+	// of the insight (the proposal of 2026-10-24, "Heavy answers point to
+	// people"). Set by content review, never inferred.
+	Heavy bool `json:"heavy,omitempty"`
 }
 
 type bankInsight struct {
@@ -148,7 +154,10 @@ var (
 	idPattern     = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
 	bannedPattern = regexp.MustCompile(`(?i)\b(disorder|depressed|depression|narcissist\w*|psychopath\w*|sociopath\w*|bipolar|adhd|autism|autistic|ocd|trauma\w*|toxic|diagnos\w*|clinical|` +
 		// The app is a guide for self-reflection and never presents itself as a clinician.
-		`therap(y|ies|ists?)|psychologists?|psychiatrists?|counsell?ors?)\b`)
+		`therap(y|ies|ists?)|psychologists?|psychiatrists?|counsell?ors?|` +
+		// Nor does it hand down verdicts on who someone is: it describes what
+		// they did (the proposal of 2026-10-24, "How the app speaks to you").
+		`people[- ]pleas\w*|scarcity mindset|burn-?out|anxious attachment|avoidant|codependen\w*|neurotic|workaholics?|control freaks?|perfectionists?|introverts?|extroverts?|commitment[- ]phob\w*|gaslight\w*)\b`)
 	// The app never feels like a survey: no agree/disagree answers, no rating scales.
 	surveyLabel  = regexp.MustCompile(`(?i)^\s*((strongly\s+)?(agree|disagree)|neutral|not sure)\s*$|on a scale`)
 	surveyPrompt = regexp.MustCompile(`(?i)on a scale|do you agree|how much do you agree|rate yourself`)
@@ -219,6 +228,9 @@ func validateBank(b bankFile) []error {
 				fail("%s: depth %d breaks the shallow-to-deep order", ow, o.Depth)
 			}
 			prevDepth = o.Depth
+			if o.Heavy && (o.Depth < 3 || themes[q.Theme].care == careIntimate) {
+				fail("%s: only a deep answer outside intimacy can be heavy", ow)
+			}
 			if len(o.Traits) > 2 {
 				fail("%s: at most 2 trait weights", ow)
 			}
@@ -578,7 +590,7 @@ func (contentBank) dailyQuestion(q bankQuestion, date string) Question {
 		if src, ok := sources[o.Insight.Source]; ok {
 			in.Research, in.SourceTitle, in.SourceURL, in.Strength = o.Insight.Research, src.Title, src.URL, o.Insight.Strength
 		}
-		out.Options = append(out.Options, Option{ID: o.ID, Label: o.Label, Depth: o.Depth, Traits: o.Traits, Insight: in})
+		out.Options = append(out.Options, Option{ID: o.ID, Label: o.Label, Depth: o.Depth, Heavy: o.Heavy, Traits: o.Traits, Insight: in})
 	}
 	return out
 }

@@ -1,11 +1,12 @@
 import { BackupSettings } from './Backup'
+import { PeopleEditor } from './People'
 import { LockSettings } from './pwa/Lock'
 import { WORDS_DAYS, type Prefs, type WordsDays } from './prefs'
 
 // Settings (review of 2026-10-15): the few choices a person can change
 // later. The 18+ answer was a one-time tap; here it can be changed, and how
-// long one's own words stay on the phone, the backup (Backup.tsx) and the
-// lock (pwa/Lock.tsx).
+// long one's own words stay on the phone, the people a heavy answer points
+// to (People.tsx), the backup (Backup.tsx) and the lock (pwa/Lock.tsx).
 
 const WORDS_NAMES: Record<WordsDays, string> = { 7: 'One week', 35: 'Five weeks', 90: 'Three months' }
 
@@ -76,6 +77,15 @@ export function SettingsScreen({
             {WORDS_NAMES[d]}
           </label>
         ))}
+      </fieldset>
+
+      <fieldset className="notice">
+        <legend className="eyebrow">Your people</legend>
+        <p className="muted">
+          When an answer sounds heavy, I'll name them instead of giving you an insight. They stay on this phone, and go
+          in your backup only if your own words do.
+        </p>
+        <PeopleEditor />
       </fieldset>
 
       <BackupSettings />

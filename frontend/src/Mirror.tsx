@@ -13,9 +13,9 @@ import {
   type Verdict,
   wordsBetween,
 } from './api'
-import { IdentityCard, PlanOffer, RevisitCard, SundaySentence } from './Keep'
+import { FocusCard, IdentityCard, PlanOffer, SundaySentence, WordsBackCard } from './Keep'
 import { setMoveStatus, startMove } from './moves'
-import { revisitDue, sentencesBetween } from './notebook'
+import { focusPlan, sentencesBetween, wordsBackDue } from './notebook'
 import {
   AREA_NAMES,
   identityName,
@@ -33,11 +33,11 @@ import {
   weekRange,
   type Lean,
 } from './mirrorText'
-import { leaningVerdict, notMeSides, rememberLeaning } from './profile'
+import { changesBetween, changeWords, leaningVerdict, loadHistory, notMeSides, rememberLeaning, type Change } from './profile'
 import { addDays } from './storage'
 import { THEMES, themeName, themeStyle, themeVars } from './themes'
 import { honestLine, TRAITS } from './traits'
-import { LEANING_REPLIES, STEP_STATUS_WORDS } from './words'
+import { CHANGES_NOTE, LEANING_REPLIES, STEP_STATUS_WORDS } from './words'
 import { ReadLink } from './Read'
 
 type Span = 'week' | Period
@@ -143,9 +143,13 @@ function MirrorPage({
   const line = tagline(m.traits, notMe)
   const lean = leanings(m.traits)
   // Sunday asks for one line about the week, and once a month brings back a
-  // card from the notebook.
+  // card or a line from the notebook: "Is that still true?"
   const sunday = new Date(`${today}T00:00:00Z`).getUTCDay() === 0
-  const [revisit] = useState(() => (sunday ? revisitDue(today) : null))
+  const [wordsBack] = useState(() => (sunday ? wordsBackDue(today) : null))
+  // Change against the person's own past, from this phone's history, and the
+  // one thing they are working on.
+  const [changes] = useState(() => changesBetween(loadHistory(), m.from, m.to).slice(-3))
+  const [focus] = useState(focusPlan)
   const starter = sentenceStarter(leanings(m.traits, notMe)[0]?.side.lean)
   const moved = m.traits.some((t) => t.history.filter((h) => h.score !== undefined).length >= 2)
   // Own words live on this phone only; the server never sees them.
@@ -156,6 +160,7 @@ function MirrorPage({
     { key: 'glance', title: 'Your week at a glance', body: <Glance m={m} />, show: true },
     { key: 'traits', title: 'Your trait read', body: <Traits m={m} />, show: true },
     { key: 'moved', title: "How you've moved", body: <Moved m={m} />, show: moved },
+    { key: 'changed', title: 'What changed', body: <Changes changes={changes} />, show: changes.length > 0 },
     { key: 'all', title: 'All of you', body: <AllOfYou themes={m.themes} />, show: m.themes.length > 0 },
     {
       key: 'who',
@@ -171,6 +176,12 @@ function MirrorPage({
     },
     { key: 'words', title: 'In your own words', body: <OwnWordsList words={words} />, show: words.length > 0 },
     {
+      key: 'focus',
+      title: "What you're working on",
+      body: focus && <FocusCard plan={focus} today={today} />,
+      show: !!focus,
+    },
+    {
       key: 'steps',
       title: 'Your small steps',
       body: <Steps m={m} today={today} reload={reload} />,
@@ -179,8 +190,8 @@ function MirrorPage({
     {
       key: 'revisit',
       title: 'Still true?',
-      body: revisit && <RevisitCard card={revisit} today={today} />,
-      show: !!revisit,
+      body: wordsBack && <WordsBackCard item={wordsBack} today={today} />,
+      show: !!wordsBack,
     },
     {
       key: 'next',
@@ -453,6 +464,24 @@ function Traits({ m }: { m: MirrorData }) {
         </div>
       </div>
     </>
+  )
+}
+
+// What changed: answers this week that leaned a way the person's own
+// answers had not leaned for weeks (profile.ts, changeAt). Never set against
+// anyone else.
+function Changes({ changes }: { changes: Change[] }) {
+  return (
+    <div className="m-card m-changes">
+      <ul className="m-why-list">
+        {changes.map((c) => (
+          <li key={`${c.questionId}-${c.trait}`}>
+            <span className="m-why-date">{longDate(c.date)}</span> {changeWords(c)}
+          </li>
+        ))}
+      </ul>
+      <p className="m-note">{CHANGES_NOTE}</p>
+    </div>
   )
 }
 

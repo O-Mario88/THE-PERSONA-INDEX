@@ -7,7 +7,7 @@ import { GoodThings, PlanCheckCard, PlanOffer } from './Keep'
 import { movesOn, setMoveStatus, startedInEvening, type Move } from './moves'
 import { planToCheck } from './notebook'
 import type { Practice } from './practices'
-import { isHeavy, loadHistory, type AnswerRecord, type History } from './profile'
+import { heavyPause, isLowMood, loadHistory, type AnswerRecord, type History } from './profile'
 import { loadJSON, saveJSON } from './storage'
 import { Upcoming } from './Sittings'
 import { themeName, themeStyle, themeVars } from './themes'
@@ -52,7 +52,10 @@ export function DayClose(props: Props) {
   const mine = answersIn(history, questions, date)
   const eveningThemes = props.sitting === 'morning' ? props.eveningThemes : null
   const endsDay = !eveningThemes
-  const heavy = mine.some((a) => isHeavy(a.theme, a.depth))
+  const heavy = mine.some((a) => a.heavy || isLowMood(a.theme, a.depth))
+  // After a heavy answer the close keeps to kind words: no honest part, no
+  // plan or practice offered (profile.ts, heavyPause).
+  const [paused] = useState(() => heavyPause(history, date))
 
   let title = "That's your day."
   let lead = "Here's what your answers add up to this evening."
@@ -78,7 +81,7 @@ export function DayClose(props: Props) {
 
       {props.sitting === 'morning' ? (
         <>
-          <Thread answers={mine} history={history} date={date} />
+          <Thread answers={mine} history={history} date={date} paused={paused} />
           <MorningMoves date={date} />
           {eveningThemes && (
             <Upcoming
@@ -96,6 +99,7 @@ export function DayClose(props: Props) {
             history={history}
             date={date}
             onPractice={onPractice}
+            paused={paused}
           />
         </>
       )}
@@ -143,9 +147,15 @@ function Tiles({ label, questions }: { label: string; questions: Question[] }) {
   )
 }
 
-type Read = { answers: History['answers']; history: History; date: string; onPractice?: (p: Practice) => void }
+type Read = {
+  answers: History['answers']
+  history: History
+  date: string
+  onPractice?: (p: Practice) => void
+  paused: boolean // after a heavy answer: no honest part and no plan offered
+}
 
-function Thread({ answers, history, date }: Read) {
+function Thread({ answers, history, date, paused }: Read) {
   if (answers.length === 0) return null
   const advice = adviceFor(answers, history, date, 'morning')
   return (
@@ -157,12 +167,12 @@ function Thread({ answers, history, date }: Read) {
           <p className="thread-name">{p.name}</p>
           <p className="thread-level">{levelLine(p.earned)}</p>
           <p>{p.strength}</p>
-          {p.honest && (
+          {p.honest && !paused && (
             <p className="honest">
               <strong>The honest part:</strong> {p.honest}
             </p>
           )}
-          {p.honest && <PlanOffer trait={p.trait} high={p.high} date={date} dark />}
+          {p.honest && !paused && <PlanOffer trait={p.trait} high={p.high} date={date} dark />}
           <p>
             <strong>For the rest of today:</strong> {p.grow}
           </p>
@@ -298,19 +308,21 @@ export function StepCheck({ date, label, pick }: { date: string; label: string; 
 // The day's clearest leaning, from the morning's and the evening's answers:
 // one thing to carry into tomorrow. Its honest part comes only once the
 // leaning is a pattern.
-function ForTomorrow({ answers, history, date, onPractice }: Read) {
+function ForTomorrow({ answers, history, date, onPractice, paused }: Read) {
   const top = adviceFor(answers, history, date, 'evening').points[0]
   return (
     <div className="thread" role="note" aria-label="For tomorrow">
       <p className="eyebrow">For tomorrow</p>
       {top && <p className="thread-name">{top.name}</p>}
       {top && <p className="thread-level">{levelLine(top.earned)}</p>}
-      {top?.honest && (
+      {top?.honest && !paused && (
         <p className="honest">
           <strong>The honest part:</strong> {top.honest}
         </p>
       )}
-      {top?.honest && <PlanOffer trait={top.trait} high={top.high} date={date} onPractice={onPractice} dark />}
+      {top?.honest && !paused && (
+        <PlanOffer trait={top.trait} high={top.high} date={date} onPractice={onPractice} dark />
+      )}
       <p>{top ? top.grow : QUIET_DAY}</p>
     </div>
   )

@@ -19,8 +19,10 @@ const MARK_DAYS = 400
 type Stamp = { at: number }
 type Removed = Stamp & { removed: true }
 
-// Revisits: once a month, Sunday asks whether a kept card still feels true.
-export type Revisit = { date: string; verdict: 'still' | 'changing' | 'not_anymore' }
+// Revisits: once a month, Sunday brings back a kept card or a Sunday
+// sentence and asks "Is that still true?" (wordsBackDue). After a change,
+// the person can say what is different now, in their own words.
+export type Revisit = { date: string; verdict: 'still' | 'changing' | 'not_anymore'; note?: string }
 
 export type KeptCard = Stamp & {
   kind: 'card'
@@ -40,7 +42,7 @@ export type KeptCard = Stamp & {
 }
 
 export type GoodThings = Stamp & { kind: 'good'; date: string; lines: string[] }
-export type Sentence = Stamp & { kind: 'sentence'; week: string; text: string } // week: its Monday
+export type Sentence = Stamp & { kind: 'sentence'; week: string; text: string; revisits?: Revisit[] } // week: its Monday
 // A check of a plan. "did" and "not_yet" go to the server under their own
 // random key, so a resend counts once and no two checks can be tied to one
 // plan there; "changed" never leaves the phone.
@@ -56,6 +58,7 @@ export type Plan = Stamp & {
   will: string
   checks: PlanCheck[]
   closed?: true
+  lookedBack?: string // the day the person last chose to keep going with it, at the eight-week look back
 }
 export type Name = Stamp & { kind: 'name'; week: string; suggested: string; name: string }
 export type Practised = Stamp & { kind: 'practice'; date: string; practice: string }
@@ -142,18 +145,40 @@ export const sentencesBetween = (from: string, to: string) =>
     .sort((a, b) => a.week.localeCompare(b.week))
 
 export function keepSentence(week: string, text: string) {
-  write({ kind: 'sentence', week, text: text.trim(), at: sentence(week)?.at ?? 0 })
+  const was = sentence(week)
+  write({ ...was, kind: 'sentence', week, text: text.trim(), at: was?.at ?? 0 })
 }
 
-// Plans for an honest part: "When ___, I will ___".
+export function reviseSentence(week: string, r: Revisit) {
+  const s = sentence(week)
+  if (s) write({ ...s, revisits: [...(s.revisits ?? []), r] })
+}
+
+// Plans for an honest part: "When ___, I will ___". One is open at a time:
+// the one thing the person is working on (the proposal of 2026-10-24, "One
+// thing you're working on"), so making a new plan closes the others. Every
+// eight weeks the mirror looks back at it with them.
 export const plan = (id: string) => read<Plan>(`${PREFIX}plan.${id}`, 'plan')
 export const plans = () => all<Plan>('plan').sort((a, b) => b.made.localeCompare(a.made) || b.at - a.at)
 export const openPlans = () => plans().filter((p) => !p.closed)
+export const focusPlan = (): Plan | null => openPlans()[0] ?? null
 
 export function makePlan(p: Omit<Plan, 'kind' | 'at' | 'checks' | 'id' | 'madeAt'> & { id?: string; madeAt?: number }): Plan {
+  for (const o of openPlans()) write({ ...o, closed: true })
   const made: Plan = { ...p, kind: 'plan', id: p.id ?? newId(), checks: [], at: 0, madeAt: p.madeAt ?? Date.now() }
   write(made)
   return plan(made.id)!
+}
+
+export const LOOK_BACK_DAYS = 56
+// lookBackDue: eight weeks since the plan was made, or since the person last
+// chose to keep going with it.
+export const lookBackDue = (p: Plan, today: string) => daysBetween(p.lookedBack ?? p.made, today) >= LOOK_BACK_DAYS
+export const timesDone = (p: Plan) => p.checks.filter((c) => c.status === 'did').length
+
+export function lookBack(id: string, date: string) {
+  const p = plan(id)
+  if (p) write({ ...p, lookedBack: date })
 }
 
 export function changePlan(id: string, when: string, will: string, date: string) {
@@ -217,20 +242,52 @@ export function notePractice(date: string, practice: string) {
 }
 export const practicesDone = () => all<Practised>('practice').sort((a, b) => b.date.localeCompare(a.date))
 
-// revisitDue is the kept card Sunday brings back: one that felt true (or was
-// not judged) at least four weeks ago and has not been revisited for four
-// weeks, the longest-kept first. Only one a month: none while a revisit was
-// answered in the last four weeks.
-export function revisitDue(today: string): KeptCard | null {
-  const recent = (r: Revisit) => daysBetween(r.date, today) < 28
+// Words back (the proposal of 2026-10-24): what Sunday brings back and asks
+// "Is that still true?" about. A kept card (with the person's own words, when
+// they answered that way) or a Sunday sentence, kept four weeks or more ago,
+// the oldest first, and only one a month: none while a revisit was answered
+// in the last four weeks. An item is done with once it has changed or is not
+// them any more; one that is still true may come back after half a year.
+// Private cards and cards the person said were not them never come back.
+export type WordsBack = { kind: 'card'; card: KeptCard } | { kind: 'sentence'; sentence: Sentence }
+
+const WORDS_BACK_DAYS = 28
+const STILL_AGAIN_DAYS = 182
+
+export function wordsBackDue(today: string): WordsBack | null {
   const cards = keptCards()
-  if (cards.some((c) => c.revisits?.some(recent))) return null
-  return (
-    cards
-      .filter((c) => !c.private && c.verdict !== 'not_me' && daysBetween(c.date, today) >= 28)
-      .filter((c) => !(c.revisits ?? []).some(recent))
-      .sort((a, b) => a.date.localeCompare(b.date))[0] ?? null
-  )
+  const sentences = all<Sentence>('sentence')
+  const recent = (r: Revisit) => daysBetween(r.date, today) < WORDS_BACK_DAYS
+  if ([...cards, ...sentences].some((e) => e.revisits?.some(recent))) return null
+  const open = (rs: Revisit[] = []) => {
+    const last = rs[rs.length - 1]
+    return !last || (last.verdict === 'still' && daysBetween(last.date, today) >= STILL_AGAIN_DAYS)
+  }
+  const old = (date: string) => daysBetween(date, today) >= WORDS_BACK_DAYS
+  const due = [
+    ...cards
+      .filter((c) => !c.private && c.verdict !== 'not_me' && old(c.date) && open(c.revisits))
+      .map((card) => ({ from: card.date, item: { kind: 'card', card } as WordsBack })),
+    ...sentences
+      .filter((s) => s.text && old(addDays(s.week, 6)) && open(s.revisits))
+      .map((sentence) => ({ from: addDays(sentence.week, 6), item: { kind: 'sentence', sentence } as WordsBack })),
+  ]
+  return due.sort((a, b) => a.from.localeCompare(b.from))[0]?.item ?? null
+}
+
+// reviseWords keeps the answer to "Is that still true?" with what was brought back.
+export function reviseWords(item: WordsBack, r: Revisit) {
+  if (item.kind === 'card') reviseCard(item.card.questionId, r)
+  else reviseSentence(item.sentence.week, r)
+}
+
+// noteRevisit adds "What's different now?" to the item's last revisit.
+export function noteRevisit(item: WordsBack, note: string) {
+  const text = note.trim()
+  const e = item.kind === 'card' ? keptCard(item.card.questionId) : sentence(item.sentence.week)
+  const rs = e?.revisits ?? []
+  if (!e || !text || rs.length === 0) return
+  write({ ...e, revisits: [...rs.slice(0, -1), { ...rs[rs.length - 1], note: text }] })
 }
 
 // pruneNotebook clears the marks of removed entries after 400 days.

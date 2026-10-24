@@ -22,6 +22,7 @@ import {
   type Name,
   type Plan,
   type Practised,
+  type Revisit,
   type Sentence,
 } from './notebook'
 import { PRACTICES, type PracticeId } from './practices'
@@ -87,6 +88,18 @@ function section(title: string, body: string): string {
   return body ? `<section><h2>${esc(title)}</h2>${body}</section>` : ''
 }
 
+// What the person said when Sunday brought an entry back, and what is different now.
+function revisitsHTML(revisits: Revisit[] = []): string {
+  return revisits
+    .map(
+      (r) =>
+        `<p class="said">${esc(fullDate(r.date))}: ${esc(REVISIT_WORDS[r.verdict])}${
+          r.note ? ` · What's different now: “${esc(r.note)}”` : ''
+        }</p>`,
+    )
+    .join('')
+}
+
 function cardHTML(c: KeptCard): string {
   const color = THEMES[c.theme]?.from ?? '#6d5dfc'
   const answer = c.words
@@ -101,7 +114,7 @@ ${c.body ? `<p>${esc(c.body)}</p>` : ''}
 ${c.otherSide ? `<p class="other"><span class="label">The other side</span> ${esc(c.otherSide)}</p>` : ''}
 ${c.step ? `<p class="meta">Small step: ${esc(c.step)}</p>` : ''}
 ${c.verdict ? `<p class="said">${esc(VERDICT_WORDS[c.verdict])}</p>` : ''}
-${(c.revisits ?? []).map((r) => `<p class="said">${esc(fullDate(r.date))}: ${esc(REVISIT_WORDS[r.verdict])}</p>`).join('')}
+${revisitsHTML(c.revisits)}
 </article>`
 }
 
@@ -170,7 +183,7 @@ export function bookHTML(b: Book): string {
     section(
       'What you learned, week by week',
       b.sentences.length
-        ? `<ul>${b.sentences.map((s) => `<li><p class="meta">Week of ${esc(fullDate(s.week))}</p><p class="line">${esc(s.text)}</p></li>`).join('')}</ul>`
+        ? `<ul>${b.sentences.map((s) => `<li><p class="meta">Week of ${esc(fullDate(s.week))}</p><p class="line">${esc(s.text)}</p>${revisitsHTML(s.revisits)}</li>`).join('')}</ul>`
         : '',
     ),
     section(

@@ -19,6 +19,7 @@ export type Option = {
   id: string
   label: string
   depth?: number
+  heavy?: boolean // a heavy answer: its card points to people instead of an insight (since 2026-10-24)
   traits?: Record<string, number>
   insight?: Insight
 }
@@ -663,6 +664,8 @@ export function recalledInstead(questionId: string): Instead | null {
 // The choice kept when no option came close to someone's own words.
 export const OWN_WORDS = '~'
 export const MAX_WORDS = 280
+// The short box a write-first card opens with: a line, not an essay.
+export const MAX_FIRST_LINE = 120
 
 const wordsPrefix = 'pi.words.'
 

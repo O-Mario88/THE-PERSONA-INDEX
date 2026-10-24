@@ -1,10 +1,12 @@
 package main
 
 import (
+	"encoding/json"
 	"maps"
 	"os"
 	"reflect"
 	"regexp"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -91,6 +93,11 @@ func TestValidateBankCatchesBrokenCards(t *testing.T) {
 			q.Options[0].Insight.Reveal = "Worries go first and then the fun for you, and you probably tidy before guests arrive and answer the hard email first"
 		}, "headline"},
 		{"deep before shallow", func(q *bankQuestion) { q.Options[0].Depth, q.Options[1].Depth = 2, 1 }, "shallow-to-deep"},
+		{"verdict on the person", func(q *bankQuestion) {
+			q.Options[2].Insight.Reveal = "You're a people-pleaser at heart. You give a lot at work, and you rarely notice you need a break, so payday becomes the break."
+		}, "banned word"},
+		{"light answer marked heavy", func(q *bankQuestion) { q.Options[0].Heavy = true }, "can be heavy"},
+		{"intimate answer marked heavy", func(q *bankQuestion) { q.Theme, q.Options[2].Heavy = "intimacy", true }, "can be heavy"},
 		{"copied reveal", func(q *bankQuestion) { q.Options[1].Insight.Reveal = q.Options[0].Insight.Reveal }, "repeats"},
 		{"currency", func(q *bankQuestion) { q.Options[2].Label = "Spend $50 on me" }, "currency"},
 		{"too few options", func(q *bankQuestion) { q.Options = q.Options[:2] }, "3 or 4 options"},
@@ -268,4 +275,40 @@ func TestDailyPick(t *testing.T) {
 			t.Fatalf("expected 1, got %d", n)
 		}
 	})
+}
+
+// Heavy answers reach the phone marked, so it can point to people instead of
+// showing an insight, and only the answers content review marked are heavy.
+func TestHeavyAnswersReachThePhone(t *testing.T) {
+	b := shippedBank(t)
+	var heavy []string
+	for _, q := range b.byID {
+		for _, o := range b.dailyQuestion(*q, "2026-10-12").Options {
+			if o.Heavy {
+				heavy = append(heavy, q.ID+"/"+o.ID)
+			}
+		}
+	}
+	slices.Sort(heavy)
+	want := []string{
+		"happiness-joy-lately/hard-to-say",
+		"happiness-mornings/heavy-feeling",
+		"quality-quantity-3am-call/handle-alone",
+		"quality-quantity-group-chats/no-real-talk",
+		"sadness-stress-bad-day/replay-in-bed",
+		"sadness-stress-disappointed/low-alone",
+		"sadness-stress-most-alone/good-news-alone",
+		"sadness-stress-most-alone/with-close-people",
+		"sadness-stress-quiet-phone/forgotten",
+	}
+	if !slices.Equal(heavy, want) {
+		t.Errorf("heavy answers = %v, want %v", heavy, want)
+	}
+	raw, err := json.Marshal(b.dailyQuestion(*b.byID["sadness-stress-quiet-phone"], "2026-10-12"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(raw), `"id":"forgotten","label":"I wonder if people have forgotten me","depth":4,"heavy":true`) {
+		t.Errorf("the API shape does not carry heavy: %s", raw)
+	}
 }

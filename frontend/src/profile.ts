@@ -1,5 +1,6 @@
 // The on-phone profile: answer history, interest per theme, how far each
-// leaning has been earned, the thread line on a card and the low-mood check.
+// leaning has been earned, the thread line on a card, change against the
+// person's own past, and the checks for low and heavy answers.
 // None of it is ever sent to the server.
 //
 // Scoring rules, version 3 (change SCORING_VERSION when they change, so old
@@ -32,6 +33,7 @@ export type AnswerRecord = {
   verdict?: Verdict // the tap under the card
   closer?: { optionId: string; traits: Record<string, number> } // after "Not me": the reading picked as closer
   evening?: true
+  heavy?: true // a heavy answer (since 2026-10-24)
 }
 export type History = { answers: AnswerRecord[]; skips: { date: string; theme: string }[] }
 
@@ -62,7 +64,15 @@ export function recordAnswer(q: Question, optionId: string, date: string) {
   if (!o || !q.theme) return
   const h = loadHistory()
   if (h.answers.some((a) => a.questionId === q.id)) return
-  h.answers.push({ date, questionId: q.id, theme: q.theme, depth: o.depth ?? 1, traits: o.traits ?? {}, optionId })
+  h.answers.push({
+    date,
+    questionId: q.id,
+    theme: q.theme,
+    depth: o.depth ?? 1,
+    traits: o.traits ?? {},
+    optionId,
+    ...(o.heavy ? { heavy: true as const } : {}),
+  })
   saveHistory(h, date)
 }
 
@@ -141,6 +151,26 @@ export function pickThree(
   return picked.length === 3 ? picked : fallback
 }
 
+// writeFirstOf picks the one card of a sitting that opens with a short box
+// for the person's own words, the options coming after as "which is
+// closest?" (Edwin, 2026-10-24: "some deep answers are typed instead of
+// selected but character controlled"). It is the question in the theme they
+// have gone deepest on lately, judged from answers before today so the pick
+// holds all day. Never an intimacy question, and none until some theme has
+// drawn a deep answer.
+const WRITE_FIRST_INTEREST = 0.5
+
+export function writeFirstOf(questions: Question[], h: History, today: string): string | null {
+  const before: History = { answers: h.answers.filter((a) => a.date < today), skips: h.skips.filter((s) => s.date < today) }
+  const interest = interestScores(before, today)
+  let best: { id: string; v: number } | null = null
+  for (const q of questions) {
+    const v = q.theme && q.care !== 'intimate' ? (interest[q.theme] ?? 0) : 0
+    if (v >= WRITE_FIRST_INTEREST && (!best || v > best.v)) best = { id: q.id, v }
+  }
+  return best?.id ?? null
+}
+
 export type Half = 'morning' | 'evening'
 
 const pickKey = (today: string, half: Half) => (half === 'morning' ? `pi.pick.${today}` : `pi.pick.${today}.pm`)
@@ -175,9 +205,21 @@ export function forgetPick(today: string, halves: Half[] = ['morning', 'evening'
 // A deep answer about sadness and stress. Its card, and the close of its
 // sitting, carry one quiet line on where to find support (the review of
 // 2026-10-15: help was hard to find). The weekly mirror adds its own note
-// when such answers repeat (backend/mirror.go).
-export const isHeavy = (theme: string | undefined, depth: number | undefined) =>
+// when such answers repeat (backend/mirror.go). Many such answers are
+// healthy ("The real answer, even if it's messy"), so the card keeps its
+// insight; a heavy answer (Option.heavy, marked in the bank) is the one
+// whose card stops and points to people.
+export const isLowMood = (theme: string | undefined, depth: number | undefined) =>
   theme === 'sadness-stress' && (depth ?? 0) >= 3
+
+// heavyPause is on while answers sound heavy: a heavy answer today, or two
+// in the last seven days. While it is on, the close of each sitting leaves
+// out the honest part and the offer of a plan (the proposal of 2026-10-24:
+// a hard week is no time to be told what to work on).
+export function heavyPause(h: History, today: string): boolean {
+  const recent = h.answers.filter((a) => a.heavy && days(a.date, today) >= 0 && days(a.date, today) < 7)
+  return recent.some((a) => a.date === today) || recent.length >= 2
+}
 
 // How far a leaning has been earned on this phone (the same rules as the
 // server's mirror, backend/mirror.go): a hint is one or two answers or one
@@ -217,14 +259,79 @@ const dayMonth = (iso: string) => {
   return `${d.getUTCDate()} ${d.toLocaleDateString('en', { month: 'long', timeZone: 'UTC' })}`
 }
 
+// Change noticed out loud, set only against the person's own past (the
+// proposal of 2026-10-24, "The app remembers you"). An answer is a change
+// when it leans one way on a trait after three or more answers that leaned
+// the other way, with nothing on its own side for two weeks or more. Evening
+// answers and intimacy answers are left out, and so is any answer the person
+// said was not them (traitsOf). weeks is how long it has been, at most eight
+// (the phone keeps 60 days).
+export type Change = { date: string; questionId: string; trait: string; high: boolean; weeks: number }
+
+const WEEK_WORDS = ['', '', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight']
+const readsForChange = (a: AnswerRecord) => !a.evening && a.theme !== 'intimacy'
+
+// changeAt is the change the answer at index i of the history makes, if any.
+export function changeAt(h: History, i: number): Change | null {
+  const mine = h.answers[i]
+  if (!mine || !readsForChange(mine)) return null
+  let best: Change | null = null
+  let bestAgainst = 0
+  for (const [trait, w] of Object.entries(traitsOf(mine))) {
+    if (!TRAITS[trait] || w === 0) continue
+    const high = w > 0
+    let against = 0
+    let from: string | null = null
+    for (let j = i - 1; j >= 0; j--) {
+      const a = h.answers[j]
+      const v = readsForChange(a) ? (traitsOf(a)[trait] ?? 0) : 0
+      if (v === 0) continue
+      from = a.date
+      if (v > 0 === high) break
+      against++
+    }
+    if (against < 3 || !from) continue
+    const weeks = Math.min(8, Math.floor(days(from, mine.date) / 7))
+    if (weeks < 2) continue
+    if (!best || weeks > best.weeks || (weeks === best.weeks && against > bestAgainst)) {
+      best = { date: mine.date, questionId: mine.questionId, trait, high, weeks }
+      bestAgainst = against
+    }
+  }
+  return best
+}
+
+// "First time in three weeks your answer leaned towards saying what you think."
+export function changeWords(c: Change): string {
+  const t = TRAITS[c.trait]
+  return `First time in ${WEEK_WORDS[c.weeks]} weeks your answer leaned towards ${(c.high ? t.high : t.low).lean}.`
+}
+
+// changeLine is the change one recorded answer makes, in words, if any.
+export function changeLine(h: History, questionId: string): string | null {
+  const c = changeAt(h, h.answers.findIndex((a) => a.questionId === questionId))
+  return c && changeWords(c)
+}
+
+// changesBetween lists the changes made by answers between two dates, for the mirror.
+export function changesBetween(h: History, from: string, to: string): Change[] {
+  return h.answers.flatMap((a, i) => {
+    const c = a.date >= from && a.date <= to ? changeAt(h, i) : null
+    return c ? [c] : []
+  })
+}
+
 // threadLine ties a fresh answer to the person's own earlier ones, and is
-// there only when it is true (the review of 2026-10-15): the last time the
-// same question came up, or else how often this week's answers have leaned
-// the same way. Built on this phone from its own history; nothing is sent.
-// The answer itself must already be recorded.
+// there only when it is true (the review of 2026-10-15): a change against
+// their own past, the last time the same question came up, or else how
+// often this week's answers have leaned the same way. Built on this phone
+// from its own history; nothing is sent. The answer itself must already be
+// recorded.
 export function threadLine(h: History, q: Question, optionId: string, today: string): string | null {
   const bankId = q.id.slice(11)
   if (q.care !== 'intimate') {
+    const change = changeLine(h, q.id)
+    if (change) return change
     const before = h.answers
       .filter((a) => a.questionId !== q.id && a.questionId.slice(11) === bankId && a.optionId && a.date < today)
       .sort((a, b) => b.date.localeCompare(a.date))[0]

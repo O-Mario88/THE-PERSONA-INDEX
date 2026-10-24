@@ -19,6 +19,7 @@ type Option struct {
 	ID      string         `json:"id"`
 	Label   string         `json:"label"`
 	Depth   int            `json:"depth,omitempty"`  // 1 light .. 4 most revealing; feeds the phone's interest score
+	Heavy   bool           `json:"heavy,omitempty"`  // a heavy answer: the phone points to people instead of an insight
 	Traits  map[string]int `json:"traits,omitempty"` // trait weights; the phone builds the profile from these
 	Insight *Insight       `json:"insight,omitempty"`
 }
