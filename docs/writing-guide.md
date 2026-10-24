@@ -77,6 +77,7 @@ Rules:
 - **Identity questions** (roots, faith, politics, family roles, body, money, class) need a "doesn't apply" or "I'd rather not say". Never ask which religion, party, ethnicity or nationality someone holds, and never store it.
 - **Politics** is about how you live with it, never which side you are on.
 - **Never presume** a partner, a nuclear family, a formal job with a boss and a salary, or a home that is a safe place.
+- **No hidden defaults.** The same words must fit a nurse in Leeds, a market trader in Lagos, a student in Lahore, a driver in Lima and a mother in Jakarta. Before you keep a word, ask: would it feel foreign to someone with an irregular cash income, a shared home, no car and a Friday rest day? If so, use the neutral word: "when money comes in" (not payday), "someone you work with or for" (not your boss), "a day off" or "this week" (not the weekend or Monday), "on the way" (not the drive), "at home" or "out of reach" (not another room), "washing" (not the shower). Keep the specific word only when it is the question's own subject: a dating question may mention a date, a colleagues question a boss. Never fix a default by adding a country, religion or ethnic group; tailor the setting, never the person. The evidence is in [research/regions/report.md](research/regions/report.md).
 - A question about a **hoped-for future** should be followed by one about what gets in the way. Wishing alone predicts less effort.
 
 Situations that work (design suggestions built on the research; none has been tested as a measure):
@@ -178,7 +179,7 @@ The research behind this:
 | Promises: "this will change your life", "40% of happiness" | Every effect is small; the 40% figure is disowned by its authors |
 | Abstract "why am I like this?" prompts, especially in the evening | That is the brooding pattern that harms people who are already low |
 | Stacked steps, streaks, penalties, all-or-nothing challenges | Accepting without doing predicts change in the wrong direction |
-| Western defaults: independence over duty, a partner, a salaried job | Most of the world lives and works otherwise |
+| Western defaults: independence over duty, a partner, a salaried job, a weekend, a car, a room of your own | Most of the world lives and works otherwise ([research/regions/report.md](research/regions/report.md)) |
 | Taking sides on religion or politics | Benefits depend on fit and community, not content |
 | Becoming another passive feed | Scrolling goes with lower satisfaction |
 

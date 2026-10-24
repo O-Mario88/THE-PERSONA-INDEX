@@ -7,7 +7,7 @@
    "options": [
     {
      "id": "light-water",
-     "label": "Open the curtains or drink some water",
+     "label": "Let in some daylight or drink some water",
      "depth": 1,
      "need": "calm",
      "traits": {
@@ -19,7 +19,7 @@
       "research": "",
       "source": "",
       "strength": "none",
-      "step": "Tomorrow, after the water or the curtains, give yourself one slow minute at the window before you check anything."
+      "step": "Tomorrow, after the water or the daylight, give yourself one slow minute at the window before you check anything."
      }
     },
     {
@@ -31,7 +31,7 @@
       "present_bias": 1
      },
      "insight": {
-      "reveal": "Other people's news reaches you before your own thoughts do. You know what happened overnight before you've brushed your teeth, and you reply fast all day. Your best ideas tend to wait for the shower or a walk, once the screen is out of reach.",
+      "reveal": "Other people's news reaches you before your own thoughts do. You know what happened overnight before you've brushed your teeth, and you reply fast all day. Your best ideas tend to wait until you're washing or walking, once the screen is out of reach.",
       "otherSide": "Starting with messages can set your day to answering other people before you've chosen what you want from it.",
       "research": "",
       "source": "",
@@ -236,19 +236,19 @@
    "options": [
     {
      "id": "fresh-start",
-     "label": "On a Monday or the first of the month",
+     "label": "At the start of a new week or month",
      "depth": 1,
      "need": "competence",
      "traits": {
       "conscientiousness": 1
      },
      "insight": {
-      "reveal": "Mondays feel like a clean page to you. New notebooks, fresh calendars and first-of-the-month plans give you a real lift, and you start with genuine commitment.",
+      "reveal": "A new week feels like a clean page to you. New notebooks, fresh calendars and first-of-the-month plans give you a real lift, and you start with genuine commitment.",
       "otherSide": "Miss that start date, and your next fresh start can feel a whole week or month away.",
       "research": "Interest in fresh starts jumps on landmark dates: student gym visits rose 33% at the start of a week, and searches for 'diet' rose 82% at New Year.",
       "source": "dai2014",
       "strength": "moderate",
-      "step": "Start one small habit on a plain, ordinary day this week, like a Thursday."
+      "step": "Start one small habit on a plain, ordinary day in the middle of this week."
      }
     },
     {
@@ -261,7 +261,7 @@
       "extraversion": 1
      },
      "insight": {
-      "reveal": "When an idea grabs you, you're already halfway in. Your enthusiasm pulls friends into plans they didn't know they wanted. The habits that stick for you are usually the ones tied to something you already do, like the morning coffee or the ride to work.",
+      "reveal": "When an idea grabs you, you're already halfway in. Your enthusiasm pulls friends into plans they didn't know they wanted. The habits that stick for you are usually the ones tied to something you already do, like your morning drink or setting off for the day.",
       "otherSide": "Starting the moment an idea hits means some of your habits begin before they have a time or a place, so they fade with the excitement.",
       "research": "Habits tend to grow when one simple action is repeated after the same daily cue.",
       "source": "gardner2012",
@@ -463,7 +463,7 @@
   {
    "id": "habits-free-saturday",
    "theme": "habits",
-   "prompt": "A free Saturday with no plans. By noon you've usually…",
+   "prompt": "A free day with no plans. By noon you've usually…",
    "options": [
     {
      "id": "chores",
@@ -497,7 +497,7 @@
       "research": "",
       "source": "",
       "strength": "none",
-      "step": "This weekend, go back to one place you loved and look for something you missed the first time."
+      "step": "On your next free day, go back to one place you loved and look for something you missed the first time."
      }
     },
     {
@@ -509,12 +509,12 @@
       "neuroticism": -1
      },
      "insight": {
-      "reveal": "You can rest without needing a reason, and that's a real skill. Switching off like this helps you come back from busy weeks with energy to spare. Explaining a happy, empty Saturday to friends might be the only hard part.",
+      "reveal": "You can rest without needing a reason, and that's a real skill. Switching off like this helps you come back from busy weeks with energy to spare. Explaining a happy, empty day to friends might be the only hard part.",
       "otherSide": "One empty day can roll into the next, and plans with people you miss can keep waiting.",
       "research": "Across 91 samples of 38,124 workers, people who mentally switched off from work in their free time reported less exhaustion and better sleep.",
       "source": "wendsche2017",
       "strength": "strong",
-      "step": "Next free Saturday, keep your easy morning, then send one message to someone you'd like to see."
+      "step": "Next free day, keep your easy morning, then send one message to someone you'd like to see."
      }
     },
     {
@@ -540,7 +540,7 @@
   {
    "id": "habits-cafe-order",
    "theme": "habits",
-   "prompt": "At a café or restaurant you love, you usually order…",
+   "prompt": "Eating out somewhere you love, you usually order…",
    "options": [
     {
      "id": "same",
@@ -646,7 +646,7 @@
       "research": "",
       "source": "",
       "strength": "none",
-      "step": "Finish one small thing you're close to the end of before the weekend."
+      "step": "Finish one small thing you're close to the end of before the week is out."
      }
     },
     {
@@ -921,7 +921,7 @@
       "conscientiousness": 1
      },
      "insight": {
-      "reveal": "You treat energy like a battery to recharge, not a fire to feed. You handle a bad mood the same way, by stepping outside or changing rooms. At work, you might suggest a walking meeting when the room starts to fade.",
+      "reveal": "You treat energy like a battery to recharge, not a fire to feed. You handle a bad mood the same way, by stepping outside for a change of scene. When the energy around you starts to fade, you might suggest a short walk.",
       "otherSide": "Because a short walk sorts the slump, you might not stop to ask whether a short night is behind it.",
       "research": "Pooling 10 UK studies, exercise in green spaces lifted mood and self-esteem, with the biggest boost from short sessions.",
       "source": "barton2010",
@@ -1254,12 +1254,12 @@
       "present_bias": 1
      },
      "insight": {
-      "reveal": "Your week borrows sleep, and your weekend tries to pay it back. The first morning back may feel slow and foggy, a bit like landing from another time zone. You give a lot during the week, and your body is quietly sending you the bill.",
-      "otherSide": "Long lie-ins can eat the free morning itself, so your weekend feels shorter than the week that wore you out.",
+      "reveal": "Your week borrows sleep, and your free days try to pay it back. The first morning back may feel slow and foggy, a bit like waking after a long journey. You give a lot during the week, and your body is quietly sending you the bill.",
+      "otherSide": "Long lie-ins can eat the free morning itself, so your time off feels shorter than the week that wore you out.",
       "research": "In a two-week lab study of 36 adults, sleeping in at the weekend did not undo short weekday sleep: people still snacked after dinner and gained weight.",
       "source": "depner2019",
       "strength": "moderate",
-      "step": "This week, go to bed 15 minutes earlier on two weeknights and see if the weekend changes."
+      "step": "This week, go to bed 15 minutes earlier on two ordinary nights and see if your free days change."
      }
     },
     {
@@ -1285,7 +1285,7 @@
   {
    "id": "sleep-health-sofa",
    "theme": "sleep-health",
-   "prompt": "When you finally sit on the sofa to rest, you feel…",
+   "prompt": "When you finally sit down to rest, you feel…",
    "options": [
     {
      "id": "relaxed",
@@ -1310,7 +1310,7 @@
      "depth": 1,
      "need": "calm",
      "insight": {
-      "reveal": "Coming home, you need a short landing before you can rest. One small ritual, like changing clothes, making tea or putting your phone in another room, can shorten that landing a lot. Then the evening tends to feel longer too.",
+      "reveal": "Coming home, you need a short landing before you can rest. One small ritual, like changing clothes, making tea or putting your phone out of reach, can shorten that landing a lot. Then the evening tends to feel longer too.",
       "otherSide": "While you're still landing, you can be a little short with the people at home, before you've really arrived.",
       "research": "",
       "source": "",
@@ -1345,8 +1345,8 @@
       "rumination": 2
      },
      "insight": {
-      "reveal": "Your thoughts get loud when the room gets quiet. A busy mind on the sofa isn't a failure to rest; it's often your first moment all day with space to think. You solve problems in the shower or just before sleep, too.",
-      "otherSide": "If the sofa is the only place your thoughts get space, rest and worry can start to arrive together.",
+      "reveal": "Your thoughts get loud when the room gets quiet. A busy mind when you sit down isn't a failure to rest; it's often your first moment all day with space to think. You solve problems while washing or just before sleep, too.",
+      "otherSide": "If sitting down is the only time your thoughts get space, rest and worry can start to arrive together.",
       "research": "In about 250,000 check-ins from around 2,250 people, minds were wandering almost half the time they were awake.",
       "source": "killingsworth2010",
       "strength": "moderate",
@@ -1442,7 +1442,7 @@
       "neuroticism": -1
      },
      "insight": {
-      "reveal": "You leave the day's problems at the bedroom door. You forgive small slights quickly, because you don't replay them. Most mornings you wake ready to start fresh, which makes you a steady partner and colleague.",
+      "reveal": "You leave the day's problems behind when you lie down. You forgive small slights quickly, because you don't replay them. Most mornings you wake ready to start fresh, which makes you steady company at home and at work.",
       "otherSide": "Letting things go so easily can mean a real problem gets put off, simply because it never keeps you up.",
       "research": "",
       "source": "",
@@ -1507,7 +1507,7 @@
   {
    "id": "money-payday",
    "theme": "money",
-   "prompt": "Payday arrives. What goes first?",
+   "prompt": "When money comes in, what goes first?",
    "options": [
     {
      "id": "bills",
@@ -1523,7 +1523,7 @@
       "research": "",
       "source": "",
       "strength": "none",
-      "step": "On the next payday, do one small nice thing on the same day, right after the bills."
+      "step": "Next time money comes in, do one small nice thing that same day, right after the bills."
      }
     },
     {
@@ -1552,12 +1552,12 @@
       "neuroticism": 2
      },
      "insight": {
-      "reveal": "On payday you're checking for a feeling, not a number. That feeling is safety. You're careful with money and quick to spot mistakes, though the relief from each check tends to last only until the next one.",
-      "otherSide": "All that checking can turn payday, a day that should feel good, into one of the tenser days of your month.",
+      "reveal": "When money comes in, you're checking for a feeling, not a number. That feeling is safety. You're careful with money and quick to spot mistakes, though the relief from each check tends to last only until the next one.",
+      "otherSide": "All that checking can turn the day money comes in, which should feel good, into one of the tenser days of your month.",
       "research": "Tracking real logins to a money app, people checked their accounts right after pay arrived and when balances were healthy.",
       "source": "olafsson2017",
       "strength": "moderate",
-      "step": "On the next payday, check once, then put the phone down for the rest of the day."
+      "step": "Next time money comes in, check once, then put the phone down for the rest of the day."
      }
     },
     {
@@ -1575,7 +1575,7 @@
       "research": "People with stronger present bias, preferring smaller rewards now over bigger ones later, are more likely to carry credit card debt.",
       "source": "meier2010",
       "strength": "moderate",
-      "step": "Next payday, decide your treat before the money arrives, so it's a plan, not a reaction."
+      "step": "Before money next comes in, decide your treat, so it's a plan, not a reaction."
      }
     }
    ]
@@ -1628,7 +1628,7 @@
       "agreeableness": -1
      },
      "insight": {
-      "reveal": "You protect friendships by keeping money out of them. You're generous in other ways: your time, your advice, a free weekend to help someone move. Your friendships tend to last precisely because nobody owes anybody.",
+      "reveal": "You protect friendships by keeping money out of them. You're generous in other ways: your time, your advice, a free day to help someone move. Your friendships tend to last precisely because nobody owes anybody.",
       "otherSide": "A firm no can land hard on a friend who was truly stuck, even when you offer help in other ways.",
       "research": "In a 2021 US poll, most adults had helped friends or family with money; over a third of those lost money, and nearly a quarter said it hurt the relationship.",
       "source": "bankrate2021lending",
@@ -1823,7 +1823,7 @@
       "conscientiousness": 1
      },
      "insight": {
-      "reveal": "Feeling safe is its own kind of treat for you. A cushion in the bank lets you breathe easier than anything you could buy with it. When the car breaks down or a surprise bill arrives, you can stay calm, because the money is already there.",
+      "reveal": "Feeling safe is its own kind of treat for you. A cushion put aside lets you breathe easier than anything you could buy with it. When something breaks or a surprise bill arrives, you can stay calm, because the money is already there.",
       "otherSide": "Saving every surprise can mean you rarely feel the lift that a little unplanned money could give you.",
       "research": "Worldwide, 79% of adults now have an account, but only 56% could reliably get hold of extra money in an emergency.",
       "source": "findex2025",
@@ -1888,7 +1888,7 @@
   {
    "id": "money-balance-check",
    "theme": "money",
-   "prompt": "How often do you look at your account balance?",
+   "prompt": "How often do you check how much money you have?",
    "options": [
     {
      "id": "weekly",
@@ -1904,7 +1904,7 @@
       "research": "",
       "source": "",
       "strength": "none",
-      "step": "On your next weekly look, check one standing payment you no longer use, and cancel it if so."
+      "step": "On your next weekly look, spot one regular cost you no longer need, and stop it if you can."
      }
     },
     {
@@ -2053,7 +2053,7 @@
       "extraversion": 1
      },
      "insight": {
-      "reveal": "Secrets give money too much power, so you just say it. You'll talk about pay and rent as casually as lunch plans. That openness invites trust: people bring you their own worries and ask for your honest advice.",
+      "reveal": "Secrets give money too much power, so you just say it. You'll talk about what you earn and what things cost as casually as lunch plans. That openness invites trust: people bring you their own worries and ask for your honest advice.",
       "otherSide": "Being open can leave you exposed to judgement, or start comparisons you never meant to start.",
       "research": "",
       "source": "",
@@ -2067,7 +2067,7 @@
      "depth": 2,
      "need": "freedom",
      "insight": {
-      "reveal": "You guard your privacy without making it awkward. You can make 'oh, it pays the rent' sound like a full answer, and people rarely see exactly what you think until they know you well.",
+      "reveal": "You guard your privacy without making it awkward. You can make 'oh, it pays the bills' sound like a full answer, and people rarely see exactly what you think until they know you well.",
       "otherSide": "Being vague keeps your privacy, but it can also keep you from learning whether you're paid fairly.",
       "research": "When university staff learned what colleagues earned, those paid below the middle felt less satisfied, while those paid above felt no happier.",
       "source": "card2012",
@@ -2333,7 +2333,7 @@
   {
    "id": "work-career-boss-talk",
    "theme": "work-career",
-   "prompt": "Your boss sends: 'Can we talk later?' You…",
+   "prompt": "Someone you work with or for sends: 'Can we talk later?' You…",
    "options": [
     {
      "id": "nothing",
@@ -2344,7 +2344,7 @@
       "neuroticism": -1
      },
      "insight": {
-      "reveal": "A vague message is just a vague message to you. You sleep fine before big meetings, and when office gossip starts flying, people drift towards your desk to calm down.",
+      "reveal": "A vague message is just a vague message to you. You sleep fine before a big day, and when gossip at work starts flying, people drift towards you to calm down.",
       "otherSide": "A vague message you send can read as bad news to the person waiting on it.",
       "research": "",
       "source": "",
@@ -2363,7 +2363,7 @@
      },
      "insight": {
       "reveal": "Not knowing bothers you more than bad news ever could. So you ask, and you handle whatever comes once it's on the table. You'd rather ask for the agenda than guess, and people are often glad you did.",
-      "otherSide": "Pressing for details can come across to your boss as impatience, when the answer simply isn't ready yet.",
+      "otherSide": "Pressing for details can make you seem impatient, when the answer simply isn't ready yet.",
       "research": "In a lab game, people's stress rose most when the outcome was least predictable, suggesting that not knowing can be stressful in itself.",
       "source": "deberker2016",
       "strength": "early",
@@ -2458,7 +2458,7 @@
       "rumination": 2
      },
      "insight": {
-      "reveal": "Your perfect comeback arrives about three days too late. You replay the moment in the shower, polishing a reply you'll never use, and the anger stays warm instead of fading. Underneath sits a strong sense of justice and a memory for detail that makes you a sharp judge of people.",
+      "reveal": "Your perfect comeback arrives about three days too late. You replay the moment on the way home, polishing a reply you'll never use, and the anger stays warm instead of fading. Underneath sits a strong sense of justice and a memory for detail that makes you a sharp judge of people.",
       "otherSide": "Carrying it for weeks can colour every meeting with that colleague, and the anger costs you more than it costs them.",
       "research": "People who vented anger while dwelling on the person who annoyed them became angrier and more aggressive than people who did nothing.",
       "source": "bushman2002",
@@ -2488,7 +2488,7 @@
   {
    "id": "work-career-pay-aside",
    "theme": "work-career",
-   "prompt": "If pay didn't matter, would you keep doing your kind of work?",
+   "prompt": "If money didn't matter, would you keep doing your kind of work?",
    "options": [
     {
      "id": "yes",
@@ -2501,7 +2501,7 @@
       "research": "Workers split roughly evenly into seeing their work as a job, a career or a calling, meaningful in itself, even within the same occupation.",
       "source": "wrzesniewski1997",
       "strength": "moderate",
-      "step": "This month, look up what your role pays elsewhere, so love for the work doesn't set your price."
+      "step": "This month, find out what work like yours earns elsewhere, so love for the work doesn't set your price."
      }
     },
     {
@@ -2513,12 +2513,12 @@
       "openness": 1
      },
      "insight": {
-      "reveal": "You love your field, just not necessarily your exact chair in it. You can probably picture a side version of your job already, the one next door to what you do now. When someone mentions a role like that, you light up more than you'd admit.",
+      "reveal": "You love your field, just not necessarily your exact place in it. You can probably picture a side version of your job already, the one next door to what you do now. When someone mentions a role like that, you light up more than you'd admit.",
       "otherSide": "Picturing the job next door can make your current one feel smaller than it is, even on good days.",
       "research": "",
       "source": "",
       "strength": "none",
-      "step": "Before Friday, spend ten minutes looking at what that nearby version looks like day to day."
+      "step": "Before the week is out, spend ten minutes looking at what that nearby version looks like day to day."
      }
     },
     {
@@ -2954,7 +2954,7 @@
       "extraversion": 1
      },
      "insight": {
-      "reveal": "You build trust one ordinary lunch at a time. You know what colleagues did over the weekend and hear the news before the official email does. Years from now, those plain lunches will probably have mattered more than any team event.",
+      "reveal": "You build trust one ordinary lunch at a time. You know what colleagues did on their day off and hear the news before it's announced. Years from now, those plain lunches will probably have mattered more than any team event.",
       "otherSide": "Long lunches every day can eat into the calm time you need to think, and your afternoons may pay for it.",
       "research": "Time side by side at work didn't, on its own, turn people into closer friends; catching up on each other's lives and joking did.",
       "source": "hall2018",
@@ -2968,7 +2968,7 @@
      "depth": 1,
      "need": "freedom",
      "insight": {
-      "reveal": "Some days you want the table, some days you want the quiet. You pick lunches by who's going, not by habit, and get along with several different groups. Your weekends probably run on the same rule.",
+      "reveal": "Some days you want the table, some days you want the quiet. You pick lunches by who's going, not by habit, and get along with several different groups. Your free days probably run on the same rule.",
       "otherSide": "Dipping in and out can mean you miss the in-jokes and small news that build a group's trust.",
       "research": "",
       "source": "",
@@ -3256,7 +3256,7 @@
       "extraversion": 1
      },
      "insight": {
-      "reveal": "For you, a place is only as good as its people. You probably choose jobs, homes, even gyms partly by who's around, and a friendship from those school years can still feel like home.",
+      "reveal": "For you, a place is only as good as its people. You probably choose where to spend your time, even which shop or stall to use, partly by who's around, and a friendship from those school years can still feel like home.",
       "otherSide": "Choosing by the people can keep you in places that suit your friends more than they suit you.",
       "research": "",
       "source": "",
@@ -3278,7 +3278,7 @@
       "research": "",
       "source": "",
       "strength": "none",
-      "step": "Give that old subject ten minutes this weekend, just for fun."
+      "step": "Give that old subject ten minutes this week, just for fun."
      }
     },
     {
@@ -3425,7 +3425,7 @@
       "extraversion": -1
      },
      "insight": {
-      "reveal": "Your best questions wait until the crowd has gone. A private question gets a real answer, so you tend to learn deeply. Asking afterwards also builds a real bond with teachers and bosses.",
+      "reveal": "Your best questions wait until the crowd has gone. A private question gets a real answer, so you tend to learn deeply. Asking afterwards also builds a real bond with teachers and the people you work for.",
       "otherSide": "Waiting until the end means you can sit through the rest half-lost, and the moment for your question may pass.",
       "research": "",
       "source": "",
@@ -3460,7 +3460,7 @@
       "neuroticism": 1
      },
      "insight": {
-      "reveal": "You'd rather be lost than look lost. You keep things smooth and never slow the room down. That polite nod probably shows up at the doctor or the mechanic too, exactly where one more question would really help you.",
+      "reveal": "You'd rather be lost than look lost. You keep things smooth and never slow the room down. That polite nod probably shows up at the doctor or the repair shop too, exactly where one more question would really help you.",
       "otherSide": "The nod can leave you with gaps that grow, so the next part is harder to follow too.",
       "research": "Students in an embarrassing T-shirt guessed about half the room noticed; only about a quarter did. People overestimate how much others notice them.",
       "source": "gilovich2000",
@@ -3650,7 +3650,7 @@
       "conscientiousness": 1
      },
      "insight": {
-      "reveal": "Feedback is information to you, not a verdict. You don't waste energy defending yourself, so you grow quickly. You probably ask follow-up questions that turn a review into a plan, which bosses love.",
+      "reveal": "Feedback is information to you, not a verdict. You don't waste energy defending yourself, so you grow quickly. You probably ask follow-up questions that turn what you hear into a plan, and whoever said it is glad you asked.",
       "otherSide": "Treating it all as information can make you seem unmoved, when the person giving it hoped you'd enjoy the praise.",
       "research": "Across 435 studies, feedback helped learning by a medium amount on average, and detailed feedback on how to improve helped far more than rewards or punishment.",
       "source": "wisniewski2020",
@@ -3710,12 +3710,12 @@
       "conscientiousness": 1
      },
      "insight": {
-      "reveal": "Learning feels best to you when it's useful. You pick up skills that pay their way, from spreadsheets to certificates. So here's a fair question: when did you last learn something purely for joy, with no point at all?",
+      "reveal": "Learning feels best to you when it's useful. You pick up skills that pay their way, from a quick trick to a whole new trade. So here's a fair question: when did you last learn something purely for joy, with no point at all?",
       "otherSide": "When learning has to pay its way, the joy of it can fade for you, until it feels like more work.",
       "research": "",
       "source": "",
       "strength": "none",
-      "step": "Before Sunday, learn one small thing that's only for fun."
+      "step": "Before the week is out, learn one small thing that's only for fun."
      }
     },
     {
@@ -3933,7 +3933,7 @@
       "neuroticism": -1
      },
      "insight": {
-      "reveal": "Silence in a chat barely registers with you. You give people the benefit of the doubt, whether it's a slow friend or a short email from a boss. Unread chats don't keep you up at night.",
+      "reveal": "Silence in a chat barely registers with you. You give people the benefit of the doubt, whether it's a slow friend or a short reply from someone you work for. Unread chats don't keep you up at night.",
       "otherSide": "Because silence never worries you, you may miss the odd time a quiet chat was a friend going through something hard.",
       "research": "",
       "source": "",
@@ -4112,7 +4112,7 @@
       "openness": 1
      },
      "insight": {
-      "reveal": "You ask before you advise, and people notice. Friends feel safe bringing you hard things because you let them choose: cheering or ideas. You're the second opinion people want on job applications and big decisions.",
+      "reveal": "You ask before you advise, and people notice. Friends feel safe bringing you hard things because you let them choose: cheering or ideas. You're the second opinion people want on new plans and big decisions.",
       "otherSide": "Asking first hands the choice to them, and when they pick 'just cheer me on', your useful view can go unsaid for good.",
       "research": "",
       "source": "",
@@ -4767,7 +4767,7 @@
       "agreeableness": 1
      },
      "insight": {
-      "reveal": "Keeping the family together is one of the ways you love them. You're often the glue at gatherings, making sure nobody feels left out, and that loyalty is real. Now and then, though, it's worth asking which parts of your life you picked and which were picked for you.",
+      "reveal": "Keeping the family together is one of the ways you love them. You're often the glue at gatherings, making sure nobody feels left out, and that loyalty is real. Now and then, though, it's worth noticing which of those choices feel good afterwards and which still weigh on you.",
       "otherSide": "A wish of your own can stay on hold for years, and a wish that waits too long can turn into regret.",
       "research": "",
       "source": "",
@@ -4822,7 +4822,7 @@
      "depth": 2,
      "need": "freedom",
      "insight": {
-      "reveal": "You've worked out that nodding is faster than arguing. It keeps the peace at home, and with bosses too, while you go on running your life your own way. The only cost is that your parent may rarely get to meet the person you've actually become.",
+      "reveal": "You've worked out that nodding is faster than arguing. It keeps the peace at home, and at work too, while you go on running your life your own way. The only cost is that your parent may rarely get to meet the person you've actually become.",
       "otherSide": "A parent who sees you nod will think you agreed, so the same advice may keep coming back to you, round after round.",
       "research": "",
       "source": "",
@@ -5339,7 +5339,7 @@
      },
      "insight": {
       "reveal": "Your money, your call, and you like it that way. You're probably careful with what you earn and hate the feeling of owing anyone. Separate finances can still work, especially when the big shared plans, like a home or the years ahead, get talked about early.",
-      "otherSide": "On money, a partner may come to feel more like a flatmate to you, and big joint plans can be harder to start.",
+      "otherSide": "On money, a partner may come to feel like someone you simply share costs with, and big joint plans can be harder to start.",
       "research": "",
       "source": "",
       "strength": "none",
@@ -5368,7 +5368,7 @@
   {
    "id": "partnership-chores-notice",
    "theme": "partnership",
-   "prompt": "At home with a partner or housemate, who notices what needs doing?",
+   "prompt": "At home with a partner or the people you live with, who notices what needs doing?",
    "options": [
     {
      "id": "both",
@@ -5376,7 +5376,7 @@
      "depth": 1,
      "need": "belonging",
      "insight": {
-      "reveal": "In your home, the invisible jobs get seen by both of you. You share the remembering and the planning, not just the doing, and that likely saves you plenty of arguments. In a shared house or at work, you spot a job and pick it up without being asked.",
+      "reveal": "In your home, the invisible jobs get seen by both of you. You share the remembering and the planning, not just the doing, and that likely saves you plenty of arguments. Wherever a space is shared, at home or at work, you spot a job and pick it up without being asked.",
       "otherSide": "When you both notice, you can also clash over how a job should be done, since two noticers bring two sets of standards.",
       "research": "",
       "source": "",
@@ -5664,7 +5664,7 @@
   {
    "id": "partnership-evening-alone",
    "theme": "partnership",
-   "prompt": "A partner is out, and the whole evening at home is yours. How do you feel, or how would you?",
+   "prompt": "A partner is out, and the whole evening is yours. How do you feel, or how would you?",
    "options": [
     {
      "id": "freedom",
@@ -5675,7 +5675,7 @@
       "extraversion": -1
      },
      "insight": {
-      "reveal": "You can love someone and still love an evening that's all yours. A film, a long bath, that half-finished project: the evening's likely planned before the door closes. And you're often warmer and more patient when they get back.",
+      "reveal": "You can love someone and still love an evening that's all yours. A film, a slow meal, that half-finished project: the evening's likely planned before the door closes. And you're often warmer and more patient when they get back.",
       "otherSide": "Treasuring your time alone can make plans together feel like something to bargain for, and a partner may take that to heart.",
       "research": "",
       "source": "",
@@ -5833,7 +5833,7 @@
       "conscientiousness": 1
      },
      "insight": {
-      "reveal": "Nothing calms you like a plan you made yourself. You're probably the one comparing options, building the spreadsheet and lining up the visits. The risk is that a partner keeps quiet wishes to themselves, simply because your plan already looks so finished.",
+      "reveal": "Nothing calms you like a plan you made yourself. You're probably the one comparing options, making the lists and lining up the visits. The risk is that a partner keeps quiet wishes to themselves, simply because your plan already looks so finished.",
       "otherSide": "Doing all the legwork can leave you carrying the blame as well, if the choice turns out badly.",
       "research": "",
       "source": "",
@@ -6046,7 +6046,7 @@
       "openness": 1
      },
      "insight": {
-      "reveal": "You talk best side by side, not face to face. Your best conversations happen on walks, in cars or while cooking, not across a table. You likely make friends easily through shared hobbies, too, because doing something together takes the pressure off.",
+      "reveal": "You talk best side by side, not face to face. Your best conversations happen on walks, on journeys or while cooking, not across a table. You likely make friends easily through shared hobbies, too, because doing something together takes the pressure off.",
       "otherSide": "An activity can fill the gaps so well that your real getting-to-know-you talk never quite happens.",
       "research": "",
       "source": "",
@@ -6179,7 +6179,7 @@
       "agreeableness": 1
      },
      "insight": {
-      "reveal": "How someone treats the person serving them tells you a lot. Decency beats charm for you every time. At work, too, you're likely to watch how a new manager speaks to the cleaner before deciding what you think of them.",
+      "reveal": "How someone treats the person serving them tells you a lot. Decency beats charm for you every time. At work, too, you're likely to watch how someone new speaks to the people with the least say before deciding what you think of them.",
       "otherSide": "One bad moment can tell you less than it seems, and someone having a rough day may get no second chance from you.",
       "research": "",
       "source": "",
@@ -6320,7 +6320,7 @@
       "neuroticism": -1
      },
      "insight": {
-      "reveal": "You don't build stories out of small silences. That makes you easy company, since you don't need constant reassurance. You likely bring the same calm to a late email from your boss or a friend who cancels plans.",
+      "reveal": "You don't build stories out of small silences. That makes you easy company, since you don't need constant reassurance. You likely bring the same calm to a late reply about work or a friend who cancels plans.",
       "otherSide": "Assuming they're busy can mean missing a real cooling-off, and you may keep investing after they've already stepped back.",
       "research": "",
       "source": "",
@@ -6902,7 +6902,7 @@
       "agreeableness": 1
      },
      "insight": {
-      "reveal": "Giving is part of your week, not a mood that comes and goes. Through it you've likely made friends of every age, people you'd never have met otherwise. On a slow, rainy weekend, you have somewhere to be and someone who's glad you came.",
+      "reveal": "Giving is part of your week, not a mood that comes and goes. Through it you've likely made friends of every age, people you'd never have met otherwise. On a slow, rainy day off, you have somewhere to be and someone who's glad you came.",
       "otherSide": "A regular commitment can turn into one more duty on a tired week, and it may be hard for you to step back without guilt.",
       "research": "",
       "source": "",
@@ -6950,12 +6950,12 @@
       "honesty_humility": 1
      },
      "insight": {
-      "reveal": "Your kindness rarely comes with a name tag. You drive people places, drop off meals and fix things without fuss, and nobody keeps a list. That everyday kind of help is far more common than signing up to volunteer, and those close to you may only notice how much you carry once you're away for a week.",
+      "reveal": "Your kindness rarely comes with a name tag. You run errands, drop off meals and fix things without fuss, and nobody keeps a list. That everyday kind of help is far more common than signing up to volunteer, and those close to you may only notice how much you carry once you're away for a week.",
       "otherSide": "Because nobody keeps a list, you may give more than you can spare, and no one around you will think to say stop.",
       "research": "In 2023, 28% of Americans volunteered through an organisation, but 54% informally helped neighbours, like running errands or lending tools.",
       "source": "census2024",
       "strength": "moderate",
-      "step": "This week, when someone thanks you for a lift or a meal, accept it with a simple 'You're welcome' instead of waving it away."
+      "step": "This week, when someone thanks you for an errand or a meal, accept it with a simple 'You're welcome' instead of waving it away."
      }
     }
    ]
@@ -7459,7 +7459,7 @@
       "research": "",
       "source": "",
       "strength": "none",
-      "step": "This week, put a two-hour 'nobody needs me' block in your calendar and guard it like a meeting."
+      "step": "This week, set aside a two-hour 'nobody needs me' stretch and guard it like a promise."
      }
     }
    ]
@@ -7546,7 +7546,7 @@
    "options": [
     {
      "id": "rest-no-guilt",
-     "label": "Rest on the sofa, no guilt",
+     "label": "Rest and do nothing, no guilt",
      "depth": 1,
      "need": "calm",
      "insight": {
@@ -7568,7 +7568,7 @@
      },
      "insight": {
       "reveal": "New places fill you up instead of wearing you out. One unfamiliar street can stay with you longer than a month of ordinary weeks. You're likely to know a few hidden corners of your own town, found simply by turning down a street you'd never tried.",
-      "otherSide": "A taste for the new can make an ordinary weekend at home feel wasted to you, even when it's giving you real rest.",
+      "otherSide": "A taste for the new can make an ordinary day off at home feel wasted to you, even when it's giving you real rest.",
       "research": "",
       "source": "",
       "strength": "none",
@@ -8103,7 +8103,7 @@
       "neuroticism": 1
      },
      "insight": {
-      "reveal": "Coming back to normal life feels heavy for you right now. Often it isn't the whole week that drains you, just one part of it: a certain meeting, a certain inbox, a certain person. Pinpointing that one piece can help more than any trip you could book.",
+      "reveal": "Coming back to normal life feels heavy for you right now. Often it isn't the whole week that drains you, just one part of it: a certain task, a certain message, a certain person. Pinpointing that one piece can help more than any trip you could book.",
       "otherSide": "Dreading the return can take the last day of the holiday from you too, the part you still had.",
       "research": "",
       "source": "",
@@ -8355,16 +8355,16 @@
    "options": [
     {
      "id": "weekend-end",
-     "label": "The last evening of the weekend",
+     "label": "The last evening of my time off",
      "depth": 1,
      "need": "calm",
      "insight": {
-      "reveal": "The quiet end of a weekend can feel strangely empty to you. It's often less about missing people and more about the gap between free time and the week ahead. A small plan for that evening, like a call, a walk or a meal you love, tends to fill it nicely.",
-      "otherSide": "That end-of-weekend emptiness can colour the start of your week too, so it begins heavier for you than it needs to.",
+      "reveal": "The quiet end of your time off can feel strangely empty to you. It's often less about missing people and more about the gap between free time and the days ahead. A small plan for that evening, like a call, a walk or a meal you love, tends to fill it nicely.",
+      "otherSide": "That evening's emptiness can colour the days that follow, so they begin heavier for you than they need to.",
       "research": "Across 26 trials, planning small enjoyable or meaningful activities and noticing how they feel tended to lift persistent low mood.",
       "source": "ekers2014",
       "strength": "strong",
-      "step": "Next weekend, plan one small thing for its last evening: a call, a walk or a meal with someone."
+      "step": "For the last evening of your next time off, plan one small thing: a call, a walk or a meal with someone."
      }
     },
     {
@@ -8919,7 +8919,7 @@
       "extraversion": 1
      },
      "insight": {
-      "reveal": "You can't stand by and watch something unfair happen. You're likely first to challenge a rude waiter or a boss who crosses a line, and friends know you'll fight for them just as hard. The volume can make people defend themselves instead of listening, even when you're completely right.",
+      "reveal": "You can't stand by and watch something unfair happen. You're likely first to challenge a rude stranger or anyone at work who crosses a line, and friends know you'll fight for them just as hard. The volume can make people defend themselves instead of listening, even when you're completely right.",
       "otherSide": "Getting loud can leave you shaky and drained afterwards, even when the other person was clearly in the wrong.",
       "research": "",
       "source": "",
@@ -8932,7 +8932,7 @@
   {
    "id": "anger-near-miss",
    "theme": "anger",
-   "prompt": "On the road, another driver nearly hits you. What's your reaction?",
+   "prompt": "On the road, a driver nearly hits you. What's your reaction?",
    "options": [
     {
      "id": "breathe-forget",
@@ -8943,29 +8943,29 @@
       "neuroticism": -1
      },
      "insight": {
-      "reveal": "You assume people mess up by accident, not on purpose. That's partly why a rough day rarely follows you to bed. When everyone in the car is shouting, you're the calm voice, and you bounce back from setbacks fast.",
-      "otherSide": "Bouncing back so fast can leave a shaken passenger feeling that their fright didn't count with you.",
+      "reveal": "You assume people mess up by accident, not on purpose. That's partly why a rough day rarely follows you to bed. When everyone around you is shouting, you're the calm voice, and you bounce back from setbacks fast.",
+      "otherSide": "Bouncing back so fast can leave someone shaken beside you feeling that their fright didn't count with you.",
       "research": "People who tend to rethink what upset them, instead of hiding their feelings, felt better inside and closer to friends than habitual hiders did.",
       "source": "gross2003",
       "strength": "moderate",
-      "step": "Next time a near miss shakes someone in the car with you, ask if they're all right before you move on."
+      "step": "Next time a near miss shakes someone with you, ask if they're all right before you move on."
      }
     },
     {
      "id": "horn",
-     "label": "The horn, and maybe a gesture",
+     "label": "A horn, a shout or a gesture",
      "depth": 2,
      "need": "respect",
      "traits": {
       "agreeableness": -1
      },
      "insight": {
-      "reveal": "Your temper flares fast and is gone just as fast. Your passenger may still be talking about it two streets later, while you've already forgotten it happened. People rarely have to guess how you feel, which is honest, though the person beside you can need longer to settle.",
+      "reveal": "Your temper flares fast and is gone just as fast. Whoever is with you may still be talking about it two streets later, while you've already forgotten it happened. People rarely have to guess how you feel, which is honest, though the person beside you can need longer to settle.",
       "otherSide": "A gesture in a moment of fright can turn a near miss into a confrontation you never wanted.",
       "research": "",
       "source": "",
       "strength": "none",
-      "step": "When your hand goes to the horn, count to three first, and use it only if it's still needed to stay safe."
+      "step": "When you want to hit the horn or shout back, count to three first, and react only if it's still needed to stay safe."
      }
     },
     {
@@ -8974,8 +8974,8 @@
      "depth": 3,
      "need": "calm",
      "insight": {
-      "reveal": "The car might be the only place your frustration gets loud. At work and at home you're patient and polite, so the car is where it spills over. A rough drive often says more about your week than about the other driver.",
-      "otherSide": "Shouting in the car can feel like release, yet it may leave you more wound up when you arrive than when you set off.",
+      "reveal": "The road might be the only place your frustration gets loud. At work and at home you're patient and polite, so the road is where it spills over. A rough journey often says more about your week than about the driver.",
+      "otherSide": "Shouting where no one hears can feel like release, yet it may leave you more wound up when you arrive than when you set off.",
       "research": "People who vented anger while dwelling on the person who annoyed them became angrier and more aggressive than people who did nothing.",
       "source": "bushman2002",
       "strength": "moderate",
@@ -8991,12 +8991,12 @@
       "rumination": 2
      },
      "insight": {
-      "reveal": "A scare like that stays in your body long after the road is clear. You probably feel it all over again each time you tell the story, and some of the tension can land on whoever's home first. That vivid memory is also what makes you such a careful driver.",
-      "otherSide": "Hours of leftover fright can make your next drive tense too, and that tension isn't yours to keep.",
+      "reveal": "A scare like that stays in your body long after the road is clear. You probably feel it all over again each time you tell the story, and some of the tension can land on whoever's home first. That vivid memory is also what makes you so careful on the road.",
+      "otherSide": "Hours of leftover fright can make your next journey tense too, and that tension isn't yours to keep.",
       "research": "",
       "source": "",
       "strength": "none",
-      "step": "When you get home after a bad drive, tell the story once, then change the topic on purpose."
+      "step": "When you get home after a scare on the road, tell the story once, then change the topic on purpose."
      }
     }
    ]
@@ -9015,7 +9015,7 @@
       "agreeableness": 1
      },
      "insight": {
-      "reveal": "You believe a problem shrinks once it's put into words. At home you're often the steady one, finding words for the mess. A very calm reply can make an upset partner feel their feelings are too big, though, so letting a little of yours show really helps.",
+      "reveal": "You believe a problem shrinks once it's put into words. At home you're often the steady one, finding words for the mess. A very calm reply can make the other person feel their feelings are too big, though, so letting a little of yours show really helps.",
       "otherSide": "Wanting to talk it through right away can rush someone who needs a little time before they have the words for you.",
       "research": "",
       "source": "",
@@ -9032,7 +9032,7 @@
       "attachment_avoidance": 1
      },
      "insight": {
-      "reveal": "You need a walk before you can find the right words. A drive, a tidy kitchen, a quiet hour: that's where your head clears. It works best if you say how long you'll be, so the other person doesn't feel shut out while you're gone.",
+      "reveal": "You need a walk before you can find the right words. Fresh air, a tidy kitchen, a quiet hour: that's where your head clears. It works best if you say how long you'll be, so the other person doesn't feel shut out while you're gone.",
       "otherSide": "Stepping away can leave the hard part unsaid, and if space becomes your habit, the same row may keep coming back.",
       "research": "Across 74 studies of over 14,000 people, couples stuck in a pattern where one pushes to talk and the other goes quiet tended to be less satisfied and feel less close.",
       "source": "schrodt2014",
@@ -9152,7 +9152,7 @@
   {
    "id": "anger-stolen-credit",
    "theme": "anger",
-   "prompt": "A colleague takes credit for your idea in a meeting. What do you do?",
+   "prompt": "Someone you work with takes credit for your idea in front of others. What do you do?",
    "options": [
     {
      "id": "let-it-slide",
@@ -9185,7 +9185,7 @@
       "research": "",
       "source": "",
       "strength": "none",
-      "step": "Before your next meeting, prepare one follow-up point about your own idea."
+      "step": "Before you next share an idea, prepare one follow-up point about it."
      }
     },
     {
@@ -9214,8 +9214,8 @@
       "rumination": 2
      },
      "insight": {
-      "reveal": "It hurts this much because your work matters so much to you. Staying quiet in the meeting kept the peace, but you might carry it for a week while they don't even know. That means you end up paying the whole cost of something they did.",
-      "otherSide": "Avoiding them can make every meeting tense for you, and the distance may get in the way of work you care about.",
+      "reveal": "It hurts this much because your work matters so much to you. Staying quiet in the moment kept the peace, but you might carry it for a week while they don't even know. That means you end up paying the whole cost of something they did.",
+      "otherSide": "Avoiding them can make every day at work tense for you, and the distance may get in the way of work you care about.",
       "research": "In polls of 800 workers, among those treated rudely at work, 80% lost time worrying about it and 48% cut back their effort.",
       "source": "porath2013",
       "strength": "moderate",
@@ -9464,7 +9464,7 @@
       "conscientiousness": 1
      },
      "insight": {
-      "reveal": "Calm, clear facts are how you clear your name. You're often the steady voice in a crisis, the one a manager leans on when things get messy. Calm works, but now and then people also need to hear that it hurt, not just that you were right.",
+      "reveal": "Calm, clear facts are how you clear your name. You're often the steady voice in a crisis, the one people lean on when things get messy. Calm works, but now and then people also need to hear that it hurt, not just that you were right.",
       "otherSide": "Sticking to the facts can make you seem unbothered, so the person who blamed you may never realise the harm.",
       "research": "",
       "source": "",
@@ -9481,7 +9481,7 @@
       "conscientiousness": 2
      },
      "insight": {
-      "reveal": "Words alone don't feel like enough to protect you. You like the emails and the dates straight before you speak, and that care means you can always say who agreed to what. A habit like that can come from a time when your word wasn't enough.",
+      "reveal": "Words alone don't feel like enough to protect you. You like the messages and the dates straight before you speak, and that care means you can always say who agreed to what. A habit like that can come from a time when your word wasn't enough.",
       "otherSide": "Waiting for proof can let the wrong story settle in people's minds before you've said a word.",
       "research": "",
       "source": "",
@@ -9633,7 +9633,7 @@
       "honesty_humility": 1
      },
      "insight": {
-      "reveal": "You find the words that are both kind and true. It's a quiet talent that shows up at work too, in feedback, references and tricky emails. You'd rather be gently honest than smoothly fake, and that makes your kind words worth trusting.",
+      "reveal": "You find the words that are both kind and true. It's a quiet talent that shows up at work too, whenever there's hard news to give or a tricky message to write. You'd rather be gently honest than smoothly fake, and that makes your kind words worth trusting.",
       "otherSide": "Thanking the thought can be read as a polite no, and a friend who knows you well may hear the gap.",
       "research": "",
       "source": "",
@@ -9688,7 +9688,7 @@
       "conscientiousness": 1
      },
      "insight": {
-      "reveal": "Once you've said yes, your word is as good as signed. You turn up with a van on moving day. You're probably careful about promising in the first place, which can make you seem slow to commit.",
+      "reveal": "Once you've said yes, your word is as good as signed. You turn up early and stay until the work is done. You're probably careful about promising in the first place, which can make you seem slow to commit.",
       "otherSide": "Going when you're running on empty can leave you worn out, and the help may cost you more than it should.",
       "research": "",
       "source": "",
@@ -9763,7 +9763,7 @@
       "honesty_humility": 1
      },
      "insight": {
-      "reveal": "You treat a mistake as news to share, not a secret to bury. Teams with you in them raise problems sooner, because you've made it feel safe. Managers likely hand you the projects where an early warning matters most.",
+      "reveal": "You treat a mistake as news to share, not a secret to bury. Teams with you in them raise problems sooner, because you've made it feel safe. You're likely trusted with the work where an early warning matters most.",
       "otherSide": "Telling the team every time can make small slips look bigger than they are, and your name may end up linked to tiny ones.",
       "research": "A trait called Honesty-Humility predicts integrity and rule-breaking at work better than the classic five personality traits alone.",
       "source": "hexaco2005",
@@ -9797,7 +9797,7 @@
       "neuroticism": 1
      },
      "insight": {
-      "reveal": "Looking bad can feel scarier to you than the mistake itself. You care how you come across, which keeps your standards high. It also means you might spend a whole weekend worrying about something a ten-minute fix would have settled.",
+      "reveal": "Looking bad can feel scarier to you than the mistake itself. You care how you come across, which keeps your standards high. It also means you might spend whole days worrying about something a ten-minute fix would have settled.",
       "otherSide": "Waiting can turn a small slip into a bigger one if someone else finds it first, and it can start to feel like hiding to you.",
       "research": "In a study of 281 scientists, colleagues who admitted a finding of theirs was wrong were judged at least as well as those who refused to, and on some measures better.",
       "source": "fetterman2015",
@@ -9814,12 +9814,12 @@
       "honesty_humility": -1
      },
      "insight": {
-      "reveal": "At some point, you learned that mistakes at work get punished. That instinct protects you, and you've become a sharp reader of office politics. It often comes from the room more than the person, so it's fair to ask whether your room is really that unsafe.",
+      "reveal": "At some point, you learned that mistakes at work get punished. That instinct protects you, and you've become a sharp reader of who holds power around you. It often comes from the room more than the person, so it's fair to ask whether your room is really that unsafe.",
       "otherSide": "Letting the system take the blame can leave a real fix undone, and the worry of being found out may stay with you.",
       "research": "In interviews with 40 employees, most had stayed silent about a concern at work, and the top reason was fear of being seen or labelled negatively.",
       "source": "milliken2003",
       "strength": "early",
-      "step": "This week, own up to one very small slip and watch how your manager responds. It shows how safe honesty is there."
+      "step": "This week, own up to one very small slip and watch how it's received. It shows how safe honesty is there."
      }
     }
    ]
@@ -9996,8 +9996,8 @@
       "conscientiousness": 1
      },
      "insight": {
-      "reveal": "For you, fair means exact. You're often trusted with group money and shared trip budgets, and sometimes called tight when you're really just precise. You probably know your bank balance to the penny.",
-      "otherSide": "Working it out to the penny can slow the end of a happy evening, and your friends may feel a little counted.",
+      "reveal": "For you, fair means exact. You're often trusted with group money and shared trip budgets, and sometimes called tight when you're really just precise. You probably know your money to the last coin.",
+      "otherSide": "Working it out to the last coin can slow the end of a happy evening, and your friends may feel a little counted.",
       "research": "",
       "source": "",
       "strength": "none",
@@ -10642,7 +10642,7 @@
   {
    "id": "quality-quantity-extra-project",
    "theme": "quality-quantity",
-   "prompt": "You're offered one more project at work. What do you do?",
+   "prompt": "You're offered extra work on top of what you already have. What do you do?",
    "options": [
     {
      "id": "yes-gladly",
@@ -10710,7 +10710,7 @@
       "research": "Helping because you chose to lifted the well-being of both helper and helped, while helping under pressure did not bring the same benefits.",
       "source": "weinstein2010",
       "strength": "moderate",
-      "step": "This week, try one small, kind no, like turning down a meeting you don't need."
+      "step": "This week, try one small, kind no, like turning down an extra task you don't need."
      }
     }
    ]
@@ -10746,7 +10746,7 @@
       "openness": 2
      },
      "insight": {
-      "reveal": "You pick your story to match your mood. Your tastes run wide, and you know which kind of story suits a tired night and which suits a lazy Sunday. Knowing what you need on a given day is a quiet skill.",
+      "reveal": "You pick your story to match your mood. Your tastes run wide, and you know which kind of story suits a tired night and which suits a lazy day off. Knowing what you need on a given day is a quiet skill.",
       "otherSide": "Moving between stories can leave a few unfinished for good, and the ones that needed your patience may never get it.",
       "research": "",
       "source": "",
@@ -10786,7 +10786,7 @@
       "research": "",
       "source": "",
       "strength": "none",
-      "step": "This weekend, pick one thing you started and finish just the next chapter or episode."
+      "step": "This week, pick one thing you started and finish just the next chapter or episode."
      }
     }
    ]
@@ -10805,7 +10805,7 @@
       "conscientiousness": 1
      },
      "insight": {
-      "reveal": "You trust your memory more than your phone. A tidy inbox and a clear desk are likely part of the same habit, and old arguments, old things and old versions of yourself don't hang around long either.",
+      "reveal": "You trust your memory more than your phone. Cleared-out messages and a tidy table are likely part of the same habit, and old arguments, old things and old versions of yourself don't hang around long either.",
       "otherSide": "Deleting as you go can mean losing an ordinary photo that would have meant a lot to you years from now.",
       "research": "",
       "source": "",
@@ -10919,7 +10919,7 @@
       "research": "Across 93,263 people aged 65 and over in 16 countries, having a hobby went along with more happiness and life satisfaction.",
       "source": "mak2023",
       "strength": "moderate",
-      "step": "This weekend, spend thirty minutes on something you used to love, with no goal at all."
+      "step": "This week, spend thirty minutes on something you used to love, with no goal at all."
      }
     },
     {
@@ -11260,7 +11260,7 @@
       "agreeableness": 2
      },
      "insight": {
-      "reveal": "With the people you love, you never keep score. You're first to raise a glass at a friend's promotion, with no edge in your voice at all. Friends call you early with good news because they know your joy will be real, and that's a kind of wealth too.",
+      "reveal": "With the people you love, you never keep score. You're first to cheer a friend's good fortune, with no edge in your voice at all. Friends call you early with good news because they know your joy will be real, and that's a kind of wealth too.",
       "otherSide": "Being so glad for a friend can make it hard to say no when their new plans start to cost more than you can comfortably spend.",
       "research": "When someone shares good news, an interested, enthusiastic reply is linked to more trust and closeness, while a flat reply is linked to less.",
       "source": "gable2004",
@@ -11336,12 +11336,12 @@
       "materialism": -2
      },
      "insight": {
-      "reveal": "You count your wealth in hours, not things. A slow morning with nothing booked feels richer to you than any shopping trip. A promotion that eats your evenings might not tempt you at all, and a tight budget can still feel like plenty to you.",
+      "reveal": "You count your wealth in hours, not things. A slow morning with nothing booked feels richer to you than any shopping trip. Extra money that costs you your evenings might not tempt you at all, and a tight budget can still feel like plenty to you.",
       "otherSide": "Putting time first can leave you little cushion for a bad month, and money worries can eat into the very calm you chose.",
       "research": "",
       "source": "",
       "strength": "none",
-      "step": "This weekend, give yourself one slow morning with nothing scheduled before ten."
+      "step": "On your next free day, give yourself one slow morning with nothing scheduled before ten."
      }
     },
     {
@@ -11693,8 +11693,8 @@
       "rumination": 1
      },
      "insight": {
-      "reveal": "Some of your money worries are older than your bank account. Your unease probably doesn't rise and fall with your balance, a clue that it's about feeling safe more than about numbers. Seeing that clearly is a big deal, and it's often where feeling settled begins.",
-      "otherSide": "An old unease can make even a good balance feel shaky, so you may hold back from things you could comfortably afford.",
+      "reveal": "Some of your money worries are older than any money of your own. Your unease probably doesn't rise and fall with how much you have, a clue that it's about feeling safe more than about numbers. Seeing that clearly is a big deal, and it's often where feeling settled begins.",
+      "otherSide": "An old unease can make even a good month feel shaky, so you may hold back from things you could comfortably afford.",
       "research": "",
       "source": "",
       "strength": "none",
@@ -11723,7 +11723,7 @@
       "research": "",
       "source": "",
       "strength": "none",
-      "step": "This weekend, do one small thing you've been 'saving up' to enjoy, even a tiny one."
+      "step": "On your next free day, do one small thing you've been 'saving up' to enjoy, even a tiny one."
      }
     },
     {
@@ -11845,7 +11845,7 @@
       "neuroticism": 2
      },
      "insight": {
-      "reveal": "For you, having more mostly means having more to lose. You plan carefully, check your accounts often and insure what you own. The middle feels safest to you, where nothing can fall too far, and good news may need a day before you trust it.",
+      "reveal": "For you, having more mostly means having more to lose. You plan carefully, keep a close eye on your money and protect what you own. The middle feels safest to you, where nothing can fall too far, and good news may need a day before you trust it.",
       "otherSide": "Guarding what you have can take more of your attention than enjoying it, so good times feel like something to protect.",
       "research": "",
       "source": "",
@@ -11874,7 +11874,7 @@
       "research": "",
       "source": "",
       "strength": "none",
-      "step": "This weekend, spend one afternoon somewhere nearby where no one knows you."
+      "step": "This week, spend one free afternoon somewhere nearby where no one knows you."
      }
     },
     {
@@ -11892,7 +11892,7 @@
       "research": "Across 94 studies, making a specific when-then plan had a medium-to-large effect on reaching goals.",
       "source": "gollwitzer2006",
       "strength": "strong",
-      "step": "This week, write one when-then plan: 'When it's Saturday morning, I'll spend 20 minutes on my idea.'"
+      "step": "This week, write one when-then plan: 'When the evening meal is done, I'll spend 20 minutes on my idea.'"
      }
     },
     {
@@ -11946,7 +11946,7 @@
       "rumination": 1
      },
      "insight": {
-      "reveal": "You care a lot about how your words land. You replay conversations in the shower and you're quick to say sorry. Funny how the person you forgive last is you, even for things the other person forgot by lunchtime.",
+      "reveal": "You care a lot about how your words land. You replay conversations late at night and you're quick to say sorry. Funny how the person you forgive last is you, even for things the other person forgot by lunchtime.",
       "otherSide": "All that replaying can turn a small slip into a long sentence you serve alone, and it can make you guarded in conversation.",
       "research": "People encouraged to meet a mistake or weakness with kindness, not harsh self-criticism, were more motivated to improve and to make amends.",
       "source": "breines2012",
@@ -12023,7 +12023,7 @@
       "conscientiousness": 1
      },
      "insight": {
-      "reveal": "Stability is the ground everything else in your life stands on. You'd keep your passion as a side project, where no boss can touch it. That's a smart way to protect what you love, as long as it still gets real hours and not just leftovers.",
+      "reveal": "Stability is the ground everything else in your life stands on. You'd keep your passion as a side project, where it answers only to you. That's a smart way to protect what you love, as long as it still gets real hours and not just leftovers.",
       "otherSide": "Security is real, but years of 'later' can turn a passion into a memory, and you may grieve that more than you expect.",
       "research": "",
       "source": "",
@@ -12228,7 +12228,7 @@
       "neuroticism": 1
      },
      "insight": {
-      "reveal": "Relief tells you that dream was carrying a heavy load. Sometimes a dream turns out to be partly someone else's, picked up from a parent, a teacher or an old plan. Setting it down can free a surprising amount of energy for something that's truly yours.",
+      "reveal": "Relief tells you that dream was carrying a heavy load. Sometimes a dream turns out to be partly someone else's, picked up from a parent, a teacher or an old plan. Setting it down can free a surprising amount of energy for something you truly want.",
       "otherSide": "Setting a dream down is freeing, but make sure it's the weight you're dropping and not the wish itself.",
       "research": "",
       "source": "",
@@ -12241,7 +12241,7 @@
   {
    "id": "ambition-desire-sunday-night",
    "theme": "ambition-desire",
-   "prompt": "It's Sunday night. What's mostly on your mind?",
+   "prompt": "It's the evening before a new week starts. What's mostly on your mind?",
    "options": [
     {
      "id": "week-plans",
@@ -12252,8 +12252,8 @@
       "conscientiousness": 2
      },
      "insight": {
-      "reveal": "You relax once the week ahead has a shape. Sunday is when you check the calendar, sort out meals and pick your clothes, so deadlines rarely sneak up on you. A weekend with no plan at all, though, can feel more stressful than fun.",
-      "otherSide": "Planning ahead calms you, but Sunday evening can turn into Monday morning early, and your rest gets cut short.",
+      "reveal": "You relax once the week ahead has a shape. The evening before is when you check the calendar, sort out meals and pick your clothes, so deadlines rarely sneak up on you. A day off with no plan at all, though, can feel more stressful than fun.",
+      "otherSide": "Planning ahead calms you, but the evening before can feel like the week has started early, and your rest gets cut short.",
       "research": "Young adults who spent five minutes writing tomorrow's to-do list fell asleep about 10 minutes faster than those writing about tasks already done.",
       "source": "scullin2018",
       "strength": "early",
@@ -12269,12 +12269,12 @@
       "neuroticism": -1
      },
      "insight": {
-      "reveal": "Sunday evening doesn't scare you, and that's worth a lot. Either your work fits your life well or you've built a solid wall between the two. You sleep easily and bounce back from bad days fast, and that's a skill worth protecting.",
-      "otherSide": "A strong wall between work and life is healthy, though it can mean a problem waiting on Monday catches you off guard.",
+      "reveal": "The start of a new week doesn't scare you, and that's worth a lot. Either your work fits your life well or you've built a solid wall between the two. You sleep easily and bounce back from bad days fast, and that's a skill worth protecting.",
+      "otherSide": "A strong wall between work and life is healthy, though it can mean a problem waiting at the start of the week catches you off guard.",
       "research": "Across 91 samples and 38,000 people, mentally switching off from work in free time went with less exhaustion, better wellbeing and better sleep.",
       "source": "wendsche2017",
       "strength": "strong",
-      "step": "This week, notice what keeps your Sunday calm, and protect that one habit."
+      "step": "This week, notice what keeps the evening before your week calm, and protect that one habit."
      }
     },
     {
@@ -12292,7 +12292,7 @@
       "research": "In Gallup's 2025 worldwide data, only 1 in 5 employees felt engaged at work, and about a third were thriving in life overall.",
       "source": "gallup2026workplace",
       "strength": "moderate",
-      "step": "Next Sunday evening, add one new thing, even a small one, and see if the feeling shifts."
+      "step": "Next week, on that same evening, add one new thing, even a small one, and see if the feeling shifts."
      }
     },
     {
@@ -12305,12 +12305,12 @@
       "neuroticism": 1
      },
      "insight": {
-      "reveal": "A braver version of your life plays in your head, clear as day. You probably already know its first step, even the day you'd take it. The risk is that it keeps waiting for the right Monday, and the right Monday never announces itself.",
+      "reveal": "A braver version of your life plays in your head, clear as day. You probably already know its first step, even the day you'd take it. The risk is that it keeps waiting for the right week, and the right week never announces itself.",
       "otherSide": "Picturing the braver life so clearly can make the life you have feel smaller than it really is.",
       "research": "",
       "source": "",
       "strength": "none",
-      "step": "This Monday, do one five-minute action from that braver life."
+      "step": "Tomorrow, do one five-minute action from that braver life."
      }
     }
    ]
@@ -12405,7 +12405,7 @@
       "openness": 2
      },
      "insight": {
-      "reveal": "What you're craving is lightness, as much as travel. You've probably daydreamed about selling most of what you own, and a weekend with no plans feels like heaven. The wish points at whatever feels heaviest in your life right now.",
+      "reveal": "What you're craving is lightness, as much as travel. You've probably daydreamed about selling most of what you own, and a day with no plans feels like heaven. The wish points at whatever feels heaviest in your life right now.",
       "otherSide": "Dreaming of no fixed home can make the roots you have feel like weight, when some of them hold you up.",
       "research": "",
       "source": "",
@@ -12422,12 +12422,12 @@
       "openness": 1
      },
      "insight": {
-      "reveal": "Making things with your own hands looks like freedom to you. Jobs where the work vanishes into emails and meetings can leave you restless, because you want something to show for your days. There may be a creative side project that matters more to you than you let on.",
+      "reveal": "Making things with your own hands looks like freedom to you. Work that leaves nothing you can touch can make you restless, because you want something to show for your days. There may be a creative side project that matters more to you than you let on.",
       "otherSide": "Seeing freedom in someone else's work can make your own days feel greyer, even the parts that give you a lot.",
       "research": "",
       "source": "",
       "strength": "none",
-      "step": "This weekend, make one small thing with your hands: a meal, a drawing, a repair."
+      "step": "This week, make one small thing with your hands: a meal, a drawing, a repair."
      }
     },
     {
@@ -12480,7 +12480,7 @@
       "openness": 1
      },
      "insight": {
-      "reveal": "You feel most alive when everything around you is new. You plan the next trip before you've unpacked from the last and try new routes just because. Routine drains you fast, so a little newness each week isn't a luxury for you.",
+      "reveal": "You feel most alive when everything around you is new. You're drawn to places you haven't seen, even a street you've never walked, and try new routes just because. Routine drains you fast, so a little newness each week isn't a luxury for you.",
       "otherSide": "Always chasing the new can make familiar places and people feel dull, even when they're what holds you steady.",
       "research": "",
       "source": "",
@@ -12557,7 +12557,7 @@
       "extraversion": 1
      },
      "insight": {
-      "reveal": "To you, a 'no' is just information, not a verdict. You'll ask for more pay, a better seat or a hand with something, without much fuss. That ease can catch others off guard, so a little warm-up helps your ask land.",
+      "reveal": "To you, a 'no' is just information, not a verdict. You'll ask for a fair price, a better seat or a hand with something, without much fuss. That ease can catch others off guard, so a little warm-up helps your ask land.",
       "otherSide": "Asking easily gets you results, though a quick ask can sometimes miss what the other person is carrying that day.",
       "research": "",
       "source": "",
@@ -13316,7 +13316,7 @@
       "conscientiousness": 1
      },
      "insight": {
-      "reveal": "Feeling capable and feeling attractive go hand in hand for you. You feel your best after nailing a presentation or finishing something big. Your confidence may rise and fall with your work week more than with the mirror, so a hard week can dim it without your noticing.",
+      "reveal": "Feeling capable and feeling attractive go hand in hand for you. You feel your best after a job done well or something big finished. Your confidence may rise and fall with how your work is going more than with the mirror, so a hard week can dim it without your noticing.",
       "otherSide": "Tying how attractive you feel to doing well can leave quiet, ordinary days feeling flat, when you're just as worth wanting.",
       "research": "A large review found that self-esteem tends to grow from doing things well, while trying to boost it directly does little for grades or work.",
       "source": "baumeister2003",
@@ -13409,7 +13409,7 @@
       "honesty_humility": 2
      },
      "insight": {
-      "reveal": "Owning your share comes easily to you. When you say it first, others often find the nerve to own theirs, and the meeting gets shorter. Bosses tend to remember who did that long after the mistake.",
+      "reveal": "Owning your share comes easily to you. When you say it first, others often find the nerve to own theirs, and the blaming stops sooner. The people you work with or for tend to remember who did that long after the mistake.",
       "otherSide": "Being first to own up can mean your name sticks to the mistake, even when your part in it was small.",
       "research": "Pooling 136 samples of over 22,000 people, feeling safe to speak up and take risks in a team went with more learning, better performance and more engagement at work.",
       "source": "frazier2017",
@@ -13457,7 +13457,7 @@
   {
    "id": "colleagues-late-message",
    "theme": "colleagues",
-   "prompt": "Your boss sends you a message late in the evening. You…",
+   "prompt": "Someone you work for messages you late in the evening. You…",
    "options": [
     {
      "id": "morning",
@@ -13468,7 +13468,7 @@
       "neuroticism": -1
      },
      "insight": {
-      "reveal": "Your evenings belong to you, and you protect them calmly. You probably walk in fresher for it, and bosses learn your rhythm fast. When something is truly urgent, you somehow still catch it.",
+      "reveal": "Your evenings belong to you, and you protect them calmly. You probably start the day fresher for it, and the people you work for learn your rhythm fast. When something is truly urgent, you somehow still catch it.",
       "otherSide": "Now and then, leaving it until morning means waking to a small fire you could have put out in one line.",
       "research": "",
       "source": "",
@@ -13520,7 +13520,7 @@
       "attachment_anxiety": 1
      },
      "insight": {
-      "reveal": "You've become the person who always answers. Colleagues love this about you, and bosses come to rely on it without saying so. The cost shows up somewhere else first, like a dinner you ate without tasting or a story you half heard.",
+      "reveal": "You've become the person who always answers. The people you work with or for love this about you, and come to rely on it without saying so. The cost shows up somewhere else first, like a dinner you ate without tasting or a story you half heard.",
       "otherSide": "When you never switch off, rest starts to feel like something you have to earn, rather than something that's yours.",
       "research": "Across 91 samples of 38,124 workers, people who mentally switched off from work in their free time reported less exhaustion and better sleep and life satisfaction.",
       "source": "wendsche2017",
@@ -13533,28 +13533,28 @@
   {
    "id": "colleagues-raise-ask",
    "theme": "colleagues",
-   "prompt": "You believe you've earned a pay rise. What do you do?",
+   "prompt": "You believe your work has earned more pay. What do you do?",
    "options": [
     {
      "id": "wait-review",
-     "label": "Wait for the next review",
+     "label": "Wait for it to be offered",
      "depth": 1,
      "need": "respect",
      "traits": {
       "agreeableness": 1
      },
      "insight": {
-      "reveal": "You trust that good work gets noticed in time. That patience makes you steady and easy to manage. It also means your pay can hang on how well your boss remembers, so a small written record of your wins helps more than it seems.",
-      "otherSide": "Waiting for your review can turn a fair ask into months of wondering, and that wondering is tiring to carry.",
+      "reveal": "You trust that good work gets noticed in time. That patience makes you steady and easy to manage. It also means your pay can hang on how well the person paying you remembers, so a small written record of your wins helps more than it seems.",
+      "otherSide": "Waiting for it to be offered can turn your fair ask into months of wondering, and that wondering is tiring to carry.",
       "research": "",
       "source": "",
       "strength": "none",
-      "step": "Start a note of your wins today, and add one line each Friday until your next review."
+      "step": "Start a note of your wins today, and add one line each week, ready for when pay comes up."
      }
     },
     {
      "id": "ask-directly",
-     "label": "Book a meeting and ask",
+     "label": "Ask for it, face to face",
      "depth": 2,
      "need": "respect",
      "traits": {
@@ -13695,7 +13695,7 @@
      "depth": 1,
      "need": "calm",
      "insight": {
-      "reveal": "You keep work warm, and you keep it at work. That spares you most of the office drama and makes you the colleague people trust for a neutral view. When you move jobs, you'll leave very few loose ends behind.",
+      "reveal": "You keep work warm, and you keep it at work. That spares you most of the workplace drama and makes you the colleague people trust for a neutral view. When you move jobs, you'll leave very few loose ends behind.",
       "otherSide": "Keeping it at work can mean years beside someone without ever really knowing them, and a good friend may slip past you.",
       "research": "Time spent side by side at work or school didn't, on its own, turn people into closer friends; catching up on each other's lives and joking did.",
       "source": "hall2018",
@@ -13752,7 +13752,7 @@
       "research": "After chatting with someone new, people tended to underestimate how much the other person liked them, a 'liking gap' that lasted months among new roommates.",
       "source": "boothby2018",
       "strength": "moderate",
-      "step": "On Monday, share one small, safe thing about your weekend with a colleague and see what comes back."
+      "step": "This week, share one small, safe thing from outside work with a colleague and see what comes back."
      }
     }
    ]
@@ -13940,7 +13940,7 @@
       "extraversion": -1
      },
      "insight": {
-      "reveal": "Ears open, words kept to yourself: that's your way. Hearing every side, you often understand the office better than it understands itself. Others see you as safe, which brings you more stories than you'd ever ask for.",
+      "reveal": "Ears open, words kept to yourself: that's your way. Hearing every side, you often understand the group better than it understands itself. Others see you as safe, which brings you more stories than you'd ever ask for.",
       "otherSide": "Saying nothing can be taken as agreement, and you may end up holding stories you never wanted to carry.",
       "research": "",
       "source": "",
@@ -14056,7 +14056,7 @@
       "research": "",
       "source": "",
       "strength": "none",
-      "step": "By Friday, write five lines on what you handle and share them with your new boss."
+      "step": "Before the week is out, write five lines on what you handle and share them with your new boss."
      }
     }
    ]
@@ -14711,12 +14711,12 @@
       "conscientiousness": 1
      },
      "insight": {
-      "reveal": "You can be practical about a dream without giving up on it. You need a plan that fits real life: evenings, weekends, small fees. Once you find one, you'll likely stick to it, because you planned for real life from the start.",
+      "reveal": "You can be practical about a dream without giving up on it. You need a plan that fits real life: evenings, days off, small fees. Once you find one, you'll likely stick to it, because you planned for real life from the start.",
       "otherSide": "Waiting for the perfect time and budget can mean you never start, when a small, cheap first step would do.",
       "research": "",
       "source": "",
       "strength": "none",
-      "step": "By the weekend, find out the real cost and hours of one course, so it becomes a fact, not a fog."
+      "step": "By the end of the week, find out the real cost and hours of one course, so it becomes a fact, not a fog."
      }
     },
     {
@@ -14848,7 +14848,7 @@
       "honesty_humility": -1
      },
      "insight": {
-      "reveal": "Loyalty to friends comes before the rules for you. You're probably generous in every direction, with notes, food and lifts home. Sometimes the friend learns less than they could have, and that can sit with you later.",
+      "reveal": "Loyalty to friends comes before the rules for you. You're probably generous in every direction, with notes, food and your time. Sometimes the friend learns less than they could have, and that can sit with you later.",
       "otherSide": "If it's spotted, you can both end up in trouble, and your good name pays for a kindness.",
       "research": "",
       "source": "",
@@ -14990,24 +14990,24 @@
       "research": "",
       "source": "",
       "strength": "none",
-      "step": "This Friday, write down one thing that went right this week, even if it wasn't on the plan."
+      "step": "At the end of this week, write down one thing that went right, even if it wasn't on the plan."
      }
     },
     {
      "id": "restart-monday",
-     "label": "Write it off and start fresh on Monday",
+     "label": "Write it off and start fresh next week",
      "depth": 2,
      "need": "competence",
      "traits": {
       "present_bias": 1
      },
      "insight": {
-      "reveal": "You love a clean slate, and Monday always offers one. Fresh beginnings give you real energy: new weeks, new months, new notebooks. A Thursday can be a fresh start too, if you let it be one.",
-      "otherSide": "Waiting for Monday can write off Thursday and Friday, when you still had good days left in the week.",
+      "reveal": "You love a clean slate, and the start of a week always offers one. Fresh beginnings give you real energy: new weeks, new months, new notebooks. A midweek day can be a fresh start too, if you let it be one.",
+      "otherSide": "Waiting for a new week can write off the rest of this one, when you still had good days left in it.",
       "research": "Interest in fresh starts jumps on landmark dates: student gym visits rose 33% at the start of a week.",
       "source": "dai2014",
       "strength": "moderate",
-      "step": "Next time a week slips, pick one small thing and restart it tomorrow, not Monday."
+      "step": "Next time a week slips, pick one small thing and restart it tomorrow, not next week."
      }
     },
     {
@@ -15039,7 +15039,7 @@
      },
      "insight": {
       "reveal": "One bad Wednesday can feel like proof about you. You probably set high bars and remember every miss. A week that feels failed is often half done, and half is a lot more than nothing.",
-      "otherSide": "Calling the week a failure can make Thursday harder for you to start, when there's still plenty of week left.",
+      "otherSide": "Calling the week a failure can make the next day harder for you to start, when there's still plenty of week left.",
       "research": "Bad events, bad feedback and bad moods usually affect people more strongly than good ones of the same size.",
       "source": "baumeister2001",
       "strength": "strong",
@@ -15059,7 +15059,7 @@
      "depth": 1,
      "need": "freedom",
      "insight": {
-      "reveal": "You don't need a date on the calendar to change. Your changes happen mid-year, without announcement, when something actually bothers you. You're also spared the February guilt that a broken list brings.",
+      "reveal": "You don't need a date on the calendar to change. Your changes happen mid-year, without announcement, when something actually bothers you. You're also spared the guilt a broken list brings a few weeks in.",
       "otherSide": "Waiting until something bothers you means change comes only when it has to, and your gentler wishes may never get their turn.",
       "research": "",
       "source": "",
@@ -15093,7 +15093,7 @@
       "present_bias": 1
      },
      "insight": {
-      "reveal": "Some wishes come back to you every January, faithfully. A wish that returns year after year is a real one that's missing a first step. The year it shrinks to something doable this week could be the year it happens.",
+      "reveal": "Some wishes come back to you every new year, faithfully. A wish that returns year after year is a real one that's missing a first step. The year it shrinks to something doable this week could be the year it happens.",
       "otherSide": "Seeing the same wishes return can start to feel like a verdict on you, rather than a sign of what you truly want.",
       "research": "Across 47 experiments, a big boost in people's intentions led to only a small-to-medium change in what they actually did.",
       "source": "webb2006",
@@ -15154,7 +15154,7 @@
       "research": "Worldwide, 79% of adults now have an account, but only 56% could reliably get hold of extra money in an emergency.",
       "source": "findex2025",
       "strength": "moderate",
-      "step": "Before your next payday, add a small 'life happens' line to your plan, even a tiny one."
+      "step": "Next time money comes in, add a small 'life happens' line to your plan, even a tiny one."
      }
     },
     {
@@ -15226,8 +15226,8 @@
       "conscientiousness": 1
      },
      "insight": {
-      "reveal": "Your birthday is your own personal new year. You may have a quiet ritual: a walk, a notebook, a few lines about the year ahead. Those private goals can outlast January ones, because they're truly yours.",
-      "otherSide": "Turning your birthday into a planning day can leave less room to enjoy it, and the goals can feel like homework by March.",
+      "reveal": "Your birthday is your own personal new year. You may have a quiet ritual: a walk, a notebook, a few lines about the year ahead. Those private goals can outlast new year ones, because they're truly yours.",
+      "otherSide": "Turning your birthday into a planning day can leave less room to enjoy it, and the goals can feel like homework a few months on.",
       "research": "New beginnings spark fresh effort: students went to the gym about 7% more after their birthdays.",
       "source": "dai2014",
       "strength": "moderate",
@@ -15289,7 +15289,7 @@
       "research": "",
       "source": "",
       "strength": "none",
-      "step": "This Sunday, write your dream at the top of next week's list, even with nothing under it."
+      "step": "Before this week ends, write your dream at the top of next week's list, even with nothing under it."
      }
     },
     {
@@ -15378,7 +15378,7 @@
       "research": "Specific, hard goals led to better results than 'just do your best', especially when people got feedback on their progress.",
       "source": "locke2002",
       "strength": "strong",
-      "step": "This weekend, write one goal for the next three months and set a reminder for the halfway date."
+      "step": "This week, write one goal for the next three months and set a reminder for the halfway date."
      }
     },
     {
@@ -15506,7 +15506,7 @@
      "need": "calm",
      "insight": {
       "reveal": "You know how to put a week down. You come back fresher, and the first morning back often brings your best ideas. The week's small wins can slip past unnoticed, though.",
-      "otherSide": "Switching off so cleanly can leave your first hour on Monday for remembering where you were, before you can get going.",
+      "otherSide": "Switching off so cleanly can leave your first hour back for remembering where you were, before you can get going.",
       "research": "Mentally switching off from work in free time went with less exhaustion, better wellbeing and better sleep, across 91 samples.",
       "source": "wendsche2017",
       "strength": "strong",
@@ -15540,12 +15540,12 @@
       "neuroticism": 1
      },
      "insight": {
-      "reveal": "Getting next week sorted is what lets you relax. Your Mondays probably start calm and clear. Sometimes the planning creeps into the weekend, and the rest never quite begins.",
+      "reveal": "Getting next week sorted is what lets you relax. Your weeks probably start calm and clear. Sometimes the planning creeps into your time off, and the rest never quite begins.",
       "otherSide": "Needing next week sorted before you relax can make your rest feel conditional, as if it has to be earned by planning first.",
       "research": "Young adults who wrote tomorrow's to-do list for five minutes fell asleep faster than those who wrote about tasks they had already done.",
       "source": "scullin2018",
       "strength": "early",
-      "step": "This weekend, finish planning by a set time, then close the notebook until Monday."
+      "step": "When the week winds down, finish planning by a set time, then close the notebook until the new week starts."
      }
     },
     {
@@ -15558,7 +15558,7 @@
      },
      "insight": {
       "reveal": "What's unfinished stays louder for you than what's done. You probably did plenty, and you remember it as less. Writing down three finished things before the replay starts can turn the volume down.",
-      "otherSide": "Replaying what's left can take your whole weekend with it, and the rest you need for next week never quite arrives.",
+      "otherSide": "Replaying what's left can take all your free time with it, and the rest you need for next week never quite arrives.",
       "research": "Unfinished tasks are not remembered better than finished ones, but people do feel a pull to go back and complete what was interrupted.",
       "source": "ghibellini2025",
       "strength": "strong",
@@ -16290,7 +16290,7 @@
       "conscientiousness": 2
      },
      "insight": {
-      "reveal": "Your first moments go to something bigger than your inbox. Starting this way tends to let you hold the day a little more loosely, and by noon you're often hard to rattle.",
+      "reveal": "Your first moments go to something bigger than your phone. Starting this way tends to let you hold the day a little more loosely, and by noon you're often hard to rattle.",
       "otherSide": "A morning practice is a gift, but when a rushed start means you miss it, you can feel off balance until night.",
       "research": "Set rituals, religious or everyday, tend to help people manage worry and feel more in control, a review of ritual research found.",
       "source": "hobson2018",
@@ -16720,7 +16720,7 @@
       "neuroticism": 1
      },
      "insight": {
-      "reveal": "Your timeline matters to you more than you admit. Weddings, promotions and new homes in your age group stir you in a way a stranger's news never does, and new goals tend to appear right after a big birthday.",
+      "reveal": "Your timeline matters to you more than you admit. Weddings, new jobs and new homes in your age group stir you in a way a stranger's news never does, and new goals tend to appear right after a big birthday.",
       "otherSide": "Measuring by your age group can make your own life feel late, even when it's simply running to a different timetable.",
       "research": "New beginnings tend to spark fresh effort: US searches for 'diet' jumped 82% at New Year, and students went to the gym more after their birthdays.",
       "source": "dai2014",
@@ -16979,7 +16979,7 @@
       "rumination": 1
      },
      "insight": {
-      "reveal": "Part of you wanted to speak, and part of you held it back. That gap shows up beyond cafés, in meetings, in families, in love, and the fact that it bothers you means your own wants are knocking a little louder.",
+      "reveal": "Part of you wanted to speak, and part of you held it back. That gap shows up well beyond the counter, at work, in families, in love, and the fact that it bothers you means your own wants are knocking a little louder.",
       "otherSide": "Swallowing it, then blaming yourself later, costs you twice: the thing you didn't get, and the evening spent on it.",
       "research": "Across 94 studies, making a specific when-then plan (\"When X happens, I will do Y\") had a medium-to-large effect on reaching goals.",
       "source": "gollwitzer2006",
@@ -17052,12 +17052,12 @@
       "rumination": 1
      },
      "insight": {
-      "reveal": "Right now, your life feels bigger than your job title. You may be in a season of change or waiting, and that can make you better company than you'd guess, because you're still choosing what comes next.",
+      "reveal": "Right now, your life feels bigger than any one-line answer. You may be in a season of change or waiting, and that can make you better company than you'd guess, because you're still choosing what comes next.",
       "otherSide": "Wishing for a better answer can make a simple question sting, and you may avoid meeting new people for a while.",
       "research": "",
       "source": "",
       "strength": "none",
-      "step": "Next time you're asked, try answering with something you love doing instead of your job."
+      "step": "Next time you're asked, try answering with something you love doing."
      }
     }
    ]
@@ -17297,7 +17297,7 @@
      "need": "belonging",
      "insight": {
       "reveal": "You reach out in words when you can't be there in person. A short, sincere message from you means more to a grieving family than you'd guess, and some families reread those messages long after the funeral is over.",
-      "otherSide": "A message is kind, but once you've sent it, it's easy to move on, and the family's hardest weeks often come after the cards stop.",
+      "otherSide": "A message is kind, but once you've sent it, it's easy to move on, and the family's hardest weeks often come after the condolences stop.",
       "research": "",
       "source": "",
       "strength": "none",
@@ -17542,7 +17542,7 @@
      },
      "insight": {
       "reveal": "You like a fresh page with a few promises on it. You start strong in the first weeks, and your resolutions stick best when they're specific, small and tied to something you already do every day.",
-      "otherSide": "A fresh page motivates you, but a slip in February can feel like failing the whole year.",
+      "otherSide": "A fresh page motivates you, but a slip a few weeks in can feel like failing the whole year.",
       "research": "Across 94 studies, making a specific when-then plan (\"When X happens, I will do Y\") had a medium-to-large effect on reaching goals.",
       "source": "gollwitzer2006",
       "strength": "strong",
@@ -17907,16 +17907,16 @@
     },
     {
      "id": "hide-the-mess",
-     "label": "Hide the mess in one room and shut the door",
+     "label": "Hide the mess wherever it fits, out of sight",
      "depth": 2,
      "need": "respect",
      "insight": {
-      "reveal": "You're a master of the ten-minute rescue. One shut door holds the overflow, and honestly, it works. The same knack shows up elsewhere: you can make almost anything presentable at short notice.",
-      "otherSide": "The shut door hides the mess, but you know it's there, and it can sit at the back of your mind all evening.",
+      "reveal": "You're a master of the ten-minute rescue. One corner, cupboard or bag holds the overflow, and honestly, it works. The same knack shows up elsewhere: you can make almost anything presentable at short notice.",
+      "otherSide": "The mess is out of sight, but you know it's there, and it can sit at the back of your mind all evening.",
       "research": "",
       "source": "",
       "strength": "none",
-      "step": "On a quiet evening, give that hiding-place room just ten minutes, so it's ready for the next surprise."
+      "step": "On a quiet evening, give that hiding place just ten minutes, so it's ready for the next surprise."
      }
     },
     {
@@ -18109,7 +18109,7 @@
   {
    "id": "home-repair-ask",
    "theme": "home",
-   "prompt": "Something at home breaks, and fixing it is your landlord's or someone else's job. You…",
+   "prompt": "Something at home breaks, and fixing it is someone else's job. You…",
    "options": [
     {
      "id": "report-today",
@@ -18173,7 +18173,7 @@
      },
      "insight": {
       "reveal": "You'd rather go without than be a bother. Requests get rehearsed in your head and softened until they barely ask for anything. Here's the thing: asking for what you're owed doesn't make you difficult, and a clear request is more likely to get a yes than you expect.",
-      "otherSide": "Waiting so as not to be trouble can mean you live with a broken thing you're paying for, for weeks longer than you need.",
+      "otherSide": "Waiting so as not to be trouble can mean you live with a broken thing for weeks longer than you need.",
       "research": "People asking strangers for help guessed they would need to ask about 50% more people than they really did: others say yes more than we expect.",
       "source": "flynn2008",
       "strength": "moderate",
@@ -18201,7 +18201,7 @@
       "research": "",
       "source": "",
       "strength": "none",
-      "step": "This weekend, show someone at home how to do one small repair you know well."
+      "step": "This week, show someone at home how to do one small repair you know well."
      }
     },
     {
@@ -18252,7 +18252,7 @@
       "research": "",
       "source": "",
       "strength": "none",
-      "step": "This Saturday, fix one thing you've learned to work around, and enjoy not needing the trick."
+      "step": "This week, fix one thing you've learned to work around, and enjoy not needing the trick."
      }
     }
    ]
@@ -18452,7 +18452,7 @@
       "agreeableness": -1
      },
      "insight": {
-      "reveal": "Grown-ups, you feel, should notice their own mess. Fair enough, though a silent message often lands as a puzzle rather than a point. Your own sense of fairness is strong, which makes it hard to understand a housemate who doesn't share it.",
+      "reveal": "Grown-ups, you feel, should notice their own mess. Fair enough, though a silent message often lands as a puzzle rather than a point. Your own sense of fairness is strong, which makes it hard to understand someone at home who doesn't share it.",
       "otherSide": "While the dishes wait, the kitchen stays messy for you too, and the standoff can last longer than the mess.",
       "research": "People tend to expect honest talks to hurt their relationships more than they do; in tests, being honest felt better and more connecting than predicted.",
       "source": "levine2018",
@@ -18518,7 +18518,7 @@
     },
     {
      "id": "check-balance",
-     "label": "I check my account more than once",
+     "label": "I check the money is there more than once",
      "depth": 3,
      "need": "security",
      "traits": {
@@ -18530,7 +18530,7 @@
       "research": "In a lab game, people felt most stressed when a bad outcome was uncertain, more than when it was very likely: not knowing can feel worse than knowing.",
       "source": "deberker2016",
       "strength": "early",
-      "step": "In rent week, check once, write the number down, and let that note do the worrying for you."
+      "step": "When a payment is due, check once, write the number down, and let that note do the worrying for you."
      }
     },
     {
@@ -18795,7 +18795,7 @@
       "research": "Tasting the same chocolate at the same moment as another person made good chocolate taste better: sharing an experience tends to make it feel stronger.",
       "source": "boothby2014",
       "strength": "moderate",
-      "step": "Next time you eat with someone, order one thing just for sharing."
+      "step": "Next time you eat with someone, make, bring or order one thing just for sharing."
      }
     },
     {
@@ -18962,7 +18962,7 @@
       "research": "",
       "source": "",
       "strength": "none",
-      "step": "This week, make a big pot of your favourite warm dish and save some for the next hard day."
+      "step": "This week, keep what you need for your favourite warm drink or dish close by, ready for the next hard day."
      }
     },
     {
@@ -19347,7 +19347,7 @@
       "research": "Across 11 studies, most people did not enjoy sitting alone for 6 to 15 minutes with only their thoughts, and many chose a mild electric shock instead.",
       "source": "wilson2014",
       "strength": "moderate",
-      "step": "This week, take yourself somewhere nice to eat alone, and enjoy every bite."
+      "step": "This week, eat one meal alone in a spot you like, at home or outside, and enjoy every bite."
      }
     },
     {
@@ -19384,7 +19384,7 @@
      },
      "insight": {
       "reveal": "You like to meet the week halfway. Laying things out the night before is how you buy yourself a calmer morning. The week often goes better when it starts on your terms, and the people around you benefit from that head start.",
-      "otherSide": "Preparing so well is calming, but your last free evening can slip into Monday mode before the weekend is truly over.",
+      "otherSide": "Preparing so well is calming, but your last free evening can slip into the week ahead before your time off is truly over.",
       "research": "Young adults who spent 5 minutes writing a to-do list before bed fell asleep in about 15 minutes, versus about 25 minutes for a comparison group.",
       "source": "scullin2018",
       "strength": "early",
@@ -19500,7 +19500,7 @@
       "research": "",
       "source": "",
       "strength": "none",
-      "step": "Next free hour, leave your phone in another room for the first fifteen minutes."
+      "step": "Next free hour, put your phone out of reach for the first fifteen minutes."
      }
     },
     {
@@ -19978,7 +19978,7 @@
      "depth": 1,
      "need": "calm",
      "insight": {
-      "reveal": "Your body knows exactly what it needs, and it's sleep. A good night fixes more for you than any weekend plan. It shows in your patience first: one short night and the world gets a little more annoying.",
+      "reveal": "Your body knows exactly what it needs, and it's sleep. A good night fixes more for you than any plan for a day off. It shows in your patience first: one short night and the world gets a little more annoying.",
       "otherSide": "Relying on sleep to fix things means a few short nights can knock you off course, and life won't always allow a long one.",
       "research": "An expert panel recommends 7 to 9 hours of sleep a night for adults and 8 to 10 hours for teenagers.",
       "source": "hirshkowitz2015",
@@ -20054,7 +20054,7 @@
      },
      "insight": {
       "reveal": "A day off, for you, is a real day off. You've drawn a clear line and you keep to it, so you come back sharper. People who work with you likely respect that line more than you think.",
-      "otherSide": "A firm line is healthy, though a small question left until Monday can grow, and you may come back to a bigger job.",
+      "otherSide": "A firm line is healthy, though a small question left for later can grow, and you may come back to a bigger job.",
       "research": "Mentally switching off from work in free time went with less exhaustion, better wellbeing and better sleep, across 91 samples and 38,000 people.",
       "source": "wendsche2017",
       "strength": "strong",
@@ -20668,7 +20668,7 @@
       "research": "",
       "source": "",
       "strength": "none",
-      "step": "This week, leave your phone in another room for one hour on purpose and see what you notice."
+      "step": "This week, put your phone out of reach for one hour on purpose and see what you notice."
      }
     },
     {
@@ -20948,7 +20948,7 @@
       "research": "People who vented anger while dwelling on the person who annoyed them became angrier and more aggressive than people who did nothing.",
       "source": "bushman2002",
       "strength": "moderate",
-      "step": "Next jam, try one slow breath out each time you want to hit the horn, and notice how you feel when you arrive."
+      "step": "Next jam, try one slow breath out each time the frustration rises, and notice how you feel when you arrive."
      }
     }
    ]
@@ -21185,7 +21185,7 @@
   {
    "id": "getting-around-ride-choice",
    "theme": "getting-around",
-   "prompt": "Bus, taxi, boda, train or on foot: what usually decides how you go?",
+   "prompt": "Bus, taxi, motorbike, train or on foot: what usually decides how you go?",
    "options": [
     {
      "id": "cheapest",
@@ -21311,7 +21311,7 @@
       "research": "",
       "source": "",
       "strength": "none",
-      "step": "This weekend, take one turn you've never taken on a route you know, and see where it leads."
+      "step": "This week, take one turn you've never taken on a route you know, and see where it leads."
      }
     },
     {
@@ -21595,7 +21595,7 @@
       "neuroticism": 1
      },
      "insight": {
-      "reveal": "Keeping the peace matters to you, even when your stomach disagrees. You may say 'it's fine' when it isn't quite, in cars and elsewhere. That politeness makes you easy to be around, though your own safety and calm deserve a voice too.",
+      "reveal": "Keeping the peace matters to you, even when your stomach disagrees. You may say 'it's fine' when it isn't quite, on the road and elsewhere. That politeness makes you easy to be around, though your own safety and calm deserve a voice too.",
       "otherSide": "Staying silent can leave you gripping the seat for the whole ride and shaky when you finally step out.",
       "research": "Each 1% rise in average speed raises the risk of a deadly crash by about 4%, and road crashes kill about 1.16 million people a year.",
       "source": "who2026road",
@@ -22053,7 +22053,7 @@
       "conscientiousness": 1
      },
      "insight": {
-      "reveal": "You notice your body's small signals and trust them. That habit runs wider than health: a strange noise in the car, a change in a friend's mood. You catch things early, and that's just good sense.",
+      "reveal": "You notice your body's small signals and trust them. That habit runs wider than health: a sound that wasn't there yesterday, a change in a friend's mood. You catch things early, and that's just good sense.",
       "otherSide": "Noticing every small signal can keep part of your mind on watch, even when nothing is wrong.",
       "research": "",
       "source": "",
@@ -22187,7 +22187,7 @@
      },
      "insight": {
       "reveal": "You feel most like yourself when you're in motion. You think better on your feet, pace during phone calls and get restless after a long sit. A day without movement can leave you a little flat, even when everything else went well.",
-      "otherSide": "Needing to move to feel right can make an injury or a week stuck at a desk hit you especially hard.",
+      "otherSide": "Needing to move to feel right can make an injury or a week stuck sitting still hit you especially hard.",
       "research": "Across 218 trials, walking or jogging, yoga and strength training eased low mood the most, and harder sessions tended to help more than gentle ones.",
       "source": "noetel2024",
       "strength": "strong",
@@ -22196,14 +22196,14 @@
     },
     {
      "id": "comforts",
-     "label": "After a long shower or a good meal",
+     "label": "After a warm wash or a good meal",
      "depth": 1,
      "need": "calm",
      "traits": {
       "openness": 1
      },
      "insight": {
-      "reveal": "Simple comforts bring you back to yourself. A warm shower, a proper meal at the table, clean clothes: small rituals like these carry you through hard weeks better than any big plan.",
+      "reveal": "Simple comforts bring you back to yourself. A warm wash, a proper sit-down meal, clean clothes: small rituals like these carry you through hard weeks better than any big plan.",
       "otherSide": "Leaning on comforts to feel well can mean your body gets soothed more often than it gets moved.",
       "research": "People who did a small ritual before eating, like unwrapping chocolate in a set way, enjoyed it more, especially when they did the ritual themselves.",
       "source": "vohs2013",
@@ -22222,7 +22222,7 @@
      },
      "insight": {
       "reveal": "Daylight and fresh air reset you like nothing else. You open the windows first thing, pick the seat by the window and feel cooped up after a day indoors. Even five minutes outside can turn your mood around.",
-      "otherSide": "Needing daylight to feel right can make long indoor days and dark winter weeks weigh on you more.",
+      "otherSide": "Needing daylight to feel right can make long indoor days and grey, gloomy weeks weigh on you more.",
       "research": "Pooling 10 UK studies of 1,252 people, exercise in green spaces lifted mood and self-esteem, with the biggest boost from short sessions.",
       "source": "barton2010",
       "strength": "moderate",
@@ -22243,7 +22243,7 @@
       "research": "",
       "source": "",
       "strength": "none",
-      "step": "This week, give your body one small kindness each day: a walk, a glass of water, a stretch or a warm shower."
+      "step": "This week, give your body one small kindness each day: a walk, a glass of water, a stretch or a warm wash."
      }
     }
    ]
@@ -22319,7 +22319,7 @@
       "research": "People tend to think others notice them far more than they do; in one test, people expected about half the room to notice, but only about a quarter did.",
       "source": "gilovich2000",
       "strength": "moderate",
-      "step": "Tonight, dance to one song at home with the door closed, and let your body remember it knows how."
+      "step": "Tonight, dance to one song when no one's watching, and let your body remember it knows how."
      }
     }
    ]
@@ -22428,7 +22428,7 @@
       "agreeableness": 1
      },
      "insight": {
-      "reveal": "You come from a family that carries things together. Expect to be the easy one at work collections and group trips, splitting costs without fuss, and a little surprised when a friend's family keeps careful count instead.",
+      "reveal": "You come from a family that carries things together. Expect to be the easy one whenever a cost is shared or a collection goes round, giving without fuss, and a little surprised when a friend's family keeps careful count instead.",
       "otherSide": "A shared pot can hide who is struggling to put in, and a relative may give more than they can afford rather than tell you so.",
       "research": "",
       "source": "",
@@ -22526,7 +22526,7 @@
       "research": "Going over and over a problem without acting on it tends to deepen low mood; thinking it through in order to act on it is different and can help.",
       "source": "nolenhoeksema2008",
       "strength": "strong",
-      "step": "Tonight, write your own plan for the next year, in your words, not anyone else's."
+      "step": "Tonight, write down what you hope for in the next year, in your own words."
      }
     },
     {
@@ -22878,7 +22878,7 @@
     },
     {
      "id": "go-resent",
-     "label": "Go, and quietly resent the lost weekend",
+     "label": "Go, and quietly resent giving up my plans",
      "depth": 3,
      "need": "belonging",
      "traits": {
@@ -22988,7 +22988,7 @@
   {
    "id": "relatives-long-stay",
    "theme": "relatives",
-   "prompt": "A relative asks to stay at your place 'for a few weeks'. What do you do?",
+   "prompt": "A relative asks to stay with you 'for a few weeks'. What do you do?",
    "options": [
     {
      "id": "of-course",
@@ -23147,7 +23147,7 @@
      "depth": 1,
      "need": "respect",
      "insight": {
-      "reveal": "You let other families have their hard moments in peace. Fewer eyes means less pressure on the parent, so carrying on calmly is a quiet favour. Colleagues probably get the same from you: room to struggle, without anyone hovering.",
+      "reveal": "You let other families have their hard moments in peace. Fewer eyes means less pressure on the parent, so carrying on calmly is a quiet favour. The people around you probably get the same from you: room to struggle, without anyone hovering.",
       "otherSide": "Carrying on can look like you didn't notice, and a parent at the end of their rope may feel more alone than you'd guess.",
       "research": "",
       "source": "",
@@ -23244,7 +23244,7 @@
       "research": "",
       "source": "",
       "strength": "none",
-      "step": "Tonight, say the rule as a when-then: \"When homework's done, then the tablet comes out.\""
+      "step": "Tonight, say the rule as a when-then: \"When homework's done, then it's screen time.\""
      }
     },
     {
@@ -23278,7 +23278,7 @@
       "research": "In a 2023 US survey, 38% of teens said they spend too much time on their phone, and 47% of their parents said the same about themselves.",
       "source": "pew2024screentime",
       "strength": "moderate",
-      "step": "Tonight, leave your phone in another room for the first half hour after you get home."
+      "step": "Tonight, put your phone out of reach for the first half hour of the evening."
      }
     }
    ]
@@ -23387,7 +23387,7 @@
       "conscientiousness": 1
      },
      "insight": {
-      "reveal": "Calm limits beat loud words, in your book. The same fairness makes you a predictable boss or teammate, and children often trust a fair rule-keeper more than a fun one, even while complaining about it.",
+      "reveal": "Calm limits beat loud words, in your book. The same fairness makes you predictable at work and among friends, and children often trust a fair rule-keeper more than a fun one, even while complaining about it.",
       "otherSide": "Quick consequences can skip the warm part, and a child may go along with you without understanding why the rule exists.",
       "research": "Warm but firm parenting went with fewer behaviour problems and better school results across US ethnic groups.",
       "source": "pinquart2018",
@@ -23781,7 +23781,7 @@
       "research": "A review of 45 studies of mostly traditional societies found relatives besides the mother helped children survive in almost all; maternal grandmothers and older siblings often did.",
       "source": "sear2008",
       "strength": "strong",
-      "step": "This weekend, do one thing purely for fun, with nothing and no one to look after."
+      "step": "This week, do one thing purely for fun, with nothing and no one to look after."
      }
     },
     {
@@ -23840,7 +23840,7 @@
       "research": "People tend to value things they put together themselves more than the same thing made by others, the so-called 'IKEA effect'.",
       "source": "sarstedt2017",
       "strength": "moderate",
-      "step": "This weekend, make something simple together: a meal, a drawing, a paper boat."
+      "step": "This week, make something simple together: a meal, a drawing, a paper boat."
      }
     },
     {
@@ -23874,7 +23874,7 @@
       "research": "People's minds wandered almost half the time they were awake, and they tended to feel less happy while their mind wandered than while focused on what they were doing.",
       "source": "killingsworth2010",
       "strength": "moderate",
-      "step": "Today, give a child ten minutes with your phone in another room, and follow their lead."
+      "step": "Today, give a child ten minutes with your phone put away, and follow their lead."
      }
     }
    ]
@@ -24484,7 +24484,7 @@
       "conscientiousness": 1
      },
      "insight": {
-      "reveal": "You fix small things without waiting for permission. The office kitchen, the bus seat, the shared yard: every place ends up a little better for your passing, and a tidier spot tends to stay tidier, because people litter less where it's already clean.",
+      "reveal": "You fix small things without waiting for permission. The place you work, the bus seat, the shared yard: every place ends up a little better for your passing, and a tidier spot tends to stay tidier, because people litter less where it's already clean.",
       "otherSide": "Picking up after the street can turn into a job nobody thanks you for, and it may leave you feeling taken for granted.",
       "research": "In field experiments, people dropped litter more in places already littered (41%) than in clean ones (11%).",
       "source": "cialdini1990",
