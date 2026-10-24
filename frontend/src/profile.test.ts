@@ -16,6 +16,7 @@ import {
   threadLine,
   traitsOf,
   loadHistory,
+  writeFirstOf,
   type AnswerRecord,
   type History,
 } from './profile'
@@ -255,6 +256,21 @@ describe('the thread line', () => {
     expect(threadLine(before, ask('2026-10-14'), 'now', '2026-10-14')).toBe('Same answer as when this came up on 14 September.')
     // Never for an intimacy question.
     expect(threadLine(before, { ...ask('2026-10-14'), care: 'intimate' }, 'now', '2026-10-14')).toBeNull()
+  })
+})
+
+describe('the write-first card', () => {
+  const sitting = [q('m1', 'money'), q('h1', 'habits'), q('i1', 'intimacy', 'intimate')]
+
+  it('is the question in the theme answered most deeply lately', () => {
+    const h: History = { answers: [answer('2026-10-10', 'habits', 4), answer('2026-10-11', 'money', 3)], skips: [] }
+    expect(writeFirstOf(sitting, h, '2026-10-12')).toBe('h1')
+  })
+
+  it('waits for a deep answer, judges only answers before today, and never picks intimacy', () => {
+    expect(writeFirstOf(sitting, { answers: [answer('2026-10-10', 'habits', 2)], skips: [] }, '2026-10-12')).toBeNull()
+    expect(writeFirstOf(sitting, { answers: [answer('2026-10-12', 'habits', 4)], skips: [] }, '2026-10-12')).toBeNull()
+    expect(writeFirstOf(sitting, { answers: [answer('2026-10-10', 'intimacy', 4)], skips: [] }, '2026-10-12')).toBeNull()
   })
 })
 

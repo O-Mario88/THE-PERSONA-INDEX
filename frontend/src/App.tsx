@@ -31,7 +31,7 @@ import type { Practice } from './practices'
 import { SettingsScreen } from './Settings'
 import { themeVars } from './themes'
 import { openThisWeek, sendUnsent } from './moves'
-import { forgetPick, todaysPick, type Half } from './profile'
+import { forgetPick, loadHistory, todaysPick, writeFirstOf, type Half } from './profile'
 import { intimacyOn, loadPrefs, savePrefs, type Prefs } from './prefs'
 import { onOtherTab } from './storage'
 import { startBackups } from './vault'
@@ -178,6 +178,12 @@ function App() {
   const steps = sitting === 'morning' ? morningQs : sitting === 'evening' ? eveningQs : []
   const flow = useStep(steps)
   const current = steps[flow.at]
+  // One card a sitting opens with a short box for your own words (profile.ts).
+  // Judged from answers before today, so it holds while the sitting goes on.
+  const writeFirst = useMemo(
+    () => (set ? writeFirstOf(sitting === 'morning' ? morningQs : sitting === 'evening' ? eveningQs : [], loadHistory(), set.date) : null),
+    [set, sitting, morningQs, eveningQs],
+  )
   const hasIntimate = !!set?.pool?.some((q) => q.care === 'intimate')
   const asking = sitting === 'morning' || sitting === 'evening'
 
@@ -356,6 +362,7 @@ function App() {
                       date={set.date}
                       sitting={sitting === 'evening' ? 'evening' : 'morning'}
                       wordsDays={prefs.wordsDays}
+                      writeFirst={current.id === writeFirst}
                       onDone={onDone}
                       onNext={() => flow.go(flow.at + 1)}
                     />

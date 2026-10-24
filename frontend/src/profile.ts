@@ -151,6 +151,26 @@ export function pickThree(
   return picked.length === 3 ? picked : fallback
 }
 
+// writeFirstOf picks the one card of a sitting that opens with a short box
+// for the person's own words, the options coming after as "which is
+// closest?" (Edwin, 2026-10-24: "some deep answers are typed instead of
+// selected but character controlled"). It is the question in the theme they
+// have gone deepest on lately, judged from answers before today so the pick
+// holds all day. Never an intimacy question, and none until some theme has
+// drawn a deep answer.
+const WRITE_FIRST_INTEREST = 0.5
+
+export function writeFirstOf(questions: Question[], h: History, today: string): string | null {
+  const before: History = { answers: h.answers.filter((a) => a.date < today), skips: h.skips.filter((s) => s.date < today) }
+  const interest = interestScores(before, today)
+  let best: { id: string; v: number } | null = null
+  for (const q of questions) {
+    const v = q.theme && q.care !== 'intimate' ? (interest[q.theme] ?? 0) : 0
+    if (v >= WRITE_FIRST_INTEREST && (!best || v > best.v)) best = { id: q.id, v }
+  }
+  return best?.id ?? null
+}
+
 export type Half = 'morning' | 'evening'
 
 const pickKey = (today: string, half: Half) => (half === 'morning' ? `pi.pick.${today}` : `pi.pick.${today}.pm`)

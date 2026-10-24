@@ -730,6 +730,8 @@ describe('the daily questions', () => {
     )
     stubApi({})
     render(<App />)
+    // Money drew a deep answer yesterday, so its card opens on a box for one line.
+    fireEvent.click(await screen.findByRole('button', { name: 'Just tap instead' }))
     await answer('Something for me')
     const h = JSON.parse(localStorage.getItem('pi.history.v1')!)
     expect(h.answers).toContainEqual({
@@ -2113,6 +2115,47 @@ describe('the app remembers you', () => {
     expect(thread).not.toHaveTextContent('The honest part')
     expect(within(done).queryByRole('button', { name: /work on this/i })).not.toBeInTheDocument()
     expect(within(done).getByRole('note', { name: 'Support' })).toHaveTextContent('talking to someone you trust')
+  })
+
+  // Edwin, 2026-10-24: "some deep answers are typed instead of selected but character controlled".
+  it('opens one card a sitting with a one-line box, in the theme you go deepest on, then asks which option is closest', async () => {
+    localStorage.setItem(
+      'pi.history.v1',
+      JSON.stringify({ answers: [{ date: '2026-10-10', questionId: 'x', theme: 'habits', depth: 4, traits: {} }], skips: [] }),
+    )
+    const fetchMock = stubApi({ today: { status: 200, body: { ...today, pool: [] } } })
+    render(<App />)
+    const card = await screen.findByRole('region', { name: 'When do you wash the dishes?' })
+    const box = within(card).getByRole('textbox', { name: 'Say it in one line' })
+    expect(box).toHaveAttribute('maxLength', '120')
+    expect(card).toHaveTextContent('120 left')
+    expect(within(card).queryByRole('button', { name: 'Right after eating' })).not.toBeInTheDocument()
+    fireEvent.change(box, { target: { value: 'As soon as I finish, or it nags me all night.' } })
+    expect(card).toHaveTextContent('75 left')
+    fireEvent.click(within(card).getByRole('button', { name: 'Keep my words' }))
+    const closest = within(card).getByRole('group', { name: 'Which of these comes closest? Your insight comes from that one.' })
+    fireEvent.click(within(closest).getByRole('button', { name: 'Right after eating' }))
+    expect(await within(card).findByRole('note', { name: 'What your answer may say' })).toHaveTextContent('clear sink')
+    expect(card).toHaveTextContent('“As soon as I finish, or it nags me all night.”')
+    for (const [, init] of fetchMock.mock.calls) expect(String(init?.body ?? '')).not.toContain('nags me')
+
+    // Only one a sitting: the next card opens on its options.
+    next()
+    expect(await screen.findByRole('button', { name: 'Split it evenly' })).toBeInTheDocument()
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+  })
+
+  it('lets a write-first card be tapped instead', async () => {
+    localStorage.setItem(
+      'pi.history.v1',
+      JSON.stringify({ answers: [{ date: '2026-10-10', questionId: 'x', theme: 'habits', depth: 4, traits: {} }], skips: [] }),
+    )
+    stubApi({ today: { status: 200, body: { ...today, pool: [] } } })
+    render(<App />)
+    const card = await screen.findByRole('region', { name: 'When do you wash the dishes?' })
+    fireEvent.click(within(card).getByRole('button', { name: 'Just tap instead' }))
+    await answer('Right after eating')
+    expect(within(card).getByRole('note', { name: 'What your answer may say' })).toHaveTextContent('clear sink')
   })
 
   it('keeps your people in Settings, on this phone only', async () => {

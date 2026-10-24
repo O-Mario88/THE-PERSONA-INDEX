@@ -6,6 +6,7 @@ import {
   CLOSED,
   dropVoteKey,
   earlierAnswer,
+  MAX_FIRST_LINE,
   MAX_WORDS,
   OWN_WORDS,
   PRIVATE_OPTION,
@@ -62,6 +63,7 @@ type Props = {
   date: string
   sitting?: Sitting
   wordsDays?: number
+  writeFirst?: boolean // open with a short box for one's own words, the options after
   onDone?: (questionId: string, done: Done) => void
   onNext: () => void
 }
@@ -74,11 +76,22 @@ type Mode = 'options' | 'writing' | 'closest'
 // words, and the same screen turns into what it says about you: the
 // insight, one small step to try and a way to say whether it landed. Never
 // what anyone else answered, and no score.
-export function QuestionCard({ question, date, sitting, wordsDays = DEFAULT_WORDS_DAYS, onDone, onNext }: Props) {
+export function QuestionCard({
+  question,
+  date,
+  sitting,
+  wordsDays = DEFAULT_WORDS_DAYS,
+  writeFirst = false,
+  onDone,
+  onNext,
+}: Props) {
   const [choice, setChoice] = useState<string | null>(() => recalledChoice(question.id))
   const [words, setWords] = useState<OwnWords | null>(() => recalledWords(question.id))
   const [draft, setDraft] = useState(() => (recalledChoice(question.id) ? '' : recalledDraft(question.id)))
-  const [mode, setMode] = useState<Mode>(() => (draft ? 'writing' : 'options'))
+  // A write-first card opens on a box for one line (Edwin, 2026-10-24); the
+  // options follow as "which is closest?", or straight away on "Just tap instead".
+  const [first, setFirst] = useState(() => writeFirst && !recalledChoice(question.id) && draft.length <= MAX_FIRST_LINE)
+  const [mode, setMode] = useState<Mode>(() => (draft || first ? 'writing' : 'options'))
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   // Set when the server already had an earlier answer from this phone.
@@ -192,6 +205,7 @@ export function QuestionCard({ question, date, sitting, wordsDays = DEFAULT_WORD
   const chosen = question.options.find((o) => o.id === choice)
   const answered = !!choice && choice !== SKIPPED
   const typed = draft.trim()
+  const max = first ? MAX_FIRST_LINE : MAX_WORDS
 
   return (
     <section
@@ -231,15 +245,15 @@ export function QuestionCard({ question, date, sitting, wordsDays = DEFAULT_WORD
           }}
         >
           <label htmlFor={wordsId} className="eyebrow">
-            In your own words
+            {first ? 'Say it in one line' : 'In your own words'}
           </label>
           <textarea
             id={wordsId}
             className="own-box"
             value={draft}
-            maxLength={MAX_WORDS}
-            rows={4}
-            autoFocus
+            maxLength={max}
+            rows={first ? 2 : 4}
+            autoFocus={!first}
             placeholder="Say it the way it really is for you."
             onChange={(e) => editDraft(e.target.value)}
           />
@@ -247,14 +261,21 @@ export function QuestionCard({ question, date, sitting, wordsDays = DEFAULT_WORD
             <span>
               <span aria-hidden="true">🔒 </span>Kept on this phone. The app never sends it.
             </span>
-            <span>{MAX_WORDS - draft.length} left</span>
+            <span>{max - draft.length} left</span>
           </p>
           <div className="own-buttons">
             <button type="submit" className="pill-button" disabled={!typed}>
               Keep my words
             </button>
-            <button type="button" className="text-button" onClick={() => setMode('options')}>
-              Back to the options
+            <button
+              type="button"
+              className="text-button"
+              onClick={() => {
+                setFirst(false)
+                setMode('options')
+              }}
+            >
+              {first ? 'Just tap instead' : 'Back to the options'}
             </button>
           </div>
         </form>
