@@ -33,16 +33,27 @@ import {
   type Verdict,
 } from './api'
 import { isEvening } from './day'
-import { Helpline } from './Helpline'
+import { Helpline, HELPLINE_URL } from './Helpline'
 import { moveFor, startMove } from './moves'
-import { keepCard, keptCard, noteVerdict, unkeepCard } from './notebook'
+import { focusPlan, keepCard, keptCard, noteVerdict, unkeepCard, type Plan } from './notebook'
 import { inOrder } from './order'
+import { loadPeople, namesLine } from './people'
+import { PeopleEditor } from './People'
 import { DEFAULT_WORDS_DAYS } from './prefs'
-import { isHeavy, loadHistory, recalledAnswer, recordAnswer, recordSkip, recordVerdict, threadLine } from './profile'
+import { isLowMood, loadHistory, recalledAnswer, recordAnswer, recordSkip, recordVerdict, threadLine } from './profile'
 import { splitReveal } from './reveal'
 import { onOtherTab } from './storage'
 import { themeName, themeStyle, themeVars } from './themes'
-import { NOT_ME_REPLY, VERDICT_REPLIES } from './words'
+import {
+  CRISIS_LINE,
+  focusTouch,
+  HEAVY_HEADLINE,
+  HEAVY_THANKS,
+  NO_PEOPLE,
+  NOT_ME_REPLY,
+  peopleAsk,
+  VERDICT_REPLIES,
+} from './words'
 
 export type Done = 'answered' | 'skipped'
 
@@ -356,7 +367,8 @@ function YourWords({ words }: { words: OwnWords }) {
 // The card, in seven parts (the review of 2026-10-15): the answer or the
 // person's own words; the headline; what it looks like in a day; the other
 // side, what this answer can cost; the thread to earlier answers, when there
-// is a true one; one small step; and whether it is them.
+// is a true one; one small step; and whether it is them. A heavy answer gets
+// none of that: a plain word, the person's own people and a helpline.
 function Answer({
   question,
   option,
@@ -372,10 +384,15 @@ function Answer({
   wordsDays: number
   onNext: () => void
 }) {
-  const insight = option.insight
+  const insight = option.heavy ? undefined : option.insight
   // Worked out once, from the history this answer was just added to, and
   // put away if the person says the card is not them.
   const [thread] = useState(() => threadLine(loadHistory(), question, option.id, date))
+  // The one thing the person is working on, when this answer touches it.
+  const [focus] = useState(() => {
+    const f = focusPlan()
+    return f && (option.traits?.[f.trait] ?? 0) !== 0 ? f : null
+  })
   const [notMe, setNotMe] = useState(() => recalledVerdict(question.id) === 'not_me')
   return (
     <div className="answer">
@@ -387,9 +404,17 @@ function Answer({
           <span className="chosen">{option.label}</span>
         </p>
       )}
-      {insight && <InsightPanel reveal={insight.reveal} otherSide={insight.otherSide} thread={notMe ? null : thread} />}
+      {option.heavy && <HeavyCard />}
+      {insight && (
+        <InsightPanel
+          reveal={insight.reveal}
+          otherSide={insight.otherSide}
+          thread={notMe ? null : thread}
+          focus={notMe ? null : focus}
+        />
+      )}
       {insight && <KeepThis question={question} option={option} words={words} date={date} />}
-      {isHeavy(question.theme, option.depth) && <Helpline />}
+      {insight && isLowMood(question.theme, option.depth) && <Helpline />}
       {insight?.step && <TryThis question={question} option={option} step={insight.step} date={date} />}
       {insight && (
         <Rate
@@ -407,7 +432,60 @@ function Answer({
   )
 }
 
-function InsightPanel({ reveal, otherSide, thread }: { reveal: string; otherSide?: string; thread: string | null }) {
+// The card of a heavy answer (the proposal of 2026-10-24, "Heavy answers
+// point to people"): no reading, no step, no rating. A plain word, the
+// people the person keeps on this phone (or a way to add them) and where to
+// find a helpline, every time.
+function HeavyCard() {
+  const [people, setPeople] = useState(loadPeople)
+  const [adding, setAdding] = useState(false)
+  const names = people?.names ?? []
+  return (
+    <div className="insight heavy" role="note" aria-label="That sounds really hard">
+      <p className="insight-headline">{HEAVY_HEADLINE}</p>
+      <p className="insight-body">{HEAVY_THANKS}</p>
+      {names.length > 0 && <p className="insight-body">{peopleAsk(namesLine(names))}</p>}
+      {people?.helps && <p className="insight-body">What helps, in your words: “{people.helps}”</p>}
+      {names.length === 0 && !adding && (
+        <>
+          <p className="insight-body">{NO_PEOPLE}</p>
+          <button type="button" className="chip" onClick={() => setAdding(true)}>
+            Add your people
+          </button>
+        </>
+      )}
+      {adding && (
+        <PeopleEditor
+          onSaved={() => {
+            setPeople(loadPeople())
+            setAdding(false)
+          }}
+          onCancel={() => setAdding(false)}
+        />
+      )}
+      <Helpline />
+      <p className="helpline">
+        {CRISIS_LINE}{' '}
+        <a href={HELPLINE_URL} target="_blank" rel="noreferrer">
+          Talk to someone now
+        </a>
+      </p>
+      <p className="insight-note">For self-reflection, not a diagnosis.</p>
+    </div>
+  )
+}
+
+function InsightPanel({
+  reveal,
+  otherSide,
+  thread,
+  focus,
+}: {
+  reveal: string
+  otherSide?: string
+  thread: string | null
+  focus: Plan | null
+}) {
   const { headline, body } = splitReveal(reveal)
   return (
     <div className="insight" role="note" aria-label="What your answer may say">
@@ -422,6 +500,12 @@ function InsightPanel({ reveal, otherSide, thread }: { reveal: string; otherSide
         <p className="insight-thread">
           <span aria-hidden="true">↺ </span>
           {thread}
+        </p>
+      )}
+      {focus && (
+        <p className="insight-thread insight-focus">
+          <span aria-hidden="true">→ </span>
+          {focusTouch(focus.when, focus.will)}
         </p>
       )}
       <p className="insight-note">For self-reflection, not a diagnosis.</p>

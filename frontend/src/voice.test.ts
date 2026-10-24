@@ -1,7 +1,7 @@
 import type { Level, Mirror, Period, PeriodMirror, PeriodTrait, Question, TraitRead } from './api'
 import { adviceFor, levelLine as closeLevelLine } from './advice'
 import { AREA_NAMES, levelLine, levelMeta, PERIOD_CLOSE, periodSummary, summary, tagline, title } from './mirrorText'
-import { threadLine, type AnswerRecord } from './profile'
+import { changeWords, threadLine, type AnswerRecord } from './profile'
 import { TRAITS } from './traits'
 import { FIXED_WORDS } from './words'
 import { voiceProblems } from './voice'
@@ -85,6 +85,8 @@ function shownWords(): [string, string][] {
         [`tagline ${trait} ${score}`, tagline(traitsRead) ?? ''],
         [`day close hint ${trait} ${score}`, adviceFor(sitting, { answers: sitting, skips: [] }, today, 'morning').headline],
         [`day close pattern ${trait} ${score}`, adviceFor(sitting, { answers: pattern, skips: [] }, today, 'morning').headline],
+        [`change ${trait} ${score}`, changeWords({ date: today, questionId: 'q', trait, high: score > 50, weeks: 3 })],
+        [`change eight weeks ${trait} ${score}`, changeWords({ date: today, questionId: 'q', trait, high: score > 50, weeks: 8 })],
         [
           `thread ${trait} ${score}`,
           threadLine({ answers: pattern, skips: [] }, { id: `${today}-q1`, prompt: '', options: [] } as Question, 'a', today) ?? '',
@@ -112,6 +114,8 @@ describe('the voice of the mirror and the day close', () => {
     expect(voiceProblems("That's okay.")).toEqual(['says "okay"'])
     expect(voiceProblems('A pull toward people.')).toEqual(['uses the US spelling "toward"'])
     expect(voiceProblems('You realize it later.')).toEqual(['uses the US spelling "realize"'])
+    expect(voiceProblems("You're a people-pleaser at heart.")).toEqual(['labels you ("people-pleaser")'])
+    expect(voiceProblems('Introverts need this.')).toEqual(['labels you ("Introverts")'])
   })
 
   it('lets their look-alikes through', () => {
@@ -122,6 +126,7 @@ describe('the voice of the mirror and the day close', () => {
       'Ask the quietest person in the room what they think.',
       'You realise a prize is worth less than its size suggests, and you lean towards colour.',
       'What would actually help?',
+      'You avoided the row and kept the peace, and pleasing people you love matters to you.',
     ]) {
       expect(voiceProblems(s), s).toEqual([])
     }

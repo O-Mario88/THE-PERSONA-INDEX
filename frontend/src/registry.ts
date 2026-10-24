@@ -41,6 +41,7 @@ export const REGISTRY: Entry[] = [
   { key: 'pi.read.', what: 'Which reads you opened, so they are not offered twice', backup: 'always', merge: 'local', download: false },
   { key: 'pi.words.', what: 'Answers in your own words', backup: 'words', merge: 'local', download: true },
   { key: 'pi.instead.', what: 'What you wrote after "Not me"', backup: 'words', merge: 'local', download: true },
+  { key: 'pi.people', what: 'Your people: who you would want to hear from on a hard day, and what helps', backup: 'words', merge: 'newest', download: true },
   { key: 'pi.unrated.', what: 'A card tap waiting to be sent', backup: 'never', merge: 'local', download: false },
   { key: 'pi.pending.', what: 'An answer waiting to be sent', backup: 'never', merge: 'local', download: false },
   { key: 'pi.draft.', what: 'A half-written answer, for a day', backup: 'never', merge: 'local', download: false },

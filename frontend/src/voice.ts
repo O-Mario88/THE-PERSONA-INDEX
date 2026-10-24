@@ -1,7 +1,7 @@
 // The voice rules (Edwin, 2026-10-15), applied to every word the app shows
 // (voice.test.ts) and to the reads (reads/gate.ts): never measure you against
-// other people, guess at most once a sentence or line, no tag questions, and
-// UK English without "ok" or "okay". The question bank is held to the same rules by backend/voice.go;
+// other people, guess at most once a sentence or line, no tag questions,
+// UK English without "ok" or "okay", and no labels for who you are. The question bank is held to the same rules by backend/voice.go;
 // keep the patterns here in step with it. (JavaScript has lookaround, so the
 // two exceptions Go handles in code, "a few people" and "are we all right?",
 // are written into the patterns here.)
@@ -72,6 +72,12 @@ const NOT_IZE = new Set(
   ),
 )
 
+// A verdict on who someone is, rather than what they did (the proposal of
+// 2026-10-24, "How the app speaks to you"). backend/content.go bans the same
+// labels in the question bank.
+export const LABEL =
+  /\b(people[- ]pleas\w*|scarcity mindset|burn-?out|anxious attachment|avoidant|codependen\w*|neurotic|workaholics?|control freaks?|perfectionists?|introverts?|extroverts?|commitment[- ]phob\w*|gaslight\w*)\b/i
+
 // voiceProblems lists every rule s breaks, as short notes for a failure message.
 export function voiceProblems(s: string): string[] {
   const out: string[] = []
@@ -87,5 +93,7 @@ export function voiceProblems(s: string): string[] {
   if (okay) out.push(`says "${okay[0]}"`)
   const us = s.match(US_SPELLING)?.[0] ?? (s.match(US_IZE) ?? []).find((w) => !NOT_IZE.has(w.toLowerCase()))
   if (us) out.push(`uses the US spelling "${us}"`)
+  const label = s.match(LABEL)
+  if (label) out.push(`labels you ("${label[0]}")`)
   return out
 }

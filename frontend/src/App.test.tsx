@@ -1999,6 +1999,210 @@ describe('accessibility', () => {
   })
 })
 
+// The proposal of 2026-10-24, "The app remembers you": change set against
+// your own past, your words brought back, one thing you're working on, and
+// heavy answers that point to people instead of an insight.
+const quietPhone: Question = {
+  id: 'q-quiet',
+  theme: 'sadness-stress',
+  care: 'personal',
+  prompt: 'Your phone has been quiet all week. What goes through your head?',
+  options: [
+    {
+      id: 'busy',
+      label: 'Everyone is busy',
+      depth: 1,
+      insight: { reveal: 'You give people room. A quiet phone reads as a busy week.', step: 'Send one hello today.' },
+    },
+    {
+      id: 'forgotten',
+      label: 'I wonder if people have forgotten me',
+      depth: 4,
+      heavy: true,
+      traits: { neuroticism: 1 },
+      insight: { reveal: 'A quiet phone can feel like a verdict on you.', step: 'Message one person today.' },
+    },
+  ],
+}
+const withQuiet: DailySet = { ...today, questions: [quietPhone, today.questions[0], today.questions[2]], pool: [] }
+
+const pastAnswers = (dates: string[], traits: Record<string, number>) =>
+  JSON.stringify({
+    answers: dates.map((date, i) => ({ date, questionId: `x${i}`, theme: 'money', depth: 2, traits })),
+    skips: [],
+  })
+
+const seedPlan = (made: string, checks: { date: string; status: 'did' | 'not_yet' }[] = []) =>
+  localStorage.setItem(
+    'pi.nb.plan.p1',
+    JSON.stringify({
+      kind: 'plan',
+      at: 1,
+      id: 'p1',
+      made,
+      madeAt: Date.parse(`${made}T08:00:00`),
+      trait: 'conscientiousness',
+      high: true,
+      when: 'I sit down for the evening',
+      will: 'leave one job for tomorrow',
+      checks,
+    }),
+  )
+
+describe('the app remembers you', () => {
+  it('notices on the card when an answer leans a way yours have not for weeks, and ties it to what you are working on', async () => {
+    localStorage.setItem('pi.history.v1', pastAnswers(['2026-09-21', '2026-09-28', '2026-10-05'], { conscientiousness: -1 }))
+    seedPlan('2026-10-01')
+    stubApi({})
+    render(<App />)
+    await answer('Right after eating')
+    const card = screen.getByRole('note', { name: 'What your answer may say' })
+    expect(card).toHaveTextContent('First time in three weeks your answer leaned towards getting things done.')
+    expect(card).toHaveTextContent(
+      "This touches what you're working on: “When I sit down for the evening, I will leave one job for tomorrow.”",
+    )
+    expect(card).not.toHaveTextContent(crowdOrScore)
+  })
+
+  it('meets a heavy answer with kind words, your people and a helpline, never an insight', async () => {
+    const fetchMock = stubApi({ today: { status: 200, body: withQuiet } })
+    render(<App />)
+    await answer('I wonder if people have forgotten me')
+    const card = screen.getByRole('region', { name: quietPhone.prompt })
+    const heavy = within(card).getByRole('note', { name: 'That sounds really hard' })
+    expect(heavy).toHaveTextContent('That sounds really hard.')
+    expect(heavy).toHaveTextContent("Thank you for being honest. I won't try to read anything into this one.")
+    // No reading, no step, no keeping and no rating on this card.
+    expect(card).not.toHaveTextContent('A quiet phone can feel like a verdict')
+    expect(within(card).queryByRole('note', { name: 'What your answer may say' })).not.toBeInTheDocument()
+    expect(within(card).queryByRole('button', { name: /Keep this/ })).not.toBeInTheDocument()
+    expect(within(card).queryByRole('button', { name: "I'll try it" })).not.toBeInTheDocument()
+    expect(within(card).queryByText('Does this sound like you?')).not.toBeInTheDocument()
+    expect(within(heavy).getByRole('link', { name: 'Find a helpline' })).toHaveAttribute('href', 'https://findahelpline.com')
+    expect(within(heavy).getByRole('link', { name: 'Talk to someone now' })).toHaveAttribute('href', 'https://findahelpline.com')
+    expect(heavy).toHaveTextContent('If you ever have thoughts of not wanting to be here, a helpline can talk with you now.')
+
+    // With no people kept yet, it offers to keep them, on this phone only.
+    expect(heavy).toHaveTextContent('Is there someone you could tell, even in a short message?')
+    fireEvent.click(within(heavy).getByRole('button', { name: 'Add your people' }))
+    fireEvent.change(within(heavy).getByRole('textbox', { name: 'Person 1' }), { target: { value: 'Ama' } })
+    fireEvent.change(within(heavy).getByRole('textbox', { name: 'Person 2' }), { target: { value: 'Kofi' } })
+    fireEvent.change(within(heavy).getByRole('textbox', { name: 'What helps when things are heavy' }), {
+      target: { value: 'A walk by the river' },
+    })
+    fireEvent.click(within(heavy).getByRole('button', { name: 'Keep them' }))
+    expect(heavy).toHaveTextContent('Could Ama or Kofi hear from you today? A short message counts.')
+    expect(heavy).toHaveTextContent('What helps, in your words: “A walk by the river”')
+    expect(JSON.parse(localStorage.getItem('pi.people')!)).toMatchObject({ names: ['Ama', 'Kofi'], helps: 'A walk by the river' })
+    for (const [, init] of fetchMock.mock.calls) expect(String(init?.body ?? '')).not.toMatch(/Ama|Kofi|river/)
+    expect(document.body.textContent).not.toMatch(noClinicianWords)
+  })
+
+  it('after a heavy answer, closes the sitting with kind words: no honest part and no plan', async () => {
+    localStorage.setItem('pi.history.v1', pastAnswers(['2026-10-09', '2026-10-10'], { conscientiousness: 1 }))
+    stubApi({ today: { status: 200, body: withQuiet } })
+    render(<App />)
+    await answer('I wonder if people have forgotten me')
+    next()
+    await answer('Right after eating')
+    next()
+    await skip()
+    const done = await screen.findByRole('region', { name: "That's your day." })
+    const thread = within(done).getByRole('note', { name: "Today's thread" })
+    expect(thread).toHaveTextContent('Getting things done has come up in 3 answers over 3 days, so a pattern is forming.')
+    expect(thread).not.toHaveTextContent('The honest part')
+    expect(within(done).queryByRole('button', { name: /work on this/i })).not.toBeInTheDocument()
+    expect(within(done).getByRole('note', { name: 'Support' })).toHaveTextContent('talking to someone you trust')
+  })
+
+  it('keeps your people in Settings, on this phone only', async () => {
+    stubApi({})
+    render(<App />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Settings' }))
+    const people = screen.getByRole('form', { name: 'Your people' })
+    fireEvent.change(within(people).getByRole('textbox', { name: 'Person 1' }), { target: { value: 'Esi' } })
+    fireEvent.click(within(people).getByRole('button', { name: 'Keep them' }))
+    expect(within(people).getByRole('status')).toHaveTextContent('Kept.')
+    expect(JSON.parse(localStorage.getItem('pi.people')!)).toMatchObject({ names: ['Esi'] })
+  })
+
+  it('on Sunday brings back a line you wrote, asks if it is still true, and keeps what is different now', async () => {
+    localStorage.setItem(
+      'pi.nb.sentence.2026-09-07',
+      JSON.stringify({ kind: 'sentence', at: 1, week: '2026-09-07', text: 'This week I learned that I say yes too fast.' }),
+    )
+    await openMirror()
+    const page = screen.getByRole('region', { name: 'Your weekly mirror' })
+    const back = await within(page).findByRole('group', { name: 'From your notebook' })
+    expect(within(page).getByRole('heading', { name: /Still true\?$/ })).toBeInTheDocument()
+    expect(back).toHaveTextContent('The week of 7 September, you wrote:')
+    expect(back).toHaveTextContent('“This week I learned that I say yes too fast.”')
+    expect(back).toHaveTextContent('Is that still true?')
+    fireEvent.click(within(back).getByRole('button', { name: "It's changing" }))
+    expect(back).toHaveTextContent("Change is the point; I'll watch which way it goes.")
+    fireEvent.change(within(back).getByRole('textbox', { name: /What's different now\?/ }), {
+      target: { value: 'I ask for a day to think.' },
+    })
+    fireEvent.click(within(back).getByRole('button', { name: 'Keep my line' }))
+    expect(back).toHaveTextContent('Kept beside the original in your notebook.')
+    expect(JSON.parse(localStorage.getItem('pi.nb.sentence.2026-09-07')!).revisits).toEqual([
+      { date: '2026-10-18', verdict: 'changing', note: 'I ask for a day to think.' },
+    ])
+  })
+
+  it('shows in the mirror what changed and what you are working on, and looks back with you at eight weeks', async () => {
+    localStorage.setItem(
+      'pi.history.v1',
+      JSON.stringify({
+        answers: [
+          ...['2026-09-21', '2026-09-28', '2026-10-05'].map((date, i) => ({
+            date,
+            questionId: `x${i}`,
+            theme: 'money',
+            depth: 2,
+            traits: { conscientiousness: -1 },
+          })),
+          { date: '2026-10-14', questionId: 'y', theme: 'habits', depth: 1, traits: { conscientiousness: 1 } },
+        ],
+        skips: [],
+      }),
+    )
+    seedPlan('2026-08-20', [
+      { date: '2026-08-21', status: 'did' },
+      { date: '2026-08-22', status: 'not_yet' },
+      { date: '2026-08-25', status: 'did' },
+    ])
+    await openMirror()
+    const page = screen.getByRole('region', { name: 'Your weekly mirror' })
+    await within(page).findByRole('heading', { level: 2, name: weekTitle })
+    const headings = within(page).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)
+    expect(headings).toContain('04 What changed')
+    expect(headings).toContain("08 What you're working on")
+
+    const changed = within(page).getByRole('heading', { name: '04 What changed' }).parentElement!
+    expect(changed).toHaveTextContent('14 October First time in three weeks your answer leaned towards getting things done.')
+    expect(changed).toHaveTextContent('Set against your own earlier answers only.')
+
+    // The leaning already being worked on says so, rather than offering a second plan.
+    const who = within(page).getByRole('heading', { name: '06 Who you were this week' }).parentElement!
+    expect(who).toHaveTextContent("You're already working on this one. When I sit down for the evening, I will leave one job for tomorrow.")
+    expect(who).toHaveTextContent('Work on this instead?')
+
+    const focus = within(page).getByRole('group', { name: "What you're working on" })
+    expect(focus).toHaveTextContent('When I sit down for the evening, I will leave one job for tomorrow.')
+    // Counted only when done, never what was missed.
+    expect(focus).toHaveTextContent('Done 2 times since 20 August.')
+    expect(focus).not.toHaveTextContent(/not yet|missed|streak/i)
+    expect(focus).toHaveTextContent('Eight weeks on. Keep going, make it smaller, or close it?')
+    fireEvent.click(within(focus).getByRole('button', { name: 'Make it smaller' }))
+    fireEvent.change(within(focus).getByRole('textbox', { name: 'I will' }), { target: { value: 'put one thing away' } })
+    fireEvent.click(within(focus).getByRole('button', { name: 'Keep the smaller plan' }))
+    expect(focus).toHaveTextContent('When I sit down for the evening, I will put one thing away.')
+    expect(focus).toHaveTextContent('A smaller plan is an easier one to keep.')
+    expect(JSON.parse(localStorage.getItem('pi.nb.plan.p1')!)).toMatchObject({ will: 'put one thing away', lookedBack: '2026-10-18' })
+  })
+})
+
 describe('settings', () => {
   it('changes the 18+ answer and how long your own words stay on this phone', async () => {
     localStorage.setItem('pi.prefs.v1', JSON.stringify({ adult: true, mild: false }))

@@ -106,6 +106,7 @@ export function NotebookScreen({ mild, today }: { mild: boolean; today: string }
               <li key={s.week} className="nb-entry">
                 <p className="nb-meta">{weekRange(s.week)}</p>
                 <p className="nb-line">{s.text}</p>
+                <Revisits revisits={s.revisits} />
               </li>
             ))}
           </ul>
@@ -202,11 +203,7 @@ function CardEntry({ card: c, onRemove }: { card: KeptCard; onRemove: () => void
           )}
           {c.step && <p className="muted">Small step: {c.step}</p>}
           {c.verdict && <p className="nb-verdict">{VERDICT_WORDS[c.verdict]}</p>}
-          {(c.revisits ?? []).map((r: Revisit) => (
-            <p key={r.date} className="nb-verdict">
-              {longDate(r.date)}: {REVISIT_WORDS[r.verdict]}
-            </p>
-          ))}
+          <Revisits revisits={c.revisits} />
         </>
       )}
       {asking ? (
@@ -234,6 +231,17 @@ function CardEntry({ card: c, onRemove }: { card: KeptCard; onRemove: () => void
   )
 }
 
+// What the person said when Sunday brought an entry back: "Is that still
+// true?", and what is different now, when they wrote it.
+function Revisits({ revisits = [] }: { revisits?: Revisit[] }) {
+  return revisits.map((r) => (
+    <p key={r.date} className="nb-verdict">
+      {longDate(r.date)}: {REVISIT_WORDS[r.verdict]}
+      {r.note && <span className="nb-note"> · What's different now: “{r.note}”</span>}
+    </p>
+  ))
+}
+
 function PlanEntry({ plan: p, onRemove }: { plan: Plan; onRemove: () => void }) {
   const did = p.checks.filter((c) => c.status === 'did').length
   const notYet = p.checks.filter((c) => c.status === 'not_yet').length
@@ -245,7 +253,7 @@ function PlanEntry({ plan: p, onRemove }: { plan: Plan; onRemove: () => void }) 
       <p className="nb-meta">
         {longDate(p.made)}
         {side && ` · ${side.lean}`}
-        {p.closed && ' · finished'}
+        {p.closed ? ' · finished' : " · what you're working on"}
       </p>
       <p className="nb-line">
         When {p.when}, I will {p.will}.

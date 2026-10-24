@@ -3,24 +3,40 @@ import { sendPlanChecks } from './api'
 import {
   changePlan,
   checkPlan,
+  closePlan,
+  focusPlan,
   goodThings,
   keepGoodThings,
   keepSentence,
+  lookBack,
+  lookBackDue,
   makePlan,
   nameFor,
+  noteRevisit,
   plan as loadPlan,
   rename,
-  reviseCard,
+  reviseWords,
   sentence,
-  type KeptCard,
+  timesDone,
   type Plan,
   type Revisit,
+  type WordsBack,
 } from './notebook'
 import { longDate } from './mirrorText'
 import { practiceFor, type Practice } from './practices'
-import { daysBetween } from './storage'
 import { sideOf, TRAITS } from './traits'
-import { PLAN_REPLIES, REVISIT_REPLIES } from './words'
+import {
+  LOOK_BACK_ASK,
+  LOOK_BACK_REPLIES,
+  PLAN_REPLIES,
+  REVISIT_NOTE_ASK,
+  REVISIT_NOTE_KEPT,
+  REVISIT_REPLIES,
+  SAME_FOCUS,
+  SWAP_NOTE,
+  timesDoneLine,
+  WORDS_BACK_ASK,
+} from './words'
 
 // The small pieces that let a person keep and say things themselves (the
 // review of 2026-10-15, "Yours to keep"). Everything here is written on this
@@ -140,37 +156,156 @@ export function SundaySentence({ week, starter }: { week: string; starter: strin
   )
 }
 
-// Once a month, Sunday brings back one kept card: "Still true?"
-export function RevisitCard({ card, today }: { card: KeptCard; today: string }) {
+// Words back (the proposal of 2026-10-24): once a month, Sunday brings back
+// something the person kept or wrote, in their own words when there are
+// some, and asks "Is that still true?" After a change, one optional line on
+// what is different now is kept beside the original (notebook.ts).
+export function WordsBackCard({ item, today }: { item: WordsBack; today: string }) {
   const [answer, setAnswer] = useState<Revisit['verdict'] | null>(null)
-  const ago = daysBetween(card.date, today)
+  const [note, setNote] = useState('')
+  const [noted, setNoted] = useState<'kept' | 'skipped' | null>(null)
+  const card = item.kind === 'card' ? item.card : null
+  const intro = card
+    ? `On ${longDate(card.date)} you ${card.words ? 'wrote' : 'kept this'}:`
+    : `The week of ${longDate(item.kind === 'sentence' ? item.sentence.week : today)}, you wrote:`
+  const quote = card ? (card.words ?? card.headline) : item.kind === 'sentence' ? item.sentence.text : ''
   function tap(verdict: Revisit['verdict']) {
-    reviseCard(card.questionId, { date: today, verdict })
+    reviseWords(item, { date: today, verdict })
     setAnswer(verdict)
   }
   return (
     <div className="m-card m-revisit" role="group" aria-label="From your notebook">
       <p className="m-eyebrow">From your notebook</p>
-      <p className="m-text">
-        {ago <= 40 ? 'A month ago' : `On ${longDate(card.date)}`} this felt true. Still true?
-      </p>
-      <blockquote>“{card.headline}”</blockquote>
-      <p className="m-note">{card.prompt}</p>
-      {answer ? (
-        <p className="m-note">{REVISIT_REPLIES[answer]}</p>
-      ) : (
-        <div className="m-verdict">
-          <button type="button" className="m-chip" onClick={() => tap('still')}>
-            Still me
-          </button>
-          <button type="button" className="m-chip" onClick={() => tap('changing')}>
-            Changing
-          </button>
-          <button type="button" className="m-chip" onClick={() => tap('not_anymore')}>
-            Not anymore
-          </button>
-        </div>
+      <p className="m-text">{intro}</p>
+      <blockquote>“{quote}”</blockquote>
+      {card && <p className="m-note">{card.prompt}</p>}
+      {!answer && (
+        <>
+          <p className="m-text">{WORDS_BACK_ASK}</p>
+          <div className="m-verdict">
+            <button type="button" className="m-chip" onClick={() => tap('still')}>
+              Still true
+            </button>
+            <button type="button" className="m-chip" onClick={() => tap('changing')}>
+              It's changing
+            </button>
+            <button type="button" className="m-chip" onClick={() => tap('not_anymore')}>
+              Not any more
+            </button>
+          </div>
+        </>
       )}
+      {answer && <p className="m-note">{REVISIT_REPLIES[answer]}</p>}
+      {answer && answer !== 'still' && !noted && (
+        <form
+          className="m-rename"
+          onSubmit={(e) => {
+            e.preventDefault()
+            if (!note.trim()) return
+            noteRevisit(item, note)
+            setNoted('kept')
+          }}
+        >
+          <label className="m-note" htmlFor={`differs-${today}`}>
+            {REVISIT_NOTE_ASK}
+          </label>
+          <input
+            id={`differs-${today}`}
+            className="m-input"
+            value={note}
+            maxLength={MAX_LINE}
+            onChange={(e) => setNote(e.target.value)}
+          />
+          <div className="m-verdict">
+            <button type="submit" className="m-button" disabled={!note.trim()}>
+              Keep my line
+            </button>
+            <button type="button" className="m-link" onClick={() => setNoted('skipped')}>
+              Not now
+            </button>
+          </div>
+        </form>
+      )}
+      {noted === 'kept' && <p className="m-note">{REVISIT_NOTE_KEPT}</p>}
+    </div>
+  )
+}
+
+// What you're working on: the one open plan, in the weekly mirror, with the
+// times it was done (never the times it was not) and, every eight weeks, a
+// look back with the person: keep going, make it smaller, or close it.
+export function FocusCard({ plan: start, today }: { plan: Plan; today: string }) {
+  const [p, setP] = useState(start)
+  const [reply, setReply] = useState<keyof typeof LOOK_BACK_REPLIES | null>(null)
+  const [editing, setEditing] = useState(false)
+  const [when, setWhen] = useState(start.when)
+  const [will, setWill] = useState(start.will)
+  const side = TRAITS[p.trait] ? sideOf(TRAITS[p.trait], p.high) : null
+  const due = !reply && lookBackDue(p, today)
+  function keep() {
+    lookBack(p.id, today)
+    setReply('keep')
+  }
+  function close() {
+    closePlan(p.id)
+    setReply('close')
+  }
+  return (
+    <div className="m-card m-focus" role="group" aria-label="What you're working on">
+      <p className="m-eyebrow">What you're working on{side ? ` · ${side.lean}` : ''}</p>
+      <p className="m-text">
+        When {p.when}, I will {p.will}.
+      </p>
+      <p className="m-note">{timesDoneLine(timesDone(p), longDate(p.made))}</p>
+      {due && !editing && (
+        <>
+          <p className="m-text">{LOOK_BACK_ASK}</p>
+          <div className="m-verdict">
+            <button type="button" className="m-chip" onClick={keep}>
+              Keep going
+            </button>
+            <button type="button" className="m-chip" onClick={() => setEditing(true)}>
+              Make it smaller
+            </button>
+            <button type="button" className="m-chip" onClick={close}>
+              Close it
+            </button>
+          </div>
+        </>
+      )}
+      {editing && (
+        <form
+          className="m-rename"
+          aria-label="Make it smaller"
+          onSubmit={(e) => {
+            e.preventDefault()
+            if (!when.trim() || !will.trim()) return
+            changePlan(p.id, when.trim(), will.trim(), today)
+            lookBack(p.id, today)
+            setP(loadPlan(p.id) ?? p)
+            setEditing(false)
+            setReply('smaller')
+          }}
+        >
+          <label className="plan-field">
+            <span>When</span>
+            <input className="m-input" value={when} maxLength={MAX_PLAN} onChange={(e) => setWhen(e.target.value)} />
+          </label>
+          <label className="plan-field">
+            <span>I will</span>
+            <input className="m-input" value={will} maxLength={MAX_PLAN} onChange={(e) => setWill(e.target.value)} />
+          </label>
+          <div className="m-verdict">
+            <button type="submit" className="m-button" disabled={!when.trim() || !will.trim()}>
+              Keep the smaller plan
+            </button>
+            <button type="button" className="m-link" onClick={() => setEditing(false)}>
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+      {reply && <p className="m-note">{LOOK_BACK_REPLIES[reply]}</p>}
     </div>
   )
 }
@@ -232,7 +367,9 @@ export function IdentityCard({ week, suggested }: { week: string; suggested: str
 }
 
 // "Want to work on this?" under an honest part: one plan, "When ___, I will
-// ___", and the short practice that fits, if there is one.
+// ___", and the short practice that fits, if there is one. A person works on
+// one thing at a time: when they already have a plan, this offers to put the
+// new one in its place, and says so when it is the same leaning.
 export function PlanOffer({
   trait,
   high,
@@ -251,9 +388,11 @@ export function PlanOffer({
   const [when, setWhen] = useState('')
   const [will, setWill] = useState('')
   const [made, setMade] = useState<Plan | null>(null)
+  const [focus] = useState(focusPlan)
   if (!side) return null
   const practice = onPractice ? practiceFor(trait, high) : null
   const cls = dark ? 'plan-offer' : 'plan-offer m-plan'
+  const same = !!focus && focus.trait === trait && focus.high === high
   if (made) {
     return (
       <div className={cls} role="status">
@@ -267,9 +406,15 @@ export function PlanOffer({
   if (!open) {
     return (
       <div className={cls}>
-        <button type="button" className={dark ? 'chip' : 'm-chip'} onClick={() => setOpen(true)}>
-          Want to work on this?
-        </button>
+        {same ? (
+          <p className="muted">
+            {SAME_FOCUS} When {focus.when}, I will {focus.will}.
+          </p>
+        ) : (
+          <button type="button" className={dark ? 'chip' : 'm-chip'} onClick={() => setOpen(true)}>
+            {focus ? 'Work on this instead?' : 'Want to work on this?'}
+          </button>
+        )}
         {practice && (
           <button type="button" className={dark ? 'chip' : 'm-chip'} onClick={() => onPractice?.(practice)}>
             {practice.name} · {practice.minutes} min
@@ -290,6 +435,11 @@ export function PlanOffer({
       }}
     >
       <p className="eyebrow">One plan, tied to a moment</p>
+      {focus && (
+        <p className="muted">
+          {SWAP_NOTE} Now: “When {focus.when}, I will {focus.will}.”
+        </p>
+      )}
       <label className="plan-field">
         <span>When</span>
         <input className="own-line" value={when} maxLength={MAX_PLAN} placeholder={side.plan.when} onChange={(e) => setWhen(e.target.value)} />

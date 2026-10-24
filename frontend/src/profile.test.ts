@@ -1,9 +1,12 @@
 import { describe, expect, it, beforeEach } from 'vitest'
 import type { Question } from './api'
 import {
+  changeLine,
+  changesBetween,
   earned,
+  heavyPause,
   interestScores,
-  isHeavy,
+  isLowMood,
   leaningVerdict,
   notMeSides,
   pickThree,
@@ -13,6 +16,7 @@ import {
   threadLine,
   traitsOf,
   loadHistory,
+  type AnswerRecord,
   type History,
 } from './profile'
 
@@ -254,11 +258,85 @@ describe('the thread line', () => {
   })
 })
 
-describe('heavy answers', () => {
-  it('are deep answers about sadness and stress', () => {
-    expect(isHeavy('sadness-stress', 3)).toBe(true)
-    expect(isHeavy('sadness-stress', 2)).toBe(false)
-    expect(isHeavy('anger', 4)).toBe(false)
+describe('low and heavy answers', () => {
+  it('reads deep answers about sadness and stress as low mood', () => {
+    expect(isLowMood('sadness-stress', 3)).toBe(true)
+    expect(isLowMood('sadness-stress', 2)).toBe(false)
+    expect(isLowMood('anger', 4)).toBe(false)
+  })
+
+  it('records a heavy answer as heavy, and only that one', () => {
+    const alone: Question = {
+      id: '2026-10-12-sadness-stress-007',
+      theme: 'sadness-stress',
+      care: 'personal',
+      prompt: 'Your phone has been quiet all week. What goes through your head?',
+      options: [
+        { id: 'busy', label: 'Everyone is busy', depth: 1 },
+        { id: 'forgotten', label: 'I wonder if people have forgotten me', depth: 4, heavy: true },
+      ],
+    }
+    recordAnswer(alone, 'forgotten', '2026-10-12')
+    recordAnswer({ ...alone, id: '2026-10-13-sadness-stress-007' }, 'busy', '2026-10-13')
+    expect(loadHistory().answers.map((a) => a.heavy)).toEqual([true, undefined])
+  })
+
+  it('pauses the honest part on the day of a heavy answer, or after two in a week', () => {
+    const heavy = (date: string) => ({ ...answer(date, 'sadness-stress', 4), questionId: `${date}-h`, heavy: true as const })
+    expect(heavyPause({ answers: [heavy('2026-10-14')], skips: [] }, '2026-10-14')).toBe(true)
+    expect(heavyPause({ answers: [heavy('2026-10-13')], skips: [] }, '2026-10-14')).toBe(false)
+    expect(heavyPause({ answers: [heavy('2026-10-09'), heavy('2026-10-13')], skips: [] }, '2026-10-14')).toBe(true)
+    expect(heavyPause({ answers: [heavy('2026-10-06'), heavy('2026-10-13')], skips: [] }, '2026-10-14')).toBe(false)
+    expect(heavyPause({ answers: [answer('2026-10-14', 'sadness-stress', 4)], skips: [] }, '2026-10-14')).toBe(false)
+  })
+})
+
+describe('change against your own past', () => {
+  const rec = (date: string, n: number, traits: Record<string, number>, extra: Partial<AnswerRecord> = {}): AnswerRecord => ({
+    ...answer(date, 'friendship', 2, traits),
+    questionId: `${date}-q${n}`,
+    optionId: 'a',
+    ...extra,
+  })
+  const quiet = { agreeableness: 1 } // keeping the peace
+  const straight = { agreeableness: -1 } // saying what you think
+  const past = [rec('2026-09-20', 1, straight), rec('2026-09-23', 1, quiet), rec('2026-09-30', 1, quiet), rec('2026-10-07', 1, quiet)]
+
+  it('notices the first answer in weeks that leans the other way', () => {
+    const h: History = { answers: [...past, rec('2026-10-14', 1, straight)], skips: [] }
+    expect(changeLine(h, '2026-10-14-q1')).toBe('First time in three weeks your answer leaned towards saying what you think.')
+    expect(changesBetween(h, '2026-10-12', '2026-10-18')).toEqual([
+      { date: '2026-10-14', questionId: '2026-10-14-q1', trait: 'agreeableness', high: false, weeks: 3 },
+    ])
+    // The thread line on the card leads with it.
+    const card: Question = { id: '2026-10-14-q1', theme: 'friendship', prompt: '', options: [] }
+    expect(threadLine(h, card, 'a', '2026-10-14')).toBe(
+      'First time in three weeks your answer leaned towards saying what you think.',
+    )
+  })
+
+  it('counts from the first of the other answers when this side never came up', () => {
+    const h: History = { answers: [...past.slice(1), rec('2026-10-14', 1, straight)], skips: [] }
+    expect(changeLine(h, '2026-10-14-q1')).toBe('First time in three weeks your answer leaned towards saying what you think.')
+  })
+
+  it('stays quiet without three answers the other way, or within two weeks', () => {
+    expect(changeLine({ answers: [...past.slice(0, 3), rec('2026-10-14', 1, straight)], skips: [] }, '2026-10-14-q1')).toBeNull()
+    const recent = [rec('2026-10-02', 1, straight), rec('2026-10-05', 1, quiet), rec('2026-10-08', 1, quiet), rec('2026-10-10', 1, quiet)]
+    expect(changeLine({ answers: [...recent, rec('2026-10-14', 1, straight)], skips: [] }, '2026-10-14-q1')).toBeNull()
+    // The same side again is no change.
+    expect(changeLine({ answers: [...past, rec('2026-10-14', 1, quiet)], skips: [] }, '2026-10-14-q1')).toBeNull()
+  })
+
+  it('leaves out evening answers, intimacy answers and answers that were "Not me"', () => {
+    const fresh = rec('2026-10-14', 1, straight)
+    const evening = { answers: [...past.slice(0, 3), rec('2026-10-08', 2, quiet, { evening: true }), fresh], skips: [] }
+    expect(changeLine(evening, '2026-10-14-q1')).toBeNull()
+    const intimate = { answers: [...past.slice(0, 3), rec('2026-10-08', 2, quiet, { theme: 'intimacy' }), fresh], skips: [] }
+    expect(changeLine(intimate, '2026-10-14-q1')).toBeNull()
+    const notMe = { answers: [...past.slice(0, 3), rec('2026-10-08', 2, quiet, { verdict: 'not_me' }), fresh], skips: [] }
+    expect(changeLine(notMe, '2026-10-14-q1')).toBeNull()
+    expect(changeLine({ answers: [...past, { ...fresh, theme: 'intimacy' }], skips: [] }, '2026-10-14-q1')).toBeNull()
   })
 })
 

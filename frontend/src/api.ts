@@ -19,6 +19,7 @@ export type Option = {
   id: string
   label: string
   depth?: number
+  heavy?: boolean // a heavy answer: its card points to people instead of an insight (since 2026-10-24)
   traits?: Record<string, number>
   insight?: Insight
 }

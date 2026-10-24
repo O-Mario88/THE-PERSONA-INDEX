@@ -351,6 +351,25 @@
   line-height: 1.45;
 }
 
+/* The one thing the person is working on, when an answer touches it. */
+.insight-focus {
+  color: var(--amber);
+}
+
+/* A heavy answer: no reading, just a kind word, the person's own people and
+   where to find help. Calm, without the theme's colour. */
+.insight.heavy {
+  border-color: color-mix(in srgb, var(--text) 18%, transparent);
+}
+.insight.heavy .chip {
+  align-self: flex-start;
+}
+.people {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 /* One quiet line on where to find support, never an alarm. */
 .helpline {
   padding: 12px 14px;
@@ -2132,8 +2151,13 @@ fieldset.notice legend {
 }
 .m-sentence,
 .m-revisit,
+.m-focus,
+.m-changes,
 .m-identity {
   gap: 10px;
+}
+.m-focus .plan-field {
+  color: var(--m-muted);
 }
 .m-identity {
   margin: 0;
