@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import {
   ApiError,
   cacheEdition,
@@ -13,12 +13,12 @@ import {
   type DailySet,
   type Question,
 } from './api'
-import { useDay } from './day'
+import { left, useDay, WINDOW_INFO, windowCloses, type OpenWindow, type Sitting } from './day'
 import { QuestionCard, type Done } from './QuestionCard'
 import { DayClose, StepCheck } from './DayClose'
-import { DayPlan, NightScreen, PauseScreen, PrivacyLine, Upcoming, type Progress } from './Sittings'
-import { Mirror } from './Mirror'
 import { GoodThings } from './Keep'
+import { PrivacyLine, RestScreen, Upcoming } from './Sittings'
+import { Mirror } from './Mirror'
 import { KeptScreen } from './Kept'
 import { NotebookScreen } from './Notebook'
 import { pruneNotebook } from './notebook'
@@ -33,11 +33,23 @@ import { themeVars } from './themes'
 import { openThisWeek, sendUnsent } from './moves'
 import { forgetPick, loadHistory, todaysPick, writeFirstOf, type Half } from './profile'
 import { CountryAsk } from './Country'
-import { intimacyOn, loadPrefs, regionHere, savePrefs, type Prefs } from './prefs'
+import { blackOn, intimacyOn, loadPrefs, pulseOn, regionHere, savePrefs, stillOn, type Prefs } from './prefs'
 import { cachedPack, fetchPack, regionalFor, regionalToday } from './regional'
 import { onOtherTab } from './storage'
 import { startBackups } from './vault'
+import { Home, heroFor, type FeedItem, type Progress } from './Home'
+import { Flow } from './Flow'
+import { MiddayScreen, StepNudge } from './Midday'
+import { NightScreen } from './Night'
+import { PulseAsk, PulseScreen } from './Pulse'
+import { getPulse, count } from './pulse'
+import { lastSeen, markWindow, noteSeen } from './windows'
+import { Icon, type IconName } from './ui/icons'
+import { Avatar } from './ui/Avatar'
+import { AccountScreen } from './Account'
+import { CircleScreen } from './Circle'
 import './App.css'
+import './design.css'
 
 type State =
   | { kind: 'loading' }
@@ -47,10 +59,18 @@ type State =
   | { kind: 'empty' }
   | { kind: 'error' }
 
-type View = 'today' | 'mirror' | 'notebook' | 'kept' | 'settings' | 'practice' | 'read'
+type View = 'today' | 'mirror' | 'circle' | 'notebook' | 'account' | 'kept' | 'settings' | 'practice' | 'read'
 // The views reached from the tabs, which Back returns to.
-type Tab = 'today' | 'mirror' | 'notebook'
-const isTab = (v: View): v is Tab => v === 'today' || v === 'mirror' || v === 'notebook'
+type Tab = 'today' | 'mirror' | 'circle' | 'notebook' | 'account'
+const isTab = (v: View): v is Tab =>
+  v === 'today' || v === 'mirror' || v === 'circle' || v === 'notebook' || v === 'account'
+
+const TABS: { tab: Tab; name: string; icon: IconName }[] = [
+  { tab: 'today', name: 'Today', icon: 'today' },
+  { tab: 'mirror', name: 'Mirror', icon: 'mirror' },
+  { tab: 'circle', name: 'Circle', icon: 'circle' },
+  { tab: 'notebook', name: 'Notebook', icon: 'notebook' },
+]
 
 const themesOf = (qs: Question[]) => qs.map((q) => q.theme).filter((t): t is string => !!t)
 
@@ -59,24 +79,39 @@ function progressOf(qs: Question[]): Progress {
   return done === 0 ? 'none' : done === qs.length ? 'done' : 'started'
 }
 
+const wideQuery = '(min-width: 900px)'
+function useWide(): boolean {
+  const [wide, setWide] = useState(() => typeof matchMedia === 'function' && matchMedia(wideQuery).matches)
+  useEffect(() => {
+    if (typeof matchMedia !== 'function') return
+    const m = matchMedia(wideQuery)
+    const on = () => setWide(m.matches)
+    m.addEventListener?.('change', on)
+    return () => m.removeEventListener?.('change', on)
+  }, [])
+  return wide
+}
+
 function App() {
   const [state, setState] = useState<State>({ kind: 'loading' })
   const [attempt, setAttempt] = useState(0)
   const [tab, setTab] = useState<View>('today')
-  // Where Back goes from What I keep, Settings and a practice.
+  // Where Back goes from What I keep, Settings, a practice and a read.
   const [back, setBack] = useState<Tab>('today')
   const [practice, setPractice] = useState<Practice | null>(null)
   const [reading, setReading] = useState<Read | null>(null)
   const [prefs, setPrefs] = useState<Prefs>(loadPrefs)
   const [pickVersion, setPickVersion] = useState(0)
+  // The window opened from Today, full screen; null shows Today itself.
+  const [flow, setFlow] = useState<OpenWindow | null>(null)
   // What is answered lives on the phone; a finished card only asks for a
   // fresh render so the dashes catch up.
   const [, setFinished] = useState(0)
   const onDone = useCallback(() => setFinished((n) => n + 1), [])
-  // The phone's clock decides the sitting: three questions from 5 am to
-  // 4:30 pm, three more from 5 pm to midnight, and rest in between. It
-  // turns while the app is open too.
-  const { date, sitting } = useDay()
+  // The phone's clock decides the window: five a day, with the morning three
+  // open from 5 am to 5 pm and the evening three from 5 pm to midnight.
+  const { date, window: win, sitting: clockSitting } = useDay()
+  const wide = useWide()
 
   useEffect(() => {
     let live = true
@@ -139,7 +174,7 @@ function App() {
     if (!title) return
     if (!title.hasAttribute('tabindex')) title.tabIndex = -1
     title.focus({ preventScroll: true })
-  }, [tab])
+  }, [tab, flow])
 
   // Another tab on this phone answered, changed a setting or deleted
   // everything: catch up.
@@ -173,26 +208,48 @@ function App() {
     () => (set ? todaysPick(set.pool ?? [], set.questions ?? [], set.date, intimacyOn(prefs), 'morning', [], offer, local) : []),
     // pickVersion forces a fresh pick after a preference change
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [set, prefs, pickVersion, offer, local],
+    [set, prefs.adult, prefs.mild, pickVersion, offer, local],
   )
   const morning = progressOf(morningQs)
   // The evening three are picked once the morning is answered or closed, so
   // they can follow what the morning showed, and never repeat it.
   const hasEvening = !!set?.evening?.length
-  const eveningReady = hasEvening && (morning === 'done' || sitting === 'pause' || sitting === 'evening')
+  const eveningReady = hasEvening && (morning === 'done' || clockSitting === 'evening')
   const eveningQs = useMemo(
     () =>
       set && eveningReady
         ? todaysPick(set.pool ?? [], set.evening ?? [], set.date, intimacyOn(prefs), 'evening', morningQs, offer, local)
         : [],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [set, eveningReady, prefs, pickVersion, morningQs, offer, local],
+    [set, eveningReady, prefs.adult, prefs.mild, pickVersion, morningQs, offer, local],
   )
-  const evening = hasEvening ? progressOf(eveningQs) : null
-  // Each sitting shows its own three, and only those.
-  const steps = sitting === 'morning' ? morningQs : sitting === 'evening' ? eveningQs : []
-  const flow = useStep(steps)
-  const current = steps[flow.at]
+  const evening: Progress | null = hasEvening ? (eveningReady ? progressOf(eveningQs) : 'none') : null
+
+  // Opening the app in a sitting's own window with its three unanswered goes
+  // straight to the questions; otherwise it opens on Today.
+  // Decided while rendering, so Today never flashes before the questions.
+  const [flowFor, setFlowFor] = useState('')
+  const flowKey = set ? `${set.date}|${win}` : ''
+  if (set && flowFor !== flowKey) {
+    setFlowFor(flowKey)
+    setFlow(
+      set.review
+        ? null
+        : win === 'morning' && morning !== 'done'
+          ? 'morning'
+          : win === 'evening' && evening !== null && evening !== 'done'
+            ? 'evening'
+            : null,
+    )
+  }
+
+  const sitting: Sitting | null = flow === 'morning' ? 'morning' : flow === 'evening' ? 'evening' : null
+  // A sitting can be opened while its questions are open: the morning three
+  // until 5 pm, the evening three from 5 pm to midnight.
+  const canSit = (s: Sitting) => (s === 'morning' ? clockSitting === 'morning' || morning === 'done' : clockSitting === 'evening')
+  const steps = sitting && canSit(sitting) ? (sitting === 'morning' ? morningQs : eveningQs) : []
+  const flowStep = useStep(steps)
+  const current = steps[flowStep.at]
   // One card a sitting opens with a short box for your own words (profile.ts).
   // Judged from answers before today, so it holds while the sitting goes on.
   const writeFirst = useMemo(
@@ -200,7 +257,29 @@ function App() {
     [set, sitting, morningQs, eveningQs],
   )
   const hasIntimate = !!set?.pool?.some((q) => q.care === 'intimate')
-  const asking = sitting === 'morning' || sitting === 'evening'
+
+  // The Human Pulse count for Today's "since" list: the most answers any one
+  // of this morning's questions has, so "at least" is always true.
+  const [morningCount, setMorningCount] = useState<number | null>(null)
+  const pulse = pulseOn(prefs)
+  const morningIds = morningQs.filter((q) => q.care !== 'intimate' && !q.local).map((q) => q.id).join(',')
+  useEffect(() => {
+    if (!pulse || !morningIds || tab !== 'today' || flow) return
+    let live = true
+    Promise.all(morningIds.split(',').map(getPulse)).then((ps) => {
+      const best = Math.max(0, ...ps.map((p) => p?.total ?? 0))
+      if (live) setMorningCount(best > 0 ? best : null)
+    })
+    return () => {
+      live = false
+    }
+  }, [pulse, morningIds, tab, flow])
+
+  // "Since 07:51": when Today was last looked at before this visit.
+  const [since] = useState(lastSeen)
+  useEffect(() => {
+    if (tab === 'today' && !flow) noteSeen()
+  }, [tab, flow])
 
   function changePrefs(next: Prefs) {
     savePrefs(next)
@@ -208,7 +287,7 @@ function App() {
     if (next.wordsDays !== prefs.wordsDays) pruneWords(date, next.wordsDays)
     // Re-pick only a sitting nobody has started, so questions never change
     // under someone mid-sitting.
-    if (!set) return
+    if (!set || (next.adult === prefs.adult && next.mild === prefs.mild)) return
     const started = (qs: Question[]) => qs.some((q) => recalledChoice(q.id))
     const halves = (['morning', 'evening'] as Half[]).filter((h) => !started(h === 'morning' ? morningQs : eveningQs))
     if (halves.length > 0) {
@@ -228,6 +307,12 @@ function App() {
     window.scrollTo?.({ top: 0 })
   }
 
+  function goTab(t: Tab) {
+    setTab(t)
+    if (t === 'today' && tab === 'today') setFlow(null)
+    window.scrollTo?.({ top: 0 })
+  }
+
   function openPractice(p: Practice) {
     setPractice(p)
     open('practice')
@@ -242,197 +327,337 @@ function App() {
     window.scrollTo?.({ top: 0 })
   }, [])
 
+  function closeFlow() {
+    if (set && flow && flow !== 'morning' && flow !== 'evening') markWindow(set.date, flow)
+    setFlow(null)
+    window.scrollTo?.({ top: 0 })
+  }
+
+  const read = set && (
+    <TodaysRead date={set.date} themes={themesOf([...morningQs, ...eveningQs])} intimacy={intimacyOn(prefs)} />
+  )
+  const dark = blackOn(prefs) && (win === 'evening' || win === 'night' || win === 'rest') && tab === 'today'
+
+  const hero = set
+    ? heroFor({ date: set.date, window: win, review: !!set.review, morning, evening, pulse: prefs.pulse !== false })
+    : null
+
+  const feed: FeedItem[] = []
+  if (pulse && morningCount)
+    feed.push({
+      key: 'pulse',
+      icon: 'globe',
+      text: (
+        <>
+          <strong>{count(morningCount)} people</strong> joined the morning's questions
+        </>
+      ),
+      aside: win === 'morning' || win === 'midday' ? 'Pulse at 14:30' : undefined,
+    })
+
+  let body: ReactNode = null
+  if (set && tab === 'today') {
+    if (!flow || !hero) {
+      body = (
+        <Home
+          date={set.date}
+          window={win}
+          hero={hero!}
+          onOpen={() => {
+            if (hero?.opens === 'mirror') setTab('mirror')
+            else if (hero?.opens) setFlow(hero.opens)
+          }}
+          onAccount={() => setTab('account')}
+          since={since}
+          feed={feed}
+          morning={morning}
+          evening={evening}
+          wide={wide}
+        >
+          {!set.review && morning !== 'done' && win !== 'morning' && clockSitting === 'morning' && (
+            <div className="card soft row-between">
+              <p>Your morning three are still open until 17:00.</p>
+              <button type="button" className="btn small" onClick={() => setFlow('morning')}>
+                Answer them
+              </button>
+            </div>
+          )}
+          {!set.review && evening !== null && evening !== 'done' && win === 'night' && (
+            <div className="card soft row-between">
+              <p>Your evening three are still open until midnight.</p>
+              <button type="button" className="btn small" onClick={() => setFlow('evening')}>
+                Answer them
+              </button>
+            </div>
+          )}
+          {set.review && (
+            <section className="card review" aria-labelledby="review-title">
+              <h2 id="review-title" className="title">
+                Sunday is for looking back.
+              </h2>
+              <p className="muted">
+                No new questions today. Your week is waiting in your mirror: what you noticed, how you've been changing
+                and what to try next. Fresh questions arrive tomorrow at 5 am.
+              </p>
+              <Upcoming label="Tomorrow" themes={set.tomorrowThemes ?? []} />
+              <StepCheck date={set.date} label="This week's small steps" pick={() => openThisWeek(set.date)} />
+              <GoodThings date={set.date} label="Three good things from today" />
+            </section>
+          )}
+          {win === 'rest' && !set.review && <RestScreen date={set.date} morningThemes={themesOf(morningQs)} />}
+          {read}
+          <InstallInvite today={set.date} />
+          <PrivacyLine onOpenKept={() => open('kept')} onOpenSettings={() => open('settings')} />
+        </Home>
+      )
+    } else if (flow === 'morning' || flow === 'evening') {
+      const name = WINDOW_INFO[flow].name
+      const at = flowStep.at
+      const closing = at >= steps.length
+      body = (
+        <Flow
+          tone={flow}
+          label={steps.length === 0 ? name : closing ? `${name} close` : `${name} · ${at + 1} of ${steps.length}`}
+          onClose={closeFlow}
+          bar={
+            steps.length > 0 && (
+              <>
+              <nav className="dashes" aria-label="Today's questions">
+                {steps.map((q, i) => {
+                  const done = doneOf(recalledChoice(q.id))
+                  return (
+                    <button
+                      key={q.id}
+                      type="button"
+                      className={`dash ${done ?? ''}`}
+                      style={themeVars(q.theme)}
+                      aria-label={`Question ${i + 1} of ${steps.length}`}
+                      aria-current={at === i ? 'step' : undefined}
+                      disabled={!done && at !== i}
+                      onClick={() => flowStep.go(i)}
+                    />
+                  )
+                })}
+              </nav>
+              <p className="label edition-line">
+                {set.edition ? `Edition #${set.edition}` : "Today's questions"} · {weekday(set.date)}
+                {flow === 'evening' && ' evening'}
+              </p>
+              </>
+            )
+          }
+          footer={
+            !closing && current ? (
+              <p className="muted small">
+                {flow === 'evening' && at === 0 ? 'Then: the route you took this morning.' : 'What you usually do, not what you wish you did.'}
+              </p>
+            ) : undefined
+          }
+        >
+          {hasIntimate && prefs.adult === null && !closing && (
+            <section className="card gate" aria-labelledby="gate-title">
+              <h2 id="gate-title" className="title">
+                Are you 18 or older?
+              </h2>
+              <p className="muted">
+                Some questions are about intimacy and sex. They are frank, never graphic, and only kept as "a private
+                answer".
+              </p>
+              <div className="row-gap">
+                <button type="button" className="btn small" onClick={() => changePrefs({ ...prefs, adult: true })}>
+                  Yes, I'm 18 or older
+                </button>
+                <button type="button" className="btn small ghost" onClick={() => changePrefs({ ...prefs, adult: false })}>
+                  No
+                </button>
+              </div>
+            </section>
+          )}
+          {flow === 'evening' && at === 0 && !closing && <StepNudge date={set.date} evening />}
+          {steps.length === 0 && (
+            <p className="muted">
+              {flow === 'evening' ? 'Your evening three open at 5 pm.' : 'Your morning three open at 5 am.'}
+            </p>
+          )}
+          {current && (
+            <QuestionCard
+              key={current.id}
+              question={current}
+              date={set.date}
+              sitting={flow}
+              wordsDays={prefs.wordsDays}
+              writeFirst={current.id === writeFirst}
+              still={stillOn(prefs)}
+              index={at}
+              of={steps.length}
+              pulse={prefs.pulse}
+              onPulse={(on) => changePrefs({ ...prefs, pulse: on })}
+              onDone={onDone}
+              onNext={() => flowStep.go(at + 1)}
+            />
+          )}
+          {closing &&
+            steps.length > 0 &&
+            (flow === 'evening' ? (
+              <DayClose
+                sitting="evening"
+                date={set.date}
+                questions={eveningQs}
+                morning={morningQs}
+                tomorrowThemes={set.tomorrowThemes ?? []}
+                onPractice={openPractice}
+              />
+            ) : (
+              <DayClose
+                sitting="morning"
+                date={set.date}
+                questions={morningQs}
+                eveningThemes={hasEvening ? themesOf(eveningQs) : null}
+                tomorrowThemes={set.tomorrowThemes ?? []}
+              />
+            ))}
+          {closing && steps.length > 0 && prefs.country === undefined && (
+            <CountryAsk onAnswer={(country) => changePrefs({ ...prefs, country })} />
+          )}
+          {closing && steps.length > 0 && (
+            <button type="button" className="btn wide" onClick={closeFlow}>
+              Back to today
+            </button>
+          )}
+          <PrivacyLine onOpenKept={() => open('kept')} onOpenSettings={() => open('settings')} />
+        </Flow>
+      )
+    } else if (flow === 'midday') {
+      body = (
+        <Flow
+          tone="midday"
+          live
+          label={`Midday · closes in ${left(windowCloses(set.date, 'midday') - Date.now()).text}`}
+          onClose={closeFlow}
+          footer={<p className="muted small">Then nothing until 14:30.</p>}
+        >
+          <MiddayScreen
+            date={set.date}
+            friend={null}
+            read={read}
+            morningOpen={morning !== 'done' && clockSitting === 'morning'}
+            onMorning={() => setFlow('morning')}
+            onDone={() => markWindow(set.date, 'midday')}
+          />
+        </Flow>
+      )
+    } else if (flow === 'afternoon') {
+      body = (
+        <Flow tone="afternoon" live label={pulse ? 'Live · afternoon pulse' : 'Afternoon'} onClose={closeFlow}>
+          {prefs.pulse === undefined && <PulseAsk onAnswer={(on) => changePrefs({ ...prefs, pulse: on })} />}
+          {pulse && <PulseScreen questions={morningQs.filter((q) => recalledChoice(q.id))} />}
+          {read}
+        </Flow>
+      )
+    } else if (flow === 'night') {
+      body = (
+        <Flow tone="night" label={`Night · ${new Date().toTimeString().slice(0, 5)}`} onClose={closeFlow}>
+          <NightScreen
+            date={set.date}
+            tomorrowThemes={set.tomorrowThemes ?? []}
+            onPractice={openPractice}
+            onClose={() => markWindow(set.date, 'night')}
+          />
+        </Flow>
+      )
+    }
+  }
+
   return (
     <OpenRead.Provider value={openRead}>
-      <main className={tab === 'mirror' ? 'page mirror-page' : 'page today-page'}>
-        <header className="masthead">
-          <h1 className="brand">The Persona Index</h1>
-          {set && (
-            <nav className="tabs" aria-label="Sections">
-              <button type="button" aria-pressed={tab === 'today'} onClick={() => setTab('today')}>
-                Today
-              </button>
-              <button type="button" aria-pressed={tab === 'mirror'} onClick={() => setTab('mirror')}>
-                Your mirror
-              </button>
-              <button type="button" aria-pressed={tab === 'notebook'} onClick={() => setTab('notebook')}>
-                Notebook
-              </button>
-            </nav>
-          )}
-        </header>
-
-        {offline && tab === 'today' && (
-          <p className="notice offline" role="status">
-            You're offline, so I opened what this phone already had. Answers go through once you're back.
-          </p>
-        )}
-
-        {tab === 'kept' && <KeptScreen today={date} mild={!intimacyOn(prefs)} onBack={() => setTab(back)} />}
-
-        {tab === 'notebook' && <NotebookScreen mild={!intimacyOn(prefs)} today={date} />}
-
-        {tab === 'practice' && practice && <PracticeScreen practice={practice} date={date} onBack={() => setTab(back)} />}
-
-        {tab === 'read' && reading && (
-          <ReadScreen key={reading.slug} read={reading} date={date} intimacy={intimacyOn(prefs)} onBack={() => setTab(back)} />
-        )}
-
-        {tab === 'settings' && (
-          <SettingsScreen prefs={prefs} onChange={changePrefs} onOpenKept={() => open('kept')} onBack={() => setTab(back)} />
-        )}
-
-        {loading && (tab === 'today' || tab === 'mirror') && (
-          <p className="muted center">Getting today's questions ready…</p>
-        )}
-
-        {state.kind === 'empty' && tab === 'today' && <p className="notice">No questions today yet. Check back soon.</p>}
-
-        {state.kind === 'error' && tab === 'today' && (
-          <div className="notice" role="alert">
-            <p>I couldn't load today's questions.</p>
-            <button type="button" className="option" onClick={retry}>
-              Try again
+      <div className={`app${dark ? ' is-dark' : ''}${flow && tab === 'today' ? ' in-flow' : ''}${stillOn(prefs) ? ' is-still' : ''}`} data-window={win}>
+        <nav className="tabs" aria-label="Sections">
+          <span className="rail-logo" aria-hidden="true">
+            P
+          </span>
+          {TABS.map((t) => (
+            <button
+              key={t.tab}
+              type="button"
+              className="tab"
+              aria-pressed={tab === t.tab}
+              onClick={() => goTab(t.tab)}
+              disabled={!set && t.tab !== 'today' && t.tab !== 'circle' && t.tab !== 'notebook'}
+            >
+              <Icon name={t.icon} size={22} />
+              <span className="tab-name">{t.name}</span>
             </button>
-          </div>
-        )}
+          ))}
+          <button
+            type="button"
+            className="tab rail-account"
+            aria-pressed={tab === 'account'}
+            aria-label="Account"
+            onClick={() => goTab('account')}
+          >
+            <Avatar name="You" tint="#4f7357" size={36} />
+          </button>
+        </nav>
+        <main className={`page page-${tab}`}>
+          <h1 className="sr-only">The Persona Index</h1>
 
-        {set && tab === 'mirror' && <Mirror today={set.date} onOpenKept={() => open('kept')} />}
+          {offline && tab === 'today' && (
+            <p className="notice offline" role="status">
+              You're offline, so I opened what this phone already had. Answers go through once you're back.
+            </p>
+          )}
 
-        {set && tab === 'today' && (
-          <div className="today">
-            <div className="edition-bar">
-              <p className="edition-line">
-                {set.review ? 'Review day' : set.edition ? `Edition #${set.edition}` : "Today's questions"} ·{' '}
-                {weekday(set.date)}
-                {!set.review && (sitting === 'pause' || sitting === 'evening') && ' evening'}
-              </p>
-              {steps.length > 0 && (
-                <nav className="dashes" aria-label="Today's questions">
-                  {steps.map((q, i) => {
-                    const done = doneOf(recalledChoice(q.id))
-                    return (
-                      <button
-                        key={q.id}
-                        type="button"
-                        className={`dash ${done ?? ''}`}
-                        style={themeVars(q.theme)}
-                        aria-label={`Question ${i + 1} of ${steps.length}`}
-                        aria-current={flow.at === i ? 'step' : undefined}
-                        disabled={!done && flow.at !== i}
-                        onClick={() => flow.go(i)}
-                      />
-                    )
-                  })}
-                </nav>
-              )}
+          {tab === 'kept' && <KeptScreen today={date} mild={!intimacyOn(prefs)} onBack={() => setTab(back)} />}
+
+          {tab === 'notebook' && <NotebookScreen mild={!intimacyOn(prefs)} today={date} />}
+
+          {tab === 'circle' && <CircleScreen />}
+
+          {tab === 'account' && (
+            <AccountScreen
+              prefs={prefs}
+              onChange={changePrefs}
+              onOpenSettings={() => open('settings')}
+              onOpenKept={() => open('kept')}
+            />
+          )}
+
+          {tab === 'practice' && practice && <PracticeScreen practice={practice} date={date} onBack={() => setTab(back)} />}
+
+          {tab === 'read' && reading && (
+            <ReadScreen key={reading.slug} read={reading} date={date} intimacy={intimacyOn(prefs)} onBack={() => setTab(back)} />
+          )}
+
+          {tab === 'settings' && (
+            <SettingsScreen prefs={prefs} onChange={changePrefs} onOpenKept={() => open('kept')} onBack={() => setTab(back)} />
+          )}
+
+          {loading && (tab === 'today' || tab === 'mirror') && (
+            <p className="muted center">Getting today's questions ready…</p>
+          )}
+
+          {state.kind === 'empty' && tab === 'today' && <p className="notice">No questions today yet. Check back soon.</p>}
+
+          {state.kind === 'error' && tab === 'today' && (
+            <div className="notice" role="alert">
+              <p>I couldn't load today's questions.</p>
+              <button type="button" className="btn small" onClick={retry}>
+                Try again
+              </button>
             </div>
-            <div className="today-main">
-              {set.review && (
-                <section className="notice review" aria-labelledby="review-title">
-                  <h2 id="review-title">Sunday is for looking back.</h2>
-                  <p>
-                    No new questions today. Your week is waiting in your mirror: what you noticed, how you've been
-                    changing and what to try next. Fresh questions arrive tomorrow at 5 am.
-                  </p>
-                  <Upcoming label="Tomorrow" themes={set.tomorrowThemes ?? []} />
-                  <button type="button" className="option" onClick={() => setTab('mirror')}>
-                    Open your mirror
-                  </button>
-                  <StepCheck date={set.date} label="This week's small steps" pick={() => openThisWeek(set.date)} />
-                  <GoodThings date={set.date} label="Three good things from today" />
-                </section>
-              )}
+          )}
 
-              {!set.review && sitting === 'night' && <NightScreen date={set.date} morningThemes={themesOf(morningQs)} />}
+          {set && tab === 'mirror' && <Mirror today={set.date} onOpenKept={() => open('kept')} />}
 
-              {!set.review && sitting === 'pause' && (
-                <PauseScreen morning={morning} eveningThemes={hasEvening ? themesOf(eveningQs) : null} />
-              )}
-
-              {!set.review && asking && (
-                <>
-                  {hasIntimate && prefs.adult === null && (
-                    <section className="notice gate" aria-labelledby="gate-title">
-                      <h2 id="gate-title">Are you 18 or older?</h2>
-                      <p className="muted">
-                        Some questions are about intimacy and sex. They are frank, never graphic, and only kept as "a
-                        private answer".
-                      </p>
-                      <div className="confirm">
-                        <button type="button" className="option" onClick={() => changePrefs({ ...prefs, adult: true })}>
-                          Yes, I'm 18 or older
-                        </button>
-                        <button type="button" className="option" onClick={() => changePrefs({ ...prefs, adult: false })}>
-                          No
-                        </button>
-                      </div>
-                    </section>
-                  )}
-
-                  {current && (
-                    <QuestionCard
-                      key={current.id}
-                      question={current}
-                      date={set.date}
-                      sitting={sitting === 'evening' ? 'evening' : 'morning'}
-                      wordsDays={prefs.wordsDays}
-                      writeFirst={current.id === writeFirst}
-                      onDone={onDone}
-                      onNext={() => flow.go(flow.at + 1)}
-                    />
-                  )}
-
-                  {flow.at >= steps.length &&
-                    (sitting === 'evening' ? (
-                      <DayClose
-                        sitting="evening"
-                        date={set.date}
-                        questions={eveningQs}
-                        morning={morningQs}
-                        tomorrowThemes={set.tomorrowThemes ?? []}
-                        onPractice={openPractice}
-                      />
-                    ) : (
-                      steps.length > 0 && (
-                        <DayClose
-                          sitting="morning"
-                          date={set.date}
-                          questions={morningQs}
-                          eveningThemes={hasEvening ? themesOf(eveningQs) : null}
-                          tomorrowThemes={set.tomorrowThemes ?? []}
-                        />
-                      )
-                    ))}
-                  {flow.at >= steps.length && steps.length > 0 && prefs.country === undefined && (
-                    <CountryAsk onAnswer={(country) => changePrefs({ ...prefs, country })} />
-                  )}
-                </>
-              )}
-            </div>
-            {/* The rest of the day: under the card on a phone, beside it on a
-                wide screen. */}
-            <div className="today-side">
-              {!set.review && <DayPlan sitting={sitting} morning={morning} evening={evening} />}
-              <TodaysRead date={set.date} themes={themesOf([...morningQs, ...eveningQs])} intimacy={intimacyOn(prefs)} />
-            <InstallInvite today={set.date} />
-              <PrivacyLine onOpenKept={() => open('kept')} onOpenSettings={() => open('settings')} />
-              {prefs.adult === true && (
-                <label className="switch">
-                  <input
-                    type="checkbox"
-                    checked={prefs.mild}
-                    onChange={(e) => changePrefs({ ...prefs, mild: e.target.checked })}
-                  />
-                  Keep it mild (no intimacy questions)
-                </label>
-              )}
-            </div>
-          </div>
-        )}
-      </main>
+          {body}
+        </main>
+      </div>
     </OpenRead.Provider>
   )
+}
+
+function weekday(iso: string): string {
+  return new Date(`${iso}T00:00:00Z`).toLocaleDateString('en', { weekday: 'long', timeZone: 'UTC' })
 }
 
 function doneOf(choice: string | null): Done | undefined {
@@ -458,10 +683,6 @@ function useStep(steps: Question[]) {
     window.scrollTo?.({ top: 0 })
   }
   return { at, go }
-}
-
-function weekday(iso: string): string {
-  return new Date(`${iso}T00:00:00Z`).toLocaleDateString('en', { weekday: 'long', timeZone: 'UTC' })
 }
 
 export default App

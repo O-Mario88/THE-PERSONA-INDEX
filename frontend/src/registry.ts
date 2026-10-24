@@ -51,6 +51,10 @@ export const REGISTRY: Entry[] = [
   { key: 'pi.midday.', what: 'That you said "not yet" to the midday step check, for the day', backup: 'never', merge: 'local', download: false },
   { key: 'pi.vault.v1', what: 'Your 12-word phrase and the state of your backup', backup: 'never', merge: 'local', download: false },
   { key: 'pi.lock.v1', what: "The phone's fingerprint or face check for the app", backup: 'never', merge: 'local', download: false },
+  { key: 'pi.tapestry.v1', what: 'Your season tapestry: for each day of the last ninety, how many answers reached for each need', backup: 'always', merge: 'local', download: true },
+  { key: 'pi.pulse.', what: 'How many people had answered a question when you last looked, for the day', backup: 'never', merge: 'local', download: false },
+  { key: 'pi.windows.', what: 'Which of the day’s five windows you opened, and when, for the day', backup: 'never', merge: 'local', download: false },
+  { key: 'pi.seen.v1', what: 'When you last looked at Today, for its “since” line', backup: 'never', merge: 'local', download: false },
   { key: 'pi.install.v1', what: 'Whether you were invited to add the app to your home screen', backup: 'never', merge: 'local', download: false },
 ]
 

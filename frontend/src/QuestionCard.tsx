@@ -34,6 +34,8 @@ import {
   type Verdict,
 } from './api'
 import { isEvening } from './day'
+import { PulseAsk, PulsePill } from './Pulse'
+import { hasPulse } from './pulse'
 import { Helpline } from './Helpline'
 import { moveFor, startMove } from './moves'
 import { focusPlan, keepCard, keptCard, makePlan, noteVerdict, unkeepCard, type Plan } from './notebook'
@@ -67,6 +69,11 @@ type Props = {
   sitting?: Sitting
   wordsDays?: number
   writeFirst?: boolean // open with a short box for one's own words, the options after
+  still?: boolean // show the card at once instead of unfolding it in three beats
+  index?: number // where the card sits in its sitting, from 0
+  of?: number
+  pulse?: boolean // the Human Pulse: undefined until asked once, false for never
+  onPulse?: (on: boolean) => void
   onDone?: (questionId: string, done: Done) => void
   onNext: () => void
 }
@@ -85,6 +92,11 @@ export function QuestionCard({
   sitting,
   wordsDays = DEFAULT_WORDS_DAYS,
   writeFirst = false,
+  still = false,
+  index,
+  of,
+  pulse,
+  onPulse,
   onDone,
   onNext,
 }: Props) {
@@ -367,7 +379,18 @@ export function QuestionCard({
         </p>
       )}
       {chosen && (
-        <Answer question={question} option={chosen} words={words} date={date} wordsDays={wordsDays} onNext={onNext} />
+        <Answer
+          question={question}
+          option={chosen}
+          words={words}
+          date={date}
+          wordsDays={wordsDays}
+          still={still}
+          card={index !== undefined && of ? `Card ${index + 1} of ${of}` : undefined}
+          pulse={pulse}
+          onPulse={onPulse}
+          onNext={onNext}
+        />
       )}
 
       {error && (
@@ -405,6 +428,10 @@ function Answer({
   words,
   date,
   wordsDays,
+  still,
+  card,
+  pulse,
+  onPulse,
   onNext,
 }: {
   question: Question
@@ -412,6 +439,10 @@ function Answer({
   words: OwnWords | null
   date: string
   wordsDays: number
+  still: boolean
+  card?: string
+  pulse?: boolean
+  onPulse?: (on: boolean) => void
   onNext: () => void
 }) {
   const insight = option.heavy ? undefined : option.insight
@@ -424,8 +455,10 @@ function Answer({
     return f && (option.traits?.[f.trait] ?? 0) !== 0 ? f : null
   })
   const [notMe, setNotMe] = useState(() => recalledVerdict(question.id) === 'not_me')
+  const counted = hasPulse(question) && !option.heavy
   return (
-    <div className="answer">
+    <div className={still ? 'answer' : 'answer unfold'}>
+      {card && <p className="card-count label">{card}</p>}
       {words ? (
         <YourWords words={words} />
       ) : (
@@ -444,6 +477,8 @@ function Answer({
           focus={notMe ? null : focus}
         />
       )}
+      {counted && pulse === true && <PulsePill question={question} optionId={option.id} />}
+      {counted && pulse === undefined && onPulse && <PulseAsk onAnswer={onPulse} />}
       {insight && <KeepThis question={question} option={option} words={words} date={date} />}
       {insight && isLowMood(question.theme, option.depth) && <Helpline />}
       {insight?.step && (
@@ -524,11 +559,11 @@ function InsightPanel({
   const { headline, body } = splitReveal(reveal)
   return (
     <div className="insight" role="note" aria-label="What your answer may say">
-      <p className="insight-headline">{headline}</p>
-      {body && <p className="insight-body">{body}</p>}
-      {reach && <p className="insight-reach">{reachingLine(reach)}</p>}
+      <p className="insight-headline beat-1">{headline}</p>
+      {body && <p className="insight-body beat-2">{body}</p>}
+      {reach && <p className="insight-reach beat-3">{reachingLine(reach)}</p>}
       {otherSide && (
-        <p className="insight-other">
+        <p className="insight-other beat-3">
           <span className="eyebrow">The other side</span> {otherSide}
         </p>
       )}

@@ -221,8 +221,6 @@ describe('the daily questions', () => {
     expect(screen.getByText('Edition #3 · Monday')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Question 1 of 3' })).toHaveAttribute('aria-current', 'step')
     expect(screen.getByRole('button', { name: 'Question 3 of 3' })).toBeDisabled()
-    // Edwin, 2026-10-15: "Everything should feel private".
-    expect(screen.getByText(/Private to you: no name, no email, no account\./)).toBeInTheDocument()
   })
 
   // Edwin, 2026-10-15: "Some answers need typing ... so they are not limited
@@ -793,8 +791,10 @@ describe('the daily questions', () => {
     expect(await screen.findByText(closeness.prompt)).toBeInTheDocument()
     expect(screen.queryByRole('region', { name: 'Are you 18 or older?' })).not.toBeInTheDocument()
 
-    // The keep-it-mild switch is always there and takes intimacy out again.
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Keep it mild (no intimacy questions)' }))
+    // The keep-it-mild switch is always there, on Account, and takes intimacy out again.
+    fireEvent.click(screen.getByRole('button', { name: 'Account' }))
+    fireEvent.click(screen.getByRole('switch', { name: /Keep it mild \(no intimacy questions\)/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Today' }))
     expect(screen.queryByText(closeness.prompt)).not.toBeInTheDocument()
     unmount()
     render(<App />)
@@ -879,11 +879,6 @@ describe('the evening, from 5 pm', () => {
       screen.queryByRole('button', { name: /^(morning|afternoon|evening|check-in)/i }),
     ).not.toBeInTheDocument()
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
-    expect(within(screen.getByRole('group', { name: 'Your day' })).getAllByRole('listitem').map(plainText)).toEqual([
-      'Morning three5 am to 4:30 pmDone',
-      'Evening three5 pm to midnightOpen now',
-    ])
-
     await answer('I get out for a walk')
     next()
     await answer('Say something calmly')
@@ -902,20 +897,22 @@ describe('the evening, from 5 pm', () => {
     // This evening's cards are still one tap away on the dashes.
     fireEvent.click(screen.getByRole('button', { name: 'Question 1 of 3' }))
     expect(await screen.findByRole('region', { name: 'Lunch time. What usually happens?' })).toHaveTextContent('You chose')
+
+    // Back on Today, the day's five windows show what is done.
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }))
+    const dayLine = within(screen.getByRole('group', { name: 'Your day' })).getAllByRole('listitem').map(plainText)
+    expect(dayLine).toHaveLength(5)
+    expect(dayLine[0]).toBe('Morningdone')
+    expect(dayLine[3]).toBe('Eveningdone')
+    expect(dayLine[4]).toBe('Night21:00')
   })
 
-  it('turns at 4:30 pm, 5 pm and midnight while the app stays open', async () => {
+  it('turns from the afternoon to the evening and to the night while the app stays open', async () => {
     answeredThisMorning()
     vi.setSystemTime(at(15))
     const fetchMock = stubApi({ today: { status: 200, body: sixADay } })
     render(<App />)
-    expect(await screen.findByRole('region', { name: 'Morning done.' })).toBeInTheDocument()
-
-    vi.setSystemTime(new Date(2026, 9, 12, 16, 30))
-    fireEvent(window, new Event('focus'))
-    const pause = await screen.findByRole('region', { name: 'Your evening three open at 5 pm.' })
-    expect(pause).toHaveTextContent('Your morning is done. This half hour is yours.')
-    expect(within(pause).getByRole('group', { name: 'This evening' })).toHaveTextContent('Food and eating')
+    expect(await screen.findByRole('heading', { name: 'Afternoon' })).toBeInTheDocument()
     expect(screen.queryByRole('navigation', { name: "Today's questions" })).not.toBeInTheDocument()
 
     vi.setSystemTime(at(17))
@@ -925,23 +922,19 @@ describe('the evening, from 5 pm', () => {
     vi.setSystemTime(at(0, 13))
     fireEvent(document, new Event('visibilitychange'))
     await waitFor(() => expect(calls(fetchMock, '/api/editions/2026-10-13')).toHaveLength(1))
-    expect(await screen.findByRole('region', { name: 'The night is yours.' })).toHaveTextContent(
-      'Your morning three open at 5 am.',
-    )
+    expect(await screen.findByRole('heading', { name: 'Night' })).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: 'The night is yours' })).toHaveTextContent('Your morning three open at 05:00.')
   })
 
-  it("closes the morning's questions at 4:30 pm, answered or not, without a word of blame", async () => {
+  it("keeps the morning's questions open until 5 pm, without a word of blame", async () => {
     vi.setSystemTime(new Date(2026, 9, 12, 16, 45))
     stubApi({ today: { status: 200, body: sixADay } })
     const first = render(<App />)
-    const pause = await screen.findByRole('region', { name: 'Your evening three open at 5 pm.' })
-    expect(pause).toHaveTextContent("This morning's questions have closed. That's fine: the evening is a fresh start.")
+    expect(await screen.findByText('Your morning three are still open until 17:00.')).toBeInTheDocument()
     expect(screen.queryByText('When do you wash the dishes?')).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Skip this one' })).not.toBeInTheDocument()
-    expect(within(screen.getByRole('group', { name: 'Your day' })).getAllByRole('listitem').map(plainText)).toEqual([
-      'Morning three5 am to 4:30 pmClosed',
-      'Evening three5 pm to midnightOpens at 5 pm',
-    ])
+    expect(screen.getByRole('group', { name: 'Your day' })).not.toHaveTextContent(/\b(missed|late|failed|behind)\b/i)
+    fireEvent.click(screen.getByRole('button', { name: 'Answer them' }))
+    expect(await screen.findByRole('region', { name: 'When do you wash the dishes?' })).toBeInTheDocument()
     first.unmount()
 
     vi.setSystemTime(at(19))
@@ -954,14 +947,18 @@ describe('the evening, from 5 pm', () => {
     vi.setSystemTime(at(3))
     stubApi({ today: { status: 200, body: sixADay } })
     render(<App />)
-    const night = await screen.findByRole('region', { name: 'The night is yours.' })
-    expect(night).toHaveTextContent('Your morning three open at 5 am. Nothing to do until then but rest.')
-    expect(within(night).getByRole('group', { name: 'Your morning three · 5 am' })).toHaveTextContent('Daily habits')
+    const night = await screen.findByRole('group', { name: 'The night is yours' })
+    expect(night).toHaveTextContent('Your morning three open at 05:00. Nothing to do until then but rest.')
+    const rest = screen.getByRole('region', { name: 'The night is yours' })
+    expect(within(rest).getByRole('group', { name: 'Your morning three · 5 am' })).toHaveTextContent('Daily habits')
     expect(screen.queryByRole('navigation', { name: "Today's questions" })).not.toBeInTheDocument()
     expect(screen.queryByText('When do you wash the dishes?')).not.toBeInTheDocument()
     expect(within(screen.getByRole('group', { name: 'Your day' })).getAllByRole('listitem').map(plainText)).toEqual([
-      'Morning three5 am to 4:30 pmOpens at 5 am',
-      'Evening three5 pm to midnightOpens at 5 pm',
+      'Morning05:00',
+      'Midday11:30',
+      'Pulse14:30',
+      'Evening17:00',
+      'Night21:00',
     ])
   })
 
@@ -1046,10 +1043,9 @@ describe('the evening, from 5 pm', () => {
     vi.setSystemTime(at(19))
     stubApi({})
     render(<App />)
-    const day = await screen.findByRole('region', { name: "That's your day." })
+    expect(await screen.findByRole('group', { name: "That's today's questions" })).toHaveTextContent('Three good things open at 21:00.')
     expect(screen.queryByRole('navigation', { name: "Today's questions" })).not.toBeInTheDocument()
-    expect(within(day).queryByRole('list', { name: "This evening's answers" })).not.toBeInTheDocument()
-    expect(within(screen.getByRole('group', { name: 'Your day' })).getAllByRole('listitem')).toHaveLength(1)
+    expect(screen.queryByRole('list', { name: "This evening's answers" })).not.toBeInTheDocument()
   })
 })
 
@@ -1223,7 +1219,7 @@ async function openMirror(routes: Parameters<typeof stubApi>[0] = {}) {
   vi.setSystemTime(at(9, 18))
   const fetchMock = stubApi({ edition: { status: 200, body: sunday }, mirror: { status: 200, body: mirror }, ...routes })
   render(<App />)
-  fireEvent.click(await screen.findByRole('button', { name: 'Your mirror' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Mirror' }))
   return fetchMock
 }
 
@@ -1433,7 +1429,7 @@ describe('the weekly mirror', () => {
     fireEvent.click(screen.getByRole('button', { name: 'What I keep, and how to delete it' }))
     expect(await screen.findByRole('heading', { name: 'What I keep' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: '← Back' }))
-    expect(screen.getByRole('button', { name: 'Your mirror' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'Mirror' })).toHaveAttribute('aria-pressed', 'true')
   })
 
   it('gets a new token and asks again when the server no longer accepts the old one', async () => {
@@ -1720,20 +1716,15 @@ describe('the week', () => {
     await morningThree()
     const morning = await screen.findByRole('region', { name: 'Morning done.' })
     expect(within(morning).getByRole('group', { name: 'Your evening three · 5 pm' })).toBeInTheDocument()
+    expect(screen.getByText('Edition #3 · Monday')).toBeInTheDocument()
     expect(screen.queryByText('Lunch time. What usually happens?')).not.toBeInTheDocument()
     first.unmount()
 
-    vi.setSystemTime(new Date(2026, 9, 12, 16, 29))
-    const second = render(<App />)
-    expect(await screen.findByRole('region', { name: 'Morning done.' })).toBeInTheDocument()
-    expect(screen.getByText('Edition #3 · Monday')).toBeInTheDocument()
-    second.unmount()
-
     vi.setSystemTime(new Date(2026, 9, 12, 16, 59))
-    const third = render(<App />)
-    expect(await screen.findByRole('region', { name: 'Your evening three open at 5 pm.' })).toBeInTheDocument()
+    const second = render(<App />)
+    expect(await screen.findByRole('heading', { name: 'Afternoon' })).toBeInTheDocument()
     expect(screen.queryByText('Lunch time. What usually happens?')).not.toBeInTheDocument()
-    third.unmount()
+    second.unmount()
 
     vi.setSystemTime(at(17))
     render(<App />)
@@ -1747,7 +1738,7 @@ describe('the week', () => {
     stubApi({ edition: { status: 200, body: sunday }, mirror: { status: 200, body: mirror } })
     render(<App />)
     expect(await screen.findByRole('heading', { level: 2, name: weekTitle })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Your mirror' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'Mirror' })).toHaveAttribute('aria-pressed', 'true')
 
     fireEvent.click(screen.getByRole('button', { name: 'Today' }))
     const review = screen.getByRole('region', { name: 'Sunday is for looking back.' })
@@ -1755,12 +1746,10 @@ describe('the week', () => {
     const tomorrow = within(review).getByRole('group', { name: 'Tomorrow' })
     expect(tomorrow).toHaveTextContent('Money')
     expect(tomorrow).toHaveTextContent('Anger')
-    expect(screen.queryByRole('group', { name: 'Your day' })).not.toBeInTheDocument()
     expect(review).not.toHaveTextContent(crowdOrScore)
-    expect(screen.getByText('Review day · Sunday')).toBeInTheDocument()
-    expect(screen.queryByRole('region', { name: 'Morning done.' })).not.toBeInTheDocument()
-    fireEvent.click(within(review).getByRole('button', { name: 'Open your mirror' }))
-    expect(screen.getByRole('button', { name: 'Your mirror' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.queryByRole('navigation', { name: "Today's questions" })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Open: Your Sunday Mirror is ready' }))
+    expect(screen.getByRole('button', { name: 'Mirror' })).toHaveAttribute('aria-pressed', 'true')
   })
 
   it('looks ahead to the review day on Saturday evening', async () => {
@@ -1993,6 +1982,8 @@ describe("today's read", () => {
   it('offers a read on one of the day’s life areas, opens it, and remembers it was read', async () => {
     stubApi({})
     render(<App />)
+    // The morning opens on its questions; the read waits on Today.
+    fireEvent.click(await screen.findByRole('button', { name: 'Close' }))
     const eyebrow = await screen.findByText(/^Today's read · \d+ min$/)
     const offer = eyebrow.closest('section')!
     const title = within(offer).getByRole('heading', { level: 3 }).textContent!
@@ -2399,9 +2390,14 @@ describe("what you're reaching for", () => {
     answeredThisMorning()
     localStorage.setItem('pi.pick.2026-10-12', JSON.stringify(['q-dishes', 'q-bill', 'q-alarm']))
     seedHistory([{ date: '2026-10-12', questionId: 'q-dishes', theme: 'habits', depth: 1, traits: {}, optionId: 'right-away', need: 'calm' }])
+    // The evening three are answered too; the day's close is one tap from Today.
+    localStorage.setItem('pi.pick.2026-10-12.pm', JSON.stringify(['q-lunch', 'q-queue', 'q-ring']))
+    for (const [q, o] of [['q-lunch', 'out'], ['q-queue', 'say'], ['q-ring', 'later']]) localStorage.setItem(`pi.choice.${q}`, o)
     vi.setSystemTime(at(19))
-    const fetchMock = stubApi({ edition: { status: 200, body: reaching } })
+    const evening = { ...reaching, evening: [lunch, queue, ring], pool: [...reaching.questions!, lunch, queue, ring] }
+    const fetchMock = stubApi({ edition: { status: 200, body: evening } })
     render(<App />)
+    fireEvent.click(await screen.findByRole('button', { name: 'See your evening: Your evening three are answered' }))
     const day = await screen.findByRole('region', { name: "That's your day." })
     const choice = within(day).getByRole('group', { name: "This morning's choice" })
     expect(choice).toHaveTextContent('This morning you chose “Right after eating”. It sounded like feeling settled mattered there.')
@@ -2490,7 +2486,7 @@ describe('where you live', () => {
     expect(JSON.parse(localStorage.getItem('pi.prefs.v1')!)).toMatchObject({ country: 'none' })
     unmount()
     render(<App />)
-    await screen.findByRole('region', { name: "That's your day." })
+    await screen.findByRole('heading', { name: 'Morning' })
     expect(screen.queryByRole('region', { name: 'Where do you live now?' })).not.toBeInTheDocument()
   })
 

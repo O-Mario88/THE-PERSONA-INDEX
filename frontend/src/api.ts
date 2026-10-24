@@ -497,6 +497,13 @@ export function pruneLocal(today: string, wordsDays: number) {
     if (k.startsWith(pickPrefix) && k.slice(pickPrefix.length, pickPrefix.length + 10) < addDays(today, -1)) remove(k)
     // The midday step check's "not yet" (DayClose.tsx), only needed on its day.
     if (k.startsWith('pi.midday.') && k.slice('pi.midday.'.length) < today) remove(k)
+    // The day's windows (windows.ts), only needed on their day.
+    if (k.startsWith('pi.windows.') && k.slice('pi.windows.'.length) < today) remove(k)
+    // The last pulse count seen for a question (pulse.ts), after its week.
+    if (k.startsWith('pi.pulse.')) {
+      const d = dateOf(k.slice('pi.pulse.'.length))
+      if (!d || daysBetween(d, today) > NOTES_KEPT_DAYS) remove(k)
+    }
     // What felt uncertain, when the mirror asked (reaching.ts), after five weeks.
     if (k.startsWith('pi.safety.') && daysBetween(k.slice('pi.safety.'.length), today) > 35) remove(k)
     // A verdict on a mirror leaning (profile.ts), after its five weeks.
