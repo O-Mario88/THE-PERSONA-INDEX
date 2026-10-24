@@ -62,3 +62,49 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run build
+
+  # The image a host runs (Dockerfile): built from this commit, started
+  # against Postgres the way docs/deploy.md describes, then smoke-checked
+  # through the edge-only gate with one vote end to end.
+  image:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: persona_smoke
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 2s --health-timeout 5s --health-retries 20
+    env:
+      EDGE_SECRET: ci-only-edge-secret-0123456789abcdef0123
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build --build-arg VERSION="${GITHUB_SHA::12}" -t persona-index:ci .
+      - name: start the image
+        run: |
+          docker run -d --name app --network host \
+            -e DATABASE_URL='postgres://postgres:postgres@localhost:5432/persona_smoke?sslmode=disable' \
+            -e DEVICE_TOKEN_SECRET=ci-only-secret-0123456789abcdef0123 \
+            -e DATA_KEY_SECRET=ci-only-data-key-0123456789abcdef0123 \
+            -e EDGE_SECRET -e TRUST_CF_CONNECTING_IP=1 -e METRICS_ADDR=127.0.0.1:9090 \
+            persona-index:ci
+          for i in $(seq 30); do curl -sf localhost:8080/api/ready && break; sleep 1; done
+      - run: SMOKE_VOTE=1 deploy/smoke.sh http://localhost:8080
+      - name: metrics name the vote route
+        run: curl -sf localhost:9090/metrics | grep 'persona_http_requests_total{route="POST /api/votes",code="202"} 1'
+      - name: the image reports healthy
+        run: |
+          for i in $(seq 30); do
+            [ "$(docker inspect --format '{{.State.Health.Status}}' app)" = healthy ] && exit 0
+            sleep 2
+          done
+          docker inspect --format '{{json .State.Health}}' app
+          exit 1
+      - name: stops cleanly
+        run: |
+          docker stop --time 20 app
+          docker logs app 2>&1 | tail -3 | grep '"msg":"stopped"'
+      - if: failure()
+        run: docker logs app

@@ -3,6 +3,7 @@ package main
 import (
 	"net"
 	"net/http"
+	"net/netip"
 	"sync"
 	"time"
 )
@@ -72,18 +73,43 @@ func (l *windowLimiter) Blocked(key string, now time.Time) (bool, time.Duration)
 	return true, c.start.Add(l.window).Sub(now)
 }
 
-// clientAddress is the address the device limit is keyed on. It is held in
-// memory for at most an hour and never stored. Behind Cloudflare, set
-// TRUST_CF_CONNECTING_IP=1 so the real client address is used.
+// clientAddress is the address the per-address limits are keyed on. It is
+// held in memory for at most an hour and never stored. Behind Cloudflare, set
+// TRUST_CF_CONNECTING_IP=1 so the real client address is used (and
+// EDGE_SECRET, so nobody can reach the origin and forge it).
+//
+// An IPv6 client is keyed on its /64 network: one home or phone is given a
+// whole /64 and can pick a fresh address in it at will, so counting single
+// addresses would let one person look like millions.
 func clientAddress(r *http.Request, trustCF bool) string {
+	addr := ""
 	if trustCF {
-		if ip := r.Header.Get("CF-Connecting-IP"); ip != "" {
-			return ip
+		addr = r.Header.Get("CF-Connecting-IP")
+	}
+	if addr == "" {
+		host, _, err := net.SplitHostPort(r.RemoteAddr)
+		if err != nil {
+			host = r.RemoteAddr
 		}
+		addr = host
 	}
-	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	return limitKey(addr)
+}
+
+// limitKey is an IPv4 address as it is, an IPv6 address as its /64, and
+// anything unreadable as it came.
+func limitKey(addr string) string {
+	ip, err := netip.ParseAddr(addr)
 	if err != nil {
-		return r.RemoteAddr
+		return addr
 	}
-	return host
+	ip = ip.Unmap()
+	if ip.Is4() {
+		return ip.String()
+	}
+	p, err := ip.WithZone("").Prefix(64)
+	if err != nil {
+		return addr
+	}
+	return p.String()
 }

@@ -80,6 +80,11 @@ The choice on an intimacy question is never stored on the server, in any table:
 
 Nothing in memory is written to disk or logs.
 
+### Logs and backups
+
+- **Logs** hold, for a failed or slow request (or every request if `ACCESS_LOG=all`), its request id, method, route pattern, status, duration and size; and the background jobs' row counts and errors. Never a path, query string, address, user agent, pass or answer (`observe`, `backend/middleware.go`). Kept by the host for 30 days or less ([monitoring.md](monitoring.md#logs)).
+- **The host's database backups** are whole copies of the tables above, kept **7 days or less**, so a phone's rows leave every backup within 7 days of "Delete everywhere". A restore to a moment before a deletion brings that phone's rows back, unreadable without its pass, until normal retention removes them ([backups.md](backups.md)).
+
 ## Deleting everything
 
 `DELETE /api/device/data` (header `Authorization: Device <pass>`; `DELETE /api/mirror` is the older name and does the same):

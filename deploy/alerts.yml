@@ -1,0 +1,81 @@
+# Alert rules for the API's /metrics (Prometheus rule format; Grafana and
+# most hosted Prometheus services read it as is). What each alert means and
+# what to do first is in docs/monitoring.md, under the alert's name.
+# backend/alerts_test.go checks that every metric named here is one the
+# server writes.
+groups:
+  - name: persona-index
+    rules:
+      - alert: PersonaInstanceDown
+        expr: up{job="persona-index"} == 0
+        for: 2m
+        labels: { severity: page }
+        annotations:
+          summary: An instance has not answered the metrics scrape for 2 minutes.
+
+      - alert: PersonaDatabaseUnreachable
+        expr: persona_tally_backlog_votes == -1
+        for: 2m
+        labels: { severity: page }
+        annotations:
+          summary: An instance cannot read the database; votes are being refused.
+
+      - alert: PersonaServerErrors
+        expr: |
+          sum(rate(persona_http_requests_total{code=~"5.."}[5m]))
+            / sum(rate(persona_http_requests_total[5m])) > 0.01
+        for: 5m
+        labels: { severity: page }
+        annotations:
+          summary: More than 1% of requests are failing on the server's side.
+
+      - alert: PersonaVotesSlow
+        expr: |
+          histogram_quantile(0.95,
+            sum by (le) (rate(persona_http_request_duration_seconds_bucket{route="POST /api/votes"}[5m]))) > 0.3
+        for: 10m
+        labels: { severity: page }
+        annotations:
+          summary: The slowest 5% of votes take longer than 300 ms (the load gate's limit).
+
+      - alert: PersonaTallyStopped
+        expr: time() - persona_job_last_success_timestamp_seconds{job="tally"} > 120
+        for: 2m
+        labels: { severity: page }
+        annotations:
+          summary: Votes have not been counted for 2 minutes; results are going stale.
+
+      - alert: PersonaTallyBehind
+        expr: persona_tally_backlog_votes > 20000
+        for: 5m
+        labels: { severity: ticket }
+        annotations:
+          summary: More than 20,000 accepted votes are waiting to be counted.
+
+      - alert: PersonaHourlyJobsStopped
+        expr: time() - persona_job_last_success_timestamp_seconds{job!="tally"} > 3 * 3600
+        for: 10m
+        labels: { severity: ticket }
+        annotations:
+          summary: "{{ $labels.job }} has not finished for 3 hours: data is being kept past its time."
+
+      - alert: PersonaPanics
+        expr: increase(persona_http_panics_total[10m]) > 0
+        labels: { severity: ticket }
+        annotations:
+          summary: A request crashed its handler (answered 500); the log has the stack.
+
+      - alert: PersonaDatabasePoolFull
+        expr: |
+          max by (instance) (persona_db_connections{state="in_use"})
+            / max by (instance) (persona_db_connections{state="max"}) > 0.9
+        for: 5m
+        labels: { severity: ticket }
+        annotations:
+          summary: An instance is using over 90% of its database connections.
+
+      - alert: PersonaOriginProbed
+        expr: increase(persona_edge_refused_total[15m]) > 100
+        labels: { severity: info }
+        annotations:
+          summary: Requests are reaching the origin without coming through Cloudflare.

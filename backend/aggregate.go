@@ -14,19 +14,8 @@ const aggregationBatch = 1000
 // until none are left. Any number of instances can run it at once; the store
 // guarantees each vote is counted exactly once.
 func (s *Server) RunAggregation() error {
-	ctx := context.Background()
-	for {
-		n, err := s.votes.Tally(ctx, aggregationBatch)
-		if err != nil {
-			return err
-		}
-		if n > 0 {
-			s.resultCache.clear()
-		}
-		if n < aggregationBatch {
-			return nil
-		}
-	}
+	_, err := s.tallyAll(context.Background(), s.clock())
+	return err
 }
 
 // resultCache keeps each question's tallies in the instance for a moment, so

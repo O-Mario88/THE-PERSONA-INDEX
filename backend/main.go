@@ -5,11 +5,13 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
-	"log"
+	"io"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -31,6 +33,11 @@ const (
 	// accepts votes (its day plus rolloverGrace), so deleting them can never
 	// reopen a question to a device that already voted.
 	minRetention = 7 * 24 * time.Hour
+	// shutdownGrace is how long in-flight requests get to finish on SIGTERM.
+	shutdownGrace = 10 * time.Second
+	// drainDelay is how long /api/ready answers 503 before the listener
+	// closes, so the host's load balancer stops sending new requests first.
+	drainDelay = 3 * time.Second
 )
 
 // newHTTPServer bounds every phase of a request so slow or stalled clients
@@ -47,71 +54,68 @@ func newHTTPServer(addr string, h http.Handler) *http.Server {
 	}
 }
 
-// Configuration (environment):
+// Configuration is read and checked by loadConfig (config.go); every setting
+// is described in docs/operations.md.
 //
-//	DATABASE_URL                  Postgres URL. Without it votes live in memory and are lost on restart.
-//	DATABASE_MAX_CONNS            pool size per instance (default 20).
-//	DEVICE_TOKEN_SECRET           32+ bytes; signs device tokens. Required with DATABASE_URL.
-//	DEVICE_TOKEN_SECRET_PREVIOUS  optional; the token secret before a rotation, still accepted.
-//	DATA_KEY_SECRET               32+ bytes, different from the token secrets; keys every stored
-//	                              hash. Required with DATABASE_URL. Never rotated (docs/operations.md).
-//	TRUST_CF_CONNECTING_IP        "1" when the only route in is through Cloudflare.
-//	RUN_TALLY_WORKER              "0" to stop this instance tallying (default on; safe on every instance).
-//	VOTE_RETENTION_DAYS           raw-vote retention (default 7, minimum 7).
-//	PORT                          listen port (default 8080).
+// Commands besides serving:
 //
-// `go run . schedule` maintains the frozen schedule instead of serving (schedule.go).
-// `go run . cards` lists the insight cards people say do not fit them, from DATABASE_URL (cards.go).
+//	go run . schedule     maintains the frozen schedule (schedule.go)
+//	go run . cards        lists the insight cards people say do not fit them (cards.go)
+//	go run . check        checks a database: schema, backlog, retention (check.go)
+//	api healthcheck       exits 0 when this instance answers /api/ready (for Docker's HEALTHCHECK)
 func main() {
-	if len(os.Args) > 1 && os.Args[1] == "schedule" {
-		os.Exit(runScheduleCommand(os.Args[2:], time.Now(), os.Stdout, os.Stderr))
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "schedule":
+			os.Exit(runScheduleCommand(os.Args[2:], time.Now(), os.Stdout, os.Stderr))
+		case "healthcheck":
+			os.Exit(runHealthcheck(os.Getenv("PORT")))
+		case "cards", "check":
+			// These read a database and need nothing else: no secrets, so a
+			// restored copy can be checked without the production keys.
+			ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+			code := runDatabaseCommand(ctx, os.Args[1], os.Args[2:], os.Getenv, os.Stdout, os.Stderr)
+			stop()
+			os.Exit(code)
+		default:
+			fmt.Fprintf(os.Stderr, "unknown command %q (schedule, cards, check or healthcheck)\n", os.Args[1])
+			os.Exit(2)
+		}
+	}
+	cfg, warnings, err := loadConfig(os.Getenv)
+	setupLogging(cfg.LogFormat)
+	if err != nil {
+		slog.Error("configuration", "error", err)
+		os.Exit(1)
+	}
+	for _, w := range warnings {
+		slog.Warn(w)
 	}
 	bank, err := loadShippedBank()
 	if err != nil {
-		log.Fatal(err)
+		slog.Error("question bank", "error", err)
+		os.Exit(1)
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	if len(os.Args) > 1 && os.Args[1] == "cards" {
-		url := os.Getenv("DATABASE_URL")
-		if url == "" {
-			log.Fatal("cards: set DATABASE_URL to the database whose taps to read")
-		}
-		st, err := openPGStore(ctx, url, 2)
-		if err != nil {
-			log.Fatal(err)
-		}
-		code := runCardsCommand(ctx, os.Args[2:], st, bank, os.Stdout, os.Stderr)
-		st.Close()
-		os.Exit(code)
-	}
-
-	keys := KeyConfig{
-		TokenSecret: []byte(os.Getenv("DEVICE_TOKEN_SECRET")),
-		DataSecret:  []byte(os.Getenv("DATA_KEY_SECRET")),
-	}
-	if prev := os.Getenv("DEVICE_TOKEN_SECRET_PREVIOUS"); prev != "" {
-		keys.PreviousTokenSecret = []byte(prev)
-	}
 	var store Store
-	if url := os.Getenv("DATABASE_URL"); url != "" {
-		if len(keys.TokenSecret) < minSecretBytes || len(keys.DataSecret) < minSecretBytes {
-			log.Fatal("DEVICE_TOKEN_SECRET and DATA_KEY_SECRET must both be set (32+ bytes) when DATABASE_URL is set")
-		}
-		st, err := openPGStore(ctx, url, int32(envInt("DATABASE_MAX_CONNS", 20)))
+	keys := cfg.Keys
+	if cfg.DatabaseURL != "" {
+		st, err := openPGStore(ctx, cfg.DatabaseURL, cfg.MaxConns)
 		if err != nil {
-			log.Fatal(err)
+			slog.Error("database", "error", err)
+			os.Exit(1)
 		}
 		defer st.Close()
 		store = st
 	} else {
-		log.Println("WARNING: DATABASE_URL not set; votes are kept in memory and lost on restart")
+		slog.Warn("DATABASE_URL not set; votes are kept in memory and lost on restart")
 		store = newMemoryStore()
-		for _, k := range []*[]byte{&keys.TokenSecret, &keys.DataSecret} {
+		for name, k := range map[string]*[]byte{"DEVICE_TOKEN_SECRET": &keys.TokenSecret, "DATA_KEY_SECRET": &keys.DataSecret} {
 			if len(*k) < minSecretBytes {
-				log.Println("WARNING: a key secret is not set; using a random one, so device tokens reset on restart")
+				slog.Warn(name + " is not set; using a random one until this process stops")
 				*k = make([]byte, 32)
 				rand.Read(*k)
 			}
@@ -119,83 +123,123 @@ func main() {
 	}
 	devices, err := newKeyring(keys)
 	if err != nil {
-		log.Fatal(err)
+		slog.Error("keys", "error", err)
+		os.Exit(1)
 	}
 
 	srv := NewServer(time.Now, bank, store, devices)
-	srv.trustCF = os.Getenv("TRUST_CF_CONNECTING_IP") == "1"
-	srv.voteRetention = max(time.Duration(envInt("VOTE_RETENTION_DAYS", int(defaultRetention.Hours()/24)))*24*time.Hour, minRetention)
+	srv.trustCF = cfg.TrustCF
+	srv.voteRetention = cfg.VoteRetention
+	srv.edgeSecret = cfg.EdgeSecret
+	srv.metricsToken = cfg.MetricsToken
+	srv.accessLog = cfg.AccessLog
+	if cfg.StaticDir != "" {
+		site, err := newStaticSite(cfg.StaticDir)
+		if err != nil {
+			slog.Error("static site", "error", err)
+			os.Exit(1)
+		}
+		srv.static = site
+	}
 	if days := bank.scheduledUntil().Sub(time.Now()).Hours() / 24; days < scheduleWarnDays {
-		log.Printf("WARNING: the frozen schedule ends in %.0f days; run `cd backend && go run . schedule` and ship the result", days)
+		slog.Warn(fmt.Sprintf("the frozen schedule ends in %.0f days; run `cd backend && go run . schedule` and ship the result", days))
 	}
 
-	if os.Getenv("RUN_TALLY_WORKER") != "0" {
-		go runWorker(ctx, srv, srv.voteRetention)
+	if cfg.RunWorker {
+		go runWorker(ctx, srv)
+	}
+	if cfg.MetricsAddr != "" {
+		metricsSrv := newHTTPServer(cfg.MetricsAddr, srv.MetricsHandler(""))
+		go func() {
+			if err := metricsSrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+				slog.Error("metrics listener", "error", err)
+			}
+		}()
+		defer metricsSrv.Close()
 	}
 
-	httpSrv := newHTTPServer(":"+strconv.Itoa(envInt("PORT", 8080)), srv.Routes())
+	httpSrv := newHTTPServer(":"+strconv.Itoa(cfg.Port), srv.Handler())
 	go func() {
 		<-ctx.Done()
-		shutdown, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		// Tell the load balancer first, then stop taking new requests and
+		// let the ones in flight finish.
+		slog.Info("draining", "delay", drainDelay.String(), "grace", shutdownGrace.String())
+		srv.draining.Store(true)
+		time.Sleep(drainDelay)
+		shutdown, cancel := context.WithTimeout(context.Background(), shutdownGrace)
 		defer cancel()
 		httpSrv.Shutdown(shutdown)
 	}()
-	log.Printf("listening on %s", httpSrv.Addr)
+	slog.Info("listening", "addr", httpSrv.Addr, "version", buildVersion(), "static", cfg.StaticDir != "", "worker", cfg.RunWorker)
 	if err := httpSrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-		log.Fatal(err)
+		slog.Error("listen", "error", err)
+		os.Exit(1)
 	}
-	srv.RunAggregation() // fold what is left before exiting
+	if err := srv.RunAggregation(); err != nil { // count what is left before exiting
+		slog.Error("final tally", "error", err)
+	}
+	slog.Info("stopped")
 }
 
-func runWorker(ctx context.Context, srv *Server, retention time.Duration) {
-	tick := time.NewTicker(aggregationInterval)
-	defer tick.Stop()
-	lastCleanup := time.Time{}
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-tick.C:
-		}
-		if err := srv.RunAggregation(); err != nil {
-			log.Printf("tally: %v", err)
-		}
-		if time.Since(lastCleanup) > time.Hour {
-			lastCleanup = time.Now()
-			if n, err := srv.votes.DeleteTalliedBefore(ctx, time.Now().Add(-retention)); err != nil {
-				log.Printf("retention: %v", err)
-			} else if n > 0 {
-				log.Printf("retention: deleted %d raw votes", n)
-			}
-			// Fold finished weeks before their answers can go. Folding is
-			// idempotent, so instances doing it at once only repeat work.
-			if n, err := srv.FoldWeeks(ctx); err != nil {
-				log.Printf("mirror fold: %v", err)
-			} else if n > 0 {
-				log.Printf("mirror fold: folded %d weeks", n)
-			}
-			if n, err := srv.mirror.DeleteWeeksBefore(ctx, time.Now().Add(-weekSummaryRetention).UTC().Format(dateLayout)); err != nil {
-				log.Printf("week summary retention: %v", err)
-			} else if n > 0 {
-				log.Printf("week summary retention: deleted %d rows", n)
-			}
-			if n, err := srv.mirror.DeleteMirrorBefore(ctx, time.Now().Add(-mirrorRetention).UTC().Format(dateLayout)); err != nil {
-				log.Printf("mirror retention: %v", err)
-			} else if n > 0 {
-				log.Printf("mirror retention: deleted %d rows", n)
-			}
-			if n, err := srv.vaults.DeleteVaultsBefore(ctx, time.Now().Add(-vaultRetention).UTC().Format(dateLayout)); err != nil {
-				log.Printf("backup retention: %v", err)
-			} else if n > 0 {
-				log.Printf("backup retention: deleted %d backups", n)
-			}
-		}
+// setupLogging sends all logs, the log package's included, through slog:
+// JSON lines in production (one event per line, for the host's log search),
+// plain text locally.
+func setupLogging(format string) {
+	var h slog.Handler
+	if format == "json" {
+		h = slog.NewJSONHandler(os.Stderr, nil)
+	} else {
+		h = slog.NewTextHandler(os.Stderr, nil)
 	}
+	slog.SetDefault(slog.New(h))
 }
 
-func envInt(name string, def int) int {
-	if v, err := strconv.Atoi(os.Getenv(name)); err == nil && v > 0 {
-		return v
+// runHealthcheck asks this instance's /api/ready, for container health
+// checks on images with no shell or curl.
+func runHealthcheck(port string) int {
+	if port == "" {
+		port = "8080"
 	}
-	return def
+	c := http.Client{Timeout: 3 * time.Second}
+	res, err := c.Get("http://127.0.0.1:" + port + "/api/ready")
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "healthcheck:", err)
+		return 1
+	}
+	res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		fmt.Fprintln(os.Stderr, "healthcheck: status", res.StatusCode)
+		return 1
+	}
+	return 0
+}
+
+// runDatabaseCommand runs `cards` or `check` against DATABASE_URL. Only
+// `cards` may bring the schema up to date; `check` only reads, so it can be
+// pointed at a restored backup as it is.
+func runDatabaseCommand(ctx context.Context, name string, args []string, getenv func(string) string, out, errOut io.Writer) int {
+	url := strings.TrimSpace(getenv("DATABASE_URL"))
+	if url == "" {
+		fmt.Fprintf(errOut, "%s: set DATABASE_URL to the database to read\n", name)
+		return 2
+	}
+	bank, err := loadShippedBank()
+	if err != nil {
+		fmt.Fprintf(errOut, "%s: question bank: %v\n", name, err)
+		return 2
+	}
+	st, err := connectPG(ctx, url, 2)
+	if err != nil {
+		fmt.Fprintf(errOut, "%s: %v\n", name, err)
+		return 2
+	}
+	defer st.Close()
+	if name == "cards" {
+		if err := st.migrate(ctx); err != nil {
+			fmt.Fprintf(errOut, "%s: %v\n", name, err)
+			return 2
+		}
+		return runCardsCommand(ctx, args, st, bank, out, errOut)
+	}
+	return runCheckCommand(ctx, args, st, bank, time.Now(), out, errOut)
 }

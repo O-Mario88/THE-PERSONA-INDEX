@@ -257,3 +257,19 @@ func newEventID() string {
 	}
 	return "evt_" + hex.EncodeToString(b[:])
 }
+
+// Backlog counts accepted votes not tallied yet, for the metrics.
+func (m *memoryStore) Backlog(context.Context) (int64, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var n int64
+	for _, e := range m.events {
+		if !e.tallied {
+			n++
+		}
+	}
+	return n, nil
+}
+
+// Ping always answers: the memory store has no database to lose.
+func (m *memoryStore) Ping(context.Context) error { return nil }

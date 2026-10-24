@@ -89,7 +89,7 @@ func tokenFor(s *Server, name string) string {
 func do(t *testing.T, s *Server, req *http.Request) *httptest.ResponseRecorder {
 	t.Helper()
 	w := httptest.NewRecorder()
-	s.Routes().ServeHTTP(w, req)
+	s.Handler().ServeHTTP(w, req) // the API with every layer around it, as it is served
 	return w
 }
 

@@ -113,6 +113,5 @@ func (p *pgStore) DeleteVault(ctx context.Context, id string) (bool, error) {
 }
 
 func (p *pgStore) DeleteVaultsBefore(ctx context.Context, date string) (int, error) {
-	tag, err := p.pool.Exec(ctx, `DELETE FROM vaults WHERE seen_on < $1`, date)
-	return int(tag.RowsAffected()), err
+	return p.deleteInBatches(ctx, `DELETE FROM vaults WHERE vault_id IN (SELECT vault_id FROM vaults WHERE seen_on < $1 LIMIT $2)`, date)
 }

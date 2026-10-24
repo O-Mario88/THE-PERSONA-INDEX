@@ -211,16 +211,16 @@ func (p *pgStore) DeviceData(ctx context.Context, deviceKey string, voterHashes 
 func (p *pgStore) DeleteMirrorBefore(ctx context.Context, date string) (int, error) {
 	n := 0
 	for _, sql := range []string{
-		`DELETE FROM mirror_answers WHERE edition_date < $1`,
-		`DELETE FROM mirror_steps WHERE started_on < $1`,
-		`DELETE FROM mirror_plan_checks WHERE checked_on < $1`,
-		`DELETE FROM forgotten_devices WHERE forgotten_on < $1`,
+		`DELETE FROM mirror_answers WHERE ctid IN (SELECT ctid FROM mirror_answers WHERE edition_date < $1 LIMIT $2)`,
+		`DELETE FROM mirror_steps WHERE ctid IN (SELECT ctid FROM mirror_steps WHERE started_on < $1 LIMIT $2)`,
+		`DELETE FROM mirror_plan_checks WHERE ctid IN (SELECT ctid FROM mirror_plan_checks WHERE checked_on < $1 LIMIT $2)`,
+		`DELETE FROM forgotten_devices WHERE ctid IN (SELECT ctid FROM forgotten_devices WHERE forgotten_on < $1 LIMIT $2)`,
 	} {
-		tag, err := p.pool.Exec(ctx, sql, date)
+		d, err := p.deleteInBatches(ctx, sql, date)
+		n += d
 		if err != nil {
 			return n, err
 		}
-		n += int(tag.RowsAffected())
 	}
 	return n, nil
 }
@@ -283,10 +283,10 @@ func (p *pgStore) FoldedWeeks(ctx context.Context, from, to string) ([]string, e
 }
 
 func (p *pgStore) DeleteWeeksBefore(ctx context.Context, monday string) (int, error) {
-	w, err := p.pool.Exec(ctx, `DELETE FROM mirror_weeks WHERE monday < $1`, monday)
+	w, err := p.deleteInBatches(ctx, `DELETE FROM mirror_weeks WHERE ctid IN (SELECT ctid FROM mirror_weeks WHERE monday < $1 LIMIT $2)`, monday)
 	if err != nil {
-		return 0, err
+		return w, err
 	}
-	f, err := p.pool.Exec(ctx, `DELETE FROM mirror_folds WHERE monday < $1`, monday)
-	return int(w.RowsAffected() + f.RowsAffected()), err
+	f, err := p.deleteInBatches(ctx, `DELETE FROM mirror_folds WHERE ctid IN (SELECT ctid FROM mirror_folds WHERE monday < $1 LIMIT $2)`, monday)
+	return w + f, err
 }

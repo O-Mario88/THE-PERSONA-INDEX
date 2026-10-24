@@ -1,0 +1,36 @@
+# The whole app on one machine, as it runs in production: Postgres and one
+# instance of the image. For trying a build locally, not for real traffic:
+# the secrets below are examples.
+#
+#   docker compose up --build      then open http://localhost:8080
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_PASSWORD: local-only
+      POSTGRES_DB: persona
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 2s
+      timeout: 5s
+      retries: 20
+    volumes:
+      - db:/var/lib/postgresql/data
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    # Room to drain, finish requests in flight and count the last votes.
+    stop_grace_period: 20s
+    environment:
+      DATABASE_URL: postgres://postgres:local-only@db:5432/persona?sslmode=disable
+      DEVICE_TOKEN_SECRET: local-only-device-secret-0123456789abcdef
+      DATA_KEY_SECRET: local-only-data-key-secret-0123456789abcdef
+      METRICS_ADDR: ":9090"
+
+volumes:
+  db:
