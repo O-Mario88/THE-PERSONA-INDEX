@@ -1,6 +1,6 @@
 # Data map
 
-Everything The Persona Index keeps about a person: where it is, what it holds, how long it stays and how it is deleted. There are no accounts, so there is no name, email, phone number or address anywhere. The app's "What I keep" screen shows the live counts behind this page (`GET /api/device/data`), and "Delete everywhere" removes every row below that belongs to the phone.
+Everything The Persona Index keeps about a person: where it is, what it holds, how long it stays and how it is deleted. Signing in is optional (Stage 5, 2026-10-24). Signed out, there is no name, email, phone number or address anywhere. Signed in, the account holds a display name and a handle, and no email address or phone number: only a keyed hash of how the person signs in and a hint such as `a•••@gmail.com` (see "Accounts and the circle" below). The app's "What I keep" screen shows the live counts behind this page (`GET /api/device/data`), and "Delete everywhere" removes every row below that belongs to the phone.
 
 Keep this page in step with the code. The retention numbers come from the constants named in each row; a change to one of them, or a new table or storage key, changes this page in the same pull request.
 
@@ -31,6 +31,9 @@ Every key is named in one registry, `frontend/src/registry.ts`, which also says 
 | The three questions each sitting showed | `pi.pick.<date>` and `pi.pick.<date>.pm` | Yesterday and today | Never |
 | The day's questions, for opening offline | `pi.edition.<date>` | Yesterday, today and tomorrow | Public content, nothing personal |
 | Settings: 18+ answer, keep it mild, how long own words stay, the country the person said they live in (or "Prefer not to say"), guessed only from the phone's own time zone, on the phone, and whether questions about everyday life there are switched off | `pi.prefs.v1` | Until deleted | Only sealed in the backup. The country is never sent; tapping "Find a helpline" opens that country's page on Find A Helpline, so that site sees it only then. The phone maps the country to a region itself |
+| Signed in: the session token and the name, handle and choices the account shows | `pi.account.v1`, `pi.account.me` | Until signing out, deleting the account or "Delete from this phone" ("Delete everywhere" keeps the person signed in and moves the account to a fresh pass) | The token is sent with account and circle requests. Never in a backup |
+| An invite link the person followed (`/c/<code>`) | `pi.invite` | Until they join or say not now | Sent once to accept the invite |
+| That the sign-in sheet was offered after the first sitting | `pi.signin.asked` | Until deleted | Never |
 | The questions about everyday life in each part of the world, for opening without a connection | `pi.regional.v1` | Until the next copy arrives | Public content, the same for everyone. `GET /api/regional` sends nothing about the phone: no pass, no country, no region |
 
 Everything marked *always* in the registry, and own words when switched on, also leaves the phone sealed, in the backup (below), if the person turns the backup on. Nothing else in this table is sent as it is.
@@ -86,6 +89,26 @@ Nothing in memory is written to disk or logs.
 
 - **Logs** hold, for a failed or slow request (or every request if `ACCESS_LOG=all`), its request id, method, route pattern, status, duration and size; and the background jobs' row counts and errors. Never a path, query string, address, user agent, pass or answer (`observe`, `backend/middleware.go`). Kept by the host for 30 days or less ([monitoring.md](monitoring.md#logs)).
 - **The host's database backups** are whole copies of the tables above, kept **7 days or less**, so a phone's rows leave every backup within 7 days of "Delete everywhere". A restore to a moment before a deletion brings that phone's rows back, unreadable without its pass, until normal retention removes them ([backups.md](backups.md)).
+
+## Accounts and the circle (only when signed in)
+
+Migration `backend/migrations/008_accounts_circle.sql`; rules in `backend/social.go`. None of these tables holds an answer, a vote, an email address or a phone number. Deleting the account (`DELETE /api/account`) removes every row that names it (`ON DELETE CASCADE`) and the answers kept under its pass.
+
+| What | Table | Kept |
+| --- | --- | --- |
+| Display name, handle, whether to be suggested to friends of friends, whether nods and Answer Together are on, whether sync is on, the day last seen (a date, never a moment) | `accounts` | Until the account is deleted |
+| Each way of signing in: a keyed hash of `kind:subject` and a hint (`a•••@gmail.com`, `+256 ••• 418`) | `account_logins` | Until the account is deleted |
+| Signed-in devices: a label ("iPhone · Safari") and the day last seen | `account_sessions` | Until signed out |
+| A 6-digit code waiting to be typed, as a keyed hash; ten minutes, five tries | `login_codes` | Deleted when used or expired |
+| With sync on, the backup's 12 words sealed with a server key. The server could open them; this is the person's choice and the Account screen says so | `account_sync` | Until sync is turned off |
+| Friendships, both ways: the tag each side gave, the day, and a mute the muted person is never told about | `friendships` | Until either side disconnects |
+| Invite links (30 days), room codes (24 hours) and who joined, connect requests and dismissed suggestions | `circle_invites`, `circle_rooms`, `circle_room_members`, `circle_asks`, `circle_dismissed` | Until expired (`social_retention`) or the account is deleted |
+| That the person answered a friend question on a day: no subject, question or option | `friend_prompt_log` | 35 days (`friendRetention`) |
+| A friend answer about a person: the subject, the week, the question and option, and a keyed mark of the sender and subject pair that counts distinct friends without naming them. No sender, and no link to the prompt log | `friend_mirror_inputs` | 35 days (`friendRetention`). The Outside Mirror opens a trait only when three different friends spoke to it in the last three weeks |
+| Quiet nods: sender, receiver, day and one of 24 fixed cards. Never counted | `nods` | 35 days; shown for 7 |
+| Answer Together: the two people, the question and each choice. Never fed to a mirror or a count; the asker's choice is shown to the other only after they answer | `together` | 48 hours, then gone a day later |
+
+Signed in, every phone on the account votes and keeps its mirror under one pass, derived from the account (`accountDeviceID`), so the duplicate-vote rule holds per account. Answers are still stored under a keyed hash of that pass, never with a name or handle, but the server can tell which account they belong to.
 
 ## Deleting everything
 

@@ -1028,16 +1028,26 @@ function RoadAhead() {
 }
 
 function Footer({ onOpenKept }: { onOpenKept: () => void }) {
+  const signedIn = !!useAccount()
   return (
     <footer className="m-footer">
       <p className="m-strong">For self-reflection, not a diagnosis.</p>
       <div className="m-privacy" role="note" aria-label="What leaves my phone">
         <p className="m-eyebrow">What leaves my phone</p>
-        <p>
-          I keep your answers on the server under an anonymous key made from this phone's pass: no name, no email, no
-          account. That's how I build this mirror. For an intimate question I keep only that you answered, never what you
-          chose. Anything you write in your own words stays on this phone and is never sent.
-        </p>
+        {signedIn ? (
+          <p>
+            You're signed in, so I keep your answers under a key made from your account, the same on every device you
+            sign in on. Your name and handle are never stored with them, but the server can tell they belong to your
+            account. For an intimate question I keep only that you answered, never what you chose. Anything you write in
+            your own words stays on your phone and is never sent.
+          </p>
+        ) : (
+          <p>
+            I keep your answers on the server under an anonymous key made from this phone's pass: no name, no email, no
+            account. That's how I build this mirror. For an intimate question I keep only that you answered, never what
+            you chose. Anything you write in your own words stays on this phone and is never sent.
+          </p>
+        )}
         <p>
           Your answers and small steps go after five weeks. For your month, quarter and year, I keep a small note of each
           week for 13 months: how many answers, how deep they went, your three clearest answers and the steps that helped.

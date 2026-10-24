@@ -514,6 +514,7 @@ function HeavyCard() {
       <p className="insight-body">{HEAVY_THANKS}</p>
       {names.length > 0 && <p className="insight-body">{peopleAsk(namesLine(names))}</p>}
       {people?.helps && <p className="insight-body">What helps, in your words: “{people.helps}”</p>}
+      {names.length > 0 && <ReachOut names={names} />}
       {names.length === 0 && !adding && (
         <>
           <p className="insight-body">{NO_PEOPLE}</p>
@@ -542,6 +543,57 @@ function HeavyCard() {
     </div>
   )
 }
+
+// ReachOut drafts a short message to one of the person's people and hands it
+// to WhatsApp or the phone's messages, where they can change anything before
+// sending. The app sends nothing and never sees the conversation.
+function ReachOut({ names }: { names: string[] }) {
+  const [to, setTo] = useState(names[0])
+  const [text, setText] = useState(() => draftFor(names[0]))
+  const [edited, setEdited] = useState(false)
+  function pick(n: string) {
+    setTo(n)
+    if (!edited) setText(draftFor(n))
+  }
+  const body = encodeURIComponent(text)
+  return (
+    <div className="reach-out" role="group" aria-label="Reach out">
+      <p className="insight-body strong">Could one of your people hear from you tonight?</p>
+      <div className="chips" role="group" aria-label="Who">
+        {names.map((n) => (
+          <button key={n} type="button" className="chip-toggle" aria-pressed={to === n} onClick={() => pick(n)}>
+            {n}
+          </button>
+        ))}
+      </div>
+      <label className="small muted" htmlFor="reach-text">
+        Opens in your messages · edit anything before sending
+      </label>
+      <textarea
+        id="reach-text"
+        className="field reach-text"
+        rows={2}
+        value={text}
+        maxLength={280}
+        onChange={(e) => {
+          setText(e.target.value)
+          setEdited(true)
+        }}
+      />
+      <div className="row-gap">
+        <a className="btn small light" href={`https://wa.me/?text=${body}`} target="_blank" rel="noreferrer">
+          WhatsApp
+        </a>
+        <a className="btn small outline" href={`sms:?&body=${body}`}>
+          SMS
+        </a>
+      </div>
+      <p className="insight-note">The app never sends anything for you and never sees the conversation.</p>
+    </div>
+  )
+}
+
+const draftFor = (name: string) => `Hey ${name}, had a heavy day. Free for a 5-minute call later?`
 
 function InsightPanel({
   reveal,

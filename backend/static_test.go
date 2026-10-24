@@ -139,7 +139,7 @@ func TestStaticSite(t *testing.T) {
 		s.Handler().ServeHTTP(w, httptest.NewRequest(method, path, nil))
 		return w
 	}
-	for path, want := range map[string]string{"/": "app", "/read/": "reads", "/read/sleep/": "sleep", "/assets/index-abc.js": "console"} {
+	for path, want := range map[string]string{"/": "app", "/c/abcdefghjk": "app", "/read/": "reads", "/read/sleep/": "sleep", "/assets/index-abc.js": "console"} {
 		w := get(http.MethodGet, path)
 		if w.Code != http.StatusOK || !strings.Contains(w.Body.String(), want) {
 			t.Errorf("%s: %d %q", path, w.Code, w.Body)
@@ -154,7 +154,7 @@ func TestStaticSite(t *testing.T) {
 	if w := get(http.MethodGet, "/manifest.webmanifest"); w.Header().Get("Content-Type") != "application/manifest+json" {
 		t.Errorf("manifest served as %q", w.Header().Get("Content-Type"))
 	}
-	for _, hidden := range []string{"/_headers", "/.env", "/assets/", "/nowhere"} {
+	for _, hidden := range []string{"/_headers", "/.env", "/assets/", "/nowhere", "/c/short", "/c/abcdefghjk/x"} {
 		if w := get(http.MethodGet, hidden); w.Code != http.StatusNotFound {
 			t.Errorf("%s: %d, want 404", hidden, w.Code)
 		}

@@ -58,8 +58,17 @@ func (s *staticSite) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	applyHeaders(w.Header(), s.headers, r.URL.Path)
+	// An invite link (personaindex.com/c/<code>) opens the app, which reads
+	// the code from the address (frontend/src/social.ts). frontend/public/
+	// _redirects says the same for Cloudflare Pages.
+	if invitePath.MatchString(r.URL.Path) {
+		r = r.Clone(r.Context())
+		r.URL.Path = "/"
+	}
 	s.files.ServeHTTP(w, r)
 }
+
+var invitePath = regexp.MustCompile(`^/c/[a-z2-9]{10}$`)
 
 // siteFS hides what is not part of the site (the _headers file, dot files)
 // and never lists a folder: a folder without index.html is not found.

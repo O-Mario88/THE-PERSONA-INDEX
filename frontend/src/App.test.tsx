@@ -2126,6 +2126,15 @@ describe('the app remembers you', () => {
     expect(heavy).toHaveTextContent('Could Ama or Kofi hear from you today? A short message counts.')
     expect(heavy).toHaveTextContent('What helps, in your words: “A walk by the river”')
     expect(JSON.parse(localStorage.getItem('pi.people')!)).toMatchObject({ names: ['Ama', 'Kofi'], helps: 'A walk by the river' })
+
+    // A message to one of them, handed to WhatsApp or the phone's messages:
+    // the app sends nothing itself.
+    const reach = within(heavy).getByRole('group', { name: 'Reach out' })
+    fireEvent.click(within(reach).getByRole('button', { name: 'Kofi' }))
+    expect(within(reach).getByRole('textbox')).toHaveValue('Hey Kofi, had a heavy day. Free for a 5-minute call later?')
+    expect(within(reach).getByRole('link', { name: 'WhatsApp' })).toHaveAttribute('href', `https://wa.me/?text=${encodeURIComponent('Hey Kofi, had a heavy day. Free for a 5-minute call later?')}`)
+    expect(within(reach).getByRole('link', { name: 'SMS' }).getAttribute('href')).toMatch(/^sms:\?&body=Hey%20Kofi/)
+    expect(reach).toHaveTextContent('The app never sends anything for you and never sees the conversation.')
     for (const [, init] of fetchMock.mock.calls) expect(String(init?.body ?? '')).not.toMatch(/Ama|Kofi|river/)
     expect(document.body.textContent).not.toMatch(noClinicianWords)
   })

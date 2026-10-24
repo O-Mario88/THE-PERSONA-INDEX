@@ -57,6 +57,7 @@ import { useAccount } from './useAccount'
 import { load as loadKey, save as saveKey } from './storage'
 import './App.css'
 import './design.css'
+import './social.css'
 
 type State =
   | { kind: 'loading' }

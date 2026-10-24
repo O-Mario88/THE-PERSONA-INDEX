@@ -106,14 +106,14 @@ export function CircleScreen({ onOpenMirror }: { onOpenMirror?: () => void }) {
         <div>
           <p className="circle-hero-title">
             {unlocked
-              ? 'Your Outside Mirror is open'
+              ? 'Three friends are here. Your Outside Mirror fills as they answer'
               : toGo === 1
                 ? 'One more friend unlocks your Outside Mirror'
                 : `${toGo} more friends unlock your Outside Mirror`}
           </p>
           {unlocked && onOpenMirror ? (
             <button type="button" className="link-button light" onClick={onOpenMirror}>
-              See how your circle experiences you →
+              See it in your mirror →
             </button>
           ) : (
             <button type="button" className="link-button light" aria-expanded={panel === 'why'} onClick={() => setPanel(panel === 'why' ? null : 'why')}>

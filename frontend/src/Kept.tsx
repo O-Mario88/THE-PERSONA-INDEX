@@ -14,6 +14,7 @@ import { notebookCount } from './notebook'
 import { loadPrefs } from './prefs'
 import { loadHistory } from './profile'
 import { deleteBackup, vaultState } from './vault'
+import { useAccount } from './useAccount'
 
 // "What I keep" (review of 2026-10-15): everything the app holds about this
 // person, on this phone and on the server, how long each is kept, and the
@@ -40,6 +41,7 @@ function onPhone() {
 
 export function KeptScreen({ today, mild, onBack }: { today: string; mild: boolean; onBack: () => void }) {
   const [phone, setPhone] = useState(onPhone)
+  const signedIn = !!useAccount()
   const [server, setServer] = useState<Server>({ kind: 'loading' })
   const [attempt, setAttempt] = useState(0)
   const [step, setStep] = useState<Step>('idle')
@@ -99,7 +101,9 @@ export function KeptScreen({ today, mild, onBack }: { today: string; mild: boole
         What I keep
       </h2>
       <p className="muted">
-        No name, no email, no account. Here is everything I hold about you, where it is, and how long it stays.
+        {signedIn
+          ? 'You’re signed in: your account keeps a name, a handle and how you sign in (Account lists it all). Here is everything else I hold about you, where it is, and how long it stays.'
+          : 'No name, no email, no account. Here is everything I hold about you, where it is, and how long it stays.'}
       </p>
 
       <div className="notice" role="group" aria-label="On this phone">
