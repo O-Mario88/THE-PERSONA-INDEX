@@ -124,6 +124,8 @@ Time zones run from UTC-12 to UTC+14, so a date is today somewhere for about 50 
 
 `GET /api/questions/today` still serves the UTC date's set; the app falls back to it when its own date is not open (a phone clock far off).
 
+`GET /api/regional` serves the questions about everyday life in each part of the world (`backend/regional.go`, content in `backend/content/regional.json`), the same pack for everyone, about 30 KB gzipped: no pass, `public, max-age=3600, s-maxage=3600` and an ETag. The phone maps the country it keeps to a region and picks one now and then; nothing about these questions is ever sent back, so the server cannot tell who answered them or where anyone lives. The server refuses to start if the pack fails its gate.
+
 ## Edge rules (Cloudflare)
 
 The API has its own per-instance limits (30 votes, ratings, steps and data requests per device a minute; 20 new passes and 20 deletes per address an hour), which hold whatever the Cloudflare plan. The origin takes requests only from Cloudflare (`EDGE_SECRET`, [deploy.md](deploy.md#cloudflare)), so the edge's rules cannot be skipped.
@@ -132,7 +134,7 @@ Cloudflare's rate-limiting rules depend on the plan (its documentation, read 202
 
 - Free: one rule for paths starting `/api/`: 50 requests per IP per 10 seconds, block for 10 seconds. A sitting is a handful of requests a minute.
 - Pro: add a second rule for `/api/device`: 10 requests per IP per minute, block for an hour.
-- Cache `GET /api/editions/*`, `GET /api/questions/today` and `GET /api/questions/*/results` by respecting origin `Cache-Control` (`s-maxage`). Never cache `POST`, `PUT` or `DELETE` routes, `/api/mirror*`, `/api/device/*` or `/api/vault`; they send `no-store`.
+- Cache `GET /api/editions/*`, `GET /api/questions/today`, `GET /api/questions/*/results` and `GET /api/regional` by respecting origin `Cache-Control` (`s-maxage`). Never cache `POST`, `PUT` or `DELETE` routes, `/api/mirror*`, `/api/device/*` or `/api/vault`; they send `no-store`.
 - Bot Fight Mode on.
 
 ## Insight card ratings

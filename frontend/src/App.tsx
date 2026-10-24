@@ -33,7 +33,8 @@ import { themeVars } from './themes'
 import { openThisWeek, sendUnsent } from './moves'
 import { forgetPick, loadHistory, todaysPick, writeFirstOf, type Half } from './profile'
 import { CountryAsk } from './Country'
-import { intimacyOn, loadPrefs, savePrefs, type Prefs } from './prefs'
+import { intimacyOn, loadPrefs, regionHere, savePrefs, type Prefs } from './prefs'
+import { cachedPack, fetchPack, regionalFor, regionalToday } from './regional'
 import { onOtherTab } from './storage'
 import { startBackups } from './vault'
 import './App.css'
@@ -155,11 +156,24 @@ function App() {
   // arrives; it is not shown as today's.
   const set = state.kind === 'ready' && state.day === date ? state.set : null
   const loading = state.kind === 'loading' || (state.kind === 'ready' && !set)
+  // Questions about everyday life where the person lives (regional.ts): the
+  // phone's copy of the pack opens at once, a fresh one follows each day.
+  const region = regionHere(prefs)
+  const [pack, setPack] = useState(cachedPack)
+  useEffect(() => {
+    if (!region) return
+    fetchPack().then(setPack, () => {
+      // offline or not there: the kept copy serves
+    })
+  }, [region, date])
+  // Judged from answers before today, so the day's offer holds all day.
+  const offer = useMemo(() => (set ? regionalFor(pack, region, set.date, loadHistory()) : null), [set, pack, region])
+  const local = useMemo(() => (set ? regionalToday(pack, set.date) : []), [set, pack])
   const morningQs = useMemo(
-    () => (set ? todaysPick(set.pool ?? [], set.questions ?? [], set.date, intimacyOn(prefs)) : []),
+    () => (set ? todaysPick(set.pool ?? [], set.questions ?? [], set.date, intimacyOn(prefs), 'morning', [], offer, local) : []),
     // pickVersion forces a fresh pick after a preference change
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [set, prefs, pickVersion],
+    [set, prefs, pickVersion, offer, local],
   )
   const morning = progressOf(morningQs)
   // The evening three are picked once the morning is answered or closed, so
@@ -169,10 +183,10 @@ function App() {
   const eveningQs = useMemo(
     () =>
       set && eveningReady
-        ? todaysPick(set.pool ?? [], set.evening ?? [], set.date, intimacyOn(prefs), 'evening', morningQs)
+        ? todaysPick(set.pool ?? [], set.evening ?? [], set.date, intimacyOn(prefs), 'evening', morningQs, offer, local)
         : [],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [set, eveningReady, prefs, pickVersion, morningQs],
+    [set, eveningReady, prefs, pickVersion, morningQs, offer, local],
   )
   const evening = hasEvening ? progressOf(eveningQs) : null
   // Each sitting shows its own three, and only those.

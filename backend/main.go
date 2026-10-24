@@ -128,6 +128,10 @@ func main() {
 	}
 
 	srv := NewServer(time.Now, bank, store, devices)
+	if srv.regional, srv.regionalTag, err = loadShippedRegional(); err != nil {
+		slog.Error("regional bank", "error", err)
+		os.Exit(1)
+	}
 	srv.trustCF = cfg.TrustCF
 	srv.voteRetention = cfg.VoteRetention
 	srv.edgeSecret = cfg.EdgeSecret

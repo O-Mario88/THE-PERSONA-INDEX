@@ -152,6 +152,11 @@ type Server struct {
 	static       http.Handler
 	metricsToken string
 	draining     atomic.Bool // set when shutdown begins; /api/ready answers 503
+
+	// The regional pack (regional.go), encoded once, and its ETag; nil until
+	// main loads it.
+	regional    []byte
+	regionalTag string
 }
 
 // NewServer wires the API to one store, which keeps the votes and the
@@ -181,6 +186,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/ready", s.Ready)
 	mux.HandleFunc("GET /api/questions/today", s.TodayQuestions)
 	mux.HandleFunc("GET /api/editions/{date}", s.Edition)
+	mux.HandleFunc("GET /api/regional", s.Regional)
 	mux.HandleFunc("POST /api/device", s.IssueDevice)
 	mux.HandleFunc("POST /api/votes", s.CastVote)
 	mux.HandleFunc("POST /api/ratings", s.RateCard)

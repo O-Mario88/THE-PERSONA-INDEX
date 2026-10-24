@@ -118,9 +118,13 @@ export const SAFETY_REPLIES = {
 // Where someone lives (country.ts): asked once, after a sitting, and in Settings.
 export const COUNTRY_ASK = 'Where do you live now?'
 export const COUNTRY_WHY = 'So your questions, and the help I point to, fit where you are. It stays on this phone.'
-export const COUNTRY_SETTING = 'It picks the helpline I point to on a heavy day. It stays on this phone, and goes in your backup only if you turn the backup on.'
+export const COUNTRY_SETTING =
+  'It picks the helpline I point to on a heavy day, and now and then a question about everyday life where you are. It stays on this phone, and goes in your backup only if you turn the backup on.'
 export const COUNTRY_KEEP = 'Keep this'
 export const COUNTRY_NONE = 'Prefer not to say'
+// A regional question (regional.ts): its card says so, and that nothing is sent.
+export const LOCAL_NOTE = 'About everyday life where you live. Your answer stays on this phone.'
+export const REGIONAL_SWITCH = 'Questions about everyday life where I live'
 
 // After a plan is checked.
 export const PLAN_REPLIES = {
@@ -170,5 +174,6 @@ export const FIXED_WORDS: [string, string][] = [
   ['safety ask', SAFETY_ASK],
   ['country why', COUNTRY_WHY],
   ['country setting', COUNTRY_SETTING],
+  ['local note', LOCAL_NOTE],
   ...Object.entries(SAFETY_REPLIES).map(([k, v]): [string, string] => [`safety reply ${k}`, v]),
 ]

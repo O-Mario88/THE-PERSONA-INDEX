@@ -47,6 +47,7 @@ export const REGISTRY: Entry[] = [
   { key: 'pi.pending.', what: 'An answer waiting to be sent', backup: 'never', merge: 'local', download: false },
   { key: 'pi.draft.', what: 'A half-written answer, for a day', backup: 'never', merge: 'local', download: false },
   { key: 'pi.edition.', what: "Today's questions, for opening without a connection", backup: 'never', merge: 'local', download: false },
+  { key: 'pi.regional.v1', what: 'The questions about everyday life in each part of the world, the same for everyone, for opening without a connection', backup: 'never', merge: 'local', download: false },
   { key: 'pi.midday.', what: 'That you said "not yet" to the midday step check, for the day', backup: 'never', merge: 'local', download: false },
   { key: 'pi.vault.v1', what: 'Your 12-word phrase and the state of your backup', backup: 'never', merge: 'local', download: false },
   { key: 'pi.lock.v1', what: "The phone's fingerprint or face check for the app", backup: 'never', merge: 'local', download: false },

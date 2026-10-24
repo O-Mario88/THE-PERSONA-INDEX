@@ -91,6 +91,19 @@ Situations that work (design suggestions built on the research; none has been te
 | Feeling watched | You notice a stain on your sleeve just before meeting people. | Go and change / cover it / mention it with a laugh / carry on |
 | Faith in strangers | You left your phone at a café. First thought? | Someone will hand it in / it'll come back, maybe not intact / it's gone / I'd go back but not expect much |
 
+### Questions about where someone lives
+
+A small second bank, [`backend/content/regional.json`](../backend/content/regional.json), holds everyday moments that belong to one part of the world: a relative asking for money you had set aside, your turn in a savings group, guests who stay for hours, a family holiday where the questions about your life begin, a meal shared or eaten alone. A phone whose person gave a country offers one of its region's now and then, among the everyday questions. The regions are `africa` (south of the Sahara), `mena`, `south-asia`, `east-asia` (with Southeast Asia), `latin-america` (with the Caribbean) and `west`; they organise content and never describe a person. The evidence for each region's moments is in [research/regions/](research/regions/report.md).
+
+Everything above applies, and a few rules more:
+
+- The words fit the **whole region**, not one country: no country or city names, no local-language words ("your savings group", never its local name), no named festivals or holy days, no religion or ethnic group named. Faith may be one respectable option among others, never the assumption.
+- No politics, conflict or government. Hardship (a power cut, a slow day for money, waiting for papers, an unsafe street) is named plainly and kindly, as part of ordinary life, without blame.
+- Ids start with the region key (`africa-relative-asks-money`), never clash with the main bank, and a region needs at least three questions so the phone can rest between them. Never an intimacy question.
+- The answer stays on the phone: nothing about these questions is sent, not the vote, the card tap or a step, because even a question's id would say where someone lives.
+
+Check a draft with the server's own gate before adding it: `cd backend && REGIONAL_DRAFT=draft.json go test -run TestRegionalDraft .` (new sources go in `sources.json` first).
+
 ## Insight cards
 
 ### The shape
@@ -212,5 +225,7 @@ The app never shows a source, but every card's research must be accurate:
 | Every answer option names one of the seven needs | `backend/content.go` (gate), ids kept in step with `frontend/src/needs.ts` by `needs_test.go` |
 | Need steps follow the voice rules | `backend/voice.go`, `backend/content.go` (length) |
 | What a week reached for counts only your own answers, never intimacy, heavy or "Not me" | `frontend/src/reaching.ts`, tested in `reaching.test.ts` |
+| Regional questions: a known region, no intimacy, no id shared with the main bank, at least three a region, every main-bank rule | `backend/regional.go` (`validateRegional`), tested in `regional_test.go` |
+| A regional answer, tap or step never leaves the phone | `frontend/src/QuestionCard.tsx`, `moves.ts`, tested in `regional.test.ts` and `App.test.tsx` |
 
 Run `cd backend && go test ./...` and `cd frontend && npm test` after any change to the bank or the app's words.

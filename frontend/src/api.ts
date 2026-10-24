@@ -32,6 +32,9 @@ export type Question = {
   care?: 'everyday' | 'personal' | 'intimate'
   prompt: string
   options: Option[]
+  // A regional question (regional.ts), asked on this phone only: nothing
+  // about it is ever sent, not even that it was answered.
+  local?: true
 }
 export type DailySet = {
   date: string

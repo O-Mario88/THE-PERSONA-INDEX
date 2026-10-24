@@ -23,7 +23,7 @@
 import { generateMnemonic, mnemonicToSeedWebcrypto, validateMnemonic } from '@scure/bip39'
 import { wordlist } from '@scure/bip39/wordlists/english.js'
 import { mergeEntry } from './notebook'
-import type { AnswerRecord, History } from './profile'
+import type { AnswerRecord, History, SkipRecord } from './profile'
 import type { Move } from './moves'
 import { entryFor } from './registry'
 import { keys, load, loadJSON, onChange, remove, save, saveJSON } from './storage'
@@ -259,8 +259,8 @@ export function mergeHistory(a: History | null, b: History | null): History {
     if (!had.route && r.route) Object.assign(next, { route: r.route, label: r.label })
     byQ.set(r.questionId, next)
   }
-  const skips = new Map<string, { date: string; theme: string }>()
-  for (const s of [...x.skips, ...y.skips]) skips.set(`${s.date}|${s.theme}`, s)
+  const skips = new Map<string, SkipRecord>()
+  for (const s of [...x.skips, ...y.skips]) skips.set(`${s.date}|${s.theme}|${s.questionId ?? ''}`, s)
   const byDate = <T extends { date: string }>(p: T, q: T) => p.date.localeCompare(q.date)
   return { answers: [...byQ.values()].sort(byDate), skips: [...skips.values()].sort(byDate) }
 }

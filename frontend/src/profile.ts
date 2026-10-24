@@ -38,10 +38,13 @@ export type AnswerRecord = {
   need?: Need // what the answer reached for (since 2026-10-24)
   route?: Route // the evening's "Does that route usually get you there?"
   label?: string // the option's label, kept once a route is tapped, for the mirror
+  regional?: true // a regional question (regional.ts), answered on this phone only (since 2026-10-24)
 }
 // How well a route gets the person to what they were after, in their words.
 export type Route = 'yes' | 'bit' | 'no'
-export type History = { answers: AnswerRecord[]; skips: { date: string; theme: string }[] }
+// A skipped regional question keeps its id, so the phone can pace them (regional.ts).
+export type SkipRecord = { date: string; theme: string; regional?: true; questionId?: string }
+export type History = { answers: AnswerRecord[]; skips: SkipRecord[] }
 
 const DAY = 86400_000
 const days = (from: string, to: string) => (Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / DAY
@@ -79,6 +82,7 @@ export function recordAnswer(q: Question, optionId: string, date: string) {
     optionId,
     ...(o.heavy ? { heavy: true as const } : {}),
     ...(isNeed(o.need) ? { need: o.need } : {}),
+    ...(q.local ? { regional: true as const } : {}),
   })
   saveHistory(h, date)
 }
@@ -116,7 +120,7 @@ export function traitsOf(a: AnswerRecord): Record<string, number> {
 export function recordSkip(q: Question, date: string) {
   if (!q.theme) return
   const h = loadHistory()
-  h.skips.push({ date, theme: q.theme })
+  h.skips.push(q.local ? { date, theme: q.theme, regional: true, questionId: q.id } : { date, theme: q.theme })
   saveHistory(h, date)
 }
 
@@ -133,7 +137,9 @@ export function interestScores(h: History, today: string): Record<string, number
 // pickThree chooses this phone's three questions for one half of the day:
 // the two highest-interest themes, then the theme seen least in two weeks,
 // never two from one theme, and none of the questions or themes already taken
-// that morning. A phone with no history gets the shared default three.
+// that morning. A regional question on offer (regional.ts) takes the third
+// place when its theme is free. A phone with no history gets the shared
+// default three.
 export function pickThree(
   pool: Question[],
   defaults: Question[],
@@ -141,6 +147,7 @@ export function pickThree(
   today: string,
   adult: boolean,
   taken: Question[] = [],
+  offer: Question | null = null,
 ): Question[] {
   const takenIds = new Set(taken.map((q) => q.id))
   const eligible = pool.filter((q) => (q.care !== 'intimate' || adult) && !takenIds.has(q.id))
@@ -165,7 +172,8 @@ export function pickThree(
 
   take([...fresh()].sort(byInterest)[0])
   take([...fresh()].sort(byInterest)[0])
-  take([...fresh()].sort(bySeen)[0])
+  if (offer && !takenIds.has(offer.id) && !usedThemes.has(offer.theme ?? offer.id)) take(offer)
+  else take([...fresh()].sort(bySeen)[0])
   return picked.length === 3 ? picked : fallback
 }
 
@@ -203,14 +211,18 @@ export function todaysPick(
   adult: boolean,
   half: Half = 'morning',
   taken: Question[] = [],
+  offer: Question | null = null,
+  local: Question[] = [],
 ): Question[] {
   const key = pickKey(today, half)
   const ids = loadJSON(key)
   if (Array.isArray(ids)) {
-    const qs = ids.map((id) => pool.find((q) => q.id === id) ?? defaults.find((q) => q.id === id))
+    // A regional question already picked stays, even if it would not be offered now.
+    const known = [...pool, ...defaults, ...(offer ? [offer] : []), ...local]
+    const qs = ids.map((id) => known.find((q) => q.id === id))
     if (qs.every(Boolean)) return qs as Question[]
   }
-  const qs = pickThree(pool.length ? pool : defaults, defaults, loadHistory(), today, adult, taken)
+  const qs = pickThree(pool.length ? pool : defaults, defaults, loadHistory(), today, adult, taken, offer)
   saveJSON(key, qs.map((q) => q.id))
   return qs
 }

@@ -1,8 +1,18 @@
 {
+ "aarp2025care": {
+  "strength": "moderate",
+  "title": "AARP & National Alliance for Caregiving, 2025",
+  "url": "https://www.aarp.org/press/releases/2025-07-24-new-report-reveals-crisis-point-for-americas-63-million-family-caregivers.html"
+ },
  "abeler2019": {
   "strength": "strong",
   "title": "Abeler et al., 2019",
   "url": "https://www.iza.org/publications/dp/10188/preferences-for-truth-telling"
+ },
+ "afrobarometer2026": {
+  "strength": "moderate",
+  "title": "Afrobarometer, 2026",
+  "url": "https://www.afrobarometer.org/wp-content/uploads/2026/08/News-release-More-than-half-of-African-youth-consider-emigration-Afrobarometer-bh-20aug26.pdf"
  },
  "aknin2013": {
   "strength": "strong",
@@ -33,6 +43,11 @@
   "strength": "early",
   "title": "Andrews et al., 2015",
   "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4625000"
+ },
+ "ano2005": {
+  "strength": "strong",
+  "title": "Ano & Vasconcelles, 2005",
+  "url": "https://www.uned.es/universidad/inicio/dam/jcr:fd37f522-5523-47c7-9f9f-821180678483/ANOYVA~1.PDF"
  },
  "apa2022stress": {
   "strength": "moderate",
@@ -204,6 +219,16 @@
   "title": "Cheng & Ying, 2023",
   "url": "https://public-pages-files-2025.frontiersin.org/journals/psychiatry/articles/10.3389/fpsyt.2023.1097598/text"
  },
+ "chingwete2026": {
+  "strength": "moderate",
+  "title": "Chingwete et al., 2026",
+  "url": "https://www.afrobarometer.org/wp-content/uploads/2026/06/AD1191-PAP13-Africans-experience-economic-hardship-despite-signs-of-recovery-Afrobarometer-6june26.pdf"
+ },
+ "chirkov2003": {
+  "strength": "moderate",
+  "title": "Chirkov et al., 2003",
+  "url": "https://pure.ewha.ac.kr/en/publications/differentiating-autonomy-from-individualism-and-independence-a-se/"
+ },
  "chopik2017": {
   "strength": "moderate",
   "title": "Chopik, 2017",
@@ -223,6 +248,11 @@
   "strength": "moderate",
   "title": "Cruwys et al., 2013",
   "url": "https://ideas.repec.org/a/eee/socmed/v98y2013icp179-186.html"
+ },
+ "curran2026": {
+  "strength": "strong",
+  "title": "Curran et al., 2026",
+  "url": "https://www.apa.org/news/press/releases/2026/05/young-adults-perfectionistic"
  },
  "curry2018": {
   "strength": "strong",
@@ -254,6 +284,11 @@
   "title": "de Berker et al., 2016",
   "url": "https://www.nature.com/articles/ncomms10996"
  },
+ "deneve2025": {
+  "strength": "moderate",
+  "title": "De Neve et al., 2025",
+  "url": "https://worldhappiness.report/ed/2025/sharing-meals-with-others-how-sharing-meals-supports-happiness-and-social-connections/"
+ },
  "depaulo1996": {
   "strength": "moderate",
   "title": "DePaulo et al., 1996",
@@ -268,6 +303,11 @@
   "strength": "strong",
   "title": "de Ridder et al., 2012",
   "url": "https://research.vu.nl/en/publications/taking-stock-of-self-control-a-meta-analysis-of-how-self-control-/"
+ },
+ "detert2011": {
+  "strength": "moderate",
+  "title": "Detert & Edmondson, 2011",
+  "url": "https://academicnewsletter.sufe.edu.cn/info/361477"
  },
  "ding2025": {
   "strength": "strong",
@@ -309,10 +349,25 @@
   "title": "Ekers et al., 2014",
   "url": "https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0100100"
  },
+ "elkhatib2023": {
+  "strength": "moderate",
+  "title": "El Khatib et al., 2023",
+  "url": "https://bmcpsychiatry.biomedcentral.com/articles/10.1186/s12888-023-04827-4"
+ },
+ "elsbach2010": {
+  "strength": "moderate",
+  "title": "Elsbach et al., 2010",
+  "url": "https://journals.sagepub.com/doi/10.1177/0018726709353139"
+ },
  "epley2014": {
   "strength": "moderate",
   "title": "Epley & Schroeder, 2014",
   "url": "https://www.npr.org/sections/health-shots/2019/07/26/744267015/want-to-feel-happier-today-try-talking-to-a-stranger"
+ },
+ "eurostat2025home": {
+  "strength": "moderate",
+  "title": "Eurostat, 2025",
+  "url": "https://ec.europa.eu/eurostat/web/products-eurostat-news/w/ddn-20250923-1"
  },
  "eurostat2026adult": {
   "strength": "moderate",
@@ -499,6 +554,11 @@
   "title": "Gross & John, 2003",
   "url": "https://pubmed.ncbi.nlm.nih.gov/12916575/"
  },
+ "gugerty2007": {
+  "strength": "moderate",
+  "title": "Gugerty, 2007",
+  "url": "https://ideas.repec.org/a/ucp/ecdecc/y2007v55i2p251-82.html"
+ },
  "haimovitz2016": {
   "strength": "early",
   "title": "Haimovitz & Dweck, 2016",
@@ -564,10 +624,20 @@
   "title": "Impett et al., 2024",
   "url": "https://journals.sagepub.com/doi/10.1177/09637214231217663"
  },
+ "insightcrime2017": {
+  "strength": "moderate",
+  "title": "InSight Crime, 2017",
+  "url": "https://insightcrime.org/news/analysis/how-fear-crime-central-america-impacts-daily-life-contributes-migration-report/"
+ },
  "jakubiak2017": {
   "strength": "moderate",
   "title": "Jakubiak & Feeney, 2017",
   "url": "https://journals.sagepub.com/doi/10.1177/1088868316650307"
+ },
+ "jchs2025housing": {
+  "strength": "moderate",
+  "title": "Harvard Joint Center for Housing Studies, 2025",
+  "url": "https://www.jchs.harvard.edu/press-releases/new-report-highlights-unease-housing-market-amid-worsening-affordability-crisis"
  },
  "jebb2018": {
   "strength": "moderate",
@@ -588,6 +658,11 @@
   "strength": "strong",
   "title": "Joel et al., 2020",
   "url": "https://cris.biu.ac.il/en/publications/machine-learning-uncovers-the-most-robust-self-report-predictors--3/"
+ },
+ "joongang2026": {
+  "strength": "moderate",
+  "title": "Korea JoongAng Daily, 2026",
+  "url": "https://www.koreajoongangdaily.com/lifestyle/chuseok-nagging-menus-put-a-price-on-prying-as-younger-koreans-seek-to-celebrate-without-stress/12886656"
  },
  "jordan2011": {
   "strength": "moderate",
@@ -779,6 +854,11 @@
   "title": "Milkman et al., 2021",
   "url": "https://www.hks.harvard.edu/publications/megastudies-improve-impact-applied-behavioural-science"
  },
+ "miller2017": {
+  "strength": "moderate",
+  "title": "Miller et al., 2017",
+  "url": "https://www.psychologicalscience.org/journals/perspectives/1745691617706099/"
+ },
  "milliken2003": {
   "strength": "early",
   "title": "Milliken et al., 2003",
@@ -848,6 +928,11 @@
   "strength": "moderate",
   "title": "Norton & Gino, 2013",
   "url": "https://www.bps.org.uk/research-digest/rituals-bring-comfort-even-non-believers"
+ },
+ "oecd2025social": {
+  "strength": "moderate",
+  "title": "OECD, 2025",
+  "url": "https://www.oecd.org/en/publications/social-connections-and-loneliness-in-oecd-countries_6df2d6a0-en.html"
  },
  "okano2019": {
   "strength": "early",
@@ -934,6 +1019,11 @@
   "title": "Pew Research Center, 2024",
   "url": "https://www.pewresearch.org/internet/2024/03/11/how-teens-and-parents-approach-screen-time/"
  },
+ "pew2025friends": {
+  "strength": "moderate",
+  "title": "Pew Research Center, 2025",
+  "url": "https://www.pewresearch.org/social-trends/2025/01/16/where-men-and-women-turn-for-emotional-support-and-social-connection/"
+ },
  "pew2025neighbors": {
   "strength": "moderate",
   "title": "Pew Research Center, 2025",
@@ -973,6 +1063,11 @@
   "strength": "strong",
   "title": "Pronin et al., 2002",
   "url": "https://journals.sagepub.com/doi/10.1177/0146167202286008"
+ },
+ "rankin2019": {
+  "strength": "moderate",
+  "title": "Rankin et al., 2019",
+  "url": "https://escholarship.org/content/qt25t752vx/qt25t752vx.pdf"
  },
  "raposa2016": {
   "strength": "early",
@@ -1033,6 +1128,11 @@
   "strength": "strong",
   "title": "Rohrer et al., 2015",
   "url": "https://press.uni-mainz.de/birth-order-has-only-very-small-effects-on-personality/"
+ },
+ "rojas2018": {
+  "strength": "early",
+  "title": "Rojas, 2018",
+  "url": "https://upaep.mx/ciie/images/2018/presentaciones/Mariano_Rojas_High_Happiness_in_Latin_America.pdf"
  },
  "ross1977": {
   "strength": "strong",
@@ -1104,6 +1204,11 @@
   "title": "Serota & Levine, 2015",
   "url": "https://journals.sagepub.com/doi/10.1177/0261927X14528804"
  },
+ "singerman2007": {
+  "strength": "early",
+  "title": "Singerman, 2007",
+  "url": "https://papers.ssrn.com/abstract=1087433"
+ },
  "singh2023": {
   "strength": "strong",
   "title": "Singh et al., 2023",
@@ -1118,6 +1223,16 @@
   "strength": "strong",
   "title": "Soto, 2019",
   "url": "https://www.psychologicalscience.org/observer/new-replicability-project-bolsters-research-correlating-personality-traits-and-life-outcomes"
+ },
+ "squires2024": {
+  "strength": "moderate",
+  "title": "Squires, 2024",
+  "url": "https://theafricanmirror.africa/news/kinship-tax-puts-the-brakes-on-business-kenyan-study-measures-the-impact-of-helping-family/"
+ },
+ "stafford2007": {
+  "strength": "moderate",
+  "title": "Stafford et al., 2007",
+  "url": "https://www.ucl.ac.uk/news/2007/sep/individuals-high-fear-crime-twice-likely-suffer-depression"
  },
  "stamatakis2022": {
   "strength": "moderate",
@@ -1143,6 +1258,16 @@
   "strength": "strong",
   "title": "Teixeira et al., 2012",
   "url": "https://acuresearchbank.acu.edu.au/item/8677w/exercise-physical-activity-and-self-determination-theory-a-systematic-review"
+ },
+ "telzer2009": {
+  "strength": "moderate",
+  "title": "Telzer & Fuligni, 2009",
+  "url": "https://experts.illinois.edu/en/publications/daily-family-assistance-and-the-psychological-well-being-of-adole/"
+ },
+ "tsai2025": {
+  "strength": "strong",
+  "title": "Tsai et al., 2025",
+  "url": "https://research.dial.uclouvain.be/entities/publication/d4fbbc23-48dc-4d47-8232-efe6fe572280"
  },
  "vanboven2003": {
   "strength": "moderate",
@@ -1258,5 +1383,15 @@
   "strength": "moderate",
   "title": "Yogman et al., 2018",
   "url": "https://aap.org/en/news-room/news-releases/aap/2018/want-creative-curious-healthier-children-with-21st-century-skills-let-them-play"
+ },
+ "zenelabden2026": {
+  "strength": "moderate",
+  "title": "Zenelabden et al., 2026",
+  "url": "https://scholarscommons.fgcu.edu/esploro/outputs/journalArticle/Unplugged-and-unhappy-Power-outages-and/99385856050306570"
+ },
+ "zhao2022": {
+  "strength": "moderate",
+  "title": "Zhao & Epley, 2022",
+  "url": "https://www.psychologicalscience.org/journals/psychological-science/09567976221097615/"
  }
 }

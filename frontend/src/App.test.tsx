@@ -114,6 +114,7 @@ function stubApi(routes: {
   kept?: Route
   steps?: Route
   rating?: Route | Route[]
+  regional?: Route
 }) {
   let devices = 0
   let votes = 0
@@ -153,6 +154,9 @@ function stubApi(routes: {
     }
     if (url === '/api/device/data') {
       return json(routes.kept ?? { status: 200, body: keptOnServer })
+    }
+    if (url === '/api/regional') {
+      return json(routes.regional ?? { status: 404, body: { error: 'no_regional' } })
     }
     return json({ status: 404, body: { error: 'not_found' } })
   })
@@ -2505,5 +2509,104 @@ describe('where you live', () => {
     expect(select).toHaveValue('GH')
     fireEvent.change(select, { target: { value: 'none' } })
     expect(JSON.parse(localStorage.getItem('pi.prefs.v1')!)).toMatchObject({ country: 'none' })
+  })
+})
+
+describe('questions about everyday life where you live', () => {
+  const homeMoment = {
+    id: 'africa-relative-money',
+    region: 'africa',
+    theme: 'relatives',
+    care: 'personal',
+    prompt: 'A relative asks for money you had set aside. You usually…',
+    options: [
+      {
+        id: 'give',
+        label: 'Give it',
+        depth: 1,
+        need: 'belonging',
+        insight: {
+          reveal: 'Family comes before your own plans. You give first and work out the rest later.',
+          otherSide: 'Your own plans can keep sliding to the back of the queue.',
+          step: 'This week, notice how it feels in the moment you hand money over.',
+          needStep: 'This week, ask what the money is for before you decide how much.',
+        },
+      },
+      { id: 'part', label: 'Give part of it', depth: 2, need: 'security' },
+      { id: 'no', label: 'Say not this time', depth: 3, need: 'freedom' },
+    ],
+  }
+  const ID = '2026-10-12-africa-relative-money'
+  const LOCAL_NOTE = 'About everyday life where you live. Your answer stays on this phone.'
+
+  // A phone in Nigeria whose morning holds the regional question third.
+  function inNigeria(prefs: object = {}) {
+    localStorage.setItem('pi.prefs.v1', JSON.stringify({ adult: null, mild: false, wordsDays: 35, country: 'NG', ...prefs }))
+    localStorage.setItem('pi.regional.v1', JSON.stringify({ questions: [homeMoment] }))
+    localStorage.setItem('pi.pick.2026-10-12', JSON.stringify(['q-dishes', 'q-bill', ID]))
+  }
+
+  it('is answered, tapped and tried on this phone, and nothing about it is sent', async () => {
+    inNigeria()
+    const fetchMock = stubApi({ regional: { status: 200, body: { regions: [], questions: [homeMoment] } } })
+    render(<App />)
+    await answer('Right after eating')
+    next()
+    await skip()
+    expect(await screen.findByText(homeMoment.prompt)).toBeInTheDocument()
+    expect(screen.getByText(LOCAL_NOTE)).toBeInTheDocument()
+    await answer('Give it')
+    fireEvent.click(within(screen.getByRole('group', { name: 'Does this sound like you?' })).getByRole('button', { name: "That's me" }))
+    fireEvent.click(within(screen.getByRole('group', { name: 'Something to try' })).getByRole('button', { name: "I'll try it" }))
+
+    await waitFor(() => expect(calls(fetchMock, '/api/regional')).toHaveLength(1))
+    // the pack is asked for with nothing about the phone
+    expect(calls(fetchMock, '/api/regional')[0][1]).toBeUndefined()
+    expect(calls(fetchMock, '/api/votes')).toHaveLength(1) // the dishes only
+    expect(calls(fetchMock, '/api/ratings')).toHaveLength(0)
+    expect(calls(fetchMock, '/api/steps')).toHaveLength(0)
+    for (const [url, init] of fetchMock.mock.calls) {
+      expect(String(url)).not.toMatch(/africa|NG/)
+      expect(String(init?.body ?? '')).not.toMatch(/africa|relative|"NG"/)
+    }
+    const answers = JSON.parse(localStorage.getItem('pi.history.v1')!).answers
+    expect(answers.find((a: { questionId: string }) => a.questionId === ID)).toMatchObject({ regional: true, verdict: 'me', need: 'belonging' })
+    expect(JSON.parse(localStorage.getItem('pi.moves.v1')!)).toEqual([expect.objectContaining({ questionId: ID, local: true })])
+  })
+
+  it('can be switched off in Settings, without changing a sitting already started', async () => {
+    inNigeria()
+    stubApi({})
+    render(<App />)
+    await answer('Right after eating')
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }))
+    const where = screen.getByRole('group', { name: 'Where you live' })
+    const offer = within(where).getByRole('checkbox', { name: 'Questions about everyday life where I live' })
+    expect(offer).toBeChecked()
+    fireEvent.click(offer)
+    expect(JSON.parse(localStorage.getItem('pi.prefs.v1')!)).toMatchObject({ country: 'NG', regional: false })
+    expect(JSON.parse(localStorage.getItem('pi.pick.2026-10-12')!)).toEqual(['q-dishes', 'q-bill', ID])
+    // a country with no regional questions has no switch
+    fireEvent.change(within(where).getByRole('combobox', { name: 'Country' }), { target: { value: 'KZ' } })
+    expect(within(where).queryByRole('checkbox')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: '← Back' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Next' }))
+    await skip()
+    expect(await screen.findByText(homeMoment.prompt)).toBeInTheDocument()
+  })
+
+  it('is not offered when switched off', async () => {
+    inNigeria({ regional: false })
+    localStorage.removeItem('pi.pick.2026-10-12')
+    localStorage.setItem(
+      'pi.history.v1',
+      JSON.stringify({ answers: [{ date: '2026-10-08', questionId: 'x', theme: 'habits', depth: 2, traits: {} }], skips: [] }),
+    )
+    const fetchMock = stubApi({})
+    render(<App />)
+    await screen.findByRole('navigation', { name: "Today's questions" })
+    expect(JSON.parse(localStorage.getItem('pi.pick.2026-10-12')!)).toHaveLength(3)
+    expect(JSON.parse(localStorage.getItem('pi.pick.2026-10-12')!)).not.toContain(ID)
+    expect(calls(fetchMock, '/api/regional')).toHaveLength(0)
   })
 })

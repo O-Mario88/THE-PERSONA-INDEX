@@ -51,6 +51,7 @@ import {
   focusTouch,
   HEAVY_HEADLINE,
   HEAVY_THANKS,
+  LOCAL_NOTE,
   NO_PEOPLE,
   NOT_ME_REPLY,
   peopleAsk,
@@ -150,6 +151,11 @@ export function QuestionCard({
   // answered. typed carries the person's own words when they picked it as
   // the closest; the words stay here.
   async function vote(o: Option, typed?: string) {
+    // A regional question is answered on this phone only: nothing is sent.
+    if (question.local) {
+      accepted(o, typed)
+      return
+    }
     setSending(true)
     setError(null)
     const sent = intimate ? PRIVATE_OPTION : o.id
@@ -221,6 +227,7 @@ export function QuestionCard({
       <h2 id={headingId} className="prompt">
         {question.prompt}
       </h2>
+      {question.local && <p className="muted local-note">{LOCAL_NOTE}</p>}
 
       {!choice && mode === 'options' && (
         <div className="options" role="group" aria-labelledby={headingId}>
@@ -622,7 +629,7 @@ function TryThis({
   const started = state === 'started' ? (moveFor(question.id)?.step ?? choices[pick]) : null
   function start() {
     setState('started')
-    startMove(date, question.id, option.id, choices[pick], Date.now(), pick === 1).catch(() => {
+    startMove(date, question.id, option.id, choices[pick], Date.now(), pick === 1, !!question.local).catch(() => {
       // kept on the phone, and sent again when the app next opens
     })
   }
@@ -753,6 +760,8 @@ function Rate({
     rememberRated(question.id, v)
     recordVerdict(question.id, v)
     noteVerdict(question.id, v)
+    // A regional question's tap stays on this phone with its answer.
+    if (question.local) return
     const sent = question.care === 'intimate' ? PRIVATE_OPTION : option.id
     rateCard(question.id, sent, v).catch(() => {
       // a lost tap is not worth bothering anyone about
