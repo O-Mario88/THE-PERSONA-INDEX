@@ -52,6 +52,11 @@ type deviceSigner struct {
 	signing []signingKey // [0] signs new tokens; every entry verifies
 
 	hashVoter, hashMirror, hashPrivate []byte
+
+	// Accounts (accounts.go): the login hash, the account's device id, the
+	// friend mark and the seal on a synced backup phrase, each its own key
+	// from the data secret.
+	hashLogin, accountDevice, friendMark, syncSeal []byte
 }
 
 // KeyConfig is the server's key material, from the environment (main.go).
@@ -82,6 +87,10 @@ func newKeyring(c KeyConfig) (*deviceSigner, error) {
 	d.hashVoter = deriveKey(c.DataSecret, "voter-hash v1")
 	d.hashMirror = deriveKey(c.DataSecret, "mirror-key v1")
 	d.hashPrivate = deriveKey(c.DataSecret, "private-question v1")
+	d.hashLogin = deriveKey(c.DataSecret, "login-key v1")
+	d.accountDevice = deriveKey(c.DataSecret, "account-device v1")
+	d.friendMark = deriveKey(c.DataSecret, "friend-mark v1")
+	d.syncSeal = deriveKey(c.DataSecret, "sync-seal v1")
 	return d, nil
 }
 

@@ -19,6 +19,7 @@ export function TapestryGrid({ s, dark, cols = 15, weaving }: { s: Season; dark?
     <ol
       className={dark ? 'tapestry dark' : 'tapestry'}
       style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}
+      role="img"
       aria-label={`Season tapestry, day ${s.day} of 90: ${s.woven} ${s.woven === 1 ? 'day' : 'days'} woven`}
     >
       {s.tiles.map((t) => (
@@ -27,16 +28,14 @@ export function TapestryGrid({ s, dark, cols = 15, weaving }: { s: Season; dark?
           className={`tile-${t.state}${t.today ? ' is-today' : ''}${t.today && weaving ? ' weaving' : ''}`}
           style={t.state === 'woven' ? { background: t.need ? NEED_TINTS[t.need] : undefined } : undefined}
           title={tileName(t)}
-        >
-          <span className="sr-only">{tileName(t)}</span>
-        </li>
+        />
       ))}
     </ol>
   )
 }
 
 // The pale card on Today.
-export function TapestryCard({ today, onOpen }: { today: string; onOpen?: () => void }) {
+export function TapestryCard({ today, onOpen, cols = 18 }: { today: string; onOpen?: () => void; cols?: number }) {
   const s = season(today)
   return (
     <section className="tapestry-card" aria-labelledby="tapestry-title">
@@ -52,7 +51,7 @@ export function TapestryCard({ today, onOpen }: { today: string; onOpen?: () => 
           <span className="label muted-ink">Each tile is one day you showed up. Days off stay plain.</span>
         )}
       </div>
-      <TapestryGrid s={s} cols={18} />
+      <TapestryGrid s={s} cols={cols} />
     </section>
   )
 }

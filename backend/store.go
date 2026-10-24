@@ -74,6 +74,7 @@ type Store interface {
 	VoteStore
 	MirrorStore
 	VaultStore
+	SocialStore
 }
 
 // VoteStore is the durable boundary: a vote is acknowledged only after Accept
@@ -111,6 +112,7 @@ type memoryStore struct {
 	counts    map[string]map[string]int
 	mirror    memoryMirror           // see mirrorstore.go
 	vaults    map[string]memoryVault // see vault.go
+	social    memorySocial           // see socialmemory.go
 }
 
 func newMemoryStore() *memoryStore {
@@ -120,6 +122,7 @@ func newMemoryStore() *memoryStore {
 			weeks: map[string]map[string]WeekSummary{}, folds: map[string]bool{}, forgotten: map[string]string{},
 			checks: map[string]map[string]PlanCheck{}},
 		vaults: map[string]memoryVault{},
+		social: newMemorySocial(),
 	}
 }
 

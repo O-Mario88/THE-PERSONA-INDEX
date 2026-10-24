@@ -104,7 +104,7 @@ export function Home({
         </section>
       )}
 
-      <TapestryCard today={date} />
+      <TapestryCard today={date} cols={wide ? 30 : 18} />
 
       <DayLine date={date} window={w} morning={morning} evening={evening} nowMin={nowMin} />
 

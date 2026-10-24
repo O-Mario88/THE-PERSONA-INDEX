@@ -1,0 +1,4464 @@
+{
+ "version": 1,
+ "questions": [
+  {
+   "id": "fq-work-01",
+   "tag": "work",
+   "prompt": "When a shared deadline gets tight, what does {name} usually do first?",
+   "options": [
+    {
+     "id": "a",
+     "label": "Quietly takes on the hardest part alone",
+     "traits": {
+      "conscientiousness": 2,
+      "attachment_avoidance": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Gathers people quickly to talk through a new plan",
+     "traits": {
+      "extraversion": 2,
+      "conscientiousness": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Checks in to keep everyone calm and unblamed",
+     "traits": {
+      "agreeableness": 2
+     }
+    },
+    {
+     "id": "d",
+     "label": "Pauses to rethink the whole route before moving",
+     "traits": {
+      "openness": 1,
+      "conscientiousness": -1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-work-02",
+   "tag": "work",
+   "prompt": "In a meeting that is going nowhere, {name} is most likely to…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Steer it back to a decision",
+     "traits": {
+      "conscientiousness": 2,
+      "extraversion": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Wait it out and say little",
+     "traits": {
+      "extraversion": -2
+     }
+    },
+    {
+     "id": "c",
+     "label": "Lighten the room with a joke",
+     "traits": {
+      "extraversion": 1,
+      "agreeableness": 1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Suggest a completely different angle",
+     "traits": {
+      "openness": 2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-work-03",
+   "tag": "work",
+   "prompt": "When {name} disagrees with a plan at work, they usually…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Say so plainly, in the room",
+     "traits": {
+      "agreeableness": -2,
+      "extraversion": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Raise it one-to-one afterwards",
+     "traits": {
+      "agreeableness": 1,
+      "extraversion": -1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Go along with it to keep things moving",
+     "traits": {
+      "agreeableness": 2
+     }
+    },
+    {
+     "id": "d",
+     "label": "Quietly do it their own way",
+     "traits": {
+      "agreeableness": -1,
+      "conscientiousness": -1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-work-04",
+   "tag": "work",
+   "prompt": "A colleague of {name}'s makes a mistake that lands on the whole team. {name}…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Fixes it without a word",
+     "traits": {
+      "conscientiousness": 1,
+      "extraversion": -1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Names it kindly so it doesn't happen again",
+     "traits": {
+      "honesty_humility": 1,
+      "agreeableness": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Gets visibly frustrated",
+     "traits": {
+      "neuroticism": 2,
+      "agreeableness": -1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Shrugs it off quickly",
+     "traits": {
+      "neuroticism": -2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-work-05",
+   "tag": "work",
+   "prompt": "When {name} finishes work early, they tend to…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Start on tomorrow's list",
+     "traits": {
+      "conscientiousness": 2
+     }
+    },
+    {
+     "id": "b",
+     "label": "Help someone else who is behind",
+     "traits": {
+      "agreeableness": 2
+     }
+    },
+    {
+     "id": "c",
+     "label": "Take the time back for themselves",
+     "traits": {
+      "conscientiousness": -1,
+      "agreeableness": -1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Try out a new idea they've been saving",
+     "traits": {
+      "openness": 2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-work-06",
+   "tag": "work",
+   "prompt": "Given credit for something a teammate did, {name} would most likely…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Point to the teammate straight away",
+     "traits": {
+      "honesty_humility": 2
+     }
+    },
+    {
+     "id": "b",
+     "label": "Mention it later, privately",
+     "traits": {
+      "honesty_humility": 1,
+      "extraversion": -1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Let it pass, feeling awkward",
+     "traits": {
+      "neuroticism": 1,
+      "honesty_humility": -1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Accept it and move on",
+     "traits": {
+      "honesty_humility": -2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-work-07",
+   "tag": "work",
+   "prompt": "How does {name} usually handle a long, dull task?",
+   "options": [
+    {
+     "id": "a",
+     "label": "Plans it in chunks and grinds through",
+     "traits": {
+      "conscientiousness": 2
+     }
+    },
+    {
+     "id": "b",
+     "label": "Puts it off until it's urgent",
+     "traits": {
+      "conscientiousness": -2
+     }
+    },
+    {
+     "id": "c",
+     "label": "Makes a game or a new method of it",
+     "traits": {
+      "openness": 2
+     }
+    },
+    {
+     "id": "d",
+     "label": "Does it alongside other people for company",
+     "traits": {
+      "extraversion": 2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-work-08",
+   "tag": "work",
+   "prompt": "When a new person joins {name}'s team, {name} is the one who…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Invites them to lunch on day one",
+     "traits": {
+      "extraversion": 2,
+      "agreeableness": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Shows them how things really work",
+     "traits": {
+      "conscientiousness": 1,
+      "agreeableness": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Waits to see what they're like",
+     "traits": {
+      "attachment_avoidance": 1,
+      "extraversion": -1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Leaves the welcoming to others",
+     "traits": {
+      "extraversion": -2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-work-09",
+   "tag": "work",
+   "prompt": "Before an important presentation, {name} usually seems…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Calm and ready",
+     "traits": {
+      "neuroticism": -2,
+      "conscientiousness": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Nervous, but it doesn't show for long",
+     "traits": {
+      "neuroticism": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Still tweaking slides at the last minute",
+     "traits": {
+      "conscientiousness": -1,
+      "openness": 1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Keen to rehearse it with someone",
+     "traits": {
+      "extraversion": 1,
+      "neuroticism": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-work-10",
+   "tag": "work",
+   "prompt": "If {name}'s plans change at the last minute because of someone else, they…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Adapt without fuss",
+     "traits": {
+      "openness": 1,
+      "neuroticism": -2
+     }
+    },
+    {
+     "id": "b",
+     "label": "Say clearly that it's a problem",
+     "traits": {
+      "agreeableness": -1,
+      "extraversion": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Get quietly annoyed for a while",
+     "traits": {
+      "neuroticism": 2
+     }
+    },
+    {
+     "id": "d",
+     "label": "Make a fresh plan on the spot",
+     "traits": {
+      "conscientiousness": 1,
+      "openness": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-work-11",
+   "tag": "work",
+   "prompt": "When {name} is stuck on a problem at work, they…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Ask someone straight away",
+     "traits": {
+      "extraversion": 1,
+      "attachment_avoidance": -2
+     }
+    },
+    {
+     "id": "b",
+     "label": "Keep at it alone until it cracks",
+     "traits": {
+      "attachment_avoidance": 2,
+      "conscientiousness": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Step away and come back later",
+     "traits": {
+      "neuroticism": -1,
+      "conscientiousness": -1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Look it up and try something new",
+     "traits": {
+      "openness": 2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-work-12",
+   "tag": "work",
+   "prompt": "In a busy week, what slips first for {name}?",
+   "options": [
+    {
+     "id": "a",
+     "label": "Their own breaks",
+     "traits": {
+      "conscientiousness": 2,
+      "agreeableness": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Replies to messages",
+     "traits": {
+      "conscientiousness": -1,
+      "extraversion": -1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Tidiness and admin",
+     "traits": {
+      "conscientiousness": -2
+     }
+    },
+    {
+     "id": "d",
+     "label": "Nothing much: they protect their time",
+     "traits": {
+      "conscientiousness": 1,
+      "agreeableness": -1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-work-13",
+   "tag": "work",
+   "prompt": "When praise is handed out at work, {name} usually…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Deflects it to the team",
+     "traits": {
+      "honesty_humility": 2,
+      "agreeableness": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Takes it with a quiet thank-you",
+     "traits": {
+      "extraversion": -1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Enjoys the moment openly",
+     "traits": {
+      "extraversion": 2
+     }
+    },
+    {
+     "id": "d",
+     "label": "Seems a bit uncomfortable",
+     "traits": {
+      "neuroticism": 1,
+      "attachment_avoidance": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-work-14",
+   "tag": "work",
+   "prompt": "A rule at work seems pointless to {name}. They…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Follow it anyway",
+     "traits": {
+      "conscientiousness": 2,
+      "agreeableness": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Ask why it exists",
+     "traits": {
+      "openness": 1,
+      "extraversion": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Work around it quietly",
+     "traits": {
+      "conscientiousness": -1,
+      "honesty_humility": -1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Push to change it",
+     "traits": {
+      "agreeableness": -1,
+      "openness": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-work-15",
+   "tag": "work",
+   "prompt": "When a teammate is clearly having a hard day, {name}…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Notices first and checks in",
+     "traits": {
+      "agreeableness": 2
+     }
+    },
+    {
+     "id": "b",
+     "label": "Takes something off their plate",
+     "traits": {
+      "agreeableness": 1,
+      "conscientiousness": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Gives them space",
+     "traits": {
+      "attachment_avoidance": 1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Might not notice until told",
+     "traits": {
+      "agreeableness": -1,
+      "extraversion": -1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-work-16",
+   "tag": "work",
+   "prompt": "At work drinks or a team lunch, {name} is usually…",
+   "options": [
+    {
+     "id": "a",
+     "label": "At the centre of the table",
+     "traits": {
+      "extraversion": 2
+     }
+    },
+    {
+     "id": "b",
+     "label": "Talking to one or two people",
+     "traits": {
+      "extraversion": -1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Leaving early",
+     "traits": {
+      "attachment_avoidance": 1,
+      "extraversion": -2
+     }
+    },
+    {
+     "id": "d",
+     "label": "Making sure the quiet ones are included",
+     "traits": {
+      "agreeableness": 2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-work-17",
+   "tag": "work",
+   "prompt": "How does {name} take feedback on their work?",
+   "options": [
+    {
+     "id": "a",
+     "label": "Thanks you and uses it",
+     "traits": {
+      "neuroticism": -1,
+      "openness": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Thinks it over for days",
+     "traits": {
+      "neuroticism": 2
+     }
+    },
+    {
+     "id": "c",
+     "label": "Argues their side first",
+     "traits": {
+      "agreeableness": -2
+     }
+    },
+    {
+     "id": "d",
+     "label": "Asks for more detail",
+     "traits": {
+      "openness": 1,
+      "conscientiousness": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-work-18",
+   "tag": "work",
+   "prompt": "When {name} says they'll do something at work, it gets done…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Early, without fuss",
+     "traits": {
+      "conscientiousness": 2
+     }
+    },
+    {
+     "id": "b",
+     "label": "Right on time",
+     "traits": {
+      "conscientiousness": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "A little late, with an apology",
+     "traits": {
+      "conscientiousness": -1,
+      "agreeableness": 1
+     }
+    },
+    {
+     "id": "d",
+     "label": "When it becomes urgent",
+     "traits": {
+      "conscientiousness": -2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-work-19",
+   "tag": "work",
+   "prompt": "Offered a role that is new and unfamiliar, {name} would probably…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Jump at it",
+     "traits": {
+      "openness": 2,
+      "extraversion": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Ask lots of questions first",
+     "traits": {
+      "conscientiousness": 1,
+      "neuroticism": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Stick with what they're good at",
+     "traits": {
+      "openness": -2
+     }
+    },
+    {
+     "id": "d",
+     "label": "Talk it over with people they trust",
+     "traits": {
+      "extraversion": 1,
+      "attachment_avoidance": -1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-work-20",
+   "tag": "work",
+   "prompt": "When two colleagues clash, {name} tends to…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Step in and smooth it over",
+     "traits": {
+      "agreeableness": 2,
+      "extraversion": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Stay well out of it",
+     "traits": {
+      "attachment_avoidance": 2
+     }
+    },
+    {
+     "id": "c",
+     "label": "Take a side if one is clearly wrong",
+     "traits": {
+      "honesty_humility": 1,
+      "agreeableness": -1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Make a joke to ease things",
+     "traits": {
+      "extraversion": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-work-21",
+   "tag": "work",
+   "prompt": "What does {name}'s desk or workspace usually look like?",
+   "options": [
+    {
+     "id": "a",
+     "label": "Neat and organised",
+     "traits": {
+      "conscientiousness": 2
+     }
+    },
+    {
+     "id": "b",
+     "label": "A system only they understand",
+     "traits": {
+      "openness": 1,
+      "conscientiousness": -1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Busy but functional",
+     "traits": {
+      "extraversion": 1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Cluttered",
+     "traits": {
+      "conscientiousness": -2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-work-22",
+   "tag": "work",
+   "prompt": "When {name} doesn't know the answer to something at work, they…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Say so openly",
+     "traits": {
+      "honesty_humility": 2
+     }
+    },
+    {
+     "id": "b",
+     "label": "Find out before replying",
+     "traits": {
+      "conscientiousness": 2
+     }
+    },
+    {
+     "id": "c",
+     "label": "Give their best guess confidently",
+     "traits": {
+      "extraversion": 1,
+      "honesty_humility": -1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Go quiet",
+     "traits": {
+      "extraversion": -2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-work-23",
+   "tag": "work",
+   "prompt": "If {name} could choose how to work, they'd pick…",
+   "options": [
+    {
+     "id": "a",
+     "label": "A busy shared space",
+     "traits": {
+      "extraversion": 2
+     }
+    },
+    {
+     "id": "b",
+     "label": "A quiet corner alone",
+     "traits": {
+      "extraversion": -2,
+      "attachment_avoidance": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "A different place every week",
+     "traits": {
+      "openness": 2
+     }
+    },
+    {
+     "id": "d",
+     "label": "Their usual, reliable spot",
+     "traits": {
+      "openness": -1,
+      "conscientiousness": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-work-24",
+   "tag": "work",
+   "prompt": "When something goes wrong that wasn't {name}'s fault, they…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Fix it anyway",
+     "traits": {
+      "conscientiousness": 1,
+      "agreeableness": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Make sure people know what happened",
+     "traits": {
+      "honesty_humility": 1,
+      "agreeableness": -1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Feel bad about it regardless",
+     "traits": {
+      "neuroticism": 2
+     }
+    },
+    {
+     "id": "d",
+     "label": "Move on quickly",
+     "traits": {
+      "neuroticism": -2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-work-25",
+   "tag": "work",
+   "prompt": "How often does {name} share their ideas at work?",
+   "options": [
+    {
+     "id": "a",
+     "label": "All the time",
+     "traits": {
+      "extraversion": 2,
+      "openness": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "When asked",
+     "traits": {
+      "extraversion": -1,
+      "agreeableness": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Only when they're sure",
+     "traits": {
+      "conscientiousness": 1,
+      "neuroticism": 1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Rarely, though they have plenty",
+     "traits": {
+      "extraversion": -2,
+      "openness": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-work-26",
+   "tag": "work",
+   "prompt": "When {name} is under pressure, people around them notice…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Very little: they stay steady",
+     "traits": {
+      "neuroticism": -2
+     }
+    },
+    {
+     "id": "b",
+     "label": "They get quieter",
+     "traits": {
+      "extraversion": -1,
+      "neuroticism": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "They get short with people",
+     "traits": {
+      "neuroticism": 2,
+      "agreeableness": -1
+     }
+    },
+    {
+     "id": "d",
+     "label": "They get more organised",
+     "traits": {
+      "conscientiousness": 2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-work-27",
+   "tag": "work",
+   "prompt": "If someone asks {name} for help at a busy moment, they usually…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Say yes and squeeze it in",
+     "traits": {
+      "agreeableness": 2,
+      "conscientiousness": -1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Offer a smaller version they can manage",
+     "traits": {
+      "agreeableness": 1,
+      "conscientiousness": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Say not now, kindly",
+     "traits": {
+      "agreeableness": -1,
+      "conscientiousness": 1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Help, then quietly fall behind",
+     "traits": {
+      "agreeableness": 1,
+      "neuroticism": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-work-28",
+   "tag": "work",
+   "prompt": "When {name} gets an unexpected message from the boss, they…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Assume it's fine",
+     "traits": {
+      "neuroticism": -2
+     }
+    },
+    {
+     "id": "b",
+     "label": "Wonder what they did wrong",
+     "traits": {
+      "neuroticism": 2
+     }
+    },
+    {
+     "id": "c",
+     "label": "Reply straight away",
+     "traits": {
+      "conscientiousness": 1,
+      "extraversion": 1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Wait a while before opening it",
+     "traits": {
+      "attachment_avoidance": 1,
+      "neuroticism": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-work-29",
+   "tag": "work",
+   "prompt": "At the end of a project, {name} is the one who…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Suggests a celebration",
+     "traits": {
+      "extraversion": 2,
+      "agreeableness": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Writes down what was learned",
+     "traits": {
+      "conscientiousness": 2
+     }
+    },
+    {
+     "id": "c",
+     "label": "Is already onto the next thing",
+     "traits": {
+      "openness": 1,
+      "conscientiousness": -1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Thanks everyone individually",
+     "traits": {
+      "agreeableness": 2,
+      "honesty_humility": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-work-30",
+   "tag": "work",
+   "prompt": "When a colleague shares a half-formed idea, {name} usually…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Builds on it with enthusiasm",
+     "traits": {
+      "openness": 2,
+      "agreeableness": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Points out the problems first",
+     "traits": {
+      "agreeableness": -1,
+      "conscientiousness": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Asks questions to understand it",
+     "traits": {
+      "openness": 1,
+      "agreeableness": 1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Waits to see if it comes to anything",
+     "traits": {
+      "extraversion": -1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-family-01",
+   "tag": "family",
+   "prompt": "At a big family gathering, where is {name} usually found?",
+   "options": [
+    {
+     "id": "a",
+     "label": "In the kitchen, helping",
+     "traits": {
+      "agreeableness": 2,
+      "conscientiousness": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "In the middle of the conversation",
+     "traits": {
+      "extraversion": 2
+     }
+    },
+    {
+     "id": "c",
+     "label": "With the children",
+     "traits": {
+      "agreeableness": 1,
+      "openness": 1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Somewhere quieter, for a bit",
+     "traits": {
+      "extraversion": -2,
+      "attachment_avoidance": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-family-02",
+   "tag": "family",
+   "prompt": "When there's tension in the family, {name} tends to…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Try to bring everyone back together",
+     "traits": {
+      "agreeableness": 2
+     }
+    },
+    {
+     "id": "b",
+     "label": "Keep their distance until it passes",
+     "traits": {
+      "attachment_avoidance": 2
+     }
+    },
+    {
+     "id": "c",
+     "label": "Say what everyone else is thinking",
+     "traits": {
+      "agreeableness": -1,
+      "extraversion": 1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Worry about it a lot",
+     "traits": {
+      "neuroticism": 2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-family-03",
+   "tag": "family",
+   "prompt": "How does {name} usually show they care at home?",
+   "options": [
+    {
+     "id": "a",
+     "label": "Doing practical things without being asked",
+     "traits": {
+      "conscientiousness": 1,
+      "extraversion": -1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Saying it out loud",
+     "traits": {
+      "extraversion": 1,
+      "attachment_avoidance": -2
+     }
+    },
+    {
+     "id": "c",
+     "label": "Remembering small details",
+     "traits": {
+      "agreeableness": 1,
+      "conscientiousness": 1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Being there, quietly",
+     "traits": {
+      "extraversion": -1,
+      "agreeableness": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-family-04",
+   "tag": "family",
+   "prompt": "When a family member asks {name} for a favour, they…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Say yes before thinking",
+     "traits": {
+      "agreeableness": 2,
+      "conscientiousness": -1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Say yes and plan it properly",
+     "traits": {
+      "agreeableness": 1,
+      "conscientiousness": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Help, but set a limit",
+     "traits": {
+      "agreeableness": -1,
+      "conscientiousness": 1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Find a reason not to, sometimes",
+     "traits": {
+      "agreeableness": -2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-family-05",
+   "tag": "family",
+   "prompt": "If {name} is upset with someone in the family, you can tell because they…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Say so directly",
+     "traits": {
+      "attachment_avoidance": -1,
+      "agreeableness": -1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Go quiet",
+     "traits": {
+      "attachment_avoidance": 2
+     }
+    },
+    {
+     "id": "c",
+     "label": "Get busy with chores",
+     "traits": {
+      "conscientiousness": 1,
+      "attachment_avoidance": 1
+     }
+    },
+    {
+     "id": "d",
+     "label": "You usually can't tell",
+     "traits": {
+      "neuroticism": -1,
+      "attachment_avoidance": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-family-06",
+   "tag": "family",
+   "prompt": "When plans for a family event fall apart, {name}…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Takes over and sorts it",
+     "traits": {
+      "conscientiousness": 2,
+      "extraversion": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Goes with whatever happens",
+     "traits": {
+      "openness": 1,
+      "neuroticism": -1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Gets stressed",
+     "traits": {
+      "neuroticism": 2
+     }
+    },
+    {
+     "id": "d",
+     "label": "Suggests something new instead",
+     "traits": {
+      "openness": 2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-family-07",
+   "tag": "family",
+   "prompt": "How does {name} handle family traditions?",
+   "options": [
+    {
+     "id": "a",
+     "label": "Keeps them going carefully",
+     "traits": {
+      "openness": -2,
+      "conscientiousness": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Loves them but adds their own twist",
+     "traits": {
+      "openness": 1,
+      "agreeableness": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Goes along for others' sake",
+     "traits": {
+      "agreeableness": 2
+     }
+    },
+    {
+     "id": "d",
+     "label": "Would happily try something different",
+     "traits": {
+      "openness": 2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-family-08",
+   "tag": "family",
+   "prompt": "When someone in the family gets good news, {name}…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Is the first to celebrate",
+     "traits": {
+      "extraversion": 2,
+      "agreeableness": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Sends a warm message",
+     "traits": {
+      "agreeableness": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Is happy, quietly",
+     "traits": {
+      "extraversion": -1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Wants to hear every detail",
+     "traits": {
+      "extraversion": 1,
+      "openness": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-family-09",
+   "tag": "family",
+   "prompt": "If a family argument breaks out at dinner, {name} is most likely to…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Change the subject",
+     "traits": {
+      "agreeableness": 1,
+      "attachment_avoidance": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Join in with their view",
+     "traits": {
+      "extraversion": 1,
+      "agreeableness": -1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Calm things down",
+     "traits": {
+      "agreeableness": 2,
+      "neuroticism": -1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Leave the table for a bit",
+     "traits": {
+      "attachment_avoidance": 2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-family-10",
+   "tag": "family",
+   "prompt": "How does {name} spend a free weekend with family around?",
+   "options": [
+    {
+     "id": "a",
+     "label": "Planning an outing for everyone",
+     "traits": {
+      "extraversion": 1,
+      "conscientiousness": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Relaxing at home together",
+     "traits": {
+      "extraversion": -1,
+      "agreeableness": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Getting jobs done around the house",
+     "traits": {
+      "conscientiousness": 2
+     }
+    },
+    {
+     "id": "d",
+     "label": "Taking some time alone",
+     "traits": {
+      "attachment_avoidance": 2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-family-11",
+   "tag": "family",
+   "prompt": "When a relative is unwell, {name} usually…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Visits or calls often",
+     "traits": {
+      "agreeableness": 2,
+      "extraversion": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Organises what needs doing",
+     "traits": {
+      "conscientiousness": 2
+     }
+    },
+    {
+     "id": "c",
+     "label": "Worries a lot from a distance",
+     "traits": {
+      "neuroticism": 2
+     }
+    },
+    {
+     "id": "d",
+     "label": "Helps in quiet, practical ways",
+     "traits": {
+      "agreeableness": 1,
+      "extraversion": -1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-family-12",
+   "tag": "family",
+   "prompt": "When {name} makes a mistake at home, they…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Own it straight away",
+     "traits": {
+      "honesty_humility": 2
+     }
+    },
+    {
+     "id": "b",
+     "label": "Fix it before anyone notices",
+     "traits": {
+      "conscientiousness": 1,
+      "honesty_humility": -1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Feel bad for a long time",
+     "traits": {
+      "neuroticism": 2
+     }
+    },
+    {
+     "id": "d",
+     "label": "Laugh it off",
+     "traits": {
+      "neuroticism": -2,
+      "extraversion": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-family-13",
+   "tag": "family",
+   "prompt": "With money in the family, {name} tends to be…",
+   "options": [
+    {
+     "id": "a",
+     "label": "The careful planner",
+     "traits": {
+      "conscientiousness": 2
+     }
+    },
+    {
+     "id": "b",
+     "label": "Generous, sometimes too generous",
+     "traits": {
+      "agreeableness": 2,
+      "conscientiousness": -1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Relaxed about it",
+     "traits": {
+      "conscientiousness": -1,
+      "neuroticism": -1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Private about it",
+     "traits": {
+      "attachment_avoidance": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-family-14",
+   "tag": "family",
+   "prompt": "When the children (or younger ones) are around, {name} is…",
+   "options": [
+    {
+     "id": "a",
+     "label": "The fun one",
+     "traits": {
+      "extraversion": 2,
+      "openness": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "The one who keeps order",
+     "traits": {
+      "conscientiousness": 2
+     }
+    },
+    {
+     "id": "c",
+     "label": "The patient listener",
+     "traits": {
+      "agreeableness": 2
+     }
+    },
+    {
+     "id": "d",
+     "label": "Happy to let others lead",
+     "traits": {
+      "extraversion": -1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-family-15",
+   "tag": "family",
+   "prompt": "If {name} disagrees with an older relative, they…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Say so respectfully",
+     "traits": {
+      "honesty_humility": 1,
+      "attachment_avoidance": -1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Keep it to themselves",
+     "traits": {
+      "agreeableness": 1,
+      "attachment_avoidance": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Argue it out",
+     "traits": {
+      "agreeableness": -2,
+      "extraversion": 1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Change the subject",
+     "traits": {
+      "attachment_avoidance": 1,
+      "agreeableness": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-family-16",
+   "tag": "family",
+   "prompt": "When {name} hasn't heard from family in a while, they…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Reach out first",
+     "traits": {
+      "attachment_avoidance": -2,
+      "agreeableness": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Wait for them to call",
+     "traits": {
+      "attachment_avoidance": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Worry something's wrong",
+     "traits": {
+      "neuroticism": 2
+     }
+    },
+    {
+     "id": "d",
+     "label": "Don't mind: they know they're close",
+     "traits": {
+      "neuroticism": -1,
+      "attachment_avoidance": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-family-17",
+   "tag": "family",
+   "prompt": "At home, {name} is the one who remembers…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Birthdays and anniversaries",
+     "traits": {
+      "conscientiousness": 1,
+      "agreeableness": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Where everything is kept",
+     "traits": {
+      "conscientiousness": 2
+     }
+    },
+    {
+     "id": "c",
+     "label": "The funny family stories",
+     "traits": {
+      "extraversion": 1,
+      "openness": 1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Not much: others remind them",
+     "traits": {
+      "conscientiousness": -2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-family-18",
+   "tag": "family",
+   "prompt": "When a family decision has to be made, {name}…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Gathers everyone's views first",
+     "traits": {
+      "agreeableness": 2,
+      "extraversion": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Makes the call so it gets done",
+     "traits": {
+      "conscientiousness": 1,
+      "agreeableness": -1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Goes with the majority",
+     "traits": {
+      "agreeableness": 1,
+      "extraversion": -1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Researches every option",
+     "traits": {
+      "conscientiousness": 1,
+      "openness": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-family-19",
+   "tag": "family",
+   "prompt": "How does {name} react to surprises at home?",
+   "options": [
+    {
+     "id": "a",
+     "label": "Loves them",
+     "traits": {
+      "openness": 2,
+      "extraversion": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Prefers to know in advance",
+     "traits": {
+      "openness": -1,
+      "conscientiousness": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Feels a bit thrown at first",
+     "traits": {
+      "neuroticism": 1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Takes them in their stride",
+     "traits": {
+      "neuroticism": -2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-family-20",
+   "tag": "family",
+   "prompt": "When someone at home needs comforting, {name}…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Hugs first, talks later",
+     "traits": {
+      "attachment_avoidance": -2,
+      "agreeableness": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Listens without fixing",
+     "traits": {
+      "agreeableness": 2
+     }
+    },
+    {
+     "id": "c",
+     "label": "Offers solutions",
+     "traits": {
+      "conscientiousness": 1,
+      "agreeableness": -1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Finds it hard to know what to say",
+     "traits": {
+      "attachment_avoidance": 1,
+      "neuroticism": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-family-21",
+   "tag": "family",
+   "prompt": "What does {name} do on a quiet evening at home?",
+   "options": [
+    {
+     "id": "a",
+     "label": "Calls or messages people",
+     "traits": {
+      "extraversion": 2
+     }
+    },
+    {
+     "id": "b",
+     "label": "Reads, watches or makes something alone",
+     "traits": {
+      "extraversion": -1,
+      "openness": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Catches up on chores",
+     "traits": {
+      "conscientiousness": 2
+     }
+    },
+    {
+     "id": "d",
+     "label": "Sits with whoever's there",
+     "traits": {
+      "agreeableness": 1,
+      "attachment_avoidance": -1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-family-22",
+   "tag": "family",
+   "prompt": "When family visits go on longer than planned, {name}…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Is happy to keep going",
+     "traits": {
+      "extraversion": 2,
+      "agreeableness": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Starts to fade but stays",
+     "traits": {
+      "agreeableness": 1,
+      "extraversion": -1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Finds a polite way to wrap up",
+     "traits": {
+      "conscientiousness": 1,
+      "attachment_avoidance": 1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Gets restless",
+     "traits": {
+      "neuroticism": 1,
+      "attachment_avoidance": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-family-23",
+   "tag": "family",
+   "prompt": "How does {name} handle a family member's bad habit?",
+   "options": [
+    {
+     "id": "a",
+     "label": "Says something honestly",
+     "traits": {
+      "honesty_humility": 1,
+      "agreeableness": -1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Drops gentle hints",
+     "traits": {
+      "agreeableness": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Lets it go",
+     "traits": {
+      "agreeableness": 1,
+      "attachment_avoidance": 1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Gets quietly irritated",
+     "traits": {
+      "neuroticism": 2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-family-24",
+   "tag": "family",
+   "prompt": "When there's a family celebration to organise, {name}…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Volunteers to run it",
+     "traits": {
+      "conscientiousness": 1,
+      "extraversion": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Brings the food or the music",
+     "traits": {
+      "agreeableness": 1,
+      "openness": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Turns up and enjoys it",
+     "traits": {
+      "extraversion": 1,
+      "conscientiousness": -1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Helps clean up afterwards",
+     "traits": {
+      "agreeableness": 1,
+      "conscientiousness": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-family-25",
+   "tag": "family",
+   "prompt": "When {name} is tired after a long day, the family notices…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Nothing: they keep going",
+     "traits": {
+      "conscientiousness": 1,
+      "attachment_avoidance": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "They need quiet",
+     "traits": {
+      "extraversion": -2
+     }
+    },
+    {
+     "id": "c",
+     "label": "They get a bit snappy",
+     "traits": {
+      "neuroticism": 2,
+      "agreeableness": -1
+     }
+    },
+    {
+     "id": "d",
+     "label": "They say so and rest",
+     "traits": {
+      "attachment_avoidance": -1,
+      "neuroticism": -1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-family-26",
+   "tag": "family",
+   "prompt": "If a family member makes a choice {name} doesn't agree with, they…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Support them anyway",
+     "traits": {
+      "agreeableness": 2
+     }
+    },
+    {
+     "id": "b",
+     "label": "Share their worry once, then let it be",
+     "traits": {
+      "honesty_humility": 1,
+      "agreeableness": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Keep bringing it up",
+     "traits": {
+      "agreeableness": -2,
+      "neuroticism": 1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Stay out of it",
+     "traits": {
+      "attachment_avoidance": 2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-family-27",
+   "tag": "family",
+   "prompt": "How does {name} talk about their family to others?",
+   "options": [
+    {
+     "id": "a",
+     "label": "With lots of warmth",
+     "traits": {
+      "agreeableness": 1,
+      "extraversion": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "With honest stories, good and bad",
+     "traits": {
+      "honesty_humility": 2
+     }
+    },
+    {
+     "id": "c",
+     "label": "Hardly at all",
+     "traits": {
+      "attachment_avoidance": 2
+     }
+    },
+    {
+     "id": "d",
+     "label": "With humour",
+     "traits": {
+      "extraversion": 1,
+      "openness": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-family-28",
+   "tag": "family",
+   "prompt": "When the house is a mess, {name}…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Can't relax until it's tidy",
+     "traits": {
+      "conscientiousness": 2,
+      "neuroticism": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Gets everyone to pitch in",
+     "traits": {
+      "extraversion": 1,
+      "conscientiousness": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Doesn't really notice",
+     "traits": {
+      "conscientiousness": -2
+     }
+    },
+    {
+     "id": "d",
+     "label": "Tidies one corner and calls it done",
+     "traits": {
+      "neuroticism": -1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-family-29",
+   "tag": "family",
+   "prompt": "When an old family story comes up, {name}…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Tells it best",
+     "traits": {
+      "extraversion": 2
+     }
+    },
+    {
+     "id": "b",
+     "label": "Adds the details others forgot",
+     "traits": {
+      "conscientiousness": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Listens and smiles",
+     "traits": {
+      "extraversion": -1,
+      "agreeableness": 1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Corrects the facts",
+     "traits": {
+      "conscientiousness": 1,
+      "agreeableness": -1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-family-30",
+   "tag": "family",
+   "prompt": "When someone in the family is struggling quietly, {name}…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Picks up on it early",
+     "traits": {
+      "agreeableness": 2
+     }
+    },
+    {
+     "id": "b",
+     "label": "Waits for them to say something",
+     "traits": {
+      "attachment_avoidance": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Offers help in practical ways",
+     "traits": {
+      "conscientiousness": 1,
+      "agreeableness": 1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Needs to be told",
+     "traits": {
+      "agreeableness": -1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-school-01",
+   "tag": "school",
+   "prompt": "In a group project, {name} usually ends up…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Organising who does what",
+     "traits": {
+      "conscientiousness": 2,
+      "extraversion": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Doing the parts no one else wants",
+     "traits": {
+      "agreeableness": 1,
+      "conscientiousness": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Coming up with the big idea",
+     "traits": {
+      "openness": 2
+     }
+    },
+    {
+     "id": "d",
+     "label": "Following the plan quietly",
+     "traits": {
+      "extraversion": -1,
+      "agreeableness": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-school-02",
+   "tag": "school",
+   "prompt": "The night before a deadline, {name} is usually…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Already finished",
+     "traits": {
+      "conscientiousness": 2
+     }
+    },
+    {
+     "id": "b",
+     "label": "Polishing the final bits",
+     "traits": {
+      "conscientiousness": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Working late to get it done",
+     "traits": {
+      "conscientiousness": -1,
+      "neuroticism": 1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Just starting",
+     "traits": {
+      "conscientiousness": -2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-school-03",
+   "tag": "school",
+   "prompt": "When a teacher asks a question to the class, {name}…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Answers first",
+     "traits": {
+      "extraversion": 2
+     }
+    },
+    {
+     "id": "b",
+     "label": "Knows the answer but waits",
+     "traits": {
+      "extraversion": -1,
+      "conscientiousness": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Thinks about it longer than most",
+     "traits": {
+      "openness": 1,
+      "extraversion": -1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Hopes not to be picked",
+     "traits": {
+      "neuroticism": 1,
+      "extraversion": -2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-school-04",
+   "tag": "school",
+   "prompt": "When {name} gets a disappointing mark, they…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Work out what went wrong",
+     "traits": {
+      "conscientiousness": 2
+     }
+    },
+    {
+     "id": "b",
+     "label": "Feel low for a few days",
+     "traits": {
+      "neuroticism": 2
+     }
+    },
+    {
+     "id": "c",
+     "label": "Shrug and move on",
+     "traits": {
+      "neuroticism": -2
+     }
+    },
+    {
+     "id": "d",
+     "label": "Talk it through with friends",
+     "traits": {
+      "extraversion": 1,
+      "attachment_avoidance": -1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-school-05",
+   "tag": "school",
+   "prompt": "In class, {name} is the one who…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Asks the unexpected questions",
+     "traits": {
+      "openness": 2
+     }
+    },
+    {
+     "id": "b",
+     "label": "Takes the best notes",
+     "traits": {
+      "conscientiousness": 2
+     }
+    },
+    {
+     "id": "c",
+     "label": "Helps others catch up",
+     "traits": {
+      "agreeableness": 2
+     }
+    },
+    {
+     "id": "d",
+     "label": "Keeps everyone laughing",
+     "traits": {
+      "extraversion": 2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-school-06",
+   "tag": "school",
+   "prompt": "If {name} sees someone copying their work, they…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Say something straight away",
+     "traits": {
+      "agreeableness": -1,
+      "honesty_humility": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Let it go this once",
+     "traits": {
+      "agreeableness": 2
+     }
+    },
+    {
+     "id": "c",
+     "label": "Cover their paper quietly",
+     "traits": {
+      "attachment_avoidance": 1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Feel uneasy but say nothing",
+     "traits": {
+      "neuroticism": 1,
+      "extraversion": -1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-school-07",
+   "tag": "school",
+   "prompt": "When {name} doesn't understand something in a lesson, they…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Ask in front of everyone",
+     "traits": {
+      "extraversion": 1,
+      "attachment_avoidance": -1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Ask the teacher afterwards",
+     "traits": {
+      "conscientiousness": 1,
+      "extraversion": -1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Work it out alone later",
+     "traits": {
+      "attachment_avoidance": 2
+     }
+    },
+    {
+     "id": "d",
+     "label": "Ask a friend",
+     "traits": {
+      "agreeableness": 1,
+      "extraversion": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-school-08",
+   "tag": "school",
+   "prompt": "Before an exam, {name} usually seems…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Relaxed and prepared",
+     "traits": {
+      "neuroticism": -2,
+      "conscientiousness": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Nervous but ready",
+     "traits": {
+      "neuroticism": 1,
+      "conscientiousness": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Cramming with friends",
+     "traits": {
+      "extraversion": 1,
+      "conscientiousness": -1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Worried they haven't done enough",
+     "traits": {
+      "neuroticism": 2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-school-09",
+   "tag": "school",
+   "prompt": "When a new student arrives, {name}…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Talks to them first",
+     "traits": {
+      "extraversion": 2,
+      "agreeableness": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Shows them around if asked",
+     "traits": {
+      "agreeableness": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Watches from a distance",
+     "traits": {
+      "extraversion": -1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Leaves it to others",
+     "traits": {
+      "extraversion": -2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-school-10",
+   "tag": "school",
+   "prompt": "When choosing a topic for a project, {name} goes for…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Something nobody else would pick",
+     "traits": {
+      "openness": 2
+     }
+    },
+    {
+     "id": "b",
+     "label": "Something they know they can do well",
+     "traits": {
+      "conscientiousness": 1,
+      "openness": -1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Whatever the group wants",
+     "traits": {
+      "agreeableness": 2
+     }
+    },
+    {
+     "id": "d",
+     "label": "Whatever is quickest",
+     "traits": {
+      "conscientiousness": -1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-school-11",
+   "tag": "school",
+   "prompt": "If {name}'s group isn't pulling its weight, they…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Speak up about it",
+     "traits": {
+      "agreeableness": -1,
+      "extraversion": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Do the extra work themselves",
+     "traits": {
+      "conscientiousness": 1,
+      "agreeableness": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Tell the teacher",
+     "traits": {
+      "honesty_humility": 1,
+      "conscientiousness": 1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Let the mark take the hit",
+     "traits": {
+      "conscientiousness": -1,
+      "attachment_avoidance": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-school-12",
+   "tag": "school",
+   "prompt": "How does {name} organise their school things?",
+   "options": [
+    {
+     "id": "a",
+     "label": "Colour-coded and planned",
+     "traits": {
+      "conscientiousness": 2
+     }
+    },
+    {
+     "id": "b",
+     "label": "Roughly, but they know where things are",
+     "traits": {
+      "openness": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "In one big pile",
+     "traits": {
+      "conscientiousness": -2
+     }
+    },
+    {
+     "id": "d",
+     "label": "Digitally, everything in the cloud",
+     "traits": {
+      "openness": 1,
+      "conscientiousness": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-school-13",
+   "tag": "school",
+   "prompt": "During a free period, {name} is usually…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Getting ahead on work",
+     "traits": {
+      "conscientiousness": 2
+     }
+    },
+    {
+     "id": "b",
+     "label": "Chatting with friends",
+     "traits": {
+      "extraversion": 2
+     }
+    },
+    {
+     "id": "c",
+     "label": "Reading or drawing alone",
+     "traits": {
+      "extraversion": -1,
+      "openness": 1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Helping someone with their work",
+     "traits": {
+      "agreeableness": 2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-school-14",
+   "tag": "school",
+   "prompt": "When a classmate is being left out, {name}…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Includes them",
+     "traits": {
+      "agreeableness": 2
+     }
+    },
+    {
+     "id": "b",
+     "label": "Notices but isn't sure what to do",
+     "traits": {
+      "neuroticism": 1,
+      "agreeableness": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Doesn't really notice",
+     "traits": {
+      "agreeableness": -1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Says something to whoever is leaving them out",
+     "traits": {
+      "honesty_humility": 1,
+      "extraversion": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-school-15",
+   "tag": "school",
+   "prompt": "In a debate or discussion, {name} usually…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Argues their side hard",
+     "traits": {
+      "agreeableness": -2,
+      "extraversion": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Sees both sides",
+     "traits": {
+      "openness": 1,
+      "agreeableness": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Listens more than talks",
+     "traits": {
+      "extraversion": -2
+     }
+    },
+    {
+     "id": "d",
+     "label": "Changes their mind if they hear a good point",
+     "traits": {
+      "openness": 2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-school-16",
+   "tag": "school",
+   "prompt": "When {name} gets praised by a teacher, they…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Light up",
+     "traits": {
+      "extraversion": 1,
+      "neuroticism": -1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Downplay it",
+     "traits": {
+      "honesty_humility": 1,
+      "extraversion": -1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Feel awkward",
+     "traits": {
+      "neuroticism": 1,
+      "attachment_avoidance": 1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Use it to push harder",
+     "traits": {
+      "conscientiousness": 2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-school-17",
+   "tag": "school",
+   "prompt": "If {name} forgets their homework, they…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Admit it honestly",
+     "traits": {
+      "honesty_humility": 2
+     }
+    },
+    {
+     "id": "b",
+     "label": "Quickly do something before class",
+     "traits": {
+      "conscientiousness": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Make up a reason",
+     "traits": {
+      "honesty_humility": -2
+     }
+    },
+    {
+     "id": "d",
+     "label": "Feel anxious all lesson",
+     "traits": {
+      "neuroticism": 2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-school-18",
+   "tag": "school",
+   "prompt": "At a school event or trip, {name} is…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Right in the middle of everything",
+     "traits": {
+      "extraversion": 2
+     }
+    },
+    {
+     "id": "b",
+     "label": "With their close group",
+     "traits": {
+      "attachment_avoidance": -1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Exploring on their own",
+     "traits": {
+      "openness": 1,
+      "attachment_avoidance": 1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Making sure nobody gets lost",
+     "traits": {
+      "conscientiousness": 1,
+      "agreeableness": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-school-19",
+   "tag": "school",
+   "prompt": "When {name} has a lot of revision to do, they…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Make a timetable and stick to it",
+     "traits": {
+      "conscientiousness": 2
+     }
+    },
+    {
+     "id": "b",
+     "label": "Revise with a study group",
+     "traits": {
+      "extraversion": 2
+     }
+    },
+    {
+     "id": "c",
+     "label": "Try new techniques to make it stick",
+     "traits": {
+      "openness": 2
+     }
+    },
+    {
+     "id": "d",
+     "label": "Leave it until the last few days",
+     "traits": {
+      "conscientiousness": -2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-school-20",
+   "tag": "school",
+   "prompt": "If a friend asks {name} to skip a class with them, {name}…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Says no",
+     "traits": {
+      "conscientiousness": 2,
+      "honesty_humility": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Thinks about it, then says no",
+     "traits": {
+      "conscientiousness": 1,
+      "neuroticism": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Goes along this once",
+     "traits": {
+      "agreeableness": 1,
+      "conscientiousness": -1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Is already halfway out the door",
+     "traits": {
+      "conscientiousness": -2,
+      "extraversion": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-school-21",
+   "tag": "school",
+   "prompt": "When {name} is working on something creative, they…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Get completely absorbed",
+     "traits": {
+      "openness": 2
+     }
+    },
+    {
+     "id": "b",
+     "label": "Follow the brief closely",
+     "traits": {
+      "conscientiousness": 2,
+      "openness": -1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Want others' opinions as they go",
+     "traits": {
+      "extraversion": 1,
+      "attachment_avoidance": -1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Keep it to themselves until it's done",
+     "traits": {
+      "attachment_avoidance": 2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-school-22",
+   "tag": "school",
+   "prompt": "After a bad day at school, {name}…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Talks about it with someone",
+     "traits": {
+      "attachment_avoidance": -2,
+      "extraversion": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Keeps it in",
+     "traits": {
+      "attachment_avoidance": 2
+     }
+    },
+    {
+     "id": "c",
+     "label": "Gets over it by evening",
+     "traits": {
+      "neuroticism": -2
+     }
+    },
+    {
+     "id": "d",
+     "label": "Thinks about it all night",
+     "traits": {
+      "neuroticism": 2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-school-23",
+   "tag": "school",
+   "prompt": "When there's a class vote, {name} usually…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Campaigns for their choice",
+     "traits": {
+      "extraversion": 2,
+      "agreeableness": -1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Votes with their friends",
+     "traits": {
+      "agreeableness": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Thinks hard about it",
+     "traits": {
+      "conscientiousness": 1,
+      "openness": 1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Doesn't mind the outcome",
+     "traits": {
+      "neuroticism": -1,
+      "extraversion": -1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-school-24",
+   "tag": "school",
+   "prompt": "When someone is unkind to {name}, they…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Stand up for themselves",
+     "traits": {
+      "agreeableness": -1,
+      "neuroticism": -1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Brush it off",
+     "traits": {
+      "neuroticism": -2
+     }
+    },
+    {
+     "id": "c",
+     "label": "Feel hurt for a while",
+     "traits": {
+      "neuroticism": 2
+     }
+    },
+    {
+     "id": "d",
+     "label": "Avoid that person",
+     "traits": {
+      "attachment_avoidance": 2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-school-25",
+   "tag": "school",
+   "prompt": "How does {name} handle a really hard subject?",
+   "options": [
+    {
+     "id": "a",
+     "label": "Keeps practising until it clicks",
+     "traits": {
+      "conscientiousness": 2
+     }
+    },
+    {
+     "id": "b",
+     "label": "Asks for extra help",
+     "traits": {
+      "attachment_avoidance": -1,
+      "conscientiousness": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Finds a different way to understand it",
+     "traits": {
+      "openness": 2
+     }
+    },
+    {
+     "id": "d",
+     "label": "Avoids it when they can",
+     "traits": {
+      "conscientiousness": -2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-school-26",
+   "tag": "school",
+   "prompt": "When {name} wins something or does well, they…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Share the credit",
+     "traits": {
+      "honesty_humility": 2,
+      "agreeableness": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Celebrate openly",
+     "traits": {
+      "extraversion": 2
+     }
+    },
+    {
+     "id": "c",
+     "label": "Keep it quiet",
+     "traits": {
+      "extraversion": -1,
+      "honesty_humility": 1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Already think about the next goal",
+     "traits": {
+      "conscientiousness": 2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-school-27",
+   "tag": "school",
+   "prompt": "If a teacher is unfair to someone, {name}…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Speaks up",
+     "traits": {
+      "honesty_humility": 2,
+      "extraversion": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Tells their friends afterwards",
+     "traits": {
+      "extraversion": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Stays quiet",
+     "traits": {
+      "agreeableness": 1,
+      "extraversion": -1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Checks on the person later",
+     "traits": {
+      "agreeableness": 2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-school-28",
+   "tag": "school",
+   "prompt": "When {name} is given freedom to do things their own way, they…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Thrive",
+     "traits": {
+      "openness": 2
+     }
+    },
+    {
+     "id": "b",
+     "label": "Prefer clear instructions",
+     "traits": {
+      "openness": -1,
+      "conscientiousness": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Get a bit lost",
+     "traits": {
+      "conscientiousness": -1,
+      "neuroticism": 1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Make a plan first",
+     "traits": {
+      "conscientiousness": 2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-school-29",
+   "tag": "school",
+   "prompt": "At lunchtime, {name} is usually…",
+   "options": [
+    {
+     "id": "a",
+     "label": "With a big group",
+     "traits": {
+      "extraversion": 2
+     }
+    },
+    {
+     "id": "b",
+     "label": "With one close friend",
+     "traits": {
+      "extraversion": -1,
+      "attachment_avoidance": -1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Wherever, with whoever",
+     "traits": {
+      "openness": 1,
+      "agreeableness": 1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Off on their own",
+     "traits": {
+      "attachment_avoidance": 2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-school-30",
+   "tag": "school",
+   "prompt": "When {name} borrows something, they…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Return it quickly and in good shape",
+     "traits": {
+      "conscientiousness": 2,
+      "honesty_humility": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Return it eventually",
+     "traits": {
+      "conscientiousness": -1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Need a reminder",
+     "traits": {
+      "conscientiousness": -2
+     }
+    },
+    {
+     "id": "d",
+     "label": "Return it with a thank-you note or treat",
+     "traits": {
+      "agreeableness": 2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-friends-01",
+   "tag": "friends",
+   "prompt": "A friend texts {name} at 7am asking for a big favour. What does {name} actually do first?",
+   "options": [
+    {
+     "id": "a",
+     "label": "Says yes before thinking it through",
+     "traits": {
+      "agreeableness": 2,
+      "conscientiousness": -1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Asks what it involves",
+     "traits": {
+      "conscientiousness": 1,
+      "agreeableness": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Offers a smaller version they can manage",
+     "traits": {
+      "agreeableness": 1,
+      "conscientiousness": 1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Leaves it until later in the day",
+     "traits": {
+      "attachment_avoidance": 1,
+      "conscientiousness": -1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-friends-02",
+   "tag": "friends",
+   "prompt": "When plans with friends get cancelled last minute, {name}…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Is secretly relieved",
+     "traits": {
+      "extraversion": -2
+     }
+    },
+    {
+     "id": "b",
+     "label": "Is disappointed and says so",
+     "traits": {
+      "attachment_avoidance": -1,
+      "extraversion": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Makes a new plan straight away",
+     "traits": {
+      "extraversion": 2,
+      "openness": 1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Doesn't mind either way",
+     "traits": {
+      "neuroticism": -2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-friends-03",
+   "tag": "friends",
+   "prompt": "In a group chat, {name} is the one who…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Keeps the conversation going",
+     "traits": {
+      "extraversion": 2
+     }
+    },
+    {
+     "id": "b",
+     "label": "Replies hours later",
+     "traits": {
+      "extraversion": -1,
+      "conscientiousness": -1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Reacts but rarely writes",
+     "traits": {
+      "extraversion": -1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Organises the actual plans",
+     "traits": {
+      "conscientiousness": 2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-friends-04",
+   "tag": "friends",
+   "prompt": "When a friend is going through a hard time, {name}…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Shows up in person",
+     "traits": {
+      "agreeableness": 2,
+      "attachment_avoidance": -1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Sends thoughtful messages",
+     "traits": {
+      "agreeableness": 1,
+      "extraversion": -1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Distracts them with fun",
+     "traits": {
+      "extraversion": 2
+     }
+    },
+    {
+     "id": "d",
+     "label": "Gives practical help",
+     "traits": {
+      "conscientiousness": 1,
+      "agreeableness": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-friends-05",
+   "tag": "friends",
+   "prompt": "If {name} is hurt by something a friend said, they…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Tell them directly",
+     "traits": {
+      "attachment_avoidance": -1,
+      "honesty_humility": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Let it go",
+     "traits": {
+      "agreeableness": 1,
+      "neuroticism": -1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Go a bit distant for a while",
+     "traits": {
+      "attachment_avoidance": 2
+     }
+    },
+    {
+     "id": "d",
+     "label": "Keep thinking about it",
+     "traits": {
+      "neuroticism": 2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-friends-06",
+   "tag": "friends",
+   "prompt": "On a night out, {name} usually…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Talks to everyone",
+     "traits": {
+      "extraversion": 2
+     }
+    },
+    {
+     "id": "b",
+     "label": "Sticks with their close friends",
+     "traits": {
+      "extraversion": -1,
+      "attachment_avoidance": -1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Suggests somewhere new",
+     "traits": {
+      "openness": 2
+     }
+    },
+    {
+     "id": "d",
+     "label": "Heads home early",
+     "traits": {
+      "extraversion": -2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-friends-07",
+   "tag": "friends",
+   "prompt": "When choosing where to eat, {name}…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Picks somewhere new",
+     "traits": {
+      "openness": 2
+     }
+    },
+    {
+     "id": "b",
+     "label": "Goes for the usual favourite",
+     "traits": {
+      "openness": -2
+     }
+    },
+    {
+     "id": "c",
+     "label": "Lets everyone else decide",
+     "traits": {
+      "agreeableness": 1,
+      "extraversion": -1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Has already booked",
+     "traits": {
+      "conscientiousness": 2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-friends-08",
+   "tag": "friends",
+   "prompt": "When a friend shares a secret with {name}, they…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Keep it completely",
+     "traits": {
+      "honesty_humility": 2
+     }
+    },
+    {
+     "id": "b",
+     "label": "Might tell their partner",
+     "traits": {
+      "honesty_humility": -1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Forget it, honestly",
+     "traits": {
+      "conscientiousness": -1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Worry about what to do with it",
+     "traits": {
+      "neuroticism": 1,
+      "agreeableness": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-friends-09",
+   "tag": "friends",
+   "prompt": "When {name} has good news, they…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Tell everyone straight away",
+     "traits": {
+      "extraversion": 2
+     }
+    },
+    {
+     "id": "b",
+     "label": "Tell one or two close friends",
+     "traits": {
+      "extraversion": -1,
+      "attachment_avoidance": -1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Keep it to themselves for a bit",
+     "traits": {
+      "attachment_avoidance": 2
+     }
+    },
+    {
+     "id": "d",
+     "label": "Wait until it's certain",
+     "traits": {
+      "conscientiousness": 1,
+      "neuroticism": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-friends-10",
+   "tag": "friends",
+   "prompt": "If a friend turns up late, {name}…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Doesn't mind at all",
+     "traits": {
+      "neuroticism": -2,
+      "agreeableness": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Gets a bit irritated",
+     "traits": {
+      "neuroticism": 1,
+      "agreeableness": -1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Says something about it",
+     "traits": {
+      "agreeableness": -1,
+      "honesty_humility": 1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Was late too",
+     "traits": {
+      "conscientiousness": -2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-friends-11",
+   "tag": "friends",
+   "prompt": "When friends disagree about something, {name}…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Plays peacemaker",
+     "traits": {
+      "agreeableness": 2
+     }
+    },
+    {
+     "id": "b",
+     "label": "Picks a side honestly",
+     "traits": {
+      "honesty_humility": 1,
+      "agreeableness": -1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Changes the subject",
+     "traits": {
+      "attachment_avoidance": 1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Enjoys the debate",
+     "traits": {
+      "extraversion": 1,
+      "openness": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-friends-12",
+   "tag": "friends",
+   "prompt": "How does {name} keep in touch with old friends?",
+   "options": [
+    {
+     "id": "a",
+     "label": "Regular calls and catch-ups",
+     "traits": {
+      "attachment_avoidance": -2,
+      "conscientiousness": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "The odd message now and then",
+     "traits": {
+      "attachment_avoidance": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Picks up exactly where they left off",
+     "traits": {
+      "neuroticism": -1
+     }
+    },
+    {
+     "id": "d",
+     "label": "They tend to drift",
+     "traits": {
+      "attachment_avoidance": 2,
+      "conscientiousness": -1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-friends-13",
+   "tag": "friends",
+   "prompt": "On holiday with friends, {name} is the one who…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Plans every detail",
+     "traits": {
+      "conscientiousness": 2
+     }
+    },
+    {
+     "id": "b",
+     "label": "Wanders off to explore",
+     "traits": {
+      "openness": 2,
+      "attachment_avoidance": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Keeps the mood up",
+     "traits": {
+      "extraversion": 2
+     }
+    },
+    {
+     "id": "d",
+     "label": "Makes sure everyone is all right",
+     "traits": {
+      "agreeableness": 2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-friends-14",
+   "tag": "friends",
+   "prompt": "When a friend asks {name} for honest feedback, they…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Give it straight",
+     "traits": {
+      "honesty_humility": 2,
+      "agreeableness": -1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Soften it a lot",
+     "traits": {
+      "agreeableness": 2
+     }
+    },
+    {
+     "id": "c",
+     "label": "Say it's great either way",
+     "traits": {
+      "agreeableness": 1,
+      "honesty_humility": -2
+     }
+    },
+    {
+     "id": "d",
+     "label": "Ask what they really want to hear",
+     "traits": {
+      "openness": 1,
+      "agreeableness": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-friends-15",
+   "tag": "friends",
+   "prompt": "At a party where {name} knows hardly anyone, they…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Make new friends fast",
+     "traits": {
+      "extraversion": 2
+     }
+    },
+    {
+     "id": "b",
+     "label": "Find one person to talk to",
+     "traits": {
+      "extraversion": -1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Help out with food or music",
+     "traits": {
+      "agreeableness": 1,
+      "conscientiousness": 1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Leave early",
+     "traits": {
+      "extraversion": -2,
+      "attachment_avoidance": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-friends-16",
+   "tag": "friends",
+   "prompt": "When {name} borrows money from a friend, they…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Pay it back the same day",
+     "traits": {
+      "conscientiousness": 2,
+      "honesty_humility": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Pay it back with a little extra",
+     "traits": {
+      "agreeableness": 1,
+      "honesty_humility": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Need a reminder",
+     "traits": {
+      "conscientiousness": -2
+     }
+    },
+    {
+     "id": "d",
+     "label": "Worry about it until it's paid",
+     "traits": {
+      "neuroticism": 2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-friends-17",
+   "tag": "friends",
+   "prompt": "When a friend achieves something big, {name}…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Throws a celebration",
+     "traits": {
+      "extraversion": 2,
+      "agreeableness": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Sends a heartfelt message",
+     "traits": {
+      "agreeableness": 2
+     }
+    },
+    {
+     "id": "c",
+     "label": "Is happy, maybe a little envious",
+     "traits": {
+      "neuroticism": 1,
+      "honesty_humility": 1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Asks how they did it",
+     "traits": {
+      "openness": 1,
+      "conscientiousness": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-friends-18",
+   "tag": "friends",
+   "prompt": "How does {name} handle a friend who always cancels?",
+   "options": [
+    {
+     "id": "a",
+     "label": "Keeps inviting them anyway",
+     "traits": {
+      "agreeableness": 2
+     }
+    },
+    {
+     "id": "b",
+     "label": "Talks to them about it",
+     "traits": {
+      "honesty_humility": 1,
+      "attachment_avoidance": -1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Stops making the effort",
+     "traits": {
+      "attachment_avoidance": 2
+     }
+    },
+    {
+     "id": "d",
+     "label": "Gets quietly hurt",
+     "traits": {
+      "neuroticism": 2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-friends-19",
+   "tag": "friends",
+   "prompt": "When there's spare time with friends, {name} would rather…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Try something none of them have done",
+     "traits": {
+      "openness": 2
+     }
+    },
+    {
+     "id": "b",
+     "label": "Do the usual thing they love",
+     "traits": {
+      "openness": -2
+     }
+    },
+    {
+     "id": "c",
+     "label": "Just talk for hours",
+     "traits": {
+      "extraversion": 1,
+      "attachment_avoidance": -1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Do something active",
+     "traits": {
+      "extraversion": 1,
+      "openness": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-friends-20",
+   "tag": "friends",
+   "prompt": "When {name} messes up with a friend, they…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Apologise right away",
+     "traits": {
+      "honesty_humility": 2,
+      "agreeableness": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Make it up with a gesture",
+     "traits": {
+      "agreeableness": 1,
+      "attachment_avoidance": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Wait for it to blow over",
+     "traits": {
+      "attachment_avoidance": 2
+     }
+    },
+    {
+     "id": "d",
+     "label": "Overthink it for days",
+     "traits": {
+      "neuroticism": 2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-friends-21",
+   "tag": "friends",
+   "prompt": "Who usually reaches out first between {name} and their friends?",
+   "options": [
+    {
+     "id": "a",
+     "label": "{name}, almost always",
+     "traits": {
+      "attachment_avoidance": -2,
+      "extraversion": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "It's about even",
+     "traits": {
+      "agreeableness": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Usually the friends",
+     "traits": {
+      "attachment_avoidance": 1,
+      "extraversion": -1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Whoever needs something",
+     "traits": {
+      "conscientiousness": -1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-friends-22",
+   "tag": "friends",
+   "prompt": "When {name} is in a bad mood, friends can tell because they…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Go quiet",
+     "traits": {
+      "extraversion": -1,
+      "attachment_avoidance": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Say exactly what's wrong",
+     "traits": {
+      "attachment_avoidance": -1,
+      "honesty_humility": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Get a bit sharp",
+     "traits": {
+      "neuroticism": 1,
+      "agreeableness": -1
+     }
+    },
+    {
+     "id": "d",
+     "label": "You honestly can't tell",
+     "traits": {
+      "neuroticism": -1,
+      "attachment_avoidance": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-friends-23",
+   "tag": "friends",
+   "prompt": "When a friend wants to talk late at night, {name}…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Stays up as long as needed",
+     "traits": {
+      "agreeableness": 2
+     }
+    },
+    {
+     "id": "b",
+     "label": "Talks for a while, then gently wraps up",
+     "traits": {
+      "agreeableness": 1,
+      "conscientiousness": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Suggests talking tomorrow",
+     "traits": {
+      "conscientiousness": 1,
+      "attachment_avoidance": 1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Is already asleep",
+     "traits": {
+      "conscientiousness": 1,
+      "extraversion": -1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-friends-24",
+   "tag": "friends",
+   "prompt": "How does {name} react to a friend's new and unusual idea?",
+   "options": [
+    {
+     "id": "a",
+     "label": "Gets excited and joins in",
+     "traits": {
+      "openness": 2,
+      "extraversion": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Asks lots of questions",
+     "traits": {
+      "openness": 1,
+      "conscientiousness": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Is supportive but cautious",
+     "traits": {
+      "agreeableness": 1,
+      "openness": -1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Points out what could go wrong",
+     "traits": {
+      "agreeableness": -1,
+      "neuroticism": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-friends-25",
+   "tag": "friends",
+   "prompt": "When a friend's birthday comes around, {name}…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Plans something thoughtful well in advance",
+     "traits": {
+      "conscientiousness": 2,
+      "agreeableness": 1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Remembers on the day",
+     "traits": {
+      "agreeableness": 1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Needs a reminder",
+     "traits": {
+      "conscientiousness": -2
+     }
+    },
+    {
+     "id": "d",
+     "label": "Turns up with something personal",
+     "traits": {
+      "agreeableness": 1,
+      "openness": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-friends-26",
+   "tag": "friends",
+   "prompt": "If {name} gets a text that's slightly ambiguous, they…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Assume the best",
+     "traits": {
+      "neuroticism": -2
+     }
+    },
+    {
+     "id": "b",
+     "label": "Wonder if something's wrong",
+     "traits": {
+      "neuroticism": 2
+     }
+    },
+    {
+     "id": "c",
+     "label": "Ask what they meant",
+     "traits": {
+      "attachment_avoidance": -1,
+      "honesty_humility": 1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Don't think about it again",
+     "traits": {
+      "neuroticism": -1,
+      "attachment_avoidance": 1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-friends-27",
+   "tag": "friends",
+   "prompt": "When a friend gets into an argument with someone else, {name}…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Backs them up no matter what",
+     "traits": {
+      "agreeableness": 1,
+      "honesty_humility": -1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Listens, then gives an honest view",
+     "traits": {
+      "honesty_humility": 2
+     }
+    },
+    {
+     "id": "c",
+     "label": "Tries to calm both sides",
+     "traits": {
+      "agreeableness": 2
+     }
+    },
+    {
+     "id": "d",
+     "label": "Stays out of it",
+     "traits": {
+      "attachment_avoidance": 2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-friends-28",
+   "tag": "friends",
+   "prompt": "With a free afternoon and no plans, {name} usually ends up…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Calling a friend to meet up",
+     "traits": {
+      "extraversion": 2
+     }
+    },
+    {
+     "id": "b",
+     "label": "Enjoying time alone",
+     "traits": {
+      "extraversion": -2
+     }
+    },
+    {
+     "id": "c",
+     "label": "Starting a project",
+     "traits": {
+      "conscientiousness": 1,
+      "openness": 1
+     }
+    },
+    {
+     "id": "d",
+     "label": "Resting without guilt",
+     "traits": {
+      "neuroticism": -1,
+      "conscientiousness": -1
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-friends-29",
+   "tag": "friends",
+   "prompt": "When friends ask {name} for advice, it's usually about…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Practical things: plans, money, work",
+     "traits": {
+      "conscientiousness": 2
+     }
+    },
+    {
+     "id": "b",
+     "label": "Feelings and relationships",
+     "traits": {
+      "agreeableness": 1,
+      "attachment_avoidance": -1
+     }
+    },
+    {
+     "id": "c",
+     "label": "Something creative or new",
+     "traits": {
+      "openness": 2
+     }
+    },
+    {
+     "id": "d",
+     "label": "Where to go and what to do",
+     "traits": {
+      "extraversion": 2
+     }
+    }
+   ]
+  },
+  {
+   "id": "fq-friends-30",
+   "tag": "friends",
+   "prompt": "In a friendship, {name} is most often the one who…",
+   "options": [
+    {
+     "id": "a",
+     "label": "Listens",
+     "traits": {
+      "agreeableness": 1,
+      "extraversion": -1
+     }
+    },
+    {
+     "id": "b",
+     "label": "Makes everyone laugh",
+     "traits": {
+      "extraversion": 2
+     }
+    },
+    {
+     "id": "c",
+     "label": "Keeps things organised",
+     "traits": {
+      "conscientiousness": 2
+     }
+    },
+    {
+     "id": "d",
+     "label": "Says the honest thing",
+     "traits": {
+      "honesty_humility": 2
+     }
+    }
+   ]
+  }
+ ]
+}
