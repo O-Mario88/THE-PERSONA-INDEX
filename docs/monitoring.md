@@ -45,8 +45,9 @@ never a path, a date, an id, an address or anything a person sent.
 | `persona_go_goroutines`, `persona_go_heap_bytes`, `persona_go_gc_pause_seconds_total` | The Go runtime |
 
 The jobs are `tally` (every second) and, every hour in this order,
-`vote_retention`, `mirror_fold`, `week_retention`, `mirror_retention` and
-`backup_retention`.
+`vote_retention`, `mirror_fold`, `week_retention`, `mirror_retention`,
+`backup_retention` and `social_retention` (friend answers, nods, Answer
+Together, sign-in codes, rooms and invites past their time).
 
 ## Alerts
 

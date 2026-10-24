@@ -19,6 +19,11 @@ How the backend runs in production, and the decisions behind it.
 | `STATIC_DIR` | Serve the built site (`frontend/dist`) from this folder, beside the API, with the headers in its `_headers` file. Set in the image. Must hold `index.html`. |
 | `METRICS_ADDR` | Serve `/metrics` on this private address too, such as `:9090`. Must differ from `PORT`. ([monitoring.md](monitoring.md)) |
 | `METRICS_TOKEN` | 32+ bytes. Serve `/metrics` on the public port to requests with `Authorization: Bearer <token>`. |
+| `SIGNIN_CODE_WEBHOOK` | Optional, https only. Turns on sign-in by code: the server POSTs `{"kind","to","code","text"}` here, for an email or SMS provider (or a small function in front of one) to deliver. Without it, and without Google or Apple, the sign-in sheet offers nothing. A local run without `DATABASE_URL` prints codes to the log instead. |
+| `SIGNIN_CODE_WEBHOOK_TOKEN` | Sent to the webhook as `Authorization: Bearer <token>`. |
+| `SIGNIN_CODE_KINDS` | `email,phone` (default), `email` or `phone`: which addresses the code sign-in accepts. |
+| `GOOGLE_CLIENT_ID` | Turns on "Continue with Google". ID tokens are checked against Google's published keys. |
+| `APPLE_CLIENT_ID` | Turns on "Continue with Apple" (the Services ID). |
 | `LOG_FORMAT` | `json` (the default with `DATABASE_URL`) or `text` (the default without). |
 | `ACCESS_LOG` | `errors` (default: 5xx and requests taking 1 s or more), `all` or `off`. Never logs a path, query, address or pass. |
 

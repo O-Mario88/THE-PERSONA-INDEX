@@ -43,6 +43,9 @@ export const REGISTRY: Entry[] = [
   { key: 'pi.words.', what: 'Answers in your own words', backup: 'words', merge: 'local', download: true },
   { key: 'pi.instead.', what: 'What you wrote after "Not me"', backup: 'words', merge: 'local', download: true },
   { key: 'pi.people', what: 'Your people: who you would want to hear from on a hard day, and what helps', backup: 'words', merge: 'newest', download: true },
+  { key: 'pi.account.', what: 'Your sign-in on this phone and the name and handle friends see', backup: 'never', merge: 'local', download: false },
+  { key: 'pi.signin.asked', what: 'That you were offered signing in after your first sitting', backup: 'never', merge: 'local', download: false },
+  { key: 'pi.invite', what: 'An invite link you followed, until you join or say not now', backup: 'never', merge: 'local', download: false },
   { key: 'pi.unrated.', what: 'A card tap waiting to be sent', backup: 'never', merge: 'local', download: false },
   { key: 'pi.pending.', what: 'An answer waiting to be sent', backup: 'never', merge: 'local', download: false },
   { key: 'pi.draft.', what: 'A half-written answer, for a day', backup: 'never', merge: 'local', download: false },
@@ -51,6 +54,10 @@ export const REGISTRY: Entry[] = [
   { key: 'pi.midday.', what: 'That you said "not yet" to the midday step check, for the day', backup: 'never', merge: 'local', download: false },
   { key: 'pi.vault.v1', what: 'Your 12-word phrase and the state of your backup', backup: 'never', merge: 'local', download: false },
   { key: 'pi.lock.v1', what: "The phone's fingerprint or face check for the app", backup: 'never', merge: 'local', download: false },
+  { key: 'pi.tapestry.v1', what: 'Your season tapestry: for each day of the last ninety, how many answers reached for each need', backup: 'always', merge: 'local', download: true },
+  { key: 'pi.pulse.', what: 'How many people had answered a question when you last looked, for the day', backup: 'never', merge: 'local', download: false },
+  { key: 'pi.windows.', what: 'Which of the day’s five windows you opened, and when, for the day', backup: 'never', merge: 'local', download: false },
+  { key: 'pi.seen.v1', what: 'When you last looked at Today, for its “since” line', backup: 'never', merge: 'local', download: false },
   { key: 'pi.install.v1', what: 'Whether you were invited to add the app to your home screen', backup: 'never', merge: 'local', download: false },
 ]
 

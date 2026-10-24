@@ -34,6 +34,8 @@ import {
   type Verdict,
 } from './api'
 import { isEvening } from './day'
+import { PulseAsk, PulsePill } from './Pulse'
+import { hasPulse } from './pulse'
 import { Helpline } from './Helpline'
 import { moveFor, startMove } from './moves'
 import { focusPlan, keepCard, keptCard, makePlan, noteVerdict, unkeepCard, type Plan } from './notebook'
@@ -67,6 +69,11 @@ type Props = {
   sitting?: Sitting
   wordsDays?: number
   writeFirst?: boolean // open with a short box for one's own words, the options after
+  still?: boolean // show the card at once instead of unfolding it in three beats
+  index?: number // where the card sits in its sitting, from 0
+  of?: number
+  pulse?: boolean // the Human Pulse: undefined until asked once, false for never
+  onPulse?: (on: boolean) => void
   onDone?: (questionId: string, done: Done) => void
   onNext: () => void
 }
@@ -85,6 +92,11 @@ export function QuestionCard({
   sitting,
   wordsDays = DEFAULT_WORDS_DAYS,
   writeFirst = false,
+  still = false,
+  index,
+  of,
+  pulse,
+  onPulse,
   onDone,
   onNext,
 }: Props) {
@@ -367,7 +379,18 @@ export function QuestionCard({
         </p>
       )}
       {chosen && (
-        <Answer question={question} option={chosen} words={words} date={date} wordsDays={wordsDays} onNext={onNext} />
+        <Answer
+          question={question}
+          option={chosen}
+          words={words}
+          date={date}
+          wordsDays={wordsDays}
+          still={still}
+          card={index !== undefined && of ? `Card ${index + 1} of ${of}` : undefined}
+          pulse={pulse}
+          onPulse={onPulse}
+          onNext={onNext}
+        />
       )}
 
       {error && (
@@ -405,6 +428,10 @@ function Answer({
   words,
   date,
   wordsDays,
+  still,
+  card,
+  pulse,
+  onPulse,
   onNext,
 }: {
   question: Question
@@ -412,6 +439,10 @@ function Answer({
   words: OwnWords | null
   date: string
   wordsDays: number
+  still: boolean
+  card?: string
+  pulse?: boolean
+  onPulse?: (on: boolean) => void
   onNext: () => void
 }) {
   const insight = option.heavy ? undefined : option.insight
@@ -424,8 +455,10 @@ function Answer({
     return f && (option.traits?.[f.trait] ?? 0) !== 0 ? f : null
   })
   const [notMe, setNotMe] = useState(() => recalledVerdict(question.id) === 'not_me')
+  const counted = hasPulse(question) && !option.heavy
   return (
-    <div className="answer">
+    <div className={still ? 'answer' : 'answer unfold'}>
+      {card && <p className="card-count label">{card}</p>}
       {words ? (
         <YourWords words={words} />
       ) : (
@@ -444,6 +477,8 @@ function Answer({
           focus={notMe ? null : focus}
         />
       )}
+      {counted && pulse === true && <PulsePill question={question} optionId={option.id} />}
+      {counted && pulse === undefined && onPulse && <PulseAsk onAnswer={onPulse} />}
       {insight && <KeepThis question={question} option={option} words={words} date={date} />}
       {insight && isLowMood(question.theme, option.depth) && <Helpline />}
       {insight?.step && (
@@ -479,6 +514,7 @@ function HeavyCard() {
       <p className="insight-body">{HEAVY_THANKS}</p>
       {names.length > 0 && <p className="insight-body">{peopleAsk(namesLine(names))}</p>}
       {people?.helps && <p className="insight-body">What helps, in your words: “{people.helps}”</p>}
+      {names.length > 0 && <ReachOut names={names} />}
       {names.length === 0 && !adding && (
         <>
           <p className="insight-body">{NO_PEOPLE}</p>
@@ -508,6 +544,57 @@ function HeavyCard() {
   )
 }
 
+// ReachOut drafts a short message to one of the person's people and hands it
+// to WhatsApp or the phone's messages, where they can change anything before
+// sending. The app sends nothing and never sees the conversation.
+function ReachOut({ names }: { names: string[] }) {
+  const [to, setTo] = useState(names[0])
+  const [text, setText] = useState(() => draftFor(names[0]))
+  const [edited, setEdited] = useState(false)
+  function pick(n: string) {
+    setTo(n)
+    if (!edited) setText(draftFor(n))
+  }
+  const body = encodeURIComponent(text)
+  return (
+    <div className="reach-out" role="group" aria-label="Reach out">
+      <p className="insight-body strong">Could one of your people hear from you tonight?</p>
+      <div className="chips" role="group" aria-label="Who">
+        {names.map((n) => (
+          <button key={n} type="button" className="chip-toggle" aria-pressed={to === n} onClick={() => pick(n)}>
+            {n}
+          </button>
+        ))}
+      </div>
+      <label className="small muted" htmlFor="reach-text">
+        Opens in your messages · edit anything before sending
+      </label>
+      <textarea
+        id="reach-text"
+        className="field reach-text"
+        rows={2}
+        value={text}
+        maxLength={280}
+        onChange={(e) => {
+          setText(e.target.value)
+          setEdited(true)
+        }}
+      />
+      <div className="row-gap">
+        <a className="btn small light" href={`https://wa.me/?text=${body}`} target="_blank" rel="noreferrer">
+          WhatsApp
+        </a>
+        <a className="btn small outline" href={`sms:?&body=${body}`}>
+          SMS
+        </a>
+      </div>
+      <p className="insight-note">The app never sends anything for you and never sees the conversation.</p>
+    </div>
+  )
+}
+
+const draftFor = (name: string) => `Hey ${name}, had a heavy day. Free for a 5-minute call later?`
+
 function InsightPanel({
   reveal,
   otherSide,
@@ -524,11 +611,11 @@ function InsightPanel({
   const { headline, body } = splitReveal(reveal)
   return (
     <div className="insight" role="note" aria-label="What your answer may say">
-      <p className="insight-headline">{headline}</p>
-      {body && <p className="insight-body">{body}</p>}
-      {reach && <p className="insight-reach">{reachingLine(reach)}</p>}
+      <p className="insight-headline beat-1">{headline}</p>
+      {body && <p className="insight-body beat-2">{body}</p>}
+      {reach && <p className="insight-reach beat-3">{reachingLine(reach)}</p>}
       {otherSide && (
-        <p className="insight-other">
+        <p className="insight-other beat-3">
           <span className="eyebrow">The other side</span> {otherSide}
         </p>
       )}

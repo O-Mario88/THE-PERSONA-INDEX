@@ -20,6 +20,7 @@
 import type { Question, Verdict } from './api'
 import { isNeed, type Need } from './needs'
 import { addDays, loadJSON, remove, saveJSON } from './storage'
+import { weave } from './tapestry'
 import { TRAITS, type TraitSide } from './traits'
 
 export const SCORING_VERSION = 3
@@ -85,6 +86,7 @@ export function recordAnswer(q: Question, optionId: string, date: string) {
     ...(q.local ? { regional: true as const } : {}),
   })
   saveHistory(h, date)
+  weave(date, o.need)
 }
 
 // recordRoute keeps the person's word on whether an answer's route usually

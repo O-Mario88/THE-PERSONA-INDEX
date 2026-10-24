@@ -133,6 +133,7 @@ func main() {
 		os.Exit(1)
 	}
 	srv.trustCF = cfg.TrustCF
+	srv.signIn = signInFromEnv(os.Getenv, cfg.DatabaseURL == "", time.Now)
 	srv.voteRetention = cfg.VoteRetention
 	srv.edgeSecret = cfg.EdgeSecret
 	srv.metricsToken = cfg.MetricsToken

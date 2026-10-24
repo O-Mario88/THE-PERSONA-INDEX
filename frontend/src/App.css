@@ -128,7 +128,7 @@
 }
 
 .dash.skipped {
-  background: #4a5070;
+  background: var(--line-strong);
 }
 
 .dash[aria-current='step'] {
@@ -281,7 +281,7 @@
 }
 
 .insight-body {
-  color: #d9dcea;
+  color: var(--soft);
   line-height: 1.55;
 }
 
@@ -359,7 +359,7 @@
 .insight-other {
   padding-top: 10px;
   border-top: 1px solid color-mix(in srgb, var(--pink) 30%, transparent);
-  color: #d9dcea;
+  color: var(--soft);
   line-height: 1.55;
 }
 
@@ -408,7 +408,7 @@
   padding: 12px 14px;
   border-radius: 12px;
   background: color-mix(in srgb, var(--accent) 10%, transparent);
-  color: #d9dcea;
+  color: var(--soft);
   font-size: 0.9rem;
   line-height: 1.5;
 }
@@ -468,7 +468,7 @@
 }
 
 .closer-picked {
-  color: #d9dcea;
+  color: var(--soft);
   line-height: 1.5;
 }
 
@@ -748,7 +748,7 @@
 }
 
 .own-box::placeholder {
-  color: #8d93ab;
+  color: var(--muted);
 }
 
 .own-box:focus {
@@ -811,7 +811,7 @@
 }
 
 .own-none {
-  color: #d9dcea;
+  color: var(--soft);
   line-height: 1.55;
 }
 
@@ -883,7 +883,7 @@
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  border: 2px solid #4a5070;
+  border: 2px solid var(--line-strong);
 }
 
 .plan-name {
@@ -1043,7 +1043,7 @@
 
 .m-hero {
   padding: 28px var(--m-gutter) 32px;
-  background: radial-gradient(120% 90% at 100% 0%, #2a2c66 0%, transparent 60%), var(--bg);
+  background: var(--m-dark);
   color: var(--text);
   display: flex;
   flex-direction: column;
@@ -1088,7 +1088,7 @@
 .m-tagline {
   font-family: var(--display);
   font-size: 1.12rem;
-  color: #d9dcea;
+  color: var(--soft);
 }
 
 .m-summary {
@@ -1250,7 +1250,7 @@
 
 .sq.missed {
   background: transparent;
-  border: 1.5px dashed #c3c7d4;
+  border: 1.5px dashed var(--line-strong);
 }
 
 .sq.later {
@@ -1263,11 +1263,11 @@
 }
 
 .sq.deeper {
-  background: #8b86e6;
+  background: var(--sage);
 }
 
 .sq.light {
-  background: #d3d1f7;
+  background: var(--sage-pale);
 }
 
 .m-legend {
@@ -1321,7 +1321,7 @@
   height: 8px;
   margin: 8px 0 6px;
   border-radius: 999px;
-  background: linear-gradient(90deg, #e6e7f7, #c9c8f3);
+  background: linear-gradient(90deg, #eef3ee, var(--sage-pale));
 }
 
 .m-scale-mid {
@@ -1554,14 +1554,14 @@
 }
 
 .m-theme.deeper {
-  background: #8b86e6;
-  border-color: #8b86e6;
+  background: var(--sage);
+  border-color: var(--sage);
   color: #fff;
 }
 
 .m-theme.light {
-  background: #e4e3fb;
-  border-color: #d3d1f7;
+  background: #eef3ee;
+  border-color: var(--sage-pale);
 }
 
 .m-theme.private {
@@ -2125,7 +2125,7 @@ fieldset.notice legend {
 }
 .nb-other {
   font-size: 0.92rem;
-  color: #d9dcea;
+  color: var(--soft);
 }
 .nb-other .eyebrow {
   display: inline;
@@ -2203,7 +2203,7 @@ fieldset.notice legend {
 }
 .m-identity {
   margin: 0;
-  background: linear-gradient(135deg, #f7f6ff, var(--m-card));
+  background: var(--m-card);
 }
 .m-identity-name {
   font-family: var(--display);
