@@ -188,7 +188,7 @@ export function CircleScreen({ onOpenMirror }: { onOpenMirror?: () => void }) {
           <ul className="people-list">
             {circle!.suggestions.map((s) => (
               <li key={s.id} className="person-row">
-                <Avatar name={s.name} />
+                <Avatar name={s.name} size={40} />
                 <span className="person-text">
                   <span className="person-name">{s.name}</span>
                   <span className="person-sub">
@@ -228,7 +228,7 @@ function FriendRow({ friend: f, onChange }: { friend: FriendView; onChange: () =
   const set = (p: { tag?: Tag; muted?: boolean }) => patchFriend(f.id, p).then(onChange, () => {})
   return (
     <li className={`person-row${f.muted ? ' is-muted' : ''}`}>
-      <Avatar name={f.name} muted={f.muted} />
+      <Avatar name={f.name} muted={f.muted} size={40} />
       <button type="button" className="person-text as-button" aria-expanded={open} onClick={() => setOpen(!open)}>
         <span className="person-name">{f.name}</span>
         <span className="person-sub">{f.muted ? 'Silently muted · they’ll never know' : `${TAG_NAMES[f.tag]} · since ${shortDate(f.since)}`}</span>

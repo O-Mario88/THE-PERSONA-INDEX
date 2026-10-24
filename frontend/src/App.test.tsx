@@ -1247,7 +1247,7 @@ describe('the weekly mirror', () => {
     expect(url).toBe('/api/mirror?date=2026-10-18')
     expect((init!.headers as Record<string, string>).Authorization).toBe('Device v1.device1.sig')
 
-    expect(page).toHaveTextContent('Your week · 12 to 17 October')
+    expect(page).toHaveTextContent('Sunday · week 42 · 12 to 17 October')
     // Both sides of the clearest leanings, in plain words, not a type label.
     expect(page).toHaveTextContent('Steady follow-through, with a radar tuned for silence.')
     expect(page).toHaveTextContent('You showed up on 5 days this week and gave 18 answers.')

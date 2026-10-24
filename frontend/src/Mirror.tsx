@@ -41,6 +41,7 @@ import { outsideMirror, type OutsideMirror as OutsideMirrorData } from './social
 import { useAccount } from './useAccount'
 import { Icon } from './ui/icons'
 import { ShareSheet } from './ShareCard'
+import { weekTiles } from './Tapestry'
 import {
   CHANGES_NOTE,
   LEANING_REPLIES,
@@ -259,11 +260,21 @@ function MirrorPage({
   return (
     <>
       <header className="m-hero">
-        <p className="m-eyebrow">Your week · {weekRange(m.from)}</p>
-        <h2>
+        <div className="m-hero-top">
+          <p className="m-eyebrow">
+            {sunday ? `Sunday · week ${m.week}` : `Week ${m.week}`} · {weekRange(m.from)}
+          </p>
+          {shareName && (
+            <button type="button" className="m-share" aria-label="Share the card" onClick={() => setSharing(true)}>
+              <Icon name="share" size={18} />
+            </button>
+          )}
+        </div>
+        <h2 className={name ? 'm-were' : undefined}>
           {name ? (
             <>
-              This week, you were <span className="m-name">{name}.</span>
+              This week, you were{' '}
+              <span className={name.length > 32 ? 'm-name long' : 'm-name'}>{name}.</span>
             </>
           ) : (
             'This week is just getting started.'
@@ -271,11 +282,11 @@ function MirrorPage({
         </h2>
         {line && <p className="m-tagline">{line}</p>}
         <p className="m-summary">{summary(m, notMe)}</p>
-        {shareName && (
-          <button type="button" className="btn small light" onClick={() => setSharing(true)}>
-            <Icon name="share" size={16} /> Share the card
-          </button>
-        )}
+        <ol className="m-week-tiles" aria-hidden="true">
+          {weekTiles(today, m.from).map((t) => (
+            <li key={t.date} style={t.tint ? { background: t.tint } : undefined} />
+          ))}
+        </ol>
       </header>
       {sharing && shareName && (
         <ShareSheet content={{ eyebrow: `Week ${m.week} · My Sunday Mirror`, name: shareName, line: line || undefined }} onClose={() => setSharing(false)} />
@@ -1096,7 +1107,7 @@ function PeriodPage({ p, onOpenKept }: { p: PeriodMirror; onOpenKept: () => void
             Week {p.weeks.length} of {p.weeksTotal}
           </span>
         </p>
-        <h2>
+        <h2 className={name ? 'm-were' : undefined}>
           {name ? (
             <>
               This {noun}, you were <span className="m-name">{name}.</span>
