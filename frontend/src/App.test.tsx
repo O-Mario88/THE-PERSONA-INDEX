@@ -375,7 +375,9 @@ describe('the daily questions', () => {
     expect(within(insight).getByText('You like a clear sink before you relax.')).toHaveClass('insight-headline')
     expect(within(insight).getByText('Unfinished tasks are noisier for you than for most.')).toHaveClass('insight-body')
     expect(insight).toHaveTextContent('For self-reflection, not a diagnosis.')
-    expect(screen.getByRole('group', { name: 'Small step' })).toHaveTextContent('Small step: Next time a small task appears')
+    expect(screen.getByRole('group', { name: 'Something to try' })).toHaveTextContent(
+      'Something you could try: Next time a small task appears',
+    )
     expect(screen.queryByText(/Batching chores/)).not.toBeInTheDocument()
   })
 
@@ -467,7 +469,7 @@ describe('the daily questions', () => {
     render(<App />)
     await answer('Right after eating')
     fireEvent.click(screen.getByRole('button', { name: "I'll try it" }))
-    expect(screen.getByRole('group', { name: 'Small step' })).toHaveTextContent(
+    expect(screen.getByRole('group', { name: 'Something to try' })).toHaveTextContent(
       "Added to today's small steps. I'll ask how it went this evening.",
     )
     await waitFor(() => expect(calls(fetchMock, '/api/steps')).toHaveLength(1))
@@ -488,6 +490,30 @@ describe('the daily questions', () => {
         at: at(9).getTime(),
       },
     ])
+  })
+
+  // Edwin, 2026-10-24: the app helps people find their own answers, never hands them out.
+  it('lets someone act on a card in their own way, kept on the phone as their one plan', async () => {
+    const fetchMock = stubApi({})
+    render(<App />)
+    await answer('Right after eating')
+    const tryIt = screen.getByRole('group', { name: 'Something to try' })
+    fireEvent.click(within(tryIt).getByRole('button', { name: 'My own idea' }))
+    const form = within(tryIt).getByRole('form', { name: 'My own idea' })
+    fireEvent.change(within(form).getByRole('textbox', { name: 'When' }), { target: { value: 'I finish dinner' } })
+    fireEvent.change(within(form).getByRole('textbox', { name: 'I will' }), { target: { value: 'leave the pans till morning' } })
+    fireEvent.click(within(form).getByRole('button', { name: 'Keep my plan' }))
+    expect(tryIt).toHaveTextContent("Your own plan, kept in your notebook. Next time you sit down, I'll ask how it went.")
+    const plans = Object.keys(localStorage).filter((k) => k.startsWith('pi.nb.plan.'))
+    expect(plans).toHaveLength(1)
+    expect(JSON.parse(localStorage.getItem(plans[0])!)).toMatchObject({
+      trait: 'conscientiousness',
+      high: true,
+      when: 'I finish dinner',
+      will: 'leave the pans till morning',
+    })
+    expect(calls(fetchMock, '/api/steps')).toHaveLength(0)
+    for (const [, init] of fetchMock.mock.calls) expect(String(init?.body ?? '')).not.toContain('pans')
   })
 
   it('lets a step wait with "Not now", sending nothing', async () => {

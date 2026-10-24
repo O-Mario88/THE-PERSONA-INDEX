@@ -106,6 +106,14 @@ func TestCheckVoiceCatchesOffVoiceCards(t *testing.T) {
 		// Don't assume a partner.
 		{"your partner", func(q *bankQuestion) { q.Prompt = "Payday arrives. What do you and your partner pay first?" }, `prompt presumes a partner ("your partner")`},
 		{"your relationship", func(q *bankQuestion) { q.Prompt = "In your relationship, who handles payday?" }, `prompt presumes a partner ("your relationship")`},
+
+		// What the research of 2026-10-24 rules out (docs/writing-guide.md).
+		{"a changed life", reveal(1, "You trust your future self. Saving like this will change your life."), `promises too much ("change your life")`},
+		{"everything will be all right", step(2, "Remember that everything will be all right."), `treat step: promises too much ("everything will be all right")`},
+		{"a silver lining", reveal(1, "You trust your future self. Every bill has a silver lining."), `forced cheer ("silver lining")`},
+		{"which religion", func(q *bankQuestion) { q.Prompt = "Payday arrives. Which religion are you, and does it guide you?" }, `asks which group someone belongs to ("Which religion are")`},
+		{"which party", func(q *bankQuestion) { q.Prompt = "Which party do you vote for on payday?" }, `asks which group someone belongs to`},
+		{"why am I like this", func(q *bankQuestion) { q.Prompt = "Payday again. Why am I like this?" }, `asks an abstract why`},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -169,6 +177,9 @@ func TestCheckVoiceLetsGoodCardsThrough(t *testing.T) {
 		{"a kind word in a reveal is fine", reveal(1, "You trust your future self, and you treat money kindly, calmly and properly.")},
 		{"a label that only sounds like a loaded one", label(2, "Be friendly, but wait and see")},
 		{"a partner, with a way out", func(q *bankQuestion) { q.Prompt = "With a partner, how do you handle payday, or how would you?" }},
+		{"life changes are not promises", reveal(1, "You trust your future self, so when life changes you have a cushion.")},
+		{"a party you go to", func(q *bankQuestion) { q.Prompt = "What party do you go to after payday?" }},
+		{"a why about a moment", func(q *bankQuestion) { q.Prompt = "Payday arrives. Why does the first thing you buy matter to you?" }},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

@@ -116,6 +116,8 @@ describe('the voice of the mirror and the day close', () => {
     expect(voiceProblems('You realize it later.')).toEqual(['uses the US spelling "realize"'])
     expect(voiceProblems("You're a people-pleaser at heart.")).toEqual(['labels you ("people-pleaser")'])
     expect(voiceProblems('Introverts need this.')).toEqual(['labels you ("Introverts")'])
+    expect(voiceProblems('This small habit will change your life.')).toEqual(['promises too much ("change your life")'])
+    expect(voiceProblems('Look on the bright side.')).toEqual(['forced cheer ("Look on the bright side")'])
   })
 
   it('lets their look-alikes through', () => {
@@ -127,6 +129,7 @@ describe('the voice of the mirror and the day close', () => {
       'You realise a prize is worth less than its size suggests, and you lean towards colour.',
       'What would actually help?',
       'You avoided the row and kept the peace, and pleasing people you love matters to you.',
+      'When life changes, you keep one old habit and try one new one.',
     ]) {
       expect(voiceProblems(s), s).toEqual([])
     }

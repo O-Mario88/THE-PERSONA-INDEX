@@ -36,7 +36,7 @@ import {
 import { isEvening } from './day'
 import { Helpline, HELPLINE_URL } from './Helpline'
 import { moveFor, startMove } from './moves'
-import { focusPlan, keepCard, keptCard, noteVerdict, unkeepCard, type Plan } from './notebook'
+import { focusPlan, keepCard, keptCard, makePlan, noteVerdict, unkeepCard, type Plan } from './notebook'
 import { inOrder } from './order'
 import { loadPeople, namesLine } from './people'
 import { PeopleEditor } from './People'
@@ -53,6 +53,7 @@ import {
   NO_PEOPLE,
   NOT_ME_REPLY,
   peopleAsk,
+  SWAP_NOTE,
   VERDICT_REPLIES,
 } from './words'
 
@@ -584,10 +585,16 @@ function KeepThis({ question, option, words, date }: { question: Question; optio
   )
 }
 
-// One small step from the card. "I'll try it" keeps it as one of today's
-// small steps: the evening asks how a morning step went, and the mirror keeps them all.
+// One thing the person could try, offered, never prescribed (Edwin,
+// 2026-10-24: the app helps people find their own answers rather than
+// handing them out). "I'll try it" keeps it as one of today's small steps:
+// the evening asks how a morning step went, and the mirror keeps them all.
+// "My own idea" lets the person put it their own way, as their one plan,
+// kept on this phone.
 function TryThis({ question, option, step, date }: { question: Question; option: Option; step: string; date: string }) {
-  const [state, setState] = useState<'open' | 'started' | 'later'>(() => (moveFor(question.id) ? 'started' : 'open'))
+  const [state, setState] = useState<'open' | 'started' | 'later' | 'own' | 'planned'>(() =>
+    moveFor(question.id) ? 'started' : 'open',
+  )
   const [evening] = useState(() => isEvening())
   function start() {
     setState('started')
@@ -596,19 +603,28 @@ function TryThis({ question, option, step, date }: { question: Question; option:
     })
   }
   return (
-    <div className="try" role="group" aria-label="Small step">
+    <div className="try" role="group" aria-label="Something to try">
       <p>
-        <strong>Small step:</strong> {step}
+        <strong>Something you could try:</strong> {step}
       </p>
       {state === 'open' && (
         <div className="try-buttons">
           <button type="button" className="pill-button" onClick={start}>
             I'll try it
           </button>
+          <button type="button" className="text-button" onClick={() => setState('own')}>
+            My own idea
+          </button>
           <button type="button" className="text-button" onClick={() => setState('later')}>
             Not now
           </button>
         </div>
+      )}
+      {state === 'own' && (
+        <OwnIdea option={option} date={date} onMade={() => setState('planned')} onCancel={() => setState('open')} />
+      )}
+      {state === 'planned' && (
+        <p className="muted">Your own plan, kept in your notebook. Next time you sit down, I'll ask how it went.</p>
       )}
       {state === 'started' && (
         <p className="muted">
@@ -620,6 +636,55 @@ function TryThis({ question, option, step, date }: { question: Question; option:
     </div>
   )
 }
+
+// OwnIdea: the person's own way of acting on the card, "When ___, I will
+// ___", kept as the one thing they are working on (notebook.ts). Only
+// whether they did it is ever sent.
+function OwnIdea({ option, date, onMade, onCancel }: { option: Option; date: string; onMade: () => void; onCancel: () => void }) {
+  const [when, setWhen] = useState('')
+  const [will, setWill] = useState('')
+  const [focus] = useState(focusPlan)
+  const [trait, w] = Object.entries(option.traits ?? {}).find(([, v]) => v !== 0) ?? ['', 1]
+  const ready = when.trim() && will.trim()
+  return (
+    <form
+      className="plan-offer"
+      aria-label="My own idea"
+      onSubmit={(e) => {
+        e.preventDefault()
+        if (!ready) return
+        makePlan({ made: date, trait, high: w > 0, when: when.trim(), will: will.trim() })
+        onMade()
+      }}
+    >
+      <p className="eyebrow">Your own way, tied to a moment</p>
+      {focus && <p className="muted">{SWAP_NOTE}</p>}
+      <label className="plan-field">
+        <span>When</span>
+        <input className="own-line" value={when} maxLength={MAX_PLAN} onChange={(e) => setWhen(e.target.value)} />
+      </label>
+      <label className="plan-field">
+        <span>I will</span>
+        <input className="own-line" value={will} maxLength={MAX_PLAN} onChange={(e) => setWill(e.target.value)} />
+      </label>
+      <p className="own-meta">
+        <span>
+          <span aria-hidden="true">🔒 </span>Your plan stays on this phone. I only ever send whether you did it.
+        </span>
+      </p>
+      <div className="own-buttons">
+        <button type="submit" className="pill-button" disabled={!ready}>
+          Keep my plan
+        </button>
+        <button type="button" className="text-button" onClick={onCancel}>
+          Cancel
+        </button>
+      </div>
+    </form>
+  )
+}
+
+const MAX_PLAN = 80
 
 // Rate asks whether the card is them: "That's me", "Partly" or "Not me"
 // (chosen 2026-10-16, in place of "I learned something"). The tap is kept
