@@ -13,7 +13,7 @@ import {
   type Plan,
   type Revisit,
 } from './notebook'
-import { THEMES, themeName, themeStyle, themeVars } from './themes'
+import { themeName, themeVars } from './themes'
 import { TRAITS } from './traits'
 import { REVISIT_WORDS, VERDICT_WORDS } from './words'
 
@@ -22,21 +22,17 @@ import { REVISIT_WORDS, VERDICT_WORDS } from './words'
 // good things, their Sunday sentences, their plans and the names they gave
 // their weeks. All of it lives on this phone only; no ads ever sit here.
 
-const AREA_ORDER = ['everyday', 'people', 'inner', 'desire']
-
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
 
-// Life areas in the app's order (themes.ts), each with its kept cards.
-function byArea(cards: KeptCard[]): [string, KeptCard[]][] {
-  const groups = new Map<string, KeptCard[]>()
-  for (const c of cards) groups.set(c.theme, [...(groups.get(c.theme) ?? []), c])
-  const rank = (theme: string) => {
-    const t = THEMES[theme]
-    const i = Object.keys(THEMES).indexOf(theme)
-    return t ? AREA_ORDER.indexOf(t.area) * 100 + i : 10_000
-  }
-  return [...groups.entries()].sort((a, b) => rank(a[0]) - rank(b[0]))
+// The Monday of the week holding this date.
+function mondayOf(iso: string): string {
+  const d = new Date(`${iso}T00:00:00Z`)
+  d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7))
+  return d.toISOString().slice(0, 10)
 }
+
+const shortDay = (iso: string) =>
+  new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' })
 
 export function NotebookScreen({ mild, today }: { mild: boolean; today: string }) {
   // Reading the notebook happens on every render; a removal asks for one.
@@ -51,14 +47,29 @@ export function NotebookScreen({ mild, today }: { mild: boolean; today: string }
   const named = names()
   const empty = cards.length + good.length + lines.length + planList.length + named.length === 0
 
+  const kinds = (
+    [
+      ['cards', 'Kept cards', shown.length + hidden],
+      ['steps', 'Steps', planList.length],
+      ['mirrors', 'Mirrors', named.length],
+      ['words', 'Your words', lines.length + good.length],
+    ] as const
+  ).filter(([, , n]) => n > 0)
+  const [pick, setPick] = useState<string | null>(null)
+  const kind = kinds.some(([k]) => k === pick) ? pick : (kinds[0]?.[0] ?? null)
+  const show = (k: string) => kinds.length <= 1 || kind === k
+  const monday = mondayOf(today)
+  const thisWeek = shown.filter((c) => c.date >= monday)
+  const earlier = shown.filter((c) => c.date < monday)
+
   return (
     <section className="screen notebook" aria-labelledby="notebook-title">
-      <h2 id="notebook-title" className="done-title">
-        My notebook
-      </h2>
-      <p className="muted">
-        What you chose to keep, and what you wrote yourself. It lives on this phone only, until you remove it.
-      </p>
+      <header className="nb-head">
+        <p className="label">On this phone only, until you remove it</p>
+        <h2 id="notebook-title" className="display">
+          Notebook
+        </h2>
+      </header>
 
       {empty && (
         <div className="notice">
@@ -69,34 +80,48 @@ export function NotebookScreen({ mild, today }: { mild: boolean; today: string }
         </div>
       )}
 
-      {shown.length > 0 && (
+      {kinds.length > 1 && (
+        <div className="nb-tabs" role="group" aria-label="Show">
+          {kinds.map(([k, label, n]) => (
+            <button key={k} type="button" className="nb-tab" aria-pressed={kind === k} onClick={() => setPick(k)}>
+              {label} · {n}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {show('cards') && shown.length > 0 && (
         <section className="nb-section" aria-labelledby="nb-cards">
-          <h3 id="nb-cards" className="eyebrow">
+          <h3 id="nb-cards" className="sr-only">
             Cards you kept · {shown.length}
           </h3>
-          {byArea(shown).map(([theme, list]) => (
-            <div key={theme} className="nb-area" role="group" aria-label={themeName(theme)}>
-              <p className="nb-area-name" style={themeVars(theme)}>
-                <span aria-hidden="true">{themeStyle(theme).icon}</span> {theme ? themeName(theme) : 'Today'}
-              </p>
-              <ul className="nb-list">
-                {list.map((c) => (
-                  <li key={c.questionId}>
-                    <CardEntry card={c} onRemove={refresh} />
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+          {[
+            ['This week', thisWeek],
+            ['Earlier', earlier],
+          ].map(
+            ([label, list]) =>
+              (list as KeptCard[]).length > 0 && (
+                <div key={label as string} className="nb-area" role="group" aria-label={label as string}>
+                  <p className="nb-area-name">{label as string}</p>
+                  <ul className="nb-list">
+                    {(list as KeptCard[]).map((c) => (
+                      <li key={c.questionId}>
+                        <CardEntry card={c} onRemove={refresh} />
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ),
+          )}
         </section>
       )}
-      {hidden > 0 && (
+      {show('cards') && hidden > 0 && (
         <p className="muted">
           {plural(hidden, 'private card')} hidden while "Keep it mild" is on.
         </p>
       )}
 
-      {lines.length > 0 && (
+      {show('words') && lines.length > 0 && (
         <section className="nb-section" aria-labelledby="nb-sentences">
           <h3 id="nb-sentences" className="eyebrow">
             What you learned, week by week
@@ -113,7 +138,7 @@ export function NotebookScreen({ mild, today }: { mild: boolean; today: string }
         </section>
       )}
 
-      {good.length > 0 && (
+      {show('words') && good.length > 0 && (
         <section className="nb-section" aria-labelledby="nb-good">
           <h3 id="nb-good" className="eyebrow">
             Three good things
@@ -133,7 +158,7 @@ export function NotebookScreen({ mild, today }: { mild: boolean; today: string }
         </section>
       )}
 
-      {planList.length > 0 && (
+      {show('steps') && planList.length > 0 && (
         <section className="nb-section" aria-labelledby="nb-plans">
           <h3 id="nb-plans" className="eyebrow">
             Your plans
@@ -148,15 +173,15 @@ export function NotebookScreen({ mild, today }: { mild: boolean; today: string }
         </section>
       )}
 
-      {named.length > 0 && (
+      {show('mirrors') && named.length > 0 && (
         <section className="nb-section" aria-labelledby="nb-names">
           <h3 id="nb-names" className="eyebrow">
             The names you gave your weeks
           </h3>
           <ul className="nb-list">
             {named.map((n) => (
-              <li key={n.week} className="nb-entry">
-                <p className="nb-meta">{weekRange(n.week)}</p>
+              <li key={n.week} className="nb-entry nb-mirror">
+                <p className="nb-meta">{weekRange(n.week)} · Sunday Mirror</p>
                 <p className="nb-line">{n.name}</p>
                 <p className="muted">I suggested {n.suggested}.</p>
               </li>
@@ -174,19 +199,29 @@ export function NotebookScreen({ mild, today }: { mild: boolean; today: string }
 function CardEntry({ card: c, onRemove }: { card: KeptCard; onRemove: () => void }) {
   const [open, setOpen] = useState(!c.private)
   const [asking, setAsking] = useState(false)
+  const [more, setMore] = useState(false)
   return (
     <article className="nb-entry nb-card" style={themeVars(c.theme)} aria-label={c.prompt}>
-      <p className="nb-meta">
-        {longDate(c.date)}
-        {c.private && ' · private'}
+      <p className="nb-meta row-between">
+        <span className="nb-card-area">{c.theme ? themeName(c.theme) : 'Today'}</span>
+        <span>
+          {shortDay(c.date)}
+          {c.private && ' · private'}
+        </span>
       </p>
-      <p className="nb-prompt">{c.prompt}</p>
+      {open && <p className="nb-headline">{c.headline}</p>}
+      {!open && <p className="nb-prompt">{c.prompt}</p>}
       {!open ? (
         <button type="button" className="text-button nb-show" onClick={() => setOpen(true)}>
           Show this private card
         </button>
+      ) : !more ? (
+        <button type="button" className="text-button nb-show" aria-expanded={false} onClick={() => setMore(true)}>
+          The question and your answer
+        </button>
       ) : (
         <>
+          <p className="nb-prompt">{c.prompt}</p>
           {c.words ? (
             <p className="nb-answer">
               In your words: “{c.words}”<span className="muted"> · closest to {c.answer}</span>
@@ -194,7 +229,6 @@ function CardEntry({ card: c, onRemove }: { card: KeptCard; onRemove: () => void
           ) : (
             <p className="nb-answer">You chose: {c.answer}</p>
           )}
-          <p className="nb-headline">{c.headline}</p>
           {c.body && <p>{c.body}</p>}
           {c.otherSide && (
             <p className="nb-other">
@@ -206,7 +240,7 @@ function CardEntry({ card: c, onRemove }: { card: KeptCard; onRemove: () => void
           <Revisits revisits={c.revisits} />
         </>
       )}
-      {asking ? (
+      {(more || !open) && asking ? (
         <div className="confirm">
           <button
             type="button"
@@ -223,9 +257,11 @@ function CardEntry({ card: c, onRemove }: { card: KeptCard; onRemove: () => void
           </button>
         </div>
       ) : (
-        <button type="button" className="text-button nb-remove" onClick={() => setAsking(true)}>
-          Remove
-        </button>
+        (more || !open) && (
+          <button type="button" className="text-button nb-remove" onClick={() => setAsking(true)}>
+            Remove
+          </button>
+        )
       )}
     </article>
   )

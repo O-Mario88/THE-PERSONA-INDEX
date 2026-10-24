@@ -2026,7 +2026,7 @@ describe('accessibility', () => {
     await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('heading', { level: 2, name: 'Settings' })))
     fireEvent.click(screen.getByRole('button', { name: '← Back' }))
     fireEvent.click(screen.getByRole('button', { name: 'Notebook' }))
-    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('heading', { level: 2, name: 'My notebook' })))
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('heading', { level: 2, name: 'Notebook' })))
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1)
   })
 })
