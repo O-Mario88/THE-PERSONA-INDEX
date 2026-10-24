@@ -50,6 +50,7 @@ import { AccountScreen } from './Account'
 import { CircleScreen } from './Circle'
 import { FriendQuestion, NodPicker, TogetherAsk, TogetherCard } from './Friends'
 import { useFriendToday, useNods, useTogethers } from './friendsData'
+import { NodCard } from './Friends'
 import { SignInSheet } from './SignIn'
 import { inviteFromURL } from './social'
 import { pullSync } from './sync'
@@ -527,6 +528,11 @@ function App() {
             </section>
           )}
           {flow === 'evening' && at === 0 && !closing && <StepNudge date={set.date} evening />}
+          {at === 0 &&
+            !closing &&
+            (nods?.received ?? [])
+              .filter((n) => n.date === set.date)
+              .map((n) => <NodCard key={n.from.id} name={n.from.name} text={n.text} />)}
           {steps.length === 0 && (
             <p className="muted">
               {flow === 'evening' ? 'Your evening three open at 5 pm.' : 'Your morning three open at 5 am.'}

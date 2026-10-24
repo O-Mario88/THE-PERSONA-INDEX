@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Avatar } from './ui/Avatar'
+import { Icon } from './ui/icons'
 import { keepStorage } from './pwa/install'
 import {
   ApiError,
@@ -562,35 +564,37 @@ function ReachOut({ names }: { names: string[] }) {
   const body = encodeURIComponent(text)
   return (
     <div className="reach-out" role="group" aria-label="Reach out">
-      <p className="insight-body strong">Could one of your people hear from you tonight?</p>
+      <p className="reach-ask">Could one of your people hear from you tonight?</p>
       <div className="chips" role="group" aria-label="Who">
         {names.map((n) => (
-          <button key={n} type="button" className="chip-toggle" aria-pressed={to === n} onClick={() => pick(n)}>
-            {n}
+          <button key={n} type="button" className="chip-toggle with-avatar" aria-pressed={to === n} onClick={() => pick(n)}>
+            <Avatar name={n} size={36} /> {n}
           </button>
         ))}
       </div>
-      <label className="small muted" htmlFor="reach-text">
-        Opens in your messages · edit anything before sending
-      </label>
-      <textarea
-        id="reach-text"
-        className="field reach-text"
-        rows={2}
-        value={text}
-        maxLength={280}
-        onChange={(e) => {
-          setText(e.target.value)
-          setEdited(true)
-        }}
-      />
-      <div className="row-gap">
-        <a className="btn small light" href={`https://wa.me/?text=${body}`} target="_blank" rel="noreferrer">
-          WhatsApp
-        </a>
-        <a className="btn small outline" href={`sms:?&body=${body}`}>
-          SMS
-        </a>
+      <div className="reach-box">
+        <label className="small muted" htmlFor="reach-text">
+          Opens in your messages · edit anything before sending
+        </label>
+        <textarea
+          id="reach-text"
+          className="field reach-text"
+          rows={2}
+          value={text}
+          maxLength={280}
+          onChange={(e) => {
+            setText(e.target.value)
+            setEdited(true)
+          }}
+        />
+        <div className="row-gap">
+          <a className="btn small light" href={`https://wa.me/?text=${body}`} target="_blank" rel="noreferrer">
+            <Icon name="chat" size={18} /> WhatsApp
+          </a>
+          <a className="btn small outline" href={`sms:?&body=${body}`}>
+            <Icon name="sms" size={18} /> SMS
+          </a>
+        </div>
       </div>
       <p className="insight-note">The app never sends anything for you and never sees the conversation.</p>
     </div>

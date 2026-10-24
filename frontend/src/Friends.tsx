@@ -207,6 +207,25 @@ export function NodPicker({ date }: { date: string }) {
   )
 }
 
+// A nod that arrived today, at the top of the sitting (M15). The heart only
+// puts it away on this phone; nothing is sent back and nothing is counted.
+export function NodCard({ name, text }: { name: string; text: string }) {
+  const [away, setAway] = useState(false)
+  if (away) return null
+  return (
+    <div className="nod-card-in" role="note" aria-label={`A quiet nod from ${name}`}>
+      <Avatar name={name} size={40} />
+      <span className="nod-card-text">
+        <span className="nod-card-from">A quiet nod from {name} · no reply needed</span>
+        <span className="nod-card-line">“{text}”</span>
+      </span>
+      <button type="button" className="nod-heart" aria-label="Put the nod away" onClick={() => setAway(true)}>
+        <Icon name="heart" size={18} />
+      </button>
+    </div>
+  )
+}
+
 // ---- Answer Together ----
 
 const labelOf = (t: TogetherView, id?: string) => t.options.find((o) => o.id === id)?.label ?? ''
@@ -314,33 +333,62 @@ export function TogetherCard({ t, onChange }: { t: TogetherView; onChange: () =>
         <h3 className="prompt serif">{t.prompt}</h3>
         <div className="together-pair">
           <div className="together-side">
-            <p className="small muted">You</p>
-            <p>{labelOf(t, t.mine)}</p>
+            <Avatar name="You" size={36} />
+            <p className="together-who">You</p>
+            <p className="together-pick">{labelOf(t, t.mine)}</p>
           </div>
           <div className="together-side">
-            <p className="small muted">{name}</p>
-            <p>{labelOf(t, t.theirs)}</p>
+            <Avatar name={name} size={36} />
+            <p className="together-who">{name}</p>
+            <p className="together-pick">{labelOf(t, t.theirs)}</p>
           </div>
         </div>
-        <p className="small">
+        <p className="together-read">
           {same
             ? `You and ${name} reach for the same thing here. Worth saying out loud sometime.`
             : `You reach for different things. Neither is the right one; it might explain a few mornings.`}
         </p>
         <p className="muted small">Just between the two of you. It never feeds your mirror.</p>
+        <a
+          className="btn wide together-talk"
+          href={`https://wa.me/?text=${encodeURIComponent(`“${t.prompt}” I chose “${labelOf(t, t.mine)}”, you chose “${labelOf(t, t.theirs)}”.`)}`}
+          target="_blank"
+          rel="noreferrer"
+        >
+          <Icon name="chat" size={18} /> Talk about it on WhatsApp
+        </a>
       </section>
     )
   }
   if (t.state === 'waiting') {
     return (
-      <section className="card soft together" aria-label={`Waiting for ${name}`}>
-        <p>
-          <strong>You’ve answered.</strong> {name} hasn’t yet. Your choice stays sealed until they do.
+      <section className="card together waiting" aria-label={`Waiting for ${name}`}>
+        <div className="together-wait-head">
+          <span className="together-avatars" aria-hidden="true">
+            <Avatar name="You" size={36} />
+            <span className="together-empty" />
+          </span>
+          <span>
+            <strong>You’ve answered. {name} hasn’t yet.</strong>
+            <span className="small muted">Your choice stays sealed until both are in.</span>
+          </span>
+        </div>
+        <div className="together-pair sealed">
+          <div className="together-side">
+            <p className="together-who">You</p>
+            <p className="small">Sealed</p>
+          </div>
+          <div className="together-side">
+            <p className="together-who">{name}</p>
+            <p className="small muted">Waiting</p>
+          </div>
+        </div>
+        <p className="muted small">
+          If {name} doesn’t answer in 48 hours it quietly goes away; nobody is told.{' '}
+          <button type="button" className="link-button" onClick={() => leaveTogether(t.id).then(onChange, () => {})}>
+            Withdraw quietly
+          </button>
         </p>
-        <p className="muted small">If {name} doesn’t answer in 48 hours it quietly goes away; nobody is told.</p>
-        <button type="button" className="link-button" onClick={() => leaveTogether(t.id).then(onChange, () => {})}>
-          Withdraw quietly
-        </button>
       </section>
     )
   }
