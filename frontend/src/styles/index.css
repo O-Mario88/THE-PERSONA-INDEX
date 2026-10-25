@@ -5,3 +5,6 @@
 @import './shell.css';
 @import './screens/home.css';
 @import './screens/sitting.css';
+@import './screens/windows.css';
+@import './screens/signin.css';
+@import './screens/pages.css';

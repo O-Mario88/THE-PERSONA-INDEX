@@ -125,15 +125,23 @@ export function SignInSheet({
           <p className="muted">{lead}</p>
           {!methods && <p className="muted small">One moment…</p>}
           {none && <p className="notice">{ERRORS.sign_in_unavailable}</p>}
-          {methods?.google && (
-            <button type="button" className="btn wide" disabled={busy} onClick={() => provider('google')}>
-              Continue with Google
-            </button>
-          )}
-          {methods?.apple && (
-            <button type="button" className="btn wide" disabled={busy} onClick={() => provider('apple')}>
-              Continue with Apple
-            </button>
+          {(methods?.google || methods?.apple) && (
+            <div className="signin-providers">
+              {methods?.google && (
+                <button type="button" className="signin-provider is-solid" disabled={busy} onClick={() => provider('google')}>
+                  <Icon name="plus-circle" size={20} />
+                  <span className="grow">Continue with Google</span>
+                  <Icon name="arrow" size={20} />
+                </button>
+              )}
+              {methods?.apple && (
+                <button type="button" className="signin-provider" disabled={busy} onClick={() => provider('apple')}>
+                  <Icon name="apple" size={20} />
+                  <span className="grow">Continue with Apple</span>
+                  <Icon name="arrow" size={20} />
+                </button>
+              )}
+            </div>
           )}
           {codes && (
             <form className="signin-code" onSubmit={send}>
@@ -150,7 +158,7 @@ export function SignInSheet({
                   autoComplete="email"
                   inputMode="email"
                 />
-                <button type="submit" className="btn terracotta" disabled={busy || !address.trim()}>
+                <button type="submit" className="btn" disabled={busy || !address.trim()}>
                   Send code
                 </button>
               </div>
@@ -284,15 +292,17 @@ export function SignInSheet({
               {(methods?.google || methods?.apple) && (
                 <div className="signin-providers">
                   {methods?.google && (
-                    <button type="button" className="signin-provider is-dark" disabled={busy} onClick={() => provider('google')}>
-                      <Icon name="plus-circle" size={18} />
-                      Continue with Google
+                    <button type="button" className="signin-provider is-solid" disabled={busy} onClick={() => provider('google')}>
+                      <Icon name="plus-circle" size={20} />
+                      <span className="grow">Continue with Google</span>
+                      <Icon name="arrow" size={20} />
                     </button>
                   )}
                   {methods?.apple && (
                     <button type="button" className="signin-provider" disabled={busy} onClick={() => provider('apple')}>
-                      <Icon name="apple" size={18} />
-                      Continue with Apple
+                      <Icon name="apple" size={20} />
+                      <span className="grow">Continue with Apple</span>
+                      <Icon name="arrow" size={20} />
                     </button>
                   )}
                 </div>
