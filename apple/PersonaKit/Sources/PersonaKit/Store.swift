@@ -7,6 +7,8 @@ import Security
 public protocol KeyValueStore: AnyObject, Sendable {
     func string(forKey key: String) -> String?
     func set(_ value: String?, forKey key: String)
+    /// Every key held under a prefix, for gathering a backup copy.
+    func keys(withPrefix prefix: String) -> [String]
 }
 
 public final class MemoryStore: KeyValueStore, @unchecked Sendable {
@@ -21,6 +23,10 @@ public final class MemoryStore: KeyValueStore, @unchecked Sendable {
 
     public func set(_ value: String?, forKey key: String) {
         lock.withLock { values[key] = value }
+    }
+
+    public func keys(withPrefix prefix: String) -> [String] {
+        lock.withLock { values.keys.filter { $0.hasPrefix(prefix) }.sorted() }
     }
 }
 
@@ -38,6 +44,10 @@ public final class DefaultsStore: KeyValueStore, @unchecked Sendable {
 
     public func set(_ value: String?, forKey key: String) {
         if let value { defaults.set(value, forKey: key) } else { defaults.removeObject(forKey: key) }
+    }
+
+    public func keys(withPrefix prefix: String) -> [String] {
+        defaults.dictionaryRepresentation().keys.filter { $0.hasPrefix(prefix) }.sorted()
     }
 }
 
@@ -72,4 +82,7 @@ public final class KeychainStore: KeyValueStore, @unchecked Sendable {
         q[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
         SecItemAdd(q as CFDictionary, nil)
     }
+
+    /// The Keychain holds a few named secrets; a backup reads them by name.
+    public func keys(withPrefix prefix: String) -> [String] { [] }
 }
