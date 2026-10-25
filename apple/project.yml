@@ -30,7 +30,14 @@ targets:
       properties:
         CFBundleDisplayName: Persona Index
         LSApplicationCategoryType: public.app-category.lifestyle
-        UILaunchScreen: {}
+        # The launch screen is the page colour, white or navy, so there is no
+        # white flash in dark mode.
+        UILaunchScreen:
+          UIColorName: LaunchBackground
+        # Figtree is declared, not registered in code at launch: the system
+        # loads each face when it is first drawn.
+        UIAppFonts: [Figtree-Regular.ttf, Figtree-Medium.ttf, Figtree-SemiBold.ttf, Figtree-Bold.ttf, Figtree-ExtraBold.ttf, Figtree-Black.ttf]
+        ATSApplicationFontsPath: "."
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         # Where the Go API lives. A local run talks to `go run .` on this Mac.
         PIApiBase: http://localhost:8080
@@ -49,5 +56,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.personaindex.app
         PRODUCT_NAME: PersonaIndex
+        # No app icon yet; the asset catalog holds only the launch colour.
+        ASSETCATALOG_COMPILER_APPICON_NAME: ""
         ENABLE_PREVIEWS: YES
         CODE_SIGN_IDENTITY: "-"

@@ -38,7 +38,7 @@ struct ReflectView: View {
         let list = thoughts
         let thought = chosen?.thought ?? list[at % max(list.count, 1)]
         ScrollView {
-            VStack(alignment: .leading, spacing: Space.s5) {
+            LazyVStack(alignment: .leading, spacing: Space.s5) {
                 VStack(alignment: .leading, spacing: Space.s2) {
                     Text("Reflect").font(.pHero).accessibilityAddTraits(.isHeader)
                     Text("A quiet space for your thoughts.").font(.figtree(17)).foregroundStyle(Palette.muted)
