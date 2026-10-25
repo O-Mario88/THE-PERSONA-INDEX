@@ -31,4 +31,12 @@ struct ModelsTests {
         #expect(intimate.sentOption(for: "a") == Question.privateOption)
         #expect(everyday.sentOption(for: "a") == "a")
     }
+
+    @Test("keeps all six answers of a question with six")
+    func sixAnswers() throws {
+        let options = (1...6).map { #"{"id":"o\#($0)","label":"Answer \#($0)"}"# }.joined(separator: ",")
+        let json = #"{"id":"q","prompt":"When money comes in, what goes first?","options":["# + options + "]}"
+        let q = try JSONDecoder().decode(Question.self, from: Data(json.utf8))
+        #expect(q.options.map(\.id) == ["o1", "o2", "o3", "o4", "o5", "o6"])
+    }
 }
