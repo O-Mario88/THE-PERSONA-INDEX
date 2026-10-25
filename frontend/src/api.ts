@@ -633,12 +633,6 @@ export function rememberAnswered(questionId: string) {
   rememberChoice(questionId, UNKNOWN)
 }
 
-// When this phone answered a question, in ms, or null if it was before times were kept.
-export function answeredAt(questionId: string): number | null {
-  const v = Number(load(`pi.at.${questionId}`))
-  return v > 0 ? v : null
-}
-
 export function recalledChoice(questionId: string): string | null {
   return load(choicePrefix + questionId)
 }

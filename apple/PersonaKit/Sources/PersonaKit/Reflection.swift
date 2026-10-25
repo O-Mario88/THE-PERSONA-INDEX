@@ -100,18 +100,6 @@ public struct ReflectionItem: Sendable, Hashable, Identifiable {
     public let text: String
 }
 
-public struct ReflectionPrompt: Sendable, Hashable, Identifiable {
-    public let id: String
-    public let area: LifeArea
-    public let kind: ReflectionKind
-    public let source: ReflectionSource
-    /// What the question is about: the strength, the area to grow, or the earlier answer.
-    public let about: String
-    public let question: String
-    /// The earlier reflection this one follows up, if any.
-    public let followsUp: String?
-}
-
 public enum Reflection {
     /// What went well and where to grow. The day draws on today's answers;
     /// a week or a month adds the week's earned reads (never a hint).
@@ -137,30 +125,6 @@ public enum Reflection {
         }
         // What was learnt, then strengths, then where to grow, each in the order found.
         return out.filter { $0.kind == .learnt } + out.filter { $0.kind == .strength } + out.filter { $0.kind == .grow }
-    }
-
-    /// The questions to answer: first a follow-up on the newest earlier
-    /// reflection about growing (from another day), then one per item.
-    public static func prompts(for items: [ReflectionItem], period: ReflectionPeriod, past: [ReflectionEntry], today: String) -> [ReflectionPrompt] {
-        var out: [ReflectionPrompt] = []
-        let followedUp = Set(past.compactMap(\.followUpOf))
-        let candidates = past.filter { $0.kind == .grow && $0.date < today && $0.followUpOf == nil && !followedUp.contains($0.id) }
-        if let earlier = candidates.max(by: { $0.date < $1.date }) {
-            out.append(ReflectionPrompt(
-                id: "follow-\(earlier.id)", area: earlier.area, kind: .grow, source: earlier.source, about: earlier.answer,
-                question: "On \(dayMonth(earlier.date)) you wrote: “\(earlier.answer)” How has it gone since?",
-                followsUp: earlier.id))
-        }
-        for item in items {
-            let question = switch item.kind {
-            case .learnt: "Where did you see this in yourself \(period.this)?"
-            case .strength: "Where did this strength help you \(period.this)?"
-            case .grow: "What is one small thing you could do differently \(period.next)?"
-            }
-            out.append(ReflectionPrompt(id: item.id, area: item.area, kind: item.kind, source: item.source,
-                                        about: item.text, question: question, followsUp: nil))
-        }
-        return out
     }
 
     /// "24 October": the day first, whatever the device's locale.

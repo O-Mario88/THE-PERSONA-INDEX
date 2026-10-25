@@ -22,12 +22,6 @@ export const AREA_NAMES: Record<ReflectionArea, string> = {
   self: 'Yourself',
 }
 
-export const SOURCE_NAMES: Record<ReflectionSource, string> = {
-  answers: 'From your answers',
-  week: 'From your week',
-  circle: 'From your circle, blended',
-}
-
 // Circle-based reflection needs this many friends behind the blended view
 // (Reflect), more than the Outside Mirror's three, so no one stands out.
 export const CIRCLE_MIN = 5
