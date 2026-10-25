@@ -18,9 +18,11 @@
 		434B6B5AB6315A79D290BDF1 /* SupportCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE7F188D5BEE89113D62B3FE /* SupportCard.swift */; };
 		509052FE78CF24092BF82C7C /* InviteCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8D975F5233DDA80D1D18013 /* InviteCard.swift */; };
 		5402D87483F205D138DDF64B /* ConnectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7376D0AB928867A5C1C8CF3 /* ConnectView.swift */; };
+		5C47FF1713D0F473794C5874 /* AppLock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FCDAF440F01D5E16C7152C2 /* AppLock.swift */; };
 		7087F80F9323837D05BAE3AE /* Figtree-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = BAE1F592572E4AE98093ADC0 /* Figtree-Regular.ttf */; };
 		7984C02E190E06C92BCB5A90 /* Figtree-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = DDE6E0628DDA64A022D9C66F /* Figtree-SemiBold.ttf */; };
 		79D7E26BD8BDEFEC5A1F0774 /* PersonaIndexApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DB7B86359BCF5B3EEA8FD8B /* PersonaIndexApp.swift */; };
+		842736E14D9FF42C4D51EC01 /* BackupModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CE05FDB9A2CDC0A4669EECA /* BackupModel.swift */; };
 		8CC09D3173D82445F8311021 /* OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = 5C8C112AE3F39E2B249F141A /* OFL.txt */; };
 		98F97464C9A38DE6BCF6302E /* SittingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E032E74F1B1AAE667A76BAE1 /* SittingView.swift */; };
 		9C561E041DCA6404F7C92396 /* WritingCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7A32AA1854AE61DA4D163B8 /* WritingCard.swift */; };
@@ -28,6 +30,8 @@
 		A6EBF7B4D95CECE9378EFA79 /* CommonGroundCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEB81C37CC2C0AFCDACAD5CA /* CommonGroundCard.swift */; };
 		AD44C77F23F0CC1D4B2C1553 /* Figtree-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 9588A5698FE8694374502898 /* Figtree-Medium.ttf */; };
 		AF83E155C729C7691BFCAF02 /* Dictation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7372EDEC6D9D4B71C0462EFF /* Dictation.swift */; };
+		B14BDA1CAA5AE068960D2C45 /* LockScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A56950EBF463510FAF8D3C7 /* LockScreen.swift */; };
+		B1E4DA417025BEAE24B575F9 /* PhraseSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BB9F50E31CB03D40F8B39A9 /* PhraseSheet.swift */; };
 		B4EFC53C6D63FBE49FB8ADD8 /* Figtree-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 8EC58F8519E3DD93027B8932 /* Figtree-ExtraBold.ttf */; };
 		BE865D2D938EE4091CE67B3D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D6E70DFE9CC59514123930D5 /* Assets.xcassets */; };
 		BF8C63B67FDF4C88B46A5496 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D978FEB9E326C63E6D93F817 /* WelcomeView.swift */; };
@@ -37,23 +41,29 @@
 		D4E9841C7AFCCBA8104898DC /* Tokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDEDBD2C2DC174469D6DBCA2 /* Tokens.swift */; };
 		DC9715A8218E881D21F1208B /* Figtree-Black.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A96E3BCFE2645770CCFAA219 /* Figtree-Black.ttf */; };
 		DD94C641717F7FD2587A2C1A /* Figtree-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1EB308A4B0ABF8E2D333F7C9 /* Figtree-Bold.ttf */; };
+		F615132247B6CBB11A85ADFC /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CCF8B6533CC7E0D2F85606A /* SettingsView.swift */; };
 		F8CA8287A6239627147721D5 /* TodayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1FFBAB58ADFFB5DE259DCD2 /* TodayView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		0FCDAF440F01D5E16C7152C2 /* AppLock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLock.swift; sourceTree = "<group>"; };
 		19B0D1E76A0FF3541F0D50FA /* WhatHelpedCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatHelpedCard.swift; sourceTree = "<group>"; };
+		1A56950EBF463510FAF8D3C7 /* LockScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockScreen.swift; sourceTree = "<group>"; };
 		1AE8BAB23E7E7EC540CDF751 /* CircleParts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CircleParts.swift; sourceTree = "<group>"; };
 		1EB308A4B0ABF8E2D333F7C9 /* Figtree-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Figtree-Bold.ttf"; sourceTree = "<group>"; };
 		4D7E35BDE335C3BA19A62164 /* ReflectParts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReflectParts.swift; sourceTree = "<group>"; };
 		56E04314E6E77555685610A4 /* PersonaIndex.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PersonaIndex.entitlements; sourceTree = "<group>"; };
+		5BB9F50E31CB03D40F8B39A9 /* PhraseSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhraseSheet.swift; sourceTree = "<group>"; };
 		5C8C112AE3F39E2B249F141A /* OFL.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = OFL.txt; sourceTree = "<group>"; };
 		637CF8C1CA555604D0445CD5 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
 		7372EDEC6D9D4B71C0462EFF /* Dictation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dictation.swift; sourceTree = "<group>"; };
 		7BC60757B82543565543A8D1 /* PersonaIndex.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = PersonaIndex.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		7CCF8B6533CC7E0D2F85606A /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		8DB7B86359BCF5B3EEA8FD8B /* PersonaIndexApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonaIndexApp.swift; sourceTree = "<group>"; };
 		8EC58F8519E3DD93027B8932 /* Figtree-ExtraBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Figtree-ExtraBold.ttf"; sourceTree = "<group>"; };
 		9588A5698FE8694374502898 /* Figtree-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Figtree-Medium.ttf"; sourceTree = "<group>"; };
 		9A741E3C4747907CC6FC91EC /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		9CE05FDB9A2CDC0A4669EECA /* BackupModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackupModel.swift; sourceTree = "<group>"; };
 		A8D975F5233DDA80D1D18013 /* InviteCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InviteCard.swift; sourceTree = "<group>"; };
 		A96E3BCFE2645770CCFAA219 /* Figtree-Black.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Figtree-Black.ttf"; sourceTree = "<group>"; };
 		B72C7744E886263E1EC5F792 /* ReflectModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReflectModel.swift; sourceTree = "<group>"; };
@@ -100,7 +110,9 @@
 		2D38EAD9B81A1BA3ACAFEE8F /* App */ = {
 			isa = PBXGroup;
 			children = (
+				0FCDAF440F01D5E16C7152C2 /* AppLock.swift */,
 				637CF8C1CA555604D0445CD5 /* AppModel.swift */,
+				9CE05FDB9A2CDC0A4669EECA /* BackupModel.swift */,
 				C19D9DC70BD8CF7701B23148 /* ConnectModel.swift */,
 				7372EDEC6D9D4B71C0462EFF /* Dictation.swift */,
 				8DB7B86359BCF5B3EEA8FD8B /* PersonaIndexApp.swift */,
@@ -176,15 +188,26 @@
 			children = (
 				E7376D0AB928867A5C1C8CF3 /* ConnectView.swift */,
 				EA239524B566D637BB3D057E /* InsightsView.swift */,
+				1A56950EBF463510FAF8D3C7 /* LockScreen.swift */,
 				DC5CA5B943743B90359E4D1F /* MainTabs.swift */,
 				F09A5454739BE97B969D5F31 /* ReflectView.swift */,
+				7CCF8B6533CC7E0D2F85606A /* SettingsView.swift */,
 				E032E74F1B1AAE667A76BAE1 /* SittingView.swift */,
 				C1FFBAB58ADFFB5DE259DCD2 /* TodayView.swift */,
 				D978FEB9E326C63E6D93F817 /* WelcomeView.swift */,
 				381D68EF02406DD88A95CFE3 /* Connect */,
 				DF34E7023AB9662BD99F7DD8 /* Reflect */,
+				C3DC2FE116C1A713EBDF8992 /* Settings */,
 			);
 			path = Screens;
+			sourceTree = "<group>";
+		};
+		C3DC2FE116C1A713EBDF8992 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				5BB9F50E31CB03D40F8B39A9 /* PhraseSheet.swift */,
+			);
+			path = Settings;
 			sourceTree = "<group>";
 		};
 		C69DCFB34C671F2340349F98 /* PersonaIndex */ = {
@@ -291,7 +314,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5C47FF1713D0F473794C5874 /* AppLock.swift in Sources */,
 				0A2359BBB052B72766B70DEA /* AppModel.swift in Sources */,
+				842736E14D9FF42C4D51EC01 /* BackupModel.swift in Sources */,
 				3A1AE93FA9522237C588D353 /* CircleParts.swift in Sources */,
 				A6EBF7B4D95CECE9378EFA79 /* CommonGroundCard.swift in Sources */,
 				D24040AFD24C5228401180BB /* Components.swift in Sources */,
@@ -300,12 +325,15 @@
 				AF83E155C729C7691BFCAF02 /* Dictation.swift in Sources */,
 				A07C2FDC7062F5CBD55B1FA8 /* InsightsView.swift in Sources */,
 				509052FE78CF24092BF82C7C /* InviteCard.swift in Sources */,
+				B14BDA1CAA5AE068960D2C45 /* LockScreen.swift in Sources */,
 				428EA353940BB8242CB6575C /* MainTabs.swift in Sources */,
 				79D7E26BD8BDEFEC5A1F0774 /* PersonaIndexApp.swift in Sources */,
+				B1E4DA417025BEAE24B575F9 /* PhraseSheet.swift in Sources */,
 				1D0492F8C55CFEC97378191E /* ReflectModel.swift in Sources */,
 				CD868504FFD61E84FD3FDDC8 /* ReflectParts.swift in Sources */,
 				180BA927900C8DB708B45017 /* ReflectView.swift in Sources */,
 				067C1F114E6F16DA187A8985 /* SelfSnapshot.swift in Sources */,
+				F615132247B6CBB11A85ADFC /* SettingsView.swift in Sources */,
 				98F97464C9A38DE6BCF6302E /* SittingView.swift in Sources */,
 				434B6B5AB6315A79D290BDF1 /* SupportCard.swift in Sources */,
 				F8CA8287A6239627147721D5 /* TodayView.swift in Sources */,
