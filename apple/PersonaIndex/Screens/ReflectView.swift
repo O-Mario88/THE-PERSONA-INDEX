@@ -1,5 +1,8 @@
 import PersonaKit
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
 
 /// Reflect: how the day, week or month went. What's going well and where
 /// you could grow, from your own answers and your week, each with its
@@ -33,15 +36,17 @@ struct ReflectView: View {
                 }
                 .pickerStyle(.segmented)
 
+                let learnt = items.filter { $0.kind == .learnt }
                 let well = items.filter { $0.kind == .strength }
                 let grow = items.filter { $0.kind == .grow }
-                if well.isEmpty && grow.isEmpty {
+                if items.isEmpty {
                     Text(period == .day
                          ? "Answer today’s questions and what they said about you shows here, ready to reflect on."
                          : "A few days of answers and your week fills this in.")
                         .font(.pSmall).foregroundStyle(Palette.text2)
                         .card(fill: Palette.surface2, stroke: .clear)
                 } else {
+                    ItemList(title: "What you learnt about yourself", items: learnt)
                     ItemList(title: "What’s going well", items: well)
                     ItemList(title: "Where you could grow", items: grow)
                 }
@@ -67,6 +72,13 @@ struct ReflectView: View {
             .frame(maxWidth: .infinity)
         }
         .background(Palette.bg)
+        .scrollDismissesKeyboard(.interactively)
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Done") { hideKeyboard() }
+            }
+        }
         .task {
             model.loadReflections()
             mirror = try? await model.weekMirror()
@@ -94,6 +106,7 @@ private struct ItemList: View {
                     }
                     .card(padding: Space.s4, fill: item.kind == .strength ? Palette.accentWash : Palette.surface,
                           stroke: item.kind == .strength ? Palette.accentLine : Palette.line)
+                    // Strengths in lime; what was learnt and where to grow on white.
                 }
             }
         }
@@ -106,6 +119,7 @@ private struct PromptCard: View {
     let onSave: (String) -> Void
     @State private var text = ""
     @State private var saved = false
+    @FocusState private var writing: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.s3) {
@@ -124,10 +138,12 @@ private struct PromptCard: View {
             } else {
                 TextField("Write a line or two…", text: $text, axis: .vertical)
                     .lineLimit(3...8)
+                    .focused($writing)
                     .font(.pBody)
                     .padding(Space.s3)
                     .background(Palette.surface2, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
                 Button("Keep this") {
+                    writing = false
                     onSave(text)
                     saved = true
                 }
@@ -149,7 +165,7 @@ private struct History: View {
                 Text("Your reflections").font(.pH2)
                 ForEach(entries) { e in
                     VStack(alignment: .leading, spacing: Space.s1) {
-                        Text("\(e.date) · \(e.area.name)".uppercased()).font(.figtree(11, .bold)).tracking(1.2).foregroundStyle(Palette.muted)
+                        Text("\(Reflection.dayMonth(e.date)) · \(e.area.name)".uppercased()).font(.figtree(11, .bold)).tracking(1.2).foregroundStyle(Palette.muted)
                         Text(e.question).font(.figtree(14)).foregroundStyle(Palette.text2)
                         Text("“\(e.answer)”").font(.figtree(16, .semibold))
                     }
@@ -160,4 +176,12 @@ private struct History: View {
             }
         }
     }
+}
+
+/// Closes the keyboard from anywhere on the screen.
+@MainActor
+func hideKeyboard() {
+    #if canImport(UIKit)
+    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+    #endif
 }

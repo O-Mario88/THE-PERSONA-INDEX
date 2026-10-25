@@ -71,7 +71,9 @@ public enum ReflectionPeriod: String, Codable, Sendable, CaseIterable {
 }
 
 public enum ReflectionKind: String, Codable, Sendable {
-    /// What's going well.
+    /// What an answer said about the person: something learnt.
+    case learnt
+    /// What's going well: a strength from an earned read.
     case strength
     /// Where the person could grow.
     case grow
@@ -144,7 +146,7 @@ public enum Reflection {
         for (q, o) in answered where q.care != .intimate && o.heavy != true {
             guard let insight = o.insight else { continue }
             let area = LifeArea.of(theme: q.theme) ?? .self
-            out.append(ReflectionItem(id: "\(q.id)-well", area: area, kind: .strength, source: .yourAnswers,
+            out.append(ReflectionItem(id: "\(q.id)-learnt", area: area, kind: .learnt, source: .yourAnswers,
                                       text: Reveal.split(insight.reveal).headline))
             if let other = insight.otherSide, !other.isEmpty {
                 out.append(ReflectionItem(id: "\(q.id)-grow", area: area, kind: .grow, source: .yourAnswers, text: other))
@@ -159,8 +161,8 @@ public enum Reflection {
                 out.append(ReflectionItem(id: "\(read.trait)-grow", area: .self, kind: .grow, source: .yourWeek, text: side.grow))
             }
         }
-        // Strengths first, each kind in the order found.
-        return out.filter { $0.kind == .strength } + out.filter { $0.kind == .grow }
+        // What was learnt, then strengths, then where to grow, each in the order found.
+        return out.filter { $0.kind == .learnt } + out.filter { $0.kind == .strength } + out.filter { $0.kind == .grow }
     }
 
     /// The questions to answer: first a follow-up on the newest earlier
@@ -176,16 +178,19 @@ public enum Reflection {
                 followsUp: earlier.id))
         }
         for item in items {
-            let question = item.kind == .strength
-                ? "Where did this show up for you \(period.this)?"
-                : "What is one small thing you could do differently \(period.next)?"
+            let question = switch item.kind {
+            case .learnt: "Where did you see this in yourself \(period.this)?"
+            case .strength: "Where did this strength help you \(period.this)?"
+            case .grow: "What is one small thing you could do differently \(period.next)?"
+            }
             out.append(ReflectionPrompt(id: item.id, area: item.area, kind: item.kind, source: item.source,
                                         about: item.text, question: question, followsUp: nil))
         }
         return out
     }
 
-    static func dayMonth(_ iso: String) -> String {
+    /// "24 October": the day first, whatever the device's locale.
+    public static func dayMonth(_ iso: String) -> String {
         let f = DateFormatter()
         f.dateFormat = "yyyy-MM-dd"
         f.timeZone = TimeZone(identifier: "UTC")
