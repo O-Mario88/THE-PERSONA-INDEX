@@ -1,4 +1,4 @@
-import { dayAt, isEvening, isSaturday, localDate, MORNING_CLOSES, morningEnd, nextTurn, sittingAt, opensAt } from './day'
+import { clock, dayAt, isEvening, isSaturday, left, localDate, MORNING_CLOSES, morningEnd, nextTurn, opensAt, sittingOf, windowAt } from './day'
 import { loadMoves, moveFor, movesOn, sendUnsent, setMoveStatus, startMove, startedInEvening } from './moves'
 
 describe('the local day', () => {
@@ -12,26 +12,33 @@ describe('the local day', () => {
     expect(isSaturday('2026-10-18')).toBe(false)
   })
 
-  // Edwin, 2026-10-15: "from 5:00 AM to 4:30 PM first 3 questions and from
-  // 5:00 PM and disappear at 12:00AM".
-  it('has two sittings: the morning from 5 am to 4:30 pm, the evening from 5 pm to midnight', () => {
-    const at = (h: number, m = 0) => sittingAt(new Date(2026, 9, 12, h, m))
-    expect(at(0)).toBe('night')
-    expect(at(4, 59)).toBe('night')
+  // The Stage 5 proposal (Edwin, 2026-10-24): five short windows a day, with
+  // the morning three open until 5 pm and the evening three until midnight.
+  it('has five windows, and the morning three stay open until the evening', () => {
+    const at = (h: number, m = 0) => windowAt(new Date(2026, 9, 12, h, m))
+    expect(at(0)).toBe('rest')
+    expect(at(4, 59)).toBe('rest')
     expect(at(5)).toBe('morning')
-    expect(at(16, 29)).toBe('morning')
-    expect(at(16, 30)).toBe('pause')
-    expect(at(16, 59)).toBe('pause')
+    expect(at(11, 29)).toBe('morning')
+    expect(at(11, 30)).toBe('midday')
+    expect(at(14, 29)).toBe('midday')
+    expect(at(14, 30)).toBe('afternoon')
+    expect(at(16, 59)).toBe('afternoon')
     expect(at(17)).toBe('evening')
-    expect(at(23, 59)).toBe('evening')
-    expect(MORNING_CLOSES).toBe(16 * 60 + 30)
+    expect(at(20, 59)).toBe('evening')
+    expect(at(21)).toBe('night')
+    expect(at(23, 59)).toBe('night')
+    expect(sittingOf('rest')).toBeNull()
+    expect((['morning', 'midday', 'afternoon'] as const).map(sittingOf)).toEqual(['morning', 'morning', 'morning'])
+    expect((['evening', 'night'] as const).map(sittingOf)).toEqual(['evening', 'evening'])
+    expect(MORNING_CLOSES).toBe(17 * 60)
   })
 
   it('counts everything after the morning closes as the evening', () => {
-    expect(isEvening(new Date(2026, 9, 12, 16, 29))).toBe(false)
-    expect(isEvening(new Date(2026, 9, 12, 16, 30))).toBe(true)
+    expect(isEvening(new Date(2026, 9, 12, 16, 59))).toBe(false)
+    expect(isEvening(new Date(2026, 9, 12, 17))).toBe(true)
     expect(isEvening(new Date(2026, 9, 12, 2))).toBe(false)
-    expect(morningEnd('2026-10-12')).toBe(new Date(2026, 9, 12, 16, 30).getTime())
+    expect(morningEnd('2026-10-12')).toBe(new Date(2026, 9, 12, 17).getTime())
   })
 
   it('names when each sitting opens', () => {
@@ -39,15 +46,24 @@ describe('the local day', () => {
     expect(opensAt('evening')).toBe('5 pm')
   })
 
-  it('turns by itself at 5 am, 4:30 pm, 5 pm and midnight', () => {
-    expect(dayAt(new Date(2026, 9, 12, 9))).toEqual({ date: '2026-10-12', sitting: 'morning' })
-    expect(dayAt(new Date(2026, 9, 12, 23, 59))).toEqual({ date: '2026-10-12', sitting: 'evening' })
-    expect(dayAt(new Date(2026, 9, 13, 0, 0))).toEqual({ date: '2026-10-13', sitting: 'night' })
+  it('says how long a window has left, the way the ring shows it', () => {
+    expect(left(2 * 3600_000 + 16 * 60_000).text).toBe('2h 16m')
+    expect(left(16 * 60_000).text).toBe('16m')
+    expect(left(10_000).text).toBe('1m')
+    expect(clock(7 * 60 + 51)).toBe('07:51')
+  })
+
+  it('turns by itself at each window and at midnight', () => {
+    expect(dayAt(new Date(2026, 9, 12, 9))).toEqual({ date: '2026-10-12', window: 'morning', sitting: 'morning' })
+    expect(dayAt(new Date(2026, 9, 12, 23, 59))).toEqual({ date: '2026-10-12', window: 'night', sitting: 'evening' })
+    expect(dayAt(new Date(2026, 9, 13, 0, 0))).toEqual({ date: '2026-10-13', window: 'rest', sitting: null })
     expect(nextTurn(new Date(2026, 9, 12, 1))).toBe(new Date(2026, 9, 12, 5).getTime())
-    expect(nextTurn(new Date(2026, 9, 12, 9))).toBe(new Date(2026, 9, 12, 16, 30).getTime())
+    expect(nextTurn(new Date(2026, 9, 12, 9))).toBe(new Date(2026, 9, 12, 11, 30).getTime())
+    expect(nextTurn(new Date(2026, 9, 12, 12))).toBe(new Date(2026, 9, 12, 14, 30).getTime())
     expect(nextTurn(new Date(2026, 9, 12, 16, 40))).toBe(new Date(2026, 9, 12, 17).getTime())
-    expect(nextTurn(new Date(2026, 9, 12, 17))).toBe(new Date(2026, 9, 13, 0).getTime())
-    expect(nextTurn(new Date(2026, 9, 31, 20))).toBe(new Date(2026, 10, 1, 0).getTime())
+    expect(nextTurn(new Date(2026, 9, 12, 17))).toBe(new Date(2026, 9, 12, 21).getTime())
+    expect(nextTurn(new Date(2026, 9, 12, 22))).toBe(new Date(2026, 9, 13, 0).getTime())
+    expect(nextTurn(new Date(2026, 9, 31, 22))).toBe(new Date(2026, 10, 1, 0).getTime())
   })
 })
 

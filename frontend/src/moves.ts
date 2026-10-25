@@ -16,6 +16,8 @@ export type Move = {
   status: StepStatus
   at?: number // when it was started, in ms; missing on steps saved before times were kept
   unsent?: true // the server has not got the latest status yet
+  needStep?: true // the card's second step, serving what the answer reached for (since 2026-10-24)
+  local?: true // from a regional question: kept on this phone, never sent (regional.ts)
 }
 
 const movesKey = 'pi.moves.v1'
@@ -41,6 +43,8 @@ function migrate(m: Record<string, unknown>): Move {
   }
   if (typeof m.at === 'number') move.at = m.at
   if (m.unsent === true) move.unsent = true
+  if (m.needStep === true) move.needStep = true
+  if (m.local === true) move.local = true
   return move
 }
 
@@ -65,9 +69,9 @@ function update(questionId: string, change: (m: Move) => void) {
 // it never had, or one deleted since) is not sent again; anything else that
 // fails is kept to send later. It rejects when the step did not get there.
 async function send(m: Move, today: string): Promise<void> {
-  if (!m.optionId) return
+  if (!m.optionId || m.local) return
   try {
-    await saveStep(m.questionId, m.optionId, m.status, today)
+    await saveStep(m.questionId, m.optionId, m.status, today, !!m.needStep)
     update(m.questionId, (x) => delete x.unsent)
   } catch (e) {
     const gone = e instanceof ApiError && (e.code === 'unknown_answer' || e.code === 'invalid_request')
@@ -77,11 +81,30 @@ async function send(m: Move, today: string): Promise<void> {
 }
 
 // startMove keeps a new step on this phone and sends it. Starting the same
-// card's step again changes nothing.
-export function startMove(date: string, questionId: string, optionId: string, step: string, at = Date.now()): Promise<void> {
+// card's step again changes nothing. needStep: the card's second step was
+// picked, the one serving what the answer reached for. local: a regional
+// question's step, which stays on this phone.
+export function startMove(
+  date: string,
+  questionId: string,
+  optionId: string,
+  step: string,
+  at = Date.now(),
+  needStep = false,
+  local = false,
+): Promise<void> {
   const moves = loadMoves()
   if (moves.some((m) => m.questionId === questionId)) return Promise.resolve()
-  const m: Move = { date, questionId, optionId, step, status: 'started', at, unsent: true }
+  const m: Move = {
+    date,
+    questionId,
+    optionId,
+    step,
+    status: 'started',
+    at,
+    ...(local ? { local: true as const } : { unsent: true as const }),
+    ...(needStep ? { needStep: true as const } : {}),
+  }
   saveMoves([...moves, m])
   return send(m, date)
 }
@@ -102,7 +125,7 @@ export function setMoveStatus(
   if (!m) return Promise.resolve()
   update(questionId, (x) => {
     x.status = status
-    x.unsent = true
+    if (!x.local) x.unsent = true
   })
   return send({ ...m, status }, today)
 }

@@ -23,7 +23,7 @@
 import { generateMnemonic, mnemonicToSeedWebcrypto, validateMnemonic } from '@scure/bip39'
 import { wordlist } from '@scure/bip39/wordlists/english.js'
 import { mergeEntry } from './notebook'
-import type { AnswerRecord, History } from './profile'
+import type { AnswerRecord, History, SkipRecord } from './profile'
 import type { Move } from './moves'
 import { entryFor } from './registry'
 import { keys, load, loadJSON, onChange, remove, save, saveJSON } from './storage'
@@ -248,10 +248,19 @@ export function mergeHistory(a: History | null, b: History | null): History {
   const byQ = new Map<string, AnswerRecord>()
   for (const r of [...x.answers, ...y.answers]) {
     const had = byQ.get(r.questionId)
-    if (!had || (!had.verdict && r.verdict)) byQ.set(r.questionId, had ? { ...had, verdict: r.verdict, closer: r.closer } : r)
+    if (!had) {
+      byQ.set(r.questionId, r)
+      continue
+    }
+    // A tap made on either phone joins the answer: the verdict with its
+    // closer reading, and the evening's word on the route with its label.
+    const next = { ...had }
+    if (!had.verdict && r.verdict) Object.assign(next, { verdict: r.verdict, closer: r.closer })
+    if (!had.route && r.route) Object.assign(next, { route: r.route, label: r.label })
+    byQ.set(r.questionId, next)
   }
-  const skips = new Map<string, { date: string; theme: string }>()
-  for (const s of [...x.skips, ...y.skips]) skips.set(`${s.date}|${s.theme}`, s)
+  const skips = new Map<string, SkipRecord>()
+  for (const s of [...x.skips, ...y.skips]) skips.set(`${s.date}|${s.theme}|${s.questionId ?? ''}`, s)
   const byDate = <T extends { date: string }>(p: T, q: T) => p.date.localeCompare(q.date)
   return { answers: [...byQ.values()].sort(byDate), skips: [...skips.values()].sort(byDate) }
 }

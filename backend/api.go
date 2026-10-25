@@ -20,6 +20,7 @@ type Option struct {
 	Label   string         `json:"label"`
 	Depth   int            `json:"depth,omitempty"`  // 1 light .. 4 most revealing; feeds the phone's interest score
 	Heavy   bool           `json:"heavy,omitempty"`  // a heavy answer: the phone points to people instead of an insight
+	Need    string         `json:"need,omitempty"`   // what the answer reaches for (needs.go)
 	Traits  map[string]int `json:"traits,omitempty"` // trait weights; the phone builds the profile from these
 	Insight *Insight       `json:"insight,omitempty"`
 }
@@ -127,6 +128,9 @@ type Server struct {
 	votes   VoteStore
 	mirror  MirrorStore // each phone's kept answers and steps (mirrorstore.go)
 	vaults  VaultStore  // the sealed backups (vault.go)
+	social  SocialStore // accounts and the circle (social.go)
+	friends friendBank  // friend questions (friends.go)
+	signIn  SignInConfig
 	devices *deviceSigner
 	// voteRetention is how long raw votes are kept (main.go), so "Delete
 	// everything" knows how far back a phone's votes can reach.
@@ -143,6 +147,14 @@ type Server struct {
 	vaultMissLimit *windowLimiter
 	trustCF        bool // read the client address from CF-Connecting-IP
 
+	// Accounts and the circle (accounts.go, circle.go).
+	codeAddrLimit   *windowLimiter // per network address
+	codeLoginLimit  *windowLimiter // per address a code goes to
+	signInLimit     *windowLimiter // per network address
+	accountLimit    *windowLimiter // per session
+	invitePeekLimit *windowLimiter // per network address
+	roomJoinLimit   *windowLimiter // per session
+
 	// The layers around the API (middleware.go): its metrics, the edge
 	// secret, the access log setting, the static site and the metrics token.
 	metrics      *metrics
@@ -151,26 +163,39 @@ type Server struct {
 	static       http.Handler
 	metricsToken string
 	draining     atomic.Bool // set when shutdown begins; /api/ready answers 503
+
+	// The regional pack (regional.go), encoded once, and its ETag; nil until
+	// main loads it.
+	regional    []byte
+	regionalTag string
 }
 
 // NewServer wires the API to one store, which keeps the votes and the
 // phones' mirrors in the same database.
 func NewServer(clock func() time.Time, bank QuestionBank, store Store, devices *deviceSigner) *Server {
 	return &Server{
-		clock:          clock,
-		bank:           bank,
-		votes:          store,
-		mirror:         store,
-		vaults:         store,
-		devices:        devices,
-		voteRetention:  defaultRetention,
-		voteLimit:      newWindowLimiter(votesPerDevicePerMinute, time.Minute),
-		deviceLimit:    newWindowLimiter(devicesPerAddressPerHour, time.Hour),
-		forgetLimit:    newWindowLimiter(forgetsPerAddressPerHour, time.Hour),
-		vaultLimit:     newWindowLimiter(vaultsPerKeyPerHour, time.Hour),
-		vaultMissLimit: newWindowLimiter(vaultMissesPerAddrPerHr, time.Hour),
-		metrics:        newMetrics(clock()),
-		accessLog:      "errors",
+		clock:           clock,
+		bank:            bank,
+		votes:           store,
+		mirror:          store,
+		vaults:          store,
+		social:          store,
+		friends:         mustFriendBank(),
+		devices:         devices,
+		voteRetention:   defaultRetention,
+		voteLimit:       newWindowLimiter(votesPerDevicePerMinute, time.Minute),
+		deviceLimit:     newWindowLimiter(devicesPerAddressPerHour, time.Hour),
+		forgetLimit:     newWindowLimiter(forgetsPerAddressPerHour, time.Hour),
+		vaultLimit:      newWindowLimiter(vaultsPerKeyPerHour, time.Hour),
+		vaultMissLimit:  newWindowLimiter(vaultMissesPerAddrPerHr, time.Hour),
+		codeAddrLimit:   newWindowLimiter(codesPerAddrHour, time.Hour),
+		codeLoginLimit:  newWindowLimiter(codesPerLoginHour, time.Hour),
+		signInLimit:     newWindowLimiter(signInsPerAddrHr, time.Hour),
+		accountLimit:    newWindowLimiter(accountsCallsMin, time.Minute),
+		invitePeekLimit: newWindowLimiter(invitePeeksPerHr, time.Hour),
+		roomJoinLimit:   newWindowLimiter(roomJoinsPerHour, time.Hour),
+		metrics:         newMetrics(clock()),
+		accessLog:       "errors",
 	}
 }
 
@@ -180,6 +205,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/ready", s.Ready)
 	mux.HandleFunc("GET /api/questions/today", s.TodayQuestions)
 	mux.HandleFunc("GET /api/editions/{date}", s.Edition)
+	mux.HandleFunc("GET /api/regional", s.Regional)
 	mux.HandleFunc("POST /api/device", s.IssueDevice)
 	mux.HandleFunc("POST /api/votes", s.CastVote)
 	mux.HandleFunc("POST /api/ratings", s.RateCard)
@@ -195,6 +221,46 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("PUT /api/vault", s.PutVault)
 	mux.HandleFunc("GET /api/vault", s.GetVault)
 	mux.HandleFunc("DELETE /api/vault", s.DeleteVault)
+
+	// Accounts (accounts.go).
+	mux.HandleFunc("GET /api/auth/methods", s.SignInMethods)
+	mux.HandleFunc("POST /api/auth/code", s.SendCode)
+	mux.HandleFunc("POST /api/auth/verify", s.VerifyCode)
+	mux.HandleFunc("POST /api/auth/id", s.SignInWithID)
+	mux.HandleFunc("GET /api/account", s.GetAccountDetails)
+	mux.HandleFunc("PATCH /api/account", s.PatchAccount)
+	mux.HandleFunc("DELETE /api/account", s.DeleteAccount)
+	mux.HandleFunc("POST /api/account/fresh", s.FreshDevice)
+	mux.HandleFunc("GET /api/account/device", s.AccountDevice)
+	mux.HandleFunc("DELETE /api/account/sessions/{id}", s.SignOut)
+	mux.HandleFunc("PUT /api/account/sync", s.PutSync)
+	mux.HandleFunc("GET /api/account/sync", s.GetSync)
+	mux.HandleFunc("DELETE /api/account/sync", s.DeleteSync)
+
+	// The circle (circle.go).
+	mux.HandleFunc("GET /api/circle", s.GetCircle)
+	mux.HandleFunc("POST /api/circle/invites", s.CreateInvite)
+	mux.HandleFunc("GET /api/circle/invites/{code}", s.PeekInvite)
+	mux.HandleFunc("POST /api/circle/invites/{code}", s.AcceptInvite)
+	mux.HandleFunc("POST /api/circle/rooms", s.OpenRoom)
+	mux.HandleFunc("POST /api/circle/rooms/{code}", s.JoinRoom)
+	mux.HandleFunc("POST /api/circle/connect/{id}", s.Connect)
+	mux.HandleFunc("POST /api/circle/dismiss/{id}", s.DismissSuggestion)
+	mux.HandleFunc("PATCH /api/circle/friends/{id}", s.PatchFriend)
+	mux.HandleFunc("DELETE /api/circle/friends/{id}", s.Disconnect)
+
+	// Friend questions and the Outside Mirror (friends.go).
+	mux.HandleFunc("GET /api/friends/today", s.FriendTodayHandler)
+	mux.HandleFunc("POST /api/friends/votes", s.FriendVote)
+	mux.HandleFunc("GET /api/friends/mirror", s.OutsideMirrorHandler)
+
+	// Quiet nods and Answer Together (connect.go).
+	mux.HandleFunc("GET /api/nods", s.GetNods)
+	mux.HandleFunc("POST /api/nods", s.SendNod)
+	mux.HandleFunc("GET /api/together", s.GetTogethers)
+	mux.HandleFunc("POST /api/together", s.AskTogether)
+	mux.HandleFunc("POST /api/together/{id}", s.AnswerTogether)
+	mux.HandleFunc("DELETE /api/together/{id}", s.LeaveTogether)
 	return mux
 }
 

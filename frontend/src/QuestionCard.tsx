@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Avatar } from './ui/Avatar'
+import { Icon } from './ui/icons'
 import { keepStorage } from './pwa/install'
 import {
   ApiError,
@@ -34,14 +36,17 @@ import {
   type Verdict,
 } from './api'
 import { isEvening } from './day'
-import { Helpline, HELPLINE_URL } from './Helpline'
+import { PulseAsk, PulsePill } from './Pulse'
+import { hasPulse } from './pulse'
+import { Helpline } from './Helpline'
 import { moveFor, startMove } from './moves'
 import { focusPlan, keepCard, keptCard, makePlan, noteVerdict, unkeepCard, type Plan } from './notebook'
 import { inOrder } from './order'
 import { loadPeople, namesLine } from './people'
 import { PeopleEditor } from './People'
-import { DEFAULT_WORDS_DAYS } from './prefs'
+import { DEFAULT_WORDS_DAYS, helplineHere } from './prefs'
 import { isLowMood, loadHistory, recalledAnswer, recordAnswer, recordSkip, recordVerdict, threadLine } from './profile'
+import { isNeed, NEED_PHRASES, type Need } from './needs'
 import { splitReveal } from './reveal'
 import { onOtherTab } from './storage'
 import { themeName, themeStyle, themeVars } from './themes'
@@ -50,6 +55,7 @@ import {
   focusTouch,
   HEAVY_HEADLINE,
   HEAVY_THANKS,
+  LOCAL_NOTE,
   NO_PEOPLE,
   NOT_ME_REPLY,
   peopleAsk,
@@ -65,6 +71,11 @@ type Props = {
   sitting?: Sitting
   wordsDays?: number
   writeFirst?: boolean // open with a short box for one's own words, the options after
+  still?: boolean // show the card at once instead of unfolding it in three beats
+  index?: number // where the card sits in its sitting, from 0
+  of?: number
+  pulse?: boolean // the Human Pulse: undefined until asked once, false for never
+  onPulse?: (on: boolean) => void
   onDone?: (questionId: string, done: Done) => void
   onNext: () => void
 }
@@ -83,10 +94,17 @@ export function QuestionCard({
   sitting,
   wordsDays = DEFAULT_WORDS_DAYS,
   writeFirst = false,
+  still = false,
+  index,
+  of,
+  pulse,
+  onPulse,
   onDone,
   onNext,
 }: Props) {
   const [choice, setChoice] = useState<string | null>(() => recalledChoice(question.id))
+  // A card answered before (coming back to it) opens whole, not in beats.
+  const [recalled] = useState(() => !!recalledChoice(question.id))
   const [words, setWords] = useState<OwnWords | null>(() => recalledWords(question.id))
   const [draft, setDraft] = useState(() => (recalledChoice(question.id) ? '' : recalledDraft(question.id)))
   // A write-first card opens on a box for one line (Edwin, 2026-10-24); the
@@ -149,6 +167,11 @@ export function QuestionCard({
   // answered. typed carries the person's own words when they picked it as
   // the closest; the words stay here.
   async function vote(o: Option, typed?: string) {
+    // A regional question is answered on this phone only: nothing is sent.
+    if (question.local) {
+      accepted(o, typed)
+      return
+    }
     setSending(true)
     setError(null)
     const sent = intimate ? PRIVATE_OPTION : o.id
@@ -220,6 +243,7 @@ export function QuestionCard({
       <h2 id={headingId} className="prompt">
         {question.prompt}
       </h2>
+      {question.local && <p className="muted local-note">{LOCAL_NOTE}</p>}
 
       {!choice && mode === 'options' && (
         <div className="options" role="group" aria-labelledby={headingId}>
@@ -231,8 +255,8 @@ export function QuestionCard({
           <button type="button" className="option own-button" disabled={sending} onClick={() => setMode('writing')}>
             <span aria-hidden="true">✎</span> In my own words
           </button>
-          <button type="button" className="text-button skip" disabled={sending} onClick={skip}>
-            Skip this one
+          <button type="button" className="text-button skip" aria-label="Skip this one" disabled={sending} onClick={skip}>
+            Skip
           </button>
         </div>
       )}
@@ -359,7 +383,19 @@ export function QuestionCard({
         </p>
       )}
       {chosen && (
-        <Answer question={question} option={chosen} words={words} date={date} wordsDays={wordsDays} onNext={onNext} />
+        <Answer
+          question={question}
+          option={chosen}
+          words={words}
+          date={date}
+          wordsDays={wordsDays}
+          still={still || recalled}
+          card={index !== undefined && of ? `Card ${index + 1} of ${of}` : undefined}
+          nextLabel={index !== undefined && of && index + 1 < of ? `Question ${index + 2} of ${of}` : 'Next'}
+          pulse={pulse}
+          onPulse={onPulse}
+          onNext={onNext}
+        />
       )}
 
       {error && (
@@ -397,13 +433,23 @@ function Answer({
   words,
   date,
   wordsDays,
+  still,
+  card,
+  nextLabel = 'Next',
+  pulse,
+  onPulse,
   onNext,
 }: {
+  nextLabel?: string
   question: Question
   option: Option
   words: OwnWords | null
   date: string
   wordsDays: number
+  still: boolean
+  card?: string
+  pulse?: boolean
+  onPulse?: (on: boolean) => void
   onNext: () => void
 }) {
   const insight = option.heavy ? undefined : option.insight
@@ -416,40 +462,73 @@ function Answer({
     return f && (option.traits?.[f.trait] ?? 0) !== 0 ? f : null
   })
   const [notMe, setNotMe] = useState(() => recalledVerdict(question.id) === 'not_me')
+  const counted = hasPulse(question) && !option.heavy
+  // The card unfolds in three beats, each on a tap (M02): the line, then the
+  // reading, then what it reached for and the other side. With "Reduce
+  // motion" on, or coming back to a card, it is all there at once.
+  const hasBody = !!insight && !!splitReveal(insight.reveal).body
+  const [beat, setBeat] = useState(() => (still || !insight ? 2 : 0))
+  const advance = () => setBeat((b) => (b === 0 && hasBody ? 1 : 2))
+  const whole = beat >= 2
   return (
-    <div className="answer">
+    <div className={still ? 'answer' : 'answer unfold'} data-beat={beat}>
+      {card && <p className="card-count label">{card}</p>}
       {words ? (
         <YourWords words={words} />
       ) : (
-        <p className="you-chose">
-          <span className="eyebrow">You chose</span>
-          <span className="chosen">{option.label}</span>
-        </p>
+        !insight && (
+          <p className="you-chose">
+            <span className="eyebrow">You chose</span>
+            <span className="chosen">{option.label}</span>
+          </p>
+        )
       )}
       {option.heavy && <HeavyCard />}
       {insight && (
         <InsightPanel
+          area={question.theme ? themeName(question.theme) : 'Today'}
+          chose={words ? undefined : option.label}
           reveal={insight.reveal}
           otherSide={insight.otherSide}
+          reach={notMe || !isNeed(option.need) ? null : option.need}
           thread={notMe ? null : thread}
           focus={notMe ? null : focus}
+          beat={beat}
         />
       )}
-      {insight && <KeepThis question={question} option={option} words={words} date={date} />}
       {insight && isLowMood(question.theme, option.depth) && <Helpline />}
-      {insight?.step && <TryThis question={question} option={option} step={insight.step} date={date} />}
-      {insight && (
-        <Rate
-          question={question}
-          option={option}
-          date={date}
-          wordsDays={wordsDays}
-          onVerdict={(v) => setNotMe(v === 'not_me')}
-        />
+      {!whole && (
+        <div className="beat-foot">
+          <button type="button" className="btn wide beat-next" onClick={advance}>
+            {beat === 0 && hasBody ? 'Read on' : 'And the other side'}
+          </button>
+        </div>
       )}
-      <button type="button" className="next" onClick={onNext}>
-        Next
-      </button>
+      {whole && (
+        <>
+          {counted && pulse === true && <PulsePill question={question} optionId={option.id} />}
+          {counted && pulse === undefined && onPulse && <PulseAsk onAnswer={onPulse} />}
+          {insight?.step && (
+            <TryThis question={question} option={option} step={insight.step} needStep={insight.needStep} date={date} />
+          )}
+          {insight && (
+            <Rate
+              question={question}
+              option={option}
+              date={date}
+              wordsDays={wordsDays}
+              onVerdict={(v) => setNotMe(v === 'not_me')}
+            />
+          )}
+          <div className="answer-foot">
+            <button type="button" className="next" onClick={onNext}>
+              {nextLabel !== 'Next' && <span className="sr-only">Next: </span>}
+              {nextLabel}
+            </button>
+            {insight && <KeepThis question={question} option={option} words={words} date={date} />}
+          </div>
+        </>
+      )}
     </div>
   )
 }
@@ -468,6 +547,7 @@ function HeavyCard() {
       <p className="insight-body">{HEAVY_THANKS}</p>
       {names.length > 0 && <p className="insight-body">{peopleAsk(namesLine(names))}</p>}
       {people?.helps && <p className="insight-body">What helps, in your words: “{people.helps}”</p>}
+      {names.length > 0 && <ReachOut names={names} />}
       {names.length === 0 && !adding && (
         <>
           <p className="insight-body">{NO_PEOPLE}</p>
@@ -488,7 +568,7 @@ function HeavyCard() {
       <Helpline />
       <p className="helpline">
         {CRISIS_LINE}{' '}
-        <a href={HELPLINE_URL} target="_blank" rel="noreferrer">
+        <a href={helplineHere()} target="_blank" rel="noreferrer">
           Talk to someone now
         </a>
       </p>
@@ -497,34 +577,109 @@ function HeavyCard() {
   )
 }
 
+// ReachOut drafts a short message to one of the person's people and hands it
+// to WhatsApp or the phone's messages, where they can change anything before
+// sending. The app sends nothing and never sees the conversation.
+function ReachOut({ names }: { names: string[] }) {
+  const [to, setTo] = useState(names[0])
+  const [text, setText] = useState(() => draftFor(names[0]))
+  const [edited, setEdited] = useState(false)
+  function pick(n: string) {
+    setTo(n)
+    if (!edited) setText(draftFor(n))
+  }
+  const body = encodeURIComponent(text)
+  return (
+    <div className="reach-out" role="group" aria-label="Reach out">
+      <p className="reach-ask">Could one of your people hear from you tonight?</p>
+      <div className="chips" role="group" aria-label="Who">
+        {names.map((n) => (
+          <button key={n} type="button" className="chip-toggle with-avatar" aria-pressed={to === n} onClick={() => pick(n)}>
+            <Avatar name={n} size={36} /> {n}
+          </button>
+        ))}
+      </div>
+      <div className="reach-box">
+        <label className="small muted" htmlFor="reach-text">
+          Opens in your messages · edit anything before sending
+        </label>
+        <textarea
+          id="reach-text"
+          className="field reach-text"
+          rows={2}
+          value={text}
+          maxLength={280}
+          onChange={(e) => {
+            setText(e.target.value)
+            setEdited(true)
+          }}
+        />
+        <div className="row-gap">
+          <a className="btn small light" href={`https://wa.me/?text=${body}`} target="_blank" rel="noreferrer">
+            <Icon name="chat" size={18} /> WhatsApp
+          </a>
+          <a className="btn small outline" href={`sms:?&body=${body}`}>
+            <Icon name="sms" size={18} /> SMS
+          </a>
+        </div>
+      </div>
+      <p className="insight-note">The app never sends anything for you and never sees the conversation.</p>
+    </div>
+  )
+}
+
+const draftFor = (name: string) => `Hey ${name}, had a heavy day. Free for a 5-minute call later?`
+
 function InsightPanel({
+  area,
+  chose,
   reveal,
   otherSide,
+  reach,
   thread,
   focus,
+  beat = 2,
 }: {
+  beat?: number // 0: the line only, 1: and the reading, 2: all of it
+  area: string
+  chose?: string // the option tapped, said small in the card's corner
   reveal: string
   otherSide?: string
+  reach: Need | null // what the answer reached for: one soft line (needs.ts)
   thread: string | null
   focus: Plan | null
 }) {
   const { headline, body } = splitReveal(reveal)
   return (
     <div className="insight" role="note" aria-label="What your answer may say">
-      <p className="insight-headline">{headline}</p>
-      {body && <p className="insight-body">{body}</p>}
-      {otherSide && (
-        <p className="insight-other">
+      <p className="insight-top">
+        <span className="insight-area">{area}</span>
+        {chose && (
+          <span className="insight-chose">
+            <span className="sr-only">You chose: </span>
+            {chose}
+          </span>
+        )}
+      </p>
+      <p className="insight-headline beat-1">{headline}</p>
+      {body && beat >= 1 && <p className="insight-body beat-2">{body}</p>}
+      {beat >= 2 && reach && (
+        <p className="insight-reach beat-3">
+          <span className="eyebrow">What it reached for</span> {NEED_PHRASES[reach]}
+        </p>
+      )}
+      {beat >= 2 && otherSide && (
+        <p className="insight-other beat-3">
           <span className="eyebrow">The other side</span> {otherSide}
         </p>
       )}
-      {thread && (
+      {beat >= 2 && thread && (
         <p className="insight-thread">
           <span aria-hidden="true">↺ </span>
           {thread}
         </p>
       )}
-      {focus && (
+      {beat >= 2 && focus && (
         <p className="insight-thread insight-focus">
           <span aria-hidden="true">→ </span>
           {focusTouch(focus.when, focus.will)}
@@ -578,7 +733,7 @@ function KeepThis({ question, option, words, date }: { question: Question; optio
         </>
       ) : (
         <button type="button" className="chip keep-button" onClick={keep}>
-          <span aria-hidden="true">＋ </span>Keep this
+          <span aria-hidden="true">＋ </span>Keep in Notebook
         </button>
       )}
     </div>
@@ -591,22 +746,57 @@ function KeepThis({ question, option, words, date }: { question: Question; optio
 // the evening asks how a morning step went, and the mirror keeps them all.
 // "My own idea" lets the person put it their own way, as their one plan,
 // kept on this phone.
-function TryThis({ question, option, step, date }: { question: Question; option: Option; step: string; date: string }) {
+function TryThis({
+  question,
+  option,
+  step,
+  needStep,
+  date,
+}: {
+  question: Question
+  option: Option
+  step: string
+  needStep?: string // the second step, serving what the answer reached for
+  date: string
+}) {
   const [state, setState] = useState<'open' | 'started' | 'later' | 'own' | 'planned'>(() =>
     moveFor(question.id) ? 'started' : 'open',
   )
   const [evening] = useState(() => isEvening())
+  // Two steps to pick from when the card has a second one (Stage 2 of the
+  // proposal of 2026-10-24: the person chooses), the card's own first.
+  const choices = needStep && needStep !== step ? [step, needStep] : [step]
+  const [pick, setPick] = useState(0)
+  const started = state === 'started' ? (moveFor(question.id)?.step ?? choices[pick]) : null
   function start() {
     setState('started')
-    startMove(date, question.id, option.id, step).catch(() => {
+    startMove(date, question.id, option.id, choices[pick], Date.now(), pick === 1, !!question.local).catch(() => {
       // kept on the phone, and sent again when the app next opens
     })
   }
   return (
     <div className="try" role="group" aria-label="Something to try">
-      <p>
-        <strong>Something you could try:</strong> {step}
-      </p>
+      {started ? (
+        <p>
+          <strong>Something you'll try:</strong> {started}
+        </p>
+      ) : choices.length === 1 ? (
+        <p>
+          <strong>Something you could try:</strong> {step}
+        </p>
+      ) : (
+        <fieldset className="try-choices">
+          <legend>
+            <strong>Something you could try:</strong> pick one.
+          </legend>
+          {choices.map((c, i) => (
+            <label key={i} className="try-choice">
+              <input type="radio" name={`try-${question.id}`} checked={pick === i} onChange={() => setPick(i)} />
+              <span>{c}</span>
+            </label>
+          ))}
+        </fieldset>
+      )}
       {state === 'open' && (
         <div className="try-buttons">
           <button type="button" className="pill-button" onClick={start}>
@@ -711,6 +901,8 @@ function Rate({
     rememberRated(question.id, v)
     recordVerdict(question.id, v)
     noteVerdict(question.id, v)
+    // A regional question's tap stays on this phone with its answer.
+    if (question.local) return
     const sent = question.care === 'intimate' ? PRIVATE_OPTION : option.id
     rateCard(question.id, sent, v).catch(() => {
       // a lost tap is not worth bothering anyone about

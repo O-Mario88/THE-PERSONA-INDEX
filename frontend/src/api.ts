@@ -1,5 +1,6 @@
 // Client for the backend API. Shapes mirror backend/api.go.
 
+import type { Need } from './needs'
 import { markCheckSent, unsentChecks } from './notebook'
 import { addDays, dateOf, daysBetween, keys, load, loadJSON, remove, save, saveJSON } from './storage'
 
@@ -14,12 +15,14 @@ export type Insight = {
   sourceUrl?: string
   strength?: 'strong' | 'moderate' | 'early'
   step: string
+  needStep?: string // a second step, serving what the answer reached for (since 2026-10-24)
 }
 export type Option = {
   id: string
   label: string
   depth?: number
   heavy?: boolean // a heavy answer: its card points to people instead of an insight (since 2026-10-24)
+  need?: Need // what the answer reaches for (needs.ts, since 2026-10-24)
   traits?: Record<string, number>
   insight?: Insight
 }
@@ -29,6 +32,9 @@ export type Question = {
   care?: 'everyday' | 'personal' | 'intimate'
   prompt: string
   options: Option[]
+  // A regional question (regional.ts), asked on this phone only: nothing
+  // about it is ever sent, not even that it was answered.
+  local?: true
 }
 export type DailySet = {
   date: string
@@ -342,16 +348,38 @@ export async function deleteEverywhere(today: string): Promise<Deleted> {
     if (res?.deleted) deleted = res.deleted
   }
   forgetLocal(today, true)
+  // Signed in, the account stays: it takes its next pass, so the mirror
+  // starts again empty (backend FreshDevice).
+  const account = load(accountKey)
+  if (account) {
+    try {
+      const { token } = await request<{ token: string }>('/api/account/fresh', {
+        method: 'POST',
+        headers: { Authorization: `Account ${account}` },
+      })
+      save(deviceKey, token)
+    } catch {
+      // the next vote takes an anonymous pass instead
+    }
+  }
   return deleted
 }
 
 // saveStep starts the small step on an answered card, or says how it went.
-export function saveStep(questionId: string, optionId: string, status: StepStatus, date: string): Promise<unknown> {
+// needStep: the person picked the card's second step, the one serving what
+// the answer reached for, so the server's mirror shows those words.
+export function saveStep(
+  questionId: string,
+  optionId: string,
+  status: StepStatus,
+  date: string,
+  needStep = false,
+): Promise<unknown> {
   return withDevice((voterId) =>
     request('/api/steps', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ questionId, optionId, status, date, voterId }),
+      body: JSON.stringify({ questionId, optionId, status, date, voterId, ...(needStep ? { needStep } : {}) }),
     }),
   )
 }
@@ -454,6 +482,9 @@ export function forgetLocal(today: string, everywhere = false) {
   const open = addDays(today, -1)
   for (const k of keys()) {
     if (k === deviceKey && !everywhere) continue
+    // Deleting everything keeps the person signed in; the account itself is
+    // deleted from Account.
+    if (everywhere && k.startsWith('pi.account.')) continue
     if (k.startsWith(choicePrefix) && load(k) !== SKIPPED) {
       const d = dateOf(k.slice(choicePrefix.length))
       if (d && d >= open) {
@@ -483,6 +514,15 @@ export function pruneLocal(today: string, wordsDays: number) {
     if (k.startsWith(pickPrefix) && k.slice(pickPrefix.length, pickPrefix.length + 10) < addDays(today, -1)) remove(k)
     // The midday step check's "not yet" (DayClose.tsx), only needed on its day.
     if (k.startsWith('pi.midday.') && k.slice('pi.midday.'.length) < today) remove(k)
+    // The day's windows (windows.ts), only needed on their day.
+    if (k.startsWith('pi.windows.') && k.slice('pi.windows.'.length) < today) remove(k)
+    // The last pulse count seen for a question (pulse.ts), after its week.
+    if (k.startsWith('pi.pulse.')) {
+      const d = dateOf(k.slice('pi.pulse.'.length))
+      if (!d || daysBetween(d, today) > NOTES_KEPT_DAYS) remove(k)
+    }
+    // What felt uncertain, when the mirror asked (reaching.ts), after five weeks.
+    if (k.startsWith('pi.safety.') && daysBetween(k.slice('pi.safety.'.length), today) > 35) remove(k)
     // A verdict on a mirror leaning (profile.ts), after its five weeks.
     if (k.startsWith(leaningPrefix)) {
       const v = loadJSON(k) as { date?: unknown } | null
@@ -512,12 +552,19 @@ function randomId(): string {
 // The anonymous device token that the one-vote-per-question rule is keyed on.
 // The server signs it, so it cannot be made up; it holds no personal data.
 const deviceKey = 'pi.device.v1'
+const accountKey = 'pi.account.v1' // social.ts
 let pendingToken: Promise<string> | null = null
 
 export function deviceToken(): Promise<string> {
   const saved = load(deviceKey)
   if (saved) return Promise.resolve(saved)
-  pendingToken ??= request<{ token: string }>('/api/device', { method: 'POST' })
+  // Signed in, the pass is the account's, the same on every phone.
+  const account = load(accountKey)
+  pendingToken ??= (
+    account
+      ? request<{ token: string }>('/api/account/device', { headers: { Authorization: `Account ${account}` } })
+      : request<{ token: string }>('/api/device', { method: 'POST' })
+  )
     .then(({ token }) => {
       save(deviceKey, token)
       return token

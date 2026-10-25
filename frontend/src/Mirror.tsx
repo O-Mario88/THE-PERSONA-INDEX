@@ -36,8 +36,37 @@ import {
 import { changesBetween, changeWords, leaningVerdict, loadHistory, notMeSides, rememberLeaning, type Change } from './profile'
 import { addDays } from './storage'
 import { THEMES, themeName, themeStyle, themeVars } from './themes'
-import { honestLine, TRAITS } from './traits'
-import { CHANGES_NOTE, LEANING_REPLIES, STEP_STATUS_WORDS } from './words'
+import { honestLine, sideOf, TRAITS } from './traits'
+import { outsideMirror, type OutsideMirror as OutsideMirrorData } from './social'
+import { useAccount } from './useAccount'
+import { Icon } from './ui/icons'
+import { ShareSheet } from './ShareCard'
+import { weekTiles } from './Tapestry'
+import {
+  CHANGES_NOTE,
+  LEANING_REPLIES,
+  REACHED_NOTE,
+  reachedLine,
+  ROUTES_NOT,
+  ROUTES_WORKED,
+  SAFETY_ASK,
+  SAFETY_REPLIES,
+  SAFETY_WORDS,
+  STEP_STATUS_WORDS,
+  SUCCESS_TWO,
+} from './words'
+import { NEED_NAMES, NEED_PHRASES } from './needs'
+import {
+  needsBetween,
+  reachedFor,
+  rememberSafety,
+  safetyAnswer,
+  safetyLed,
+  UNCERTAIN,
+  type NeedRead,
+  type Uncertain,
+} from './reaching'
+import { helplineHere } from './prefs'
 import { ReadLink } from './Read'
 
 type Span = 'week' | Period
@@ -60,7 +89,7 @@ const adjOf = (span: Span) => SPANS.find((s) => s.span === span)!.adj
 // speaks of this person alone and only sets them against their own past;
 // the research behind its words stays in mirrorText.ts, out of sight. The
 // week opens first; the month, quarter and year look further back.
-export function Mirror({ today, onOpenKept }: { today: string; onOpenKept: () => void }) {
+export function Mirror({ today, onOpenKept, onCircle }: { today: string; onOpenKept: () => void; onCircle?: () => void }) {
   const [span, setSpan] = useState<Span>('week')
   const [state, setState] = useState<State>({ kind: 'loading' })
   const [attempt, setAttempt] = useState(0)
@@ -119,7 +148,7 @@ export function Mirror({ today, onOpenKept }: { today: string; onOpenKept: () =>
           </button>
         </div>
       )}
-      {state.kind === 'week' && <MirrorPage m={state.m} today={today} reload={reload} onOpenKept={onOpenKept} />}
+      {state.kind === 'week' && <MirrorPage m={state.m} today={today} reload={reload} onOpenKept={onOpenKept} onCircle={onCircle} />}
       {state.kind === 'period' && <PeriodPage p={state.p} onOpenKept={onOpenKept} />}
     </section>
   )
@@ -130,14 +159,21 @@ function MirrorPage({
   today,
   reload,
   onOpenKept,
+  onCircle,
 }: {
   m: MirrorData
   today: string
   reload: () => void
   onOpenKept: () => void
+  onCircle?: () => void
 }) {
+  const signedIn = !!useAccount()
+  const [sharing, setSharing] = useState(false)
   // Leanings the person said are not them stay out of the title (profile.ts).
   const [notMe, setNotMe] = useState(() => notMeSides(today))
+  // The card carries the week's name only: "The Steady Finisher".
+  const top = leanings(m.traits, notMe)
+  const shareName = top.length ? titleCase(`the ${top[0].side.adj} ${(top[1] ?? top[0]).side.noun}`) : null
   const name = title(m.traits, notMe)
   const suggested = identityName(m.traits, notMe)
   const line = tagline(m.traits, notMe)
@@ -149,6 +185,12 @@ function MirrorPage({
   // Change against the person's own past, from this phone's history, and the
   // one thing they are working on.
   const [changes] = useState(() => changesBetween(loadHistory(), m.from, m.to).slice(-3))
+  // What the week's answers reached for, and whether those routes got there
+  // in the person's own words (reaching.ts). Also from this phone only.
+  const [needs] = useState(() => {
+    const h = loadHistory()
+    return { top: reachedFor(h, m.from, m.to), all: needsBetween(h, m.from, m.to), safety: safetyLed(h, m.from, m.to) }
+  })
   const [focus] = useState(focusPlan)
   const starter = sentenceStarter(leanings(m.traits, notMe)[0]?.side.lean)
   const moved = m.traits.some((t) => t.history.filter((h) => h.score !== undefined).length >= 2)
@@ -157,16 +199,17 @@ function MirrorPage({
 
   // Each section shows only when there is something real in it.
   const parts: Part[] = [
-    { key: 'glance', title: 'Your week at a glance', body: <Glance m={m} />, show: true },
-    { key: 'traits', title: 'Your trait read', body: <Traits m={m} />, show: true },
-    { key: 'moved', title: "How you've moved", body: <Moved m={m} />, show: moved },
-    { key: 'changed', title: 'What changed', body: <Changes changes={changes} />, show: changes.length > 0 },
-    { key: 'all', title: 'All of you', body: <AllOfYou themes={m.themes} />, show: m.themes.length > 0 },
     {
       key: 'who',
-      title: 'Who you were this week',
+      title: 'Where you leaned',
       body: <Who leans={lean} date={today} span="week" onVerdict={() => setNotMe(notMeSides(today))} />,
       show: lean.length > 0,
+    },
+    {
+      key: 'outside',
+      title: 'How your circle experiences you',
+      body: <OutsideMirrorSection m={m} onCircle={onCircle} />,
+      show: signedIn,
     },
     {
       key: 'sentence',
@@ -174,6 +217,23 @@ function MirrorPage({
       body: <SundaySentence week={m.from} starter={starter} />,
       show: (sunday && m.stats.answers > 0) || sentencesBetween(m.from, m.from).length > 0,
     },
+    {
+      key: 'revisit',
+      title: 'Still true?',
+      body: wordsBack && <WordsBackCard item={wordsBack} today={today} />,
+      show: !!wordsBack,
+    },
+    { key: 'glance', title: 'Your week at a glance', body: <Glance m={m} />, show: true },
+    { key: 'traits', title: 'Your trait read', body: <Traits m={m} />, show: true },
+    { key: 'moved', title: "How you've moved", body: <Moved m={m} />, show: moved },
+    { key: 'changed', title: 'What changed', body: <Changes changes={changes} />, show: changes.length > 0 },
+    {
+      key: 'reached',
+      title: 'What you reached for',
+      body: <Reached top={needs.top} all={needs.all} safety={needs.safety} week={m.from} />,
+      show: needs.top.length > 0,
+    },
+    { key: 'all', title: 'All of you', body: <AllOfYou themes={m.themes} />, show: m.themes.length > 0 },
     { key: 'words', title: 'In your own words', body: <OwnWordsList words={words} />, show: words.length > 0 },
     {
       key: 'focus',
@@ -188,29 +248,34 @@ function MirrorPage({
       show: m.steps.length > 0 || m.stepRecord.started > 0 || (m.stats.plansDid ?? 0) + (m.stats.plansNotYet ?? 0) > 0,
     },
     {
-      key: 'revisit',
-      title: 'Still true?',
-      body: wordsBack && <WordsBackCard item={wordsBack} today={today} />,
-      show: !!wordsBack,
-    },
-    {
       key: 'next',
       title: 'Next week',
       body: <NextWeek m={m} today={today} reload={reload} />,
       show: true,
     },
     { key: 'road', title: 'The road ahead', body: <RoadAhead />, show: true },
+
   ]
   const sections = numbered(parts)
 
   return (
     <>
       <header className="m-hero">
-        <p className="m-eyebrow">Your week · {weekRange(m.from)}</p>
-        <h2>
+        <div className="m-hero-top">
+          <p className="m-eyebrow">
+            {sunday ? `Sunday · week ${m.week}` : `Week ${m.week}`} · {weekRange(m.from)}
+          </p>
+          {shareName && (
+            <button type="button" className="m-share" aria-label="Share the card" onClick={() => setSharing(true)}>
+              <Icon name="share" size={18} />
+            </button>
+          )}
+        </div>
+        <h2 className={name ? 'm-were' : undefined}>
           {name ? (
             <>
-              This week, you were <span className="m-name">{name}.</span>
+              This week, you were{' '}
+              <span className={name.length > 32 ? 'm-name long' : 'm-name'}>{name}.</span>
             </>
           ) : (
             'This week is just getting started.'
@@ -218,7 +283,15 @@ function MirrorPage({
         </h2>
         {line && <p className="m-tagline">{line}</p>}
         <p className="m-summary">{summary(m, notMe)}</p>
+        <ol className="m-week-tiles" aria-hidden="true">
+          {weekTiles(today, m.from).map((t) => (
+            <li key={t.date} style={t.tint ? { background: t.tint } : undefined} />
+          ))}
+        </ol>
       </header>
+      {sharing && shareName && (
+        <ShareSheet content={{ eyebrow: `Week ${m.week} · My Sunday Mirror`, name: shareName, line: line || undefined }} onClose={() => setSharing(false)} />
+      )}
 
       {m.lowMood && (
         <div className="m-card m-support" role="note" aria-label="Support">
@@ -226,7 +299,7 @@ function MirrorPage({
             A few of your answers this week sounded heavy. If things feel hard, talking to someone you trust, or to a
             helpline, can help.
           </p>
-          <a href="https://findahelpline.com" target="_blank" rel="noreferrer">
+          <a href={helplineHere()} target="_blank" rel="noreferrer">
             Find a helpline in your country
           </a>
         </div>
@@ -481,6 +554,77 @@ function Changes({ changes }: { changes: Change[] }) {
         ))}
       </ul>
       <p className="m-note">{CHANGES_NOTE}</p>
+    </div>
+  )
+}
+
+// What you reached for: the week's two needs that drove most choices, once
+// each is a pattern, and the routes the person said got them there (the
+// evening's question). Doing well and being respected are kept apart. When
+// feeling safe has come first three weeks running, the mirror asks, never
+// tells, whether something else feels uncertain.
+function Reached({ top, all, safety, week }: { top: NeedRead[]; all: NeedRead[]; safety: boolean; week: string }) {
+  const [first, second] = top
+  const has = (n: NeedRead['need']) => all.some((r) => r.need === n)
+  return (
+    <div className="m-card m-reached">
+      <p className="m-text">{reachedLine(NEED_PHRASES[first.need], second && NEED_PHRASES[second.need])}</p>
+      {top.map((r) => (
+        <Routes key={r.need} read={r} />
+      ))}
+      {has('competence') && has('respect') && <p className="m-note">{SUCCESS_TWO}</p>}
+      {safety && <SafetyAsk week={week} />}
+      <p className="m-note">{REACHED_NOTE}</p>
+    </div>
+  )
+}
+
+function Routes({ read }: { read: NeedRead }) {
+  const worked = read.routes.filter((r) => r.route !== 'no')
+  const not = read.routes.filter((r) => r.route === 'no')
+  if (worked.length === 0 && not.length === 0) return null
+  const list = (rs: NeedRead['routes']) => rs.map((r) => `“${r.label}”`).join(', ')
+  return (
+    <div className="m-routes" role="group" aria-label={NEED_NAMES[read.need]}>
+      <p className="m-trait-name">{NEED_NAMES[read.need]}</p>
+      {worked.length > 0 && (
+        <p>
+          {ROUTES_WORKED}: {list(worked)}.
+        </p>
+      )}
+      {not.length > 0 && (
+        <p>
+          {ROUTES_NOT}: {list(not)}.
+        </p>
+      )}
+    </div>
+  )
+}
+
+function SafetyAsk({ week }: { week: string }) {
+  const [answer, setAnswer] = useState<Uncertain | null>(() => safetyAnswer(week))
+  return (
+    <div className="m-safety" role="group" aria-label="Is something else uncertain?">
+      <p className="m-text">{SAFETY_ASK}</p>
+      {answer ? (
+        <p className="m-note">{SAFETY_REPLIES[answer]}</p>
+      ) : (
+        <div className="m-verdict">
+          {UNCERTAIN.map((u) => (
+            <button
+              key={u}
+              type="button"
+              className="m-chip"
+              onClick={() => {
+                rememberSafety(week, u)
+                setAnswer(u)
+              }}
+            >
+              {SAFETY_WORDS[u]}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -786,7 +930,7 @@ function Steps({ m, today, reload }: { m: MirrorData; today: string; reload: () 
                   No change yet
                 </button>
                 <button type="button" className="m-chip" onClick={() => mark(s, 'not_tried')}>
-                  Didn't get to it
+                  Not today
                 </button>
               </div>
             )}
@@ -896,16 +1040,26 @@ function RoadAhead() {
 }
 
 function Footer({ onOpenKept }: { onOpenKept: () => void }) {
+  const signedIn = !!useAccount()
   return (
     <footer className="m-footer">
       <p className="m-strong">For self-reflection, not a diagnosis.</p>
       <div className="m-privacy" role="note" aria-label="What leaves my phone">
         <p className="m-eyebrow">What leaves my phone</p>
-        <p>
-          I keep your answers on the server under an anonymous key made from this phone's pass: no name, no email, no
-          account. That's how I build this mirror. For an intimate question I keep only that you answered, never what you
-          chose. Anything you write in your own words stays on this phone and is never sent.
-        </p>
+        {signedIn ? (
+          <p>
+            You're signed in, so I keep your answers under a key made from your account, the same on every device you
+            sign in on. Your name and handle are never stored with them, but the server can tell they belong to your
+            account. For an intimate question I keep only that you answered, never what you chose. Anything you write in
+            your own words stays on your phone and is never sent.
+          </p>
+        ) : (
+          <p>
+            I keep your answers on the server under an anonymous key made from this phone's pass: no name, no email, no
+            account. That's how I build this mirror. For an intimate question I keep only that you answered, never what
+            you chose. Anything you write in your own words stays on this phone and is never sent.
+          </p>
+        )}
         <p>
           Your answers and small steps go after five weeks. For your month, quarter and year, I keep a small note of each
           week for 13 months: how many answers, how deep they went, your three clearest answers and the steps that helped.
@@ -954,7 +1108,7 @@ function PeriodPage({ p, onOpenKept }: { p: PeriodMirror; onOpenKept: () => void
             Week {p.weeks.length} of {p.weeksTotal}
           </span>
         </p>
-        <h2>
+        <h2 className={name ? 'm-were' : undefined}>
           {name ? (
             <>
               This {noun}, you were <span className="m-name">{name}.</span>
@@ -1207,3 +1361,122 @@ function PeriodSteps({ p }: { p: PeriodMirror }) {
     </>
   )
 }
+
+// How your circle experiences you (Stage 5, the Outside Mirror): where
+// friends, blended, place you on each trait at least three of them spoke
+// to, beside where your own answers place you. Locked, it shows only how
+// many friends have answered, never which.
+function OutsideMirrorSection({ m, onCircle }: { m: MirrorData; onCircle?: () => void }) {
+  const [o, setO] = useState<OutsideMirrorData | null>(null)
+  useEffect(() => {
+    let live = true
+    outsideMirror().then(
+      (x) => live && setO(x),
+      () => {},
+    )
+    return () => {
+      live = false
+    }
+  }, [])
+  if (!o) return null
+  if (!o.open) {
+    const rows = Array.from({ length: o.need }, (_, i) => i < o.friends)
+    return (
+      <div className="m-card outside-locked">
+        <div className="outside-head">
+          <span className="outside-lock" aria-hidden="true">
+            <Icon name="lock" size={20} />
+          </span>
+          <p className="outside-opens">Opens when {o.need} friends have answered</p>
+        </div>
+        <ul className="outside-count" aria-label={`${o.friends} of ${o.need} friends have answered`}>
+          {rows.map((done, i) => (
+            <li key={i} className={done ? 'is-done' : 'is-open'}>
+              <span className="outside-dot" aria-hidden="true">
+                {done && <Icon name="check" size={14} />}
+              </span>
+              <span className="outside-who">{done ? 'A friend' : o.need - o.friends === 1 ? 'One more friend' : 'A friend to invite'}</span>
+              {done ? (
+                <span className="outside-state">Answered</span>
+              ) : (
+                onCircle && (
+                  <button type="button" className="link-button outside-state" onClick={onCircle}>
+                    Invite
+                  </button>
+                )
+              )}
+            </li>
+          ))}
+        </ul>
+        <p className="outside-why">
+          With two friends you could work out who said what by elimination. Three keeps every answer anonymous, by
+          arithmetic, not by promise. Answers already given are held until the third friend joins.
+        </p>
+        {onCircle && (
+          <button type="button" className="btn wide" onClick={onCircle}>
+            {o.need - o.friends === 1 ? 'Invite one more person' : 'Invite friends'}
+          </button>
+        )}
+      </div>
+    )
+  }
+  const own = new Map(m.traits.map((t) => [t.trait, t.score]))
+  const rows = o.traits.filter((t) => TRAITS[t.trait])
+  const gaps = rows
+    .filter((t) => own.has(t.trait))
+    .map((t) => ({ t, gap: t.position - (own.get(t.trait) ?? 50) }))
+    .sort((a, b) => Math.abs(a.gap) - Math.abs(b.gap))
+  const shared = gaps[0] && Math.abs(gaps[0].gap) < 15 ? gaps[0] : null
+  const miss = gaps.length && Math.abs(gaps[gaps.length - 1].gap) >= 20 ? gaps[gaps.length - 1] : null
+  return (
+    <>
+      <p className="small muted">
+        Blended from {o.friends} friends over {o.weeks} weeks. No single answer is ever shown.
+      </p>
+      {shared && (
+        <div className="m-card">
+          <p className="label">Shared ground</p>
+          <p>
+            You and your circle both see you near {sideOf(TRAITS[shared.t.trait], shared.t.position >= 50).lean}.
+          </p>
+        </div>
+      )}
+      {miss && (
+        <div className="m-card outside-miss">
+          <p className="label">What your circle notices that you might miss</p>
+          <p>
+            Your circle places you nearer {sideOf(TRAITS[miss.t.trait], miss.gap > 0).lean} than your own answers do.
+            Neither is the truer one: people see the side of you that you show them.
+          </p>
+        </div>
+      )}
+      <ul className="outside-scales">
+        {rows.map((t) => {
+          const tr = TRAITS[t.trait]
+          const mine = own.get(t.trait)
+          return (
+            <li key={t.trait}>
+              <p className="row-between small">
+                <span>{tr.low.lean}</span>
+                <span>{tr.high.lean}</span>
+              </p>
+              <span
+                className="m-scale"
+                role="img"
+                aria-label={`${tr.name}: your circle ${Math.round(t.position)} of 100${mine === undefined ? '' : `, you ${mine}`}`}
+              >
+                {mine !== undefined && <span className="m-scale-dot you" style={{ left: `${mine}%` }} />}
+                <span className="m-scale-dot circle" style={{ left: `${t.position}%` }} />
+              </span>
+            </li>
+          )
+        })}
+      </ul>
+      <p className="small muted">
+        <span className="dot-key you" /> you · <span className="dot-key circle" /> your circle
+      </p>
+    </>
+  )
+}
+
+const titleCase = (s: string) => s.replace(/\b\w/g, (c) => c.toUpperCase())

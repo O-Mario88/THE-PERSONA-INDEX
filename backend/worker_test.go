@@ -14,7 +14,7 @@ func TestHourlyJobsRunInOrderAndAreRecorded(t *testing.T) {
 	for _, j := range s.hourlyJobs() {
 		names = append(names, j.name)
 	}
-	if strings.Join(names, ",") != "vote_retention,mirror_fold,week_retention,mirror_retention,backup_retention" {
+	if strings.Join(names, ",") != "vote_retention,mirror_fold,week_retention,mirror_retention,backup_retention,social_retention" {
 		t.Fatalf("jobs = %v (weeks must fold before their answers can go)", names)
 	}
 

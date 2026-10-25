@@ -1,6 +1,6 @@
 # Data map
 
-Everything The Persona Index keeps about a person: where it is, what it holds, how long it stays and how it is deleted. There are no accounts, so there is no name, email, phone number or address anywhere. The app's "What I keep" screen shows the live counts behind this page (`GET /api/device/data`), and "Delete everywhere" removes every row below that belongs to the phone.
+Everything The Persona Index keeps about a person: where it is, what it holds, how long it stays and how it is deleted. Signing in is optional (Stage 5, 2026-10-24). Signed out, there is no name, email, phone number or address anywhere. Signed in, the account holds a display name and a handle, and no email address or phone number: only a keyed hash of how the person signs in and a hint such as `a•••@gmail.com` (see "Accounts and the circle" below). The app's "What I keep" screen shows the live counts behind this page (`GET /api/device/data`), and "Delete everywhere" removes every row below that belongs to the phone.
 
 Keep this page in step with the code. The retention numbers come from the constants named in each row; a change to one of them, or a new table or storage key, changes this page in the same pull request.
 
@@ -21,15 +21,20 @@ Every key is named in one registry, `frontend/src/registry.ts`, which also says 
 | Device pass: a server-signed random id, no personal data | `pi.device.v1` | Until "Delete everywhere" | Sent with every vote, step and mirror request |
 | Answers in the person's own words | `pi.words.<questionId>` | 7, 35 (default) or 90 days, chosen in Settings | Never. Only the option the person says comes closest is sent, as their vote |
 | A half-written answer | `pi.draft.<questionId>` | Until it is kept, or one day past its question's day | Never |
-| Answer history: each answer's theme, depth, option and trait leanings, the card's "That's me", "Partly" or "Not me", the reading picked as closer after "Not me", and skips | `pi.history.v1` | 60 days (`KEEP_DAYS`, `profile.ts`) | Never. The tap under a card is also sent once as a rating (below); the closer reading never is |
+| Answer history: each answer's theme, depth, option and trait leanings, the need it reached for, the card's "That's me", "Partly" or "Not me", the reading picked as closer after "Not me", the evening's word on whether the morning's route usually gets the person there (with that answer's label), skips, and a `regional` mark on answers and skips of questions about where the person lives | `pi.history.v1` | 60 days (`KEEP_DAYS`, `profile.ts`) | Never. The tap under a card is also sent once as a rating (below); the closer reading, the need and the route never are. Nothing about a regional question is ever sent: no vote, no tap, no step |
 | After "Not me", a line in the person's own words on what is closer | `pi.instead.<questionId>` | As long as own words, chosen in Settings | Never |
+| What the person said felt uncertain, when the mirror asked after feeling safe came first three weeks running | `pi.safety.<monday>` | 35 days (`pruneLocal`, `api.ts`) | Never |
 | "That's me", "Partly" or "Not me" on a leaning in the mirror | `pi.leaning.<trait>.<high\|low>` | 35 days (`LEANING_KEEP_DAYS`, `profile.ts`) | Never. A leaning marked "Not me" stays out of the mirror's title, summary and one line on this phone |
 | The order answers are shown in: a random seed, so the healthiest answer is not always first | `pi.seed` | Until "Delete from this phone" | Never |
-| Small steps and how they went | `pi.moves.v1` | The latest 60 | Each step's status is sent to the mirror; a step on a private answer cannot be started |
+| Small steps and how they went, and whether the step was the card's own or the one serving the answer's need | `pi.moves.v1` | The latest 60 | Each step's status, and which of the two steps it is, is sent to the mirror; a step on a private answer cannot be started; a step from a regional question is marked `local` and never sent |
 | Per-question notes: the option tapped, a vote waiting to send, when it was answered, the card's "That's me", "Partly" or "Not me" and that tap while it waits to send | `pi.choice.`, `pi.pending.`, `pi.at.`, `pi.rated.`, `pi.unrated.` + question id | Eight days past the question's day (`NOTES_KEPT_DAYS`), longer than any question takes votes | A waiting vote or card tap is sent again with its original key; the rest never |
 | The three questions each sitting showed | `pi.pick.<date>` and `pi.pick.<date>.pm` | Yesterday and today | Never |
 | The day's questions, for opening offline | `pi.edition.<date>` | Yesterday, today and tomorrow | Public content, nothing personal |
-| Settings: 18+ answer, keep it mild, how long own words stay | `pi.prefs.v1` | Until deleted | Only sealed in the backup |
+| Settings: 18+ answer, keep it mild, how long own words stay, the country the person said they live in (or "Prefer not to say"), guessed only from the phone's own time zone, on the phone, and whether questions about everyday life there are switched off | `pi.prefs.v1` | Until deleted | Only sealed in the backup. The country is never sent; tapping "Find a helpline" opens that country's page on Find A Helpline, so that site sees it only then. The phone maps the country to a region itself |
+| Signed in: the session token and the name, handle and choices the account shows | `pi.account.v1`, `pi.account.me` | Until signing out, deleting the account or "Delete from this phone" ("Delete everywhere" keeps the person signed in and moves the account to a fresh pass) | The token is sent with account and circle requests. Never in a backup |
+| An invite link the person followed (`/c/<code>`) | `pi.invite` | Until they join or say not now | Sent once to accept the invite |
+| That the sign-in sheet was offered after the first sitting | `pi.signin.asked` | Until deleted | Never |
+| The questions about everyday life in each part of the world, for opening without a connection | `pi.regional.v1` | Until the next copy arrives | Public content, the same for everyone. `GET /api/regional` sends nothing about the phone: no pass, no country, no region |
 
 Everything marked *always* in the registry, and own words when switched on, also leaves the phone sealed, in the backup (below), if the person turns the backup on. Nothing else in this table is sent as it is.
 
@@ -48,7 +53,7 @@ Postgres, schema in `backend/migrations/`. Every key below is an HMAC made from 
 | `votes` | A vote or a card rating, waiting to be counted or kept for the one-vote rule | Question, option, a voter hash that is different for every question, the idempotency key, the time to the hour, when it was counted | `VOTE_RETENTION_DAYS` after it is counted: default 7, never less than 7 (`main.go`) | Yes, found through the phone's voter hashes for every edition still kept (`deviceVoteHashes`) |
 | `vote_tallies` | One option's count | Question, option, count. No device key of any kind | For good | No: with nothing to link a count to a phone, it is a real total, not personal data |
 | `mirror_answers` | One answer, for the phone's mirror | Mirror key, question, date, morning or evening, theme, option, depth, the tap under the card (`verdict`: me, partly or not_me) | 35 days (`mirrorRetention`, `mirrorstore.go`) | Yes |
-| `mirror_steps` | One small step | Mirror key, question, option, the day it started, its status, the hour it last changed | 35 days | Yes |
+| `mirror_steps` | One small step | Mirror key, question, option, the day it started, its status, whether it was the need step (`007_need_steps.sql`), the hour it last changed | 35 days | Yes |
 | `mirror_weeks` | One finished week, for the monthly, quarterly and yearly mirrors | Mirror key, counts, theme depths, trait sums and on how many days each trait came up, steps that helped, the three answers that said the most. Never a private answer's question or option, never own words | 400 days (`weekSummaryRetention`, `period.go`) | Yes |
 | `mirror_plan_checks` | One check of a plan | Mirror key, a random key for the check (so a resend counts once and two checks of one plan cannot be tied together), the date, "did" or "not_yet". Never the plan's words | 35 days, with the rest of the mirror | Yes |
 | `vaults` | One encrypted backup | The SHA-256 of a key derived from the 12-word phrase, a version number, the sealed bytes (AES-GCM on the phone; the server cannot open them), the last day a phone wrote or read it. No mirror key, no pass: nothing ties it to a phone | 400 days after a phone last wrote or read it (`vaultRetention`, `vault.go`) | Yes: the app deletes it first, with `DELETE /api/vault`, while the phone still holds the phrase |
@@ -84,6 +89,26 @@ Nothing in memory is written to disk or logs.
 
 - **Logs** hold, for a failed or slow request (or every request if `ACCESS_LOG=all`), its request id, method, route pattern, status, duration and size; and the background jobs' row counts and errors. Never a path, query string, address, user agent, pass or answer (`observe`, `backend/middleware.go`). Kept by the host for 30 days or less ([monitoring.md](monitoring.md#logs)).
 - **The host's database backups** are whole copies of the tables above, kept **7 days or less**, so a phone's rows leave every backup within 7 days of "Delete everywhere". A restore to a moment before a deletion brings that phone's rows back, unreadable without its pass, until normal retention removes them ([backups.md](backups.md)).
+
+## Accounts and the circle (only when signed in)
+
+Migration `backend/migrations/008_accounts_circle.sql`; rules in `backend/social.go`. None of these tables holds an answer, a vote, an email address or a phone number. Deleting the account (`DELETE /api/account`) removes every row that names it (`ON DELETE CASCADE`) and the answers kept under its pass.
+
+| What | Table | Kept |
+| --- | --- | --- |
+| Display name, handle, whether to be suggested to friends of friends, whether nods and Answer Together are on, whether sync is on, the day last seen (a date, never a moment) | `accounts` | Until the account is deleted |
+| Each way of signing in: a keyed hash of `kind:subject` and a hint (`a•••@gmail.com`, `+256 ••• 418`) | `account_logins` | Until the account is deleted |
+| Signed-in devices: a label ("iPhone · Safari") and the day last seen | `account_sessions` | Until signed out |
+| A 6-digit code waiting to be typed, as a keyed hash; ten minutes, five tries | `login_codes` | Deleted when used or expired |
+| With sync on, the backup's 12 words sealed with a server key. The server could open them; this is the person's choice and the Account screen says so | `account_sync` | Until sync is turned off |
+| Friendships, both ways: the tag each side gave, the day, and a mute the muted person is never told about | `friendships` | Until either side disconnects |
+| Invite links (30 days), room codes (24 hours) and who joined, connect requests and dismissed suggestions | `circle_invites`, `circle_rooms`, `circle_room_members`, `circle_asks`, `circle_dismissed` | Until expired (`social_retention`) or the account is deleted |
+| That the person answered a friend question on a day: no subject, question or option | `friend_prompt_log` | 35 days (`friendRetention`) |
+| A friend answer about a person: the subject, the week, the question and option, and a keyed mark of the sender and subject pair that counts distinct friends without naming them. No sender, and no link to the prompt log | `friend_mirror_inputs` | 35 days (`friendRetention`). The Outside Mirror opens a trait only when three different friends spoke to it in the last three weeks |
+| Quiet nods: sender, receiver, day and one of 24 fixed cards. Never counted | `nods` | 35 days; shown for 7 |
+| Answer Together: the two people, the question and each choice. Never fed to a mirror or a count; the asker's choice is shown to the other only after they answer | `together` | 48 hours, then gone a day later |
+
+Signed in, every phone on the account votes and keeps its mirror under one pass, derived from the account (`accountDeviceID`), so the duplicate-vote rule holds per account. Answers are still stored under a keyed hash of that pass, never with a name or handle, but the server can tell which account they belong to.
 
 ## Deleting everything
 

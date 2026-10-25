@@ -32,7 +32,7 @@ func (mirrorBank) GetSet(date string) (DailySet, bool) {
 		return Question{ID: date + "-" + id, Theme: theme, Care: care, Prompt: prompt, Options: opts}
 	}
 	tidy := q("tidy", "habits", careEveryday, "Dishes after dinner?",
-		Option{ID: "now", Label: "Right away", Depth: 1, Traits: map[string]int{"conscientiousness": 1}, Insight: mirrorInsight("Wash one plate the moment you finish.")},
+		Option{ID: "now", Label: "Right away", Depth: 1, Need: "calm", Traits: map[string]int{"conscientiousness": 1}, Insight: mirrorInsight("Wash one plate the moment you finish.")},
 		Option{ID: "later", Label: "Before bed", Depth: 2, Insight: mirrorInsight("Notice when you actually do them.")},
 		Option{ID: "pile", Label: "When the pile is high", Depth: 3, Traits: map[string]int{"conscientiousness": -1}, Insight: mirrorInsight("Wash just the cups tonight.")},
 	)

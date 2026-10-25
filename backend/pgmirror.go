@@ -26,12 +26,12 @@ func (p *pgStore) SaveAnswer(ctx context.Context, a MirrorAnswer) error {
 
 func (p *pgStore) SaveStep(ctx context.Context, s MirrorStep) error {
 	return p.deviceWrite(ctx, s.DeviceKey, `
-		INSERT INTO mirror_steps (device_key, question_id, option_id, started_on, status, updated_at)
-		SELECT $1, $2, $3, $4, $5, $6
+		INSERT INTO mirror_steps (device_key, question_id, option_id, started_on, status, updated_at, need_step)
+		SELECT $1, $2, $3, $4, $5, $6, $7
 		WHERE NOT EXISTS (SELECT 1 FROM forgotten_devices WHERE device_key = $1)
 		ON CONFLICT (device_key, question_id)
 		DO UPDATE SET option_id = EXCLUDED.option_id, status = EXCLUDED.status, updated_at = EXCLUDED.updated_at`,
-		s.DeviceKey, s.QuestionID, s.OptionID, s.Started, s.Status, s.UpdatedAt)
+		s.DeviceKey, s.QuestionID, s.OptionID, s.Started, s.Status, s.UpdatedAt, s.NeedStep)
 }
 
 // deviceWrite runs one write under the device's lock, in one implicit
@@ -76,11 +76,11 @@ func scanAnswer(rows pgx.CollectableRow) (MirrorAnswer, error) {
 	return a, err
 }
 
-const stepColumns = `device_key, question_id, option_id, started_on::text, status, updated_at`
+const stepColumns = `device_key, question_id, option_id, started_on::text, status, updated_at, need_step`
 
 func scanStep(rows pgx.CollectableRow) (MirrorStep, error) {
 	var s MirrorStep
-	err := rows.Scan(&s.DeviceKey, &s.QuestionID, &s.OptionID, &s.Started, &s.Status, &s.UpdatedAt)
+	err := rows.Scan(&s.DeviceKey, &s.QuestionID, &s.OptionID, &s.Started, &s.Status, &s.UpdatedAt, &s.NeedStep)
 	s.UpdatedAt = s.UpdatedAt.UTC()
 	return s, err
 }

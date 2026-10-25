@@ -1,7 +1,10 @@
 import { BackupSettings } from './Backup'
+import { CountrySelect } from './Country'
 import { PeopleEditor } from './People'
 import { LockSettings } from './pwa/Lock'
-import { WORDS_DAYS, type Prefs, type WordsDays } from './prefs'
+import { countryOf, WORDS_DAYS, type Prefs, type WordsDays } from './prefs'
+import { regionOf } from './regions'
+import { COUNTRY_SETTING, REGIONAL_SWITCH } from './words'
 
 // Settings (review of 2026-10-15): the few choices a person can change
 // later. The 18+ answer was a one-time tap; here it can be changed, and how
@@ -77,6 +80,25 @@ export function SettingsScreen({
             {WORDS_NAMES[d]}
           </label>
         ))}
+      </fieldset>
+
+      <fieldset className="notice">
+        <legend className="eyebrow">Where you live</legend>
+        <p className="muted">{COUNTRY_SETTING}</p>
+        <CountrySelect value={prefs.country ?? ''} withNone onChange={(country) => onChange({ ...prefs, country })} />
+        {regionOf(countryOf(prefs)) && (
+          <label className="switch">
+            <input
+              type="checkbox"
+              checked={prefs.regional !== false}
+              onChange={(e) => {
+                const { regional: _, ...rest } = prefs
+                onChange(e.target.checked ? rest : { ...rest, regional: false })
+              }}
+            />
+            {REGIONAL_SWITCH}
+          </label>
+        )}
       </fieldset>
 
       <fieldset className="notice">

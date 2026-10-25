@@ -33,6 +33,9 @@ type Insight struct {
 	SourceURL   string `json:"sourceUrl,omitempty"`
 	Strength    string `json:"strength,omitempty"` // strong | moderate | early; absent when there is no research
 	Step        string `json:"step"`
+	// NeedStep is the second step on offer: one that serves the need the
+	// answer reached for (needs.go). The person picks one, or writes their own.
+	NeedStep string `json:"needStep,omitempty"`
 }
 
 type bankFile struct {
@@ -58,6 +61,9 @@ type bankOption struct {
 	// of the insight (the proposal of 2026-10-24, "Heavy answers point to
 	// people"). Set by content review, never inferred.
 	Heavy bool `json:"heavy,omitempty"`
+	// Need is what the answer reaches for, one of the seven in needs.go,
+	// tagged by the fixed rules in docs/writing-guide.md.
+	Need string `json:"need"`
 }
 
 type bankInsight struct {
@@ -188,109 +194,27 @@ func validateBank(b bankFile) []error {
 	perTheme := map[string]int{}
 
 	for _, q := range b.Questions {
-		where := q.ID
-		if !idPattern.MatchString(q.ID) || len(q.ID) > 40 {
-			fail("%s: id must be kebab-case, at most 40 characters", where)
-		}
-		if ids[q.ID] {
-			fail("%s: duplicate question id", where)
-		}
-		ids[q.ID] = true
-		if _, ok := themes[q.Theme]; !ok {
-			fail("%s: unknown theme %q", where, q.Theme)
-		}
 		perTheme[q.Theme]++
-		checkText(fail, where+" prompt", q.Prompt, 10, 100)
-		if surveyPrompt.MatchString(q.Prompt) {
-			fail("%s: prompt reads like a survey scale", where)
-		}
-		if n := len(q.Options); n < 3 || n > 4 {
-			fail("%s: needs 3 or 4 options, has %d", where, n)
-		}
-
-		optIDs := map[string]bool{}
-		reveals := map[string]bool{}
-		prevDepth, cited := 0, 0
-		for i, o := range q.Options {
-			ow := fmt.Sprintf("%s/%s", q.ID, o.ID)
-			if !idPattern.MatchString(o.ID) || len(o.ID) > 24 {
-				fail("%s: option id must be kebab-case, at most 24 characters", ow)
-			}
-			if optIDs[o.ID] {
-				fail("%s: duplicate option id", ow)
-			}
-			optIDs[o.ID] = true
-			checkText(fail, ow+" label", o.Label, 1, 60)
-			if surveyLabel.MatchString(o.Label) {
-				fail("%s: label reads like a survey scale", ow)
-			}
-			if o.Depth < 1 || o.Depth > 4 || o.Depth < prevDepth || (i == 0 && o.Depth != 1) {
-				fail("%s: depth %d breaks the shallow-to-deep order", ow, o.Depth)
-			}
-			prevDepth = o.Depth
-			if o.Heavy && (o.Depth < 3 || themes[q.Theme].care == careIntimate) {
-				fail("%s: only a deep answer outside intimacy can be heavy", ow)
-			}
-			if len(o.Traits) > 2 {
-				fail("%s: at most 2 trait weights", ow)
-			}
-			for k, w := range o.Traits {
-				if !traitKeys[k] || w == 0 || w < -2 || w > 2 {
-					fail("%s: bad trait weight %s=%d", ow, k, w)
-				}
-			}
-
-			in := o.Insight
-			// A reveal reads the person's own answer back to them, then says how
-			// people with that leaning tend to act, in two or three sentences.
-			checkText(fail, ow+" reveal", in.Reveal, 120, 360)
-			if !readerPattern.MatchString(in.Reveal) {
-				fail("%s: reveal must speak to the reader (you, your)", ow)
-			}
-			if claimPattern.MatchString(in.Reveal) {
-				fail("%s: reveal makes an uncited research claim; research belongs in the research field", ow)
-			}
-			if m := headlinePattern.FindStringSubmatch(in.Reveal); m == nil {
-				fail("%s: reveal needs a short headline sentence and then more", ow)
-			} else if n := len([]rune(m[1])); n > maxHeadline {
-				fail("%s: headline is %d characters, at most %d", ow, n, maxHeadline)
-			}
-			if formulaPattern.MatchString(in.Reveal) {
-				fail("%s: reveal uses a formula phrase; say it the way a person would", ow)
-			}
-			checkText(fail, ow+" step", in.Step, 20, 160)
-			checkOtherSide(fail, ow, in)
-			if reveals[in.Reveal] {
-				fail("%s: reveal repeats another option's", ow)
-			}
-			reveals[in.Reveal] = true
-			if statPattern.MatchString(in.Reveal) || statPattern.MatchString(in.Step) {
-				fail("%s: states a statistic outside cited research", ow)
-			}
-			if in.Strength == "none" || in.Strength == "" {
-				if in.Research != "" || in.Source != "" {
-					fail("%s: research without a strength", ow)
-				}
-			} else {
-				src, ok := sources[in.Source]
-				switch {
-				case !ok:
-					fail("%s: cites %q, which is not in the citation library", ow, in.Source)
-				case src.Strength != in.Strength:
-					fail("%s: strength %q, library says %q", ow, in.Strength, src.Strength)
-				}
-				checkText(fail, ow+" research", in.Research, 20, 260)
-				cited++
-			}
-		}
-		if cited == 0 {
-			fail("%s: no card cites the evidence library; every question needs at least one", where)
-		}
-		if prevDepth < 3 {
-			fail("%s: the deepest option must reach depth 3 or 4", where)
-		}
+		checkQuestion(fail, q, ids)
 	}
 
+	checkSources(fail)
+
+	for need, step := range needSteps {
+		checkText(fail, "need step "+need, step, 20, 160)
+	}
+
+	for name := range themes {
+		if perTheme[name] < minPerTheme {
+			fail("theme %s has %d questions, needs at least %d", name, perTheme[name], minPerTheme)
+		}
+	}
+	errs = append(errs, checkVoice(b)...)
+	return errs
+}
+
+// checkSources holds every entry of the citation library to its format.
+func checkSources(fail func(string, ...any)) {
 	for key, src := range sources {
 		where := "source " + key
 		if !idPattern.MatchString(strings.ReplaceAll(key, "_", "-")) {
@@ -304,14 +228,114 @@ func validateBank(b bankFile) []error {
 			fail("%s: strength %q is not strong, moderate or early", where, src.Strength)
 		}
 	}
+}
 
-	for name := range themes {
-		if perTheme[name] < minPerTheme {
-			fail("theme %s has %d questions, needs at least %d", name, perTheme[name], minPerTheme)
+// checkQuestion applies every rule one question and its cards must pass. ids
+// holds the question ids seen so far, across every bank checked together.
+func checkQuestion(fail func(string, ...any), q bankQuestion, ids map[string]bool) {
+	where := q.ID
+	if !idPattern.MatchString(q.ID) || len(q.ID) > 40 {
+		fail("%s: id must be kebab-case, at most 40 characters", where)
+	}
+	if ids[q.ID] {
+		fail("%s: duplicate question id", where)
+	}
+	ids[q.ID] = true
+	if _, ok := themes[q.Theme]; !ok {
+		fail("%s: unknown theme %q", where, q.Theme)
+	}
+	checkText(fail, where+" prompt", q.Prompt, 10, 100)
+	if surveyPrompt.MatchString(q.Prompt) {
+		fail("%s: prompt reads like a survey scale", where)
+	}
+	if n := len(q.Options); n < 3 || n > 4 {
+		fail("%s: needs 3 or 4 options, has %d", where, n)
+	}
+
+	optIDs := map[string]bool{}
+	reveals := map[string]bool{}
+	prevDepth, cited := 0, 0
+	for i, o := range q.Options {
+		ow := fmt.Sprintf("%s/%s", q.ID, o.ID)
+		if !idPattern.MatchString(o.ID) || len(o.ID) > 24 {
+			fail("%s: option id must be kebab-case, at most 24 characters", ow)
+		}
+		if optIDs[o.ID] {
+			fail("%s: duplicate option id", ow)
+		}
+		optIDs[o.ID] = true
+		checkText(fail, ow+" label", o.Label, 1, 60)
+		if surveyLabel.MatchString(o.Label) {
+			fail("%s: label reads like a survey scale", ow)
+		}
+		if o.Depth < 1 || o.Depth > 4 || o.Depth < prevDepth || (i == 0 && o.Depth != 1) {
+			fail("%s: depth %d breaks the shallow-to-deep order", ow, o.Depth)
+		}
+		prevDepth = o.Depth
+		if o.Heavy && (o.Depth < 3 || themes[q.Theme].care == careIntimate) {
+			fail("%s: only a deep answer outside intimacy can be heavy", ow)
+		}
+		if !validNeed(o.Need) {
+			fail("%s: need %q is not one of the seven in needs.go", ow, o.Need)
+		}
+		if len(o.Traits) > 2 {
+			fail("%s: at most 2 trait weights", ow)
+		}
+		for k, w := range o.Traits {
+			if !traitKeys[k] || w == 0 || w < -2 || w > 2 {
+				fail("%s: bad trait weight %s=%d", ow, k, w)
+			}
+		}
+
+		in := o.Insight
+		// A reveal reads the person's own answer back to them, then says how
+		// people with that leaning tend to act, in two or three sentences.
+		checkText(fail, ow+" reveal", in.Reveal, 120, 360)
+		if !readerPattern.MatchString(in.Reveal) {
+			fail("%s: reveal must speak to the reader (you, your)", ow)
+		}
+		if claimPattern.MatchString(in.Reveal) {
+			fail("%s: reveal makes an uncited research claim; research belongs in the research field", ow)
+		}
+		if m := headlinePattern.FindStringSubmatch(in.Reveal); m == nil {
+			fail("%s: reveal needs a short headline sentence and then more", ow)
+		} else if n := len([]rune(m[1])); n > maxHeadline {
+			fail("%s: headline is %d characters, at most %d", ow, n, maxHeadline)
+		}
+		if formulaPattern.MatchString(in.Reveal) {
+			fail("%s: reveal uses a formula phrase; say it the way a person would", ow)
+		}
+		checkText(fail, ow+" step", in.Step, 20, 160)
+		checkOtherSide(fail, ow, in)
+		if reveals[in.Reveal] {
+			fail("%s: reveal repeats another option's", ow)
+		}
+		reveals[in.Reveal] = true
+		if statPattern.MatchString(in.Reveal) || statPattern.MatchString(in.Step) {
+			fail("%s: states a statistic outside cited research", ow)
+		}
+		if in.Strength == "none" || in.Strength == "" {
+			if in.Research != "" || in.Source != "" {
+				fail("%s: research without a strength", ow)
+			}
+		} else {
+			src, ok := sources[in.Source]
+			switch {
+			case !ok:
+				fail("%s: cites %q, which is not in the citation library", ow, in.Source)
+			case src.Strength != in.Strength:
+				fail("%s: strength %q, library says %q", ow, in.Strength, src.Strength)
+			}
+			checkText(fail, ow+" research", in.Research, 20, 260)
+			cited++
 		}
 	}
-	errs = append(errs, checkVoice(b)...)
-	return errs
+	if cited == 0 {
+		fail("%s: no card cites the evidence library; every question needs at least one", where)
+	}
+	if prevDepth < 3 {
+		fail("%s: the deepest option must reach depth 3 or 4", where)
+	}
 }
 
 // checkText applies the rules every visible string shares: length, no
@@ -586,11 +610,11 @@ func shuffled(n int, area string, cycle int) []int {
 func (contentBank) dailyQuestion(q bankQuestion, date string) Question {
 	out := Question{ID: date + "-" + q.ID, Theme: q.Theme, Care: themes[q.Theme].care, Prompt: q.Prompt}
 	for _, o := range q.Options {
-		in := &Insight{Reveal: o.Insight.Reveal, OtherSide: o.Insight.OtherSide, Step: o.Insight.Step}
+		in := &Insight{Reveal: o.Insight.Reveal, OtherSide: o.Insight.OtherSide, Step: o.Insight.Step, NeedStep: needSteps[o.Need]}
 		if src, ok := sources[o.Insight.Source]; ok {
 			in.Research, in.SourceTitle, in.SourceURL, in.Strength = o.Insight.Research, src.Title, src.URL, o.Insight.Strength
 		}
-		out.Options = append(out.Options, Option{ID: o.ID, Label: o.Label, Depth: o.Depth, Heavy: o.Heavy, Traits: o.Traits, Insight: in})
+		out.Options = append(out.Options, Option{ID: o.ID, Label: o.Label, Depth: o.Depth, Heavy: o.Heavy, Need: o.Need, Traits: o.Traits, Insight: in})
 	}
 	return out
 }

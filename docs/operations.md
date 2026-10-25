@@ -19,6 +19,11 @@ How the backend runs in production, and the decisions behind it.
 | `STATIC_DIR` | Serve the built site (`frontend/dist`) from this folder, beside the API, with the headers in its `_headers` file. Set in the image. Must hold `index.html`. |
 | `METRICS_ADDR` | Serve `/metrics` on this private address too, such as `:9090`. Must differ from `PORT`. ([monitoring.md](monitoring.md)) |
 | `METRICS_TOKEN` | 32+ bytes. Serve `/metrics` on the public port to requests with `Authorization: Bearer <token>`. |
+| `SIGNIN_CODE_WEBHOOK` | Optional, https only. Turns on sign-in by code: the server POSTs `{"kind","to","code","text"}` here, for an email or SMS provider (or a small function in front of one) to deliver. Without it, and without Google or Apple, the sign-in sheet offers nothing. A local run without `DATABASE_URL` prints codes to the log instead. |
+| `SIGNIN_CODE_WEBHOOK_TOKEN` | Sent to the webhook as `Authorization: Bearer <token>`. |
+| `SIGNIN_CODE_KINDS` | `email,phone` (default), `email` or `phone`: which addresses the code sign-in accepts. |
+| `GOOGLE_CLIENT_ID` | Turns on "Continue with Google". ID tokens are checked against Google's published keys. |
+| `APPLE_CLIENT_ID` | Turns on "Continue with Apple" (the Services ID). |
 | `LOG_FORMAT` | `json` (the default with `DATABASE_URL`) or `text` (the default without). |
 | `ACCESS_LOG` | `errors` (default: 5xx and requests taking 1 s or more), `all` or `off`. Never logs a path, query, address or pass. |
 
@@ -124,6 +129,8 @@ Time zones run from UTC-12 to UTC+14, so a date is today somewhere for about 50 
 
 `GET /api/questions/today` still serves the UTC date's set; the app falls back to it when its own date is not open (a phone clock far off).
 
+`GET /api/regional` serves the questions about everyday life in each part of the world (`backend/regional.go`, content in `backend/content/regional.json`), the same pack for everyone, about 30 KB gzipped: no pass, `public, max-age=3600, s-maxage=3600` and an ETag. The phone maps the country it keeps to a region and picks one now and then; nothing about these questions is ever sent back, so the server cannot tell who answered them or where anyone lives. The server refuses to start if the pack fails its gate.
+
 ## Edge rules (Cloudflare)
 
 The API has its own per-instance limits (30 votes, ratings, steps and data requests per device a minute; 20 new passes and 20 deletes per address an hour), which hold whatever the Cloudflare plan. The origin takes requests only from Cloudflare (`EDGE_SECRET`, [deploy.md](deploy.md#cloudflare)), so the edge's rules cannot be skipped.
@@ -132,7 +139,7 @@ Cloudflare's rate-limiting rules depend on the plan (its documentation, read 202
 
 - Free: one rule for paths starting `/api/`: 50 requests per IP per 10 seconds, block for 10 seconds. A sitting is a handful of requests a minute.
 - Pro: add a second rule for `/api/device`: 10 requests per IP per minute, block for an hour.
-- Cache `GET /api/editions/*`, `GET /api/questions/today` and `GET /api/questions/*/results` by respecting origin `Cache-Control` (`s-maxage`). Never cache `POST`, `PUT` or `DELETE` routes, `/api/mirror*`, `/api/device/*` or `/api/vault`; they send `no-store`.
+- Cache `GET /api/editions/*`, `GET /api/questions/today`, `GET /api/questions/*/results` and `GET /api/regional` by respecting origin `Cache-Control` (`s-maxage`). Never cache `POST`, `PUT` or `DELETE` routes, `/api/mirror*`, `/api/device/*` or `/api/vault`; they send `no-store`.
 - Bot Fight Mode on.
 
 ## Insight card ratings

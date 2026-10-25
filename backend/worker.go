@@ -56,6 +56,9 @@ func (s *Server) hourlyJobs() []job {
 		{"backup_retention", func(ctx context.Context, now time.Time) (int, error) {
 			return s.vaults.DeleteVaultsBefore(ctx, day(now, vaultRetention))
 		}},
+		{"social_retention", func(ctx context.Context, now time.Time) (int, error) {
+			return s.social.DeleteSocialBefore(ctx, day(now, friendRetention*24*time.Hour), now)
+		}},
 	}
 }
 

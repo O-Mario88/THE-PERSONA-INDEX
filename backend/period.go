@@ -288,7 +288,7 @@ func (s *Server) summarizeWeek(key string, monday time.Time, answers []MirrorAns
 		}
 		w.StepsHelped++
 		if a, ok := byQuestion[st.QuestionID]; ok {
-			if text := s.stepText(a.MirrorAnswer); text != "" {
+			if text := s.stepFor(a.MirrorAnswer, st.NeedStep); text != "" {
 				w.Helped = append(w.Helped, HelpedStep{Theme: a.Theme, Step: text, Started: st.Started})
 			}
 		}

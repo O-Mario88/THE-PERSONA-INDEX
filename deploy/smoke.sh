@@ -64,6 +64,20 @@ IFS=$'\t' read -r code h b < <(fetch /api/questions/today)
 expect "today's questions" "$code" 200
 contains "API: locked-down policy" "$(header "$h" content-security-policy)" "default-src 'none'"
 questions="$(jq -r '(.questions // []) | length' "$b" 2>/dev/null || echo 0)"
+set_body="$b"
+if [[ "$questions" -eq 0 && "$(jq -r '.review // false' "$b" 2>/dev/null)" == true ]]; then
+  # Sunday (UTC) is the review day and has no questions by design. Saturday or
+  # Monday is still today somewhere, so check that edition instead.
+  pass "today is the review day: no questions, as designed"
+  for day in "-1 day" "+1 day"; do
+    d="$(date -u -d "$day" +%F)"
+    IFS=$'\t' read -r code h b < <(fetch "/api/editions/$d")
+    [[ "$code" == 200 ]] || continue
+    questions="$(jq -r '(.questions // []) | length' "$b" 2>/dev/null || echo 0)"
+    set_body="$b"
+    [[ "$questions" -ge 1 ]] && break
+  done
+fi
 if [[ "$questions" -ge 1 ]]; then pass "today's questions: $questions in the morning set"; else fail "today's questions: none"; fi
 
 if [[ -n "${EDGE_SECRET:-}" ]]; then
@@ -75,8 +89,7 @@ if [[ "${SMOKE_VOTE:-}" == 1 ]]; then
   IFS=$'\t' read -r code h b < <(fetch /api/device -X POST)
   expect "device pass" "$code" 201
   token="$(jq -r .token "$b")"
-  IFS=$'\t' read -r code h b < <(fetch /api/questions/today)
-  read -r qid opt < <(jq -r '[.questions[] | select(.care != "intimate")][0] | "\(.id) \(.options[0].id)"' "$b")
+  read -r qid opt < <(jq -r '[.questions[] | select(.care != "intimate")][0] | "\(.id) \(.options[0].id)"' "$set_body")
   vote="$(jq -nc --arg q "$qid" --arg o "$opt" --arg t "$token" '{questionId:$q, optionId:$o, voterId:$t}')"
   IFS=$'\t' read -r code h b < <(fetch /api/votes -X POST -H 'Content-Type: application/json' -H "Idempotency-Key: smoke-$RANDOM$RANDOM" --data "$vote")
   expect "vote accepted" "$code" 202

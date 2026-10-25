@@ -46,6 +46,26 @@ Four findings shape how the app talks about them:
 
 Personality decides which need shouts loudest, not whether it matters.
 
+### Tagging an answer option
+
+Every option in the bank carries one `need`, and the gate refuses an option without one. The ids are `freedom` (choosing for yourself), `belonging` (being close to people), `respect` (being respected), `competence` (doing well), `security` (feeling safe, having enough), `calm` (feeling settled) and `understood` (being understood).
+
+Tag by these rules, in order:
+
+1. **Tag what the choice reaches for in that moment:** what the person would get if the choice worked. Read the label first, then the card's reveal, which usually names it.
+2. **One need per option.** If two fit, take the one the reveal leans on. If they are still tied, take the one closest to the moment in the question.
+3. **Options of one question may share a need.** They differ in route, not always in need. Don't spread tags out for variety.
+4. **Avoiding something is tagged by what it protects:** money or safety is `security`, inner peace or rest is `calm`, a relationship is `belonging`, face or image is `respect`.
+5. **Pleasing people:** to stay close is `belonging`; to avoid looking bad is `respect`.
+6. **Your own way:** saying no, your own pace, not being told, privacy, novelty and treats you picked for yourself are `freedom`.
+7. **Success is two needs.** Doing it well, learning or finishing is `competence`. Being seen, praised or looking good is `respect`.
+8. **Money:** saving, a safety net or avoiding risk is `security`; spending for comfort or rest is `calm`; spending on people is `belonging`; spending to be seen is `respect`.
+9. **Honesty about yourself,** being heard or being seen as you are is `understood`.
+10. **A heavy option is tagged by what is missing:** left out or forgotten is `belonging`, controlled is `freedom`, worthless is `respect`, frightened or in debt is `security`, and worn out or hopeless is `calm`.
+11. **A light or "I didn't" option** is tagged by what not doing it kept: ease is `calm`, privacy or your own pace is `freedom`.
+
+The card shows the need as one soft line after the reveal ("Sounds like feeling settled mattered most here"). The evening asks whether the morning's route usually gets the person there, and the weekly mirror shows the two needs that came up most and the routes that worked. A need is shown, never scored, and intimacy answers stay out of the mirror's count.
+
 ## Questions and answer options
 
 Rules:
@@ -57,6 +77,7 @@ Rules:
 - **Identity questions** (roots, faith, politics, family roles, body, money, class) need a "doesn't apply" or "I'd rather not say". Never ask which religion, party, ethnicity or nationality someone holds, and never store it.
 - **Politics** is about how you live with it, never which side you are on.
 - **Never presume** a partner, a nuclear family, a formal job with a boss and a salary, or a home that is a safe place.
+- **No hidden defaults.** The same words must fit a nurse in Leeds, a market trader in Lagos, a student in Lahore, a driver in Lima and a mother in Jakarta. Before you keep a word, ask: would it feel foreign to someone with an irregular cash income, a shared home, no car and a Friday rest day? If so, use the neutral word: "when money comes in" (not payday), "someone you work with or for" (not your boss), "a day off" or "this week" (not the weekend or Monday), "on the way" (not the drive), "at home" or "out of reach" (not another room), "washing" (not the shower). Keep the specific word only when it is the question's own subject: a dating question may mention a date, a colleagues question a boss. Never fix a default by adding a country, religion or ethnic group; tailor the setting, never the person. The evidence is in [research/regions/report.md](research/regions/report.md).
 - A question about a **hoped-for future** should be followed by one about what gets in the way. Wishing alone predicts less effort.
 
 Situations that work (design suggestions built on the research; none has been tested as a measure):
@@ -69,6 +90,19 @@ Situations that work (design suggestions built on the research; none has been te
 | Saying no | A friend invites you to something you don't want to go to. | Yes, and go / yes, then cancel / no, with the real reason / no, with a small excuse |
 | Feeling watched | You notice a stain on your sleeve just before meeting people. | Go and change / cover it / mention it with a laugh / carry on |
 | Faith in strangers | You left your phone at a café. First thought? | Someone will hand it in / it'll come back, maybe not intact / it's gone / I'd go back but not expect much |
+
+### Questions about where someone lives
+
+A small second bank, [`backend/content/regional.json`](../backend/content/regional.json), holds everyday moments that belong to one part of the world: a relative asking for money you had set aside, your turn in a savings group, guests who stay for hours, a family holiday where the questions about your life begin, a meal shared or eaten alone. A phone whose person gave a country offers one of its region's now and then, among the everyday questions. The regions are `africa` (south of the Sahara), `mena`, `south-asia`, `east-asia` (with Southeast Asia), `latin-america` (with the Caribbean) and `west`; they organise content and never describe a person. The evidence for each region's moments is in [research/regions/](research/regions/report.md).
+
+Everything above applies, and a few rules more:
+
+- The words fit the **whole region**, not one country: no country or city names, no local-language words ("your savings group", never its local name), no named festivals or holy days, no religion or ethnic group named. Faith may be one respectable option among others, never the assumption.
+- No politics, conflict or government. Hardship (a power cut, a slow day for money, waiting for papers, an unsafe street) is named plainly and kindly, as part of ordinary life, without blame.
+- Ids start with the region key (`africa-relative-asks-money`), never clash with the main bank, and a region needs at least three questions so the phone can rest between them. Never an intimacy question.
+- The answer stays on the phone: nothing about these questions is sent, not the vote, the card tap or a step, because even a question's id would say where someone lives.
+
+Check a draft with the server's own gate before adding it: `cd backend && REGIONAL_DRAFT=draft.json go test -run TestRegionalDraft .` (new sources go in `sources.json` first).
 
 ## Insight cards
 
@@ -158,7 +192,7 @@ The research behind this:
 | Promises: "this will change your life", "40% of happiness" | Every effect is small; the 40% figure is disowned by its authors |
 | Abstract "why am I like this?" prompts, especially in the evening | That is the brooding pattern that harms people who are already low |
 | Stacked steps, streaks, penalties, all-or-nothing challenges | Accepting without doing predicts change in the wrong direction |
-| Western defaults: independence over duty, a partner, a salaried job | Most of the world lives and works otherwise |
+| Western defaults: independence over duty, a partner, a salaried job, a weekend, a car, a room of your own | Most of the world lives and works otherwise ([research/regions/report.md](research/regions/report.md)) |
 | Taking sides on religion or politics | Benefits depend on fit and community, not content |
 | Becoming another passive feed | Scrolling goes with lower satisfaction |
 
@@ -188,5 +222,10 @@ The app never shows a source, but every card's research must be accurate:
 | Heavy only on a deep answer outside intimacy | `backend/content.go` |
 | Heavy cards show people and a helpline, never an insight | `frontend/src/QuestionCard.tsx`, tested in `App.test.tsx` |
 | Change shown only against your own past | `frontend/src/profile.ts` (`changeAt`), tested in `profile.test.ts` |
+| Every answer option names one of the seven needs | `backend/content.go` (gate), ids kept in step with `frontend/src/needs.ts` by `needs_test.go` |
+| Need steps follow the voice rules | `backend/voice.go`, `backend/content.go` (length) |
+| What a week reached for counts only your own answers, never intimacy, heavy or "Not me" | `frontend/src/reaching.ts`, tested in `reaching.test.ts` |
+| Regional questions: a known region, no intimacy, no id shared with the main bank, at least three a region, every main-bank rule | `backend/regional.go` (`validateRegional`), tested in `regional_test.go` |
+| A regional answer, tap or step never leaves the phone | `frontend/src/QuestionCard.tsx`, `moves.ts`, tested in `regional.test.ts` and `App.test.tsx` |
 
 Run `cd backend && go test ./...` and `cd frontend && npm test` after any change to the bank or the app's words.

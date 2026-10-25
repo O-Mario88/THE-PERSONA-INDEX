@@ -114,6 +114,8 @@ function stubApi(routes: {
   kept?: Route
   steps?: Route
   rating?: Route | Route[]
+  regional?: Route
+  social?: (url: string, init?: RequestInit) => Route | undefined // Stage 5: accounts and the circle
 }) {
   let devices = 0
   let votes = 0
@@ -125,6 +127,10 @@ function stubApi(routes: {
     if (url === '/api/device' && init?.method === 'POST') {
       devices++
       return json({ status: 201, body: { token: `v1.device${devices}.sig` } })
+    }
+    if (url === '/api/account/device') {
+      devices++
+      return json({ status: 200, body: { token: `v1.device${devices}.sig` } })
     }
     if (url.startsWith('/api/editions/')) {
       return json(routes.edition ?? routes.today ?? { status: 200, body: today })
@@ -154,6 +160,11 @@ function stubApi(routes: {
     if (url === '/api/device/data') {
       return json(routes.kept ?? { status: 200, body: keptOnServer })
     }
+    if (url === '/api/regional') {
+      return json(routes.regional ?? { status: 404, body: { error: 'no_regional' } })
+    }
+    const social = routes.social?.(url, init)
+    if (social) return json(social)
     return json({ status: 404, body: { error: 'not_found' } })
   })
   vi.stubGlobal('fetch', fetchMock)
@@ -184,10 +195,10 @@ afterEach(() => {
 // Taps an answer and waits for its answer screen.
 async function answer(label: string) {
   fireEvent.click(await screen.findByRole('button', { name: label }))
-  await screen.findByRole('button', { name: 'Next' })
+  await screen.findByRole('button', { name: /^Next/ })
 }
 
-const next = () => fireEvent.click(screen.getByRole('button', { name: 'Next' }))
+const next = () => fireEvent.click(screen.getByRole('button', { name: /^Next/ }))
 const skip = async () => fireEvent.click(await screen.findByRole('button', { name: 'Skip this one' }))
 
 // This morning, before 9 am: dishes answered, the bill skipped, alarms answered.
@@ -203,8 +214,10 @@ function answeredThisMorning() {
 const noClinicianWords = /therap|psycholog|psychiatr|counsel/i
 
 // Edwin, 2026-10-15: a quiet companion, "not comparing them with other
-// people", and "it should not feel like game".
-const crowdOrScore = /player|\bcrowd\b|%|\bpts\b|\bpoints\b|bonus|\blevels?\b|\bshare\b|compare with/i
+// people", and "it should not feel like game". Since 2026-10-24 (Stage 5)
+// the week's name may be shared as a card, so "share" is no longer banned;
+// the card itself never carries an answer (ShareCard.test.tsx).
+const crowdOrScore = /player|\bcrowd\b|%|\bpts\b|\bpoints\b|bonus|\blevels?\b|compare with/i
 
 
 describe('the daily questions', () => {
@@ -217,8 +230,6 @@ describe('the daily questions', () => {
     expect(screen.getByText('Edition #3 · Monday')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Question 1 of 3' })).toHaveAttribute('aria-current', 'step')
     expect(screen.getByRole('button', { name: 'Question 3 of 3' })).toBeDisabled()
-    // Edwin, 2026-10-15: "Everything should feel private".
-    expect(screen.getByText(/Private to you: no name, no email, no account\./)).toBeInTheDocument()
   })
 
   // Edwin, 2026-10-15: "Some answers need typing ... so they are not limited
@@ -379,6 +390,27 @@ describe('the daily questions', () => {
       'Something you could try: Next time a small task appears',
     )
     expect(screen.queryByText(/Batching chores/)).not.toBeInTheDocument()
+  })
+
+  it('unfolds the card in three beats, one tap each, when motion is on', async () => {
+    const media = window.matchMedia
+    window.matchMedia = ((q: string) => ({ ...media(q), matches: false })) as typeof window.matchMedia
+    try {
+      stubApi({})
+      render(<App />)
+      fireEvent.click(await screen.findByRole('button', { name: 'Right after eating' }))
+      const insight = await screen.findByRole('note', { name: 'What your answer may say' })
+      expect(within(insight).getByText('You like a clear sink before you relax.')).toBeInTheDocument()
+      expect(within(insight).queryByText('Unfinished tasks are noisier for you than for most.')).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /^Next/ })).not.toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: 'Read on' }))
+      expect(within(insight).getByText('Unfinished tasks are noisier for you than for most.')).toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: 'And the other side' }))
+      expect(screen.getByRole('button', { name: /^Next/ })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /Keep in Notebook/ })).toBeInTheDocument()
+    } finally {
+      window.matchMedia = media
+    }
   })
 
   it("keeps the card's sources out of sight: no research line, evidence label or link", async () => {
@@ -665,7 +697,7 @@ describe('the daily questions', () => {
     expect(thread).toHaveTextContent('For the rest of today:')
     // One answer is a hint: the honest part waits for a pattern.
     expect(thread).not.toHaveTextContent('The honest part')
-    const moves = within(done).getByRole('group', { name: "Small steps you'll try" })
+    const moves = within(done).getByRole('group', { name: 'One small step for today' })
     expect(moves).toHaveTextContent('Tonight, set one alarm fewer')
     // Something to look forward to: the evening's three themes, and when.
     const later = within(done).getByRole('group', { name: 'Your evening three · 5 pm' })
@@ -789,8 +821,10 @@ describe('the daily questions', () => {
     expect(await screen.findByText(closeness.prompt)).toBeInTheDocument()
     expect(screen.queryByRole('region', { name: 'Are you 18 or older?' })).not.toBeInTheDocument()
 
-    // The keep-it-mild switch is always there and takes intimacy out again.
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Keep it mild (no intimacy questions)' }))
+    // The keep-it-mild switch is always there, on Account, and takes intimacy out again.
+    fireEvent.click(screen.getByRole('button', { name: 'Account' }))
+    fireEvent.click(screen.getByRole('switch', { name: /Keep it mild \(no intimacy questions\)/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Today' }))
     expect(screen.queryByText(closeness.prompt)).not.toBeInTheDocument()
     unmount()
     render(<App />)
@@ -875,11 +909,6 @@ describe('the evening, from 5 pm', () => {
       screen.queryByRole('button', { name: /^(morning|afternoon|evening|check-in)/i }),
     ).not.toBeInTheDocument()
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
-    expect(within(screen.getByRole('group', { name: 'Your day' })).getAllByRole('listitem').map(plainText)).toEqual([
-      'Morning three5 am to 4:30 pmDone',
-      'Evening three5 pm to midnightOpen now',
-    ])
-
     await answer('I get out for a walk')
     next()
     await answer('Say something calmly')
@@ -898,20 +927,22 @@ describe('the evening, from 5 pm', () => {
     // This evening's cards are still one tap away on the dashes.
     fireEvent.click(screen.getByRole('button', { name: 'Question 1 of 3' }))
     expect(await screen.findByRole('region', { name: 'Lunch time. What usually happens?' })).toHaveTextContent('You chose')
+
+    // Back on Today, the day's five windows show what is done.
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }))
+    const dayLine = within(screen.getByRole('group', { name: 'Your day' })).getAllByRole('listitem').map(plainText)
+    expect(dayLine).toHaveLength(5)
+    expect(dayLine[0]).toBe('Morningdone')
+    expect(dayLine[3]).toBe('Eveningdone')
+    expect(dayLine[4]).toBe('Night21:00')
   })
 
-  it('turns at 4:30 pm, 5 pm and midnight while the app stays open', async () => {
+  it('turns from the afternoon to the evening and to the night while the app stays open', async () => {
     answeredThisMorning()
     vi.setSystemTime(at(15))
     const fetchMock = stubApi({ today: { status: 200, body: sixADay } })
     render(<App />)
-    expect(await screen.findByRole('region', { name: 'Morning done.' })).toBeInTheDocument()
-
-    vi.setSystemTime(new Date(2026, 9, 12, 16, 30))
-    fireEvent(window, new Event('focus'))
-    const pause = await screen.findByRole('region', { name: 'Your evening three open at 5 pm.' })
-    expect(pause).toHaveTextContent('Your morning is done. This half hour is yours.')
-    expect(within(pause).getByRole('group', { name: 'This evening' })).toHaveTextContent('Food and eating')
+    expect(await screen.findByRole('heading', { name: 'Afternoon' })).toBeInTheDocument()
     expect(screen.queryByRole('navigation', { name: "Today's questions" })).not.toBeInTheDocument()
 
     vi.setSystemTime(at(17))
@@ -921,23 +952,19 @@ describe('the evening, from 5 pm', () => {
     vi.setSystemTime(at(0, 13))
     fireEvent(document, new Event('visibilitychange'))
     await waitFor(() => expect(calls(fetchMock, '/api/editions/2026-10-13')).toHaveLength(1))
-    expect(await screen.findByRole('region', { name: 'The night is yours.' })).toHaveTextContent(
-      'Your morning three open at 5 am.',
-    )
+    expect(await screen.findByRole('heading', { name: 'Night' })).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: 'The night is yours' })).toHaveTextContent('Your morning three open at 05:00.')
   })
 
-  it("closes the morning's questions at 4:30 pm, answered or not, without a word of blame", async () => {
+  it("keeps the morning's questions open until 5 pm, without a word of blame", async () => {
     vi.setSystemTime(new Date(2026, 9, 12, 16, 45))
     stubApi({ today: { status: 200, body: sixADay } })
     const first = render(<App />)
-    const pause = await screen.findByRole('region', { name: 'Your evening three open at 5 pm.' })
-    expect(pause).toHaveTextContent("This morning's questions have closed. That's fine: the evening is a fresh start.")
+    expect(await screen.findByText('Your morning three are still open until 17:00.')).toBeInTheDocument()
     expect(screen.queryByText('When do you wash the dishes?')).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Skip this one' })).not.toBeInTheDocument()
-    expect(within(screen.getByRole('group', { name: 'Your day' })).getAllByRole('listitem').map(plainText)).toEqual([
-      'Morning three5 am to 4:30 pmClosed',
-      'Evening three5 pm to midnightOpens at 5 pm',
-    ])
+    expect(screen.getByRole('group', { name: 'Your day' })).not.toHaveTextContent(/\b(missed|late|failed|behind)\b/i)
+    fireEvent.click(screen.getByRole('button', { name: 'Answer them' }))
+    expect(await screen.findByRole('region', { name: 'When do you wash the dishes?' })).toBeInTheDocument()
     first.unmount()
 
     vi.setSystemTime(at(19))
@@ -950,14 +977,18 @@ describe('the evening, from 5 pm', () => {
     vi.setSystemTime(at(3))
     stubApi({ today: { status: 200, body: sixADay } })
     render(<App />)
-    const night = await screen.findByRole('region', { name: 'The night is yours.' })
-    expect(night).toHaveTextContent('Your morning three open at 5 am. Nothing to do until then but rest.')
-    expect(within(night).getByRole('group', { name: 'Your morning three · 5 am' })).toHaveTextContent('Daily habits')
+    const night = await screen.findByRole('group', { name: 'The night is yours' })
+    expect(night).toHaveTextContent('Your morning three open at 05:00. Nothing to do until then but rest.')
+    const rest = screen.getByRole('region', { name: 'The night is yours' })
+    expect(within(rest).getByRole('group', { name: 'Your morning three · 5 am' })).toHaveTextContent('Daily habits')
     expect(screen.queryByRole('navigation', { name: "Today's questions" })).not.toBeInTheDocument()
     expect(screen.queryByText('When do you wash the dishes?')).not.toBeInTheDocument()
     expect(within(screen.getByRole('group', { name: 'Your day' })).getAllByRole('listitem').map(plainText)).toEqual([
-      'Morning three5 am to 4:30 pmOpens at 5 am',
-      'Evening three5 pm to midnightOpens at 5 pm',
+      'Morning05:00',
+      'Midday11:30',
+      'Pulse14:30',
+      'Evening17:00',
+      'Night21:00',
     ])
   })
 
@@ -1003,7 +1034,7 @@ describe('the evening, from 5 pm', () => {
     expect(within(moves).getAllByRole('button').map((b) => b.textContent)).toEqual([
       'It helped',
       'No change yet',
-      "Didn't get to it",
+      'Not today',
     ])
     fireEvent.click(within(moves).getByRole('button', { name: 'It helped' }))
     expect(moves).toHaveTextContent('Glad it helped.')
@@ -1042,10 +1073,9 @@ describe('the evening, from 5 pm', () => {
     vi.setSystemTime(at(19))
     stubApi({})
     render(<App />)
-    const day = await screen.findByRole('region', { name: "That's your day." })
+    expect(await screen.findByRole('group', { name: "That's today's questions" })).toHaveTextContent('Three good things open at 21:00.')
     expect(screen.queryByRole('navigation', { name: "Today's questions" })).not.toBeInTheDocument()
-    expect(within(day).queryByRole('list', { name: "This evening's answers" })).not.toBeInTheDocument()
-    expect(within(screen.getByRole('group', { name: 'Your day' })).getAllByRole('listitem')).toHaveLength(1)
+    expect(screen.queryByRole('list', { name: "This evening's answers" })).not.toBeInTheDocument()
   })
 })
 
@@ -1219,7 +1249,7 @@ async function openMirror(routes: Parameters<typeof stubApi>[0] = {}) {
   vi.setSystemTime(at(9, 18))
   const fetchMock = stubApi({ edition: { status: 200, body: sunday }, mirror: { status: 200, body: mirror }, ...routes })
   render(<App />)
-  fireEvent.click(await screen.findByRole('button', { name: 'Your mirror' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Mirror' }))
   return fetchMock
 }
 
@@ -1238,7 +1268,7 @@ describe('the weekly mirror', () => {
     expect(url).toBe('/api/mirror?date=2026-10-18')
     expect((init!.headers as Record<string, string>).Authorization).toBe('Device v1.device1.sig')
 
-    expect(page).toHaveTextContent('Your week · 12 to 17 October')
+    expect(page).toHaveTextContent('Sunday · week 42 · 12 to 17 October')
     // Both sides of the clearest leanings, in plain words, not a type label.
     expect(page).toHaveTextContent('Steady follow-through, with a radar tuned for silence.')
     expect(page).toHaveTextContent('You showed up on 5 days this week and gave 18 answers.')
@@ -1261,12 +1291,12 @@ describe('the weekly mirror', () => {
     const page = screen.getByRole('region', { name: 'Your weekly mirror' })
     await within(page).findByRole('heading', { level: 2, name: weekTitle })
     expect(within(page).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual([
-      '01 Your week at a glance',
-      '02 Your trait read',
-      "03 How you've moved",
-      '04 All of you',
-      '05 Who you were this week',
-      '06 One line for your week',
+      '01 Where you leaned',
+      '02 One line for your week',
+      '03 Your week at a glance',
+      '04 Your trait read',
+      "05 How you've moved",
+      '06 All of you',
       '07 Your small steps',
       '08 Next week',
       '09 The road ahead',
@@ -1285,7 +1315,7 @@ describe('the weekly mirror', () => {
     expect(traits).toHaveTextContent('A hint · 4 answers')
     expect(page).toHaveTextContent('compares you only with yourself')
 
-    const who = within(page).getByRole('heading', { name: '05 Who you were this week' }).parentElement!
+    const who = within(page).getByRole('heading', { name: '01 Where you leaned' }).parentElement!
     expect(who).toHaveTextContent('You finish what you start.')
     expect(who).toHaveTextContent('You said: “Right after eating”, “Before bed”')
     expect(who).toHaveTextContent('This keeps showing up: 14 answers over 3 weeks. Worth testing against your real week.')
@@ -1429,7 +1459,7 @@ describe('the weekly mirror', () => {
     fireEvent.click(screen.getByRole('button', { name: 'What I keep, and how to delete it' }))
     expect(await screen.findByRole('heading', { name: 'What I keep' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: '← Back' }))
-    expect(screen.getByRole('button', { name: 'Your mirror' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'Mirror' })).toHaveAttribute('aria-pressed', 'true')
   })
 
   it('gets a new token and asks again when the server no longer accepts the old one', async () => {
@@ -1716,20 +1746,15 @@ describe('the week', () => {
     await morningThree()
     const morning = await screen.findByRole('region', { name: 'Morning done.' })
     expect(within(morning).getByRole('group', { name: 'Your evening three · 5 pm' })).toBeInTheDocument()
+    expect(screen.getByText('Edition #3 · Monday')).toBeInTheDocument()
     expect(screen.queryByText('Lunch time. What usually happens?')).not.toBeInTheDocument()
     first.unmount()
 
-    vi.setSystemTime(new Date(2026, 9, 12, 16, 29))
-    const second = render(<App />)
-    expect(await screen.findByRole('region', { name: 'Morning done.' })).toBeInTheDocument()
-    expect(screen.getByText('Edition #3 · Monday')).toBeInTheDocument()
-    second.unmount()
-
     vi.setSystemTime(new Date(2026, 9, 12, 16, 59))
-    const third = render(<App />)
-    expect(await screen.findByRole('region', { name: 'Your evening three open at 5 pm.' })).toBeInTheDocument()
+    const second = render(<App />)
+    expect(await screen.findByRole('heading', { name: 'Afternoon' })).toBeInTheDocument()
     expect(screen.queryByText('Lunch time. What usually happens?')).not.toBeInTheDocument()
-    third.unmount()
+    second.unmount()
 
     vi.setSystemTime(at(17))
     render(<App />)
@@ -1743,7 +1768,7 @@ describe('the week', () => {
     stubApi({ edition: { status: 200, body: sunday }, mirror: { status: 200, body: mirror } })
     render(<App />)
     expect(await screen.findByRole('heading', { level: 2, name: weekTitle })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Your mirror' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'Mirror' })).toHaveAttribute('aria-pressed', 'true')
 
     fireEvent.click(screen.getByRole('button', { name: 'Today' }))
     const review = screen.getByRole('region', { name: 'Sunday is for looking back.' })
@@ -1751,12 +1776,10 @@ describe('the week', () => {
     const tomorrow = within(review).getByRole('group', { name: 'Tomorrow' })
     expect(tomorrow).toHaveTextContent('Money')
     expect(tomorrow).toHaveTextContent('Anger')
-    expect(screen.queryByRole('group', { name: 'Your day' })).not.toBeInTheDocument()
     expect(review).not.toHaveTextContent(crowdOrScore)
-    expect(screen.getByText('Review day · Sunday')).toBeInTheDocument()
-    expect(screen.queryByRole('region', { name: 'Morning done.' })).not.toBeInTheDocument()
-    fireEvent.click(within(review).getByRole('button', { name: 'Open your mirror' }))
-    expect(screen.getByRole('button', { name: 'Your mirror' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.queryByRole('navigation', { name: "Today's questions" })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Open: Your Sunday Mirror is ready' }))
+    expect(screen.getByRole('button', { name: 'Mirror' })).toHaveAttribute('aria-pressed', 'true')
   })
 
   it('looks ahead to the review day on Saturday evening', async () => {
@@ -1876,7 +1899,7 @@ describe('a vote never gets stuck', () => {
     expect(await screen.findByRole('textbox', { name: 'In your own words' })).toHaveValue('Honestly, it depends')
     fireEvent.click(screen.getByRole('button', { name: 'Keep my words' }))
     fireEvent.click(await screen.findByRole('button', { name: 'Right after eating' }))
-    await screen.findByRole('button', { name: 'Next' })
+    await screen.findByRole('button', { name: /^Next/ })
     expect(localStorage.getItem('pi.draft.q-dishes')).toBeNull()
   })
 
@@ -1989,6 +2012,8 @@ describe("today's read", () => {
   it('offers a read on one of the day’s life areas, opens it, and remembers it was read', async () => {
     stubApi({})
     render(<App />)
+    // The morning opens on its questions; the read waits on Today.
+    fireEvent.click(await screen.findByRole('button', { name: 'Close' }))
     const eyebrow = await screen.findByText(/^Today's read · \d+ min$/)
     const offer = eyebrow.closest('section')!
     const title = within(offer).getByRole('heading', { level: 3 }).textContent!
@@ -2022,7 +2047,7 @@ describe('accessibility', () => {
     await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('heading', { level: 2, name: 'Settings' })))
     fireEvent.click(screen.getByRole('button', { name: '← Back' }))
     fireEvent.click(screen.getByRole('button', { name: 'Notebook' }))
-    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('heading', { level: 2, name: 'My notebook' })))
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('heading', { level: 2, name: 'Notebook' })))
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1)
   })
 })
@@ -2122,6 +2147,15 @@ describe('the app remembers you', () => {
     expect(heavy).toHaveTextContent('Could Ama or Kofi hear from you today? A short message counts.')
     expect(heavy).toHaveTextContent('What helps, in your words: “A walk by the river”')
     expect(JSON.parse(localStorage.getItem('pi.people')!)).toMatchObject({ names: ['Ama', 'Kofi'], helps: 'A walk by the river' })
+
+    // A message to one of them, handed to WhatsApp or the phone's messages:
+    // the app sends nothing itself.
+    const reach = within(heavy).getByRole('group', { name: 'Reach out' })
+    fireEvent.click(within(reach).getByRole('button', { name: 'Kofi' }))
+    expect(within(reach).getByRole('textbox')).toHaveValue('Hey Kofi, had a heavy day. Free for a 5-minute call later?')
+    expect(within(reach).getByRole('link', { name: 'WhatsApp' })).toHaveAttribute('href', `https://wa.me/?text=${encodeURIComponent('Hey Kofi, had a heavy day. Free for a 5-minute call later?')}`)
+    expect(within(reach).getByRole('link', { name: 'SMS' }).getAttribute('href')).toMatch(/^sms:\?&body=Hey%20Kofi/)
+    expect(reach).toHaveTextContent('The app never sends anything for you and never sees the conversation.')
     for (const [, init] of fetchMock.mock.calls) expect(String(init?.body ?? '')).not.toMatch(/Ama|Kofi|river/)
     expect(document.body.textContent).not.toMatch(noClinicianWords)
   })
@@ -2245,15 +2279,15 @@ describe('the app remembers you', () => {
     const page = screen.getByRole('region', { name: 'Your weekly mirror' })
     await within(page).findByRole('heading', { level: 2, name: weekTitle })
     const headings = within(page).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)
-    expect(headings).toContain('04 What changed')
-    expect(headings).toContain("08 What you're working on")
+    expect(headings.some((h) => /^\d\d What changed$/.test(h ?? ''))).toBe(true)
+    expect(headings.some((h) => /^\d\d What you're working on$/.test(h ?? ''))).toBe(true)
 
-    const changed = within(page).getByRole('heading', { name: '04 What changed' }).parentElement!
+    const changed = within(page).getByRole('heading', { name: /^\d\d What changed$/ }).parentElement!
     expect(changed).toHaveTextContent('14 October First time in three weeks your answer leaned towards getting things done.')
     expect(changed).toHaveTextContent('Set against your own earlier answers only.')
 
     // The leaning already being worked on says so, rather than offering a second plan.
-    const who = within(page).getByRole('heading', { name: '06 Who you were this week' }).parentElement!
+    const who = within(page).getByRole('heading', { name: /^\d\d Where you leaned$/ }).parentElement!
     expect(who).toHaveTextContent("You're already working on this one. When I sit down for the evening, I will leave one job for tomorrow.")
     expect(who).toHaveTextContent('Work on this instead?')
 
@@ -2326,5 +2360,391 @@ describe('Sunday', () => {
     expect(steps).toHaveTextContent('Glad it helped.')
     await waitFor(() => expect(calls(fetchMock, '/api/steps')).toHaveLength(1))
     expect(bodyOf(calls(fetchMock, '/api/steps')[0])).toMatchObject({ questionId: 'q1', status: 'helped', date: '2026-10-18' })
+  })
+})
+
+// Stage 2 of the proposal of 2026-10-24 ("What you're reaching for"): every
+// answer names the need it reached for, in one soft line; the card offers a
+// second step for that need; the evening asks whether the morning's route
+// usually gets the person there; and the mirror shows what the week reached
+// for. All of it read from this phone, never sent.
+const calmStep = "If something knocks you back today, talk to yourself the way you'd talk to a good friend."
+const [dishes, ...restOfMorning] = today.questions
+const reaching: DailySet = {
+  ...today,
+  questions: [
+    {
+      ...dishes,
+      options: [
+        { ...dishes.options[0], depth: 1, need: 'calm', insight: { ...dishes.options[0].insight!, needStep: calmStep } },
+        dishes.options[1],
+      ],
+    },
+    ...restOfMorning,
+  ],
+}
+const seedHistory = (answers: object[]) => localStorage.setItem('pi.history.v1', JSON.stringify({ answers, skips: [] }))
+const needAnswer = (date: string, need: string, more: object = {}) => ({
+  date,
+  questionId: `${date}-${need}-${Math.random().toString(36).slice(2, 7)}`,
+  theme: 'work-career',
+  depth: 2,
+  traits: {},
+  need,
+  ...more,
+})
+
+describe("what you're reaching for", () => {
+  it('names what an answer reached for, and lets the person pick the step that serves it', async () => {
+    const fetchMock = stubApi({ edition: { status: 200, body: reaching } })
+    render(<App />)
+    await answer('Right after eating')
+    expect(screen.getByText('What it reached for').parentElement).toHaveTextContent('What it reached for feeling settled')
+
+    const tryIt = screen.getByRole('group', { name: 'Something to try' })
+    expect(within(tryIt).getByRole('radio', { name: 'Next time a small task appears, notice the itch to finish it.' })).toBeChecked()
+    fireEvent.click(within(tryIt).getByRole('radio', { name: calmStep }))
+    fireEvent.click(within(tryIt).getByRole('button', { name: "I'll try it" }))
+    expect(tryIt).toHaveTextContent(`Something you'll try: ${calmStep}`)
+    await waitFor(() => expect(calls(fetchMock, '/api/steps')).toHaveLength(1))
+    expect(bodyOf(calls(fetchMock, '/api/steps')[0])).toMatchObject({
+      questionId: 'q-dishes',
+      optionId: 'right-away',
+      status: 'started',
+      needStep: true,
+    })
+    expect(JSON.parse(localStorage.getItem('pi.moves.v1')!)[0]).toMatchObject({ step: calmStep, needStep: true })
+    expect(JSON.parse(localStorage.getItem('pi.history.v1')!).answers[0]).toMatchObject({ questionId: 'q-dishes', need: 'calm' })
+  })
+
+  it('offers one step, and no line, when the answer names no need', async () => {
+    stubApi({})
+    render(<App />)
+    await answer('Right after eating')
+    expect(screen.queryByText('What it reached for')).not.toBeInTheDocument()
+    expect(within(screen.getByRole('group', { name: 'Something to try' })).queryByRole('radio')).not.toBeInTheDocument()
+  })
+
+  it("asks in the evening whether the morning's route usually gets you there, and keeps the answer on the phone", async () => {
+    answeredThisMorning()
+    localStorage.setItem('pi.pick.2026-10-12', JSON.stringify(['q-dishes', 'q-bill', 'q-alarm']))
+    seedHistory([{ date: '2026-10-12', questionId: 'q-dishes', theme: 'habits', depth: 1, traits: {}, optionId: 'right-away', need: 'calm' }])
+    // The evening three are answered too; the day's close is one tap from Today.
+    localStorage.setItem('pi.pick.2026-10-12.pm', JSON.stringify(['q-lunch', 'q-queue', 'q-ring']))
+    for (const [q, o] of [['q-lunch', 'out'], ['q-queue', 'say'], ['q-ring', 'later']]) localStorage.setItem(`pi.choice.${q}`, o)
+    vi.setSystemTime(at(19))
+    const evening = { ...reaching, evening: [lunch, queue, ring], pool: [...reaching.questions!, lunch, queue, ring] }
+    const fetchMock = stubApi({ edition: { status: 200, body: evening } })
+    render(<App />)
+    fireEvent.click(await screen.findByRole('button', { name: 'See your evening: Your evening three are answered' }))
+    const day = await screen.findByRole('region', { name: "That's your day." })
+    const choice = within(day).getByRole('group', { name: "This morning's choice" })
+    expect(choice).toHaveTextContent('This morning you chose “Right after eating”. It sounded like feeling settled mattered there.')
+    expect(choice).toHaveTextContent('Does that route usually get you there?')
+    expect(within(choice).getAllByRole('button').map((b) => b.textContent)).toEqual(['Yes', 'A bit', 'Not really'])
+    fireEvent.click(within(choice).getByRole('button', { name: 'A bit' }))
+    expect(choice).toHaveTextContent('Noted. Part of the way there still counts.')
+    expect(within(choice).queryByRole('button')).not.toBeInTheDocument()
+    expect(JSON.parse(localStorage.getItem('pi.history.v1')!).answers[0]).toMatchObject({ route: 'bit', label: 'Right after eating' })
+    for (const [, init] of fetchMock.mock.calls) expect(String(init?.body ?? '')).not.toContain('route')
+  })
+
+  it('shows in the mirror what the week reached for, with the routes the person named', async () => {
+    seedHistory([
+      needAnswer('2026-10-12', 'respect', { route: 'no', label: 'Say nothing and stew' }),
+      needAnswer('2026-10-13', 'respect'),
+      needAnswer('2026-10-13', 'respect'),
+      needAnswer('2026-10-13', 'competence', { route: 'yes', label: 'Make a list first' }),
+      needAnswer('2026-10-14', 'competence'),
+      needAnswer('2026-10-15', 'competence'),
+      needAnswer('2026-10-15', 'calm', { theme: 'intimacy' }), // never counted
+    ])
+    await openMirror()
+    const page = screen.getByRole('region', { name: 'Your weekly mirror' })
+    const section = (await within(page).findByRole('heading', { name: /What you reached for/ })).closest('section')!
+    expect(section).toHaveTextContent('Most of your choices this week reached for doing well and being respected.')
+    expect(within(section).getByRole('group', { name: 'Doing well' })).toHaveTextContent('What got you there: “Make a list first”.')
+    expect(within(section).getByRole('group', { name: 'Being respected' })).toHaveTextContent("What didn't: “Say nothing and stew”.")
+    expect(section).toHaveTextContent('Doing well and being respected are kept apart here')
+    expect(section).toHaveTextContent('Counted from your own answers this week, nothing else.')
+    expect(section).not.toHaveTextContent('feeling settled')
+    expect(within(section).queryByRole('group', { name: 'Is something else uncertain?' })).not.toBeInTheDocument()
+  })
+
+  it('asks, never tells, when feeling safe has come first three weeks running', async () => {
+    seedHistory(
+      ['2026-09-28', '2026-09-29', '2026-10-01', '2026-10-05', '2026-10-06', '2026-10-06', '2026-10-12', '2026-10-13', '2026-10-14'].map(
+        (d) => needAnswer(d, 'security'),
+      ),
+    )
+    await openMirror()
+    const ask = await screen.findByRole('group', { name: 'Is something else uncertain?' })
+    expect(ask).toHaveTextContent('Feeling safe came first again. Is something else feeling uncertain right now?')
+    fireEvent.click(within(ask).getByRole('button', { name: 'Money' }))
+    expect(ask).toHaveTextContent('Thanks for saying.')
+    expect(within(ask).queryByRole('button')).not.toBeInTheDocument()
+    expect(JSON.parse(localStorage.getItem('pi.safety.2026-10-12')!)).toBe('money')
+  })
+})
+
+// Where someone lives (the research of 2026-10-24, "Tailor the setting, never
+// the person"): asked once after a sitting, kept on the phone, never sent; it
+// points heavy moments to that country's help.
+describe('where you live', () => {
+  async function finishMorning() {
+    await answer('Right after eating')
+    next()
+    await skip()
+    await answer('One')
+    next()
+    return screen.findByRole('region', { name: "That's your day." })
+  }
+
+  it('is asked once after a sitting, kept on this phone, and never sent', async () => {
+    const fetchMock = stubApi({})
+    render(<App />)
+    await finishMorning()
+    const ask = screen.getByRole('region', { name: 'Where do you live now?' })
+    expect(ask).toHaveTextContent('It stays on this phone.')
+    expect(within(ask).getByRole('button', { name: 'Keep this' })).toBeDisabled() // no guess from this phone's clock
+    fireEvent.change(within(ask).getByRole('combobox', { name: 'Country' }), { target: { value: 'KE' } })
+    fireEvent.click(within(ask).getByRole('button', { name: 'Keep this' }))
+    expect(screen.queryByRole('region', { name: 'Where do you live now?' })).not.toBeInTheDocument()
+    expect(JSON.parse(localStorage.getItem('pi.prefs.v1')!)).toMatchObject({ country: 'KE' })
+    for (const [url, init] of fetchMock.mock.calls) {
+      expect(String(url)).not.toMatch(/KE|country/i)
+      expect(String(init?.body ?? '')).not.toMatch(/"KE"|country/i)
+    }
+  })
+
+  it('can be left unsaid, and is not asked again', async () => {
+    stubApi({})
+    const { unmount } = render(<App />)
+    await finishMorning()
+    fireEvent.click(within(screen.getByRole('region', { name: 'Where do you live now?' })).getByRole('button', { name: 'Prefer not to say' }))
+    expect(JSON.parse(localStorage.getItem('pi.prefs.v1')!)).toMatchObject({ country: 'none' })
+    unmount()
+    render(<App />)
+    await screen.findByRole('heading', { name: 'Morning' })
+    expect(screen.queryByRole('region', { name: 'Where do you live now?' })).not.toBeInTheDocument()
+  })
+
+  it("points a heavy answer to that country's helplines, and can be changed in Settings", async () => {
+    localStorage.setItem('pi.prefs.v1', JSON.stringify({ adult: null, mild: false, wordsDays: 35, country: 'GH' }))
+    stubApi({ today: { status: 200, body: withQuiet } })
+    render(<App />)
+    await answer('I wonder if people have forgotten me')
+    const heavy = screen.getByRole('note', { name: 'That sounds really hard' })
+    expect(within(heavy).getByRole('link', { name: 'Find a helpline' })).toHaveAttribute('href', 'https://findahelpline.com/countries/gh')
+    expect(within(heavy).getByRole('link', { name: 'Talk to someone now' })).toHaveAttribute('href', 'https://findahelpline.com/countries/gh')
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Settings' }))
+    const where = screen.getByRole('group', { name: 'Where you live' })
+    const select = within(where).getByRole('combobox', { name: 'Country' })
+    expect(select).toHaveValue('GH')
+    fireEvent.change(select, { target: { value: 'none' } })
+    expect(JSON.parse(localStorage.getItem('pi.prefs.v1')!)).toMatchObject({ country: 'none' })
+  })
+})
+
+describe('questions about everyday life where you live', () => {
+  const homeMoment = {
+    id: 'africa-relative-money',
+    region: 'africa',
+    theme: 'relatives',
+    care: 'personal',
+    prompt: 'A relative asks for money you had set aside. You usually…',
+    options: [
+      {
+        id: 'give',
+        label: 'Give it',
+        depth: 1,
+        need: 'belonging',
+        insight: {
+          reveal: 'Family comes before your own plans. You give first and work out the rest later.',
+          otherSide: 'Your own plans can keep sliding to the back of the queue.',
+          step: 'This week, notice how it feels in the moment you hand money over.',
+          needStep: 'This week, ask what the money is for before you decide how much.',
+        },
+      },
+      { id: 'part', label: 'Give part of it', depth: 2, need: 'security' },
+      { id: 'no', label: 'Say not this time', depth: 3, need: 'freedom' },
+    ],
+  }
+  const ID = '2026-10-12-africa-relative-money'
+  const LOCAL_NOTE = 'About everyday life where you live. Your answer stays on this phone.'
+
+  // A phone in Nigeria whose morning holds the regional question third.
+  function inNigeria(prefs: object = {}) {
+    localStorage.setItem('pi.prefs.v1', JSON.stringify({ adult: null, mild: false, wordsDays: 35, country: 'NG', ...prefs }))
+    localStorage.setItem('pi.regional.v1', JSON.stringify({ questions: [homeMoment] }))
+    localStorage.setItem('pi.pick.2026-10-12', JSON.stringify(['q-dishes', 'q-bill', ID]))
+  }
+
+  it('is answered, tapped and tried on this phone, and nothing about it is sent', async () => {
+    inNigeria()
+    const fetchMock = stubApi({ regional: { status: 200, body: { regions: [], questions: [homeMoment] } } })
+    render(<App />)
+    await answer('Right after eating')
+    next()
+    await skip()
+    expect(await screen.findByText(homeMoment.prompt)).toBeInTheDocument()
+    expect(screen.getByText(LOCAL_NOTE)).toBeInTheDocument()
+    await answer('Give it')
+    fireEvent.click(within(screen.getByRole('group', { name: 'Does this sound like you?' })).getByRole('button', { name: "That's me" }))
+    fireEvent.click(within(screen.getByRole('group', { name: 'Something to try' })).getByRole('button', { name: "I'll try it" }))
+
+    await waitFor(() => expect(calls(fetchMock, '/api/regional')).toHaveLength(1))
+    // the pack is asked for with nothing about the phone
+    expect(calls(fetchMock, '/api/regional')[0][1]).toBeUndefined()
+    expect(calls(fetchMock, '/api/votes')).toHaveLength(1) // the dishes only
+    expect(calls(fetchMock, '/api/ratings')).toHaveLength(0)
+    expect(calls(fetchMock, '/api/steps')).toHaveLength(0)
+    for (const [url, init] of fetchMock.mock.calls) {
+      expect(String(url)).not.toMatch(/africa|NG/)
+      expect(String(init?.body ?? '')).not.toMatch(/africa|relative|"NG"/)
+    }
+    const answers = JSON.parse(localStorage.getItem('pi.history.v1')!).answers
+    expect(answers.find((a: { questionId: string }) => a.questionId === ID)).toMatchObject({ regional: true, verdict: 'me', need: 'belonging' })
+    expect(JSON.parse(localStorage.getItem('pi.moves.v1')!)).toEqual([expect.objectContaining({ questionId: ID, local: true })])
+  })
+
+  it('can be switched off in Settings, without changing a sitting already started', async () => {
+    inNigeria()
+    stubApi({})
+    render(<App />)
+    await answer('Right after eating')
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }))
+    const where = screen.getByRole('group', { name: 'Where you live' })
+    const offer = within(where).getByRole('checkbox', { name: 'Questions about everyday life where I live' })
+    expect(offer).toBeChecked()
+    fireEvent.click(offer)
+    expect(JSON.parse(localStorage.getItem('pi.prefs.v1')!)).toMatchObject({ country: 'NG', regional: false })
+    expect(JSON.parse(localStorage.getItem('pi.pick.2026-10-12')!)).toEqual(['q-dishes', 'q-bill', ID])
+    // a country with no regional questions has no switch
+    fireEvent.change(within(where).getByRole('combobox', { name: 'Country' }), { target: { value: 'KZ' } })
+    expect(within(where).queryByRole('checkbox')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: '← Back' }))
+    fireEvent.click(await screen.findByRole('button', { name: /^Next/ }))
+    await skip()
+    expect(await screen.findByText(homeMoment.prompt)).toBeInTheDocument()
+  })
+
+  it('is not offered when switched off', async () => {
+    inNigeria({ regional: false })
+    localStorage.removeItem('pi.pick.2026-10-12')
+    localStorage.setItem(
+      'pi.history.v1',
+      JSON.stringify({ answers: [{ date: '2026-10-08', questionId: 'x', theme: 'habits', depth: 2, traits: {} }], skips: [] }),
+    )
+    const fetchMock = stubApi({})
+    render(<App />)
+    await screen.findByRole('navigation', { name: "Today's questions" })
+    expect(JSON.parse(localStorage.getItem('pi.pick.2026-10-12')!)).toHaveLength(3)
+    expect(JSON.parse(localStorage.getItem('pi.pick.2026-10-12')!)).not.toContain(ID)
+    expect(calls(fetchMock, '/api/regional')).toHaveLength(0)
+  })
+})
+
+describe('Stage 5 in the day', () => {
+  const methods = { status: 200, body: { email: true, phone: false, google: false, apple: false } }
+  const signIn = () => {
+    localStorage.setItem('pi.account.v1', 's1.k.sess.sig')
+    localStorage.setItem('pi.account.me', JSON.stringify({ id: 'acc', name: 'Ama', handle: 'ama', suggest: true, connect: true, sync: false }))
+  }
+
+  it('offers signing in once, after the first sitting, and "not now" keeps everything here', async () => {
+    const fetchMock = stubApi({ social: (url) => (url === '/api/auth/methods' ? methods : undefined) })
+    const { unmount } = render(<App />)
+    await answer('Right after eating')
+    next()
+    await answer('Split it evenly')
+    next()
+    await answer('Several')
+    next()
+    expect(await screen.findByRole('heading', { name: 'Your three cards are on this phone. Keep them everywhere.' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Not now — keep it on this phone' }))
+    expect(screen.queryByRole('heading', { name: /Keep them everywhere/ })).not.toBeInTheDocument()
+    expect(calls(fetchMock, '/api/auth/code')).toHaveLength(0)
+    unmount()
+    render(<App />)
+    await screen.findByRole('heading', { name: /Morning/ })
+    expect(screen.queryByRole('heading', { name: /Keep them everywhere/ })).not.toBeInTheDocument()
+  })
+
+  it('greets a signed-in person by name and shows nods that arrived, never a count', async () => {
+    signIn()
+    answeredThisMorning()
+    vi.setSystemTime(at(12))
+    stubApi({
+      social: (url) => {
+        if (url.startsWith('/api/nods?'))
+          return { status: 200, body: { cards: ['Rooting for you this week.'], received: [{ from: { id: 'n', name: 'Nakato', tag: 'family' }, card: 0, text: 'Rooting for you this week.', date: '2026-10-12' }], sentTo: [] } }
+        if (url.startsWith('/api/friends/today')) return { status: 200, body: { open: false, have: 1, need: 3 } }
+        if (url === '/api/together') return { status: 200, body: [] }
+      },
+    })
+    render(<App />)
+    expect(await screen.findByRole('heading', { name: 'Midday, Ama' })).toBeInTheDocument()
+    expect(await screen.findByText('sent you a quiet nod · “Rooting for you this week.”', { exact: false })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Since you last looked' })).not.toHaveTextContent(/\d+ nods?/)
+  })
+
+  it("names today's friend in the midday hero once the circle has three", async () => {
+    signIn()
+    answeredThisMorning()
+    vi.setSystemTime(at(12))
+    stubApi({
+      social: (url) => {
+        if (url.startsWith('/api/friends/today'))
+          return {
+            status: 200,
+            body: {
+              open: true,
+              have: 3,
+              need: 3,
+              friend: { id: 'k', name: 'Kofi', tag: 'work', since: '2026-10-01', active: true, connect: true },
+              question: { id: 'fq-work-01', prompt: 'What does Kofi do first?', options: [{ id: 'a', label: 'Takes the hard part' }] },
+            },
+          }
+        if (url.startsWith('/api/nods?')) return { status: 200, body: { cards: [], received: [], sentTo: [] } }
+        if (url === '/api/together') return { status: 200, body: [] }
+      },
+    })
+    render(<App />)
+    expect(await screen.findByRole('button', { name: "Open: Today's friend is Kofi" })).toBeInTheDocument()
+  })
+
+  it('the Outside Mirror, locked, counts friends who answered and never names them', async () => {
+    signIn()
+    await openMirror({
+      social: (url) => (url === '/api/friends/mirror' ? { status: 200, body: { open: false, friends: 2, need: 3, weeks: 3, traits: [] } } : undefined),
+    })
+    await screen.findByRole('heading', { level: 2, name: weekTitle })
+    const section = await screen.findByRole('region', { name: /How your circle experiences you/ })
+    expect(await within(section).findByText('Opens when 3 friends have answered', { exact: false })).toBeInTheDocument()
+    expect(within(section).getByRole('list', { name: '2 of 3 friends have answered' })).toBeInTheDocument()
+    expect(within(section).getAllByText('A friend')).toHaveLength(2)
+    expect(section).not.toHaveTextContent(/Kofi|Nakato/)
+  })
+
+  it('the Outside Mirror, open, sets the circle beside your own read', async () => {
+    signIn()
+    await openMirror({
+      social: (url) =>
+        url === '/api/friends/mirror'
+          ? { status: 200, body: { open: true, friends: 4, need: 3, weeks: 3, traits: [{ trait: 'conscientiousness', position: 30 }] } }
+          : undefined,
+    })
+    const section = await screen.findByRole('region', { name: /How your circle experiences you/ })
+    expect(await within(section).findByText('Blended from 4 friends over 3 weeks. No single answer is ever shown.')).toBeInTheDocument()
+    expect(within(section).getByRole('img', { name: /Getting things done: your circle 30 of 100, you 74/ })).toBeInTheDocument()
+    expect(section).toHaveTextContent('What your circle notices that you might miss')
+  })
+
+  it('is not in the mirror for someone signed out', async () => {
+    await openMirror()
+    await screen.findByRole('heading', { level: 2, name: weekTitle })
+    expect(screen.queryByRole('region', { name: /How your circle experiences you/ })).not.toBeInTheDocument()
   })
 })

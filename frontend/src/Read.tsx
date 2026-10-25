@@ -82,7 +82,17 @@ export function ReadScreen({
 }
 
 // The day's read, offered beside the questions.
-export function TodaysRead({ date, themes, intimacy }: { date: string; themes: string[]; intimacy: boolean }) {
+export function TodaysRead({
+  date,
+  themes,
+  intimacy,
+  compact,
+}: {
+  date: string
+  themes: string[]
+  intimacy: boolean
+  compact?: boolean // one link, as in a window's footer (M06)
+}) {
   const reads = useReads()
   const open = useContext(OpenRead)
   const key = themes.join(',')
@@ -93,6 +103,13 @@ export function TodaysRead({ date, themes, intimacy }: { date: string; themes: s
   }
   const read = pick?.read
   if (!reads || !read || !open) return null
+  if (compact) {
+    return (
+      <button type="button" className="read-foot-link" onClick={() => open(read)} aria-label={`Today's read, ${reads.minutes(read)} minutes: ${read.title}`}>
+        Today's read · {reads.minutes(read)} min →
+      </button>
+    )
+  }
   return (
     <section className="notice read-offer" aria-labelledby="read-offer-title" style={read.kind === 'theme' ? themeVars(read.key) : undefined}>
       <p className="eyebrow">Today's read · {reads.minutes(read)} min</p>

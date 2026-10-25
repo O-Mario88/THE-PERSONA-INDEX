@@ -219,6 +219,13 @@ func checkVoice(b bankFile) []error {
 	fail := func(format string, args ...any) { errs = append(errs, fmt.Errorf(format, args...)) }
 	capped := make([]int, len(phraseCaps))
 
+	for need, step := range needSteps {
+		checkWording(fail, "need step "+need, step)
+		if m := findComparison(step); m != "" {
+			fail("need step %s: compares you with other people (%q)", need, m)
+		}
+	}
+
 	for _, q := range b.Questions {
 		checkWording(fail, q.ID+" prompt", q.Prompt)
 		if m := partnerPromptPattern.FindString(q.Prompt); m != "" {

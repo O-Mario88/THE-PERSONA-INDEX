@@ -1,0 +1,2217 @@
+{
+ "questions": [
+  {
+   "id": "africa-relative-asks-money",
+   "theme": "relatives",
+   "prompt": "A relative asks for money you'd set aside for something else. You usually…",
+   "options": [
+    {
+     "id": "give-it",
+     "label": "Give it; family comes first",
+     "depth": 1,
+     "need": "belonging",
+     "traits": {
+      "agreeableness": 1
+     },
+     "insight": {
+      "reveal": "Family comes before your own plans, and you don't need to think twice. Money in your hands feels partly theirs, the way theirs would be partly yours. Giving like this keeps you close to the people you'd turn to yourself, and you're willing to let your own plan wait for it.",
+      "otherSide": "If every plan waits for family, the thing you were saving for can keep slipping, and it was yours to want too.",
+      "research": "In 2024/2025 surveys across 38 African countries, nearly half of people had turned to family for financial help at least once in the past year.",
+      "source": "chingwete2026",
+      "strength": "moderate",
+      "step": "Next time money comes in, put a small share towards your own plan first, however little, before anyone asks."
+     }
+    },
+    {
+     "id": "give-part",
+     "label": "Give part and keep part for my plan",
+     "depth": 2,
+     "need": "security",
+     "traits": {
+      "conscientiousness": 1
+     },
+     "insight": {
+      "reveal": "You found a way to say yes without losing your plan. Splitting it lets you help and still keep your own goal alive, even if it moves more slowly now. Deciding on the spot what is enough takes judgement, and you trust yours.",
+      "otherSide": "Halfway can leave both sides a little short: your relative hoped for more, and your plan moves more slowly than you'd like.",
+      "research": "People tend to sort money into mental 'pots' and judge each spend by its pot, and such pots can also help protect savings.",
+      "source": "nobel2017",
+      "strength": "strong",
+      "step": "Before the next request, decide how much of what you've set aside is open to give, so the answer is ready."
+     }
+    },
+    {
+     "id": "say-none",
+     "label": "Say I don't have it right now",
+     "depth": 3,
+     "need": "security",
+     "insight": {
+      "reveal": "You protect your plan with a short answer that keeps the peace. Saying you don't have it spares you a long talk and spares them a flat no. It keeps the money for what it was meant for without pushing anyone away.",
+      "otherSide": "A short answer can sit heavy on you afterwards, and if the money shows later, it can be harder to explain than a plain no.",
+      "research": "In Kenya, 93% of business owners surveyed believed success brings money requests from family and friends, and about a third were willing to pay to keep income hidden.",
+      "source": "squires2024",
+      "strength": "moderate",
+      "step": "Next time, try 'Not this time, it's promised to something' and notice how it lands, on them and on you."
+     }
+    },
+    {
+     "id": "give-unseen",
+     "label": "Give it, and feel nobody sees what it costs me",
+     "depth": 4,
+     "need": "understood",
+     "traits": {
+      "agreeableness": 1
+     },
+     "insight": {
+      "reveal": "You give, and nobody counts what it costs you. Your plan, your worry and what you go without stay out of sight when you hand it over. What you miss may be less the money itself and more someone noticing what giving it took.",
+      "otherSide": "Carrying the cost unseen can slowly turn love into resentment, and your family can't thank you for a cost they never knew about.",
+      "research": "Across four studies, helping because you chose to lifted the helper's well-being, while helping under pressure did not bring the same benefit.",
+      "source": "weinstein2010",
+      "strength": "moderate",
+      "step": "Tonight, name to yourself what that money was meant for and what giving it cost. Your own noticing counts."
+     }
+    }
+   ],
+   "region": "africa"
+  },
+  {
+   "id": "africa-slow-money-day",
+   "theme": "work-career",
+   "prompt": "A slow day: little or no money came in. By evening, you…",
+   "options": [
+    {
+     "id": "rest-tomorrow",
+     "label": "Rest, and start again tomorrow",
+     "depth": 1,
+     "need": "calm",
+     "insight": {
+      "reveal": "For you, a slow day is a slow day, not a verdict. You let the evening be an evening and start fresh tomorrow instead of dragging today along with you. When money comes in fits and starts, that steadiness keeps you going.",
+      "otherSide": "If slow days start to run together, resting each one off can hide a pattern you'd want to catch early.",
+      "research": "People who mentally switched off from work in their free time tended to report less exhaustion and more life satisfaction.",
+      "source": "wendsche2017",
+      "strength": "strong",
+      "step": "This evening, name one thing that went right today, money or not, before you sleep."
+     }
+    },
+    {
+     "id": "find-another-way",
+     "label": "Look for another way to bring something in",
+     "depth": 2,
+     "need": "competence",
+     "traits": {
+      "conscientiousness": 1
+     },
+     "insight": {
+      "reveal": "When one door is quiet, you go looking for another. A call to an old customer, a small job, something to sell: you treat a slow day as a problem to work on. Finding a way is a skill, and skills get used again.",
+      "otherSide": "Always reaching for the next thing can leave you no evening at all, and some slow days come from things no extra effort can move.",
+      "research": "",
+      "source": "",
+      "strength": "none",
+      "step": "Before you sleep, pick the first person you'll contact tomorrow about work, and leave it at that for tonight."
+     }
+    },
+    {
+     "id": "ask-tide-over",
+     "label": "Ask someone close to tide me over",
+     "depth": 3,
+     "need": "belonging",
+     "insight": {
+      "reveal": "You let the people around you carry a little of the slow day. Asking takes trust, and it says you belong to a circle where help goes both ways: today it comes to you, another day it goes from you.",
+      "otherSide": "Asking often can start to feel like owing, and you may hold back next time even when the need is real.",
+      "research": "In 2024/2025 surveys across 38 African countries, 47% had turned to family for financial help at least once in the past year, and 33% had asked friends or neighbours for help.",
+      "source": "chingwete2026",
+      "strength": "moderate",
+      "step": "This week, send the person who helped a thank-you that names exactly what their help made possible."
+     }
+    },
+    {
+     "id": "let-down",
+     "label": "Feel I've let down the people who count on me",
+     "depth": 4,
+     "need": "respect",
+     "traits": {
+      "neuroticism": 1
+     },
+     "insight": {
+      "reveal": "You feel a slow day in the faces of the people who count on you. Providing is part of how you see your place among them. Yet a slow day often comes from prices, the season or who walked past, things that were never yours to move.",
+      "otherSide": "Carrying every slow day as your own failing can wear you down, and it can keep you from telling anyone how tight things are.",
+      "research": "",
+      "source": "",
+      "strength": "none",
+      "step": "Tonight, name one thing about today that wasn't yours to control, and one thing that was."
+     }
+    }
+   ],
+   "region": "africa"
+  },
+  {
+   "id": "africa-savings-group-turn",
+   "theme": "money",
+   "prompt": "It's your turn to collect from your savings group. Where does the money go first?",
+   "options": [
+    {
+     "id": "planned-thing",
+     "label": "To what I joined to save for",
+     "depth": 1,
+     "need": "security",
+     "traits": {
+      "conscientiousness": 1
+     },
+     "insight": {
+      "reveal": "The money goes where you promised yourself it would. You joined with a purpose, kept paying in, and now you finish what you started. The group held your plan steady when holding it alone was harder.",
+      "otherSide": "Holding fast to your plan can make a sudden bigger need feel like betraying it, when changing course would be fair.",
+      "research": "In 70 rotating savings groups in Kenya, the groups' design fitted the idea that they help members stick to saving; as many members put it, 'You can't save alone.'",
+      "source": "gugerty2007",
+      "strength": "moderate",
+      "step": "When the money lands, take one slow moment to notice that you did this, one payment at a time, before it's spent."
+     }
+    },
+    {
+     "id": "into-work",
+     "label": "Into my work: stock, tools or a business",
+     "depth": 2,
+     "need": "competence",
+     "traits": {
+      "present_bias": -1
+     },
+     "insight": {
+      "reveal": "You turn a lump of money into something that can earn again. Putting it to work says you're building, not only getting by, and you treat this payout as a step towards more good days of your own making.",
+      "otherSide": "With everything back in the work, there's no cushion if a slow month comes, and you can end up waiting on the next turn to breathe.",
+      "research": "",
+      "source": "",
+      "strength": "none",
+      "step": "Before it's spent, set a small part aside as your own cushion, and decide now what it's for."
+     }
+    },
+    {
+     "id": "share-family",
+     "label": "Some to family who knew it was my turn",
+     "depth": 3,
+     "need": "belonging",
+     "traits": {
+      "agreeableness": 1
+     },
+     "insight": {
+      "reveal": "Your good day becomes a good day for the people around you. You knew they'd heard, and you shared before they had to ask. To you, the payout is measured as much in who it helped as in what it bought.",
+      "otherSide": "If family always knows when your turn comes, the plan you joined for can end up as whatever's left once everyone is helped.",
+      "research": "In 120 of 136 countries, rich and poor, people who had recently spent money on others tended to feel more satisfied with life.",
+      "source": "aknin2013",
+      "strength": "strong",
+      "step": "Next turn, decide your family's share before the day comes, so giving is a plan and not a squeeze."
+     }
+    },
+    {
+     "id": "keep-quiet",
+     "label": "Keep it quiet so nobody asks for it",
+     "depth": 4,
+     "need": "security",
+     "insight": {
+      "reveal": "You keep the payout out of sight so it can do the job you saved for. Requests can be hard to refuse, and silence protects the plan before anyone has to hear a no. Privacy is doing real work for you here.",
+      "otherSide": "Keeping it hidden means watching what you say, and the secret can take up more room in your mind than the money does.",
+      "research": "People's minds drift to their secrets far more often than they must actively hide them, and that drifting went with lower well-being.",
+      "source": "slepian2017",
+      "strength": "moderate",
+      "step": "This time, choose one sentence you'd say if someone asks about it, so you're not caught off guard."
+     }
+    }
+   ],
+   "region": "africa"
+  },
+  {
+   "id": "africa-power-water-cut",
+   "theme": "home",
+   "prompt": "The power or water goes off just when you need it. What do you do?",
+   "options": [
+    {
+     "id": "wait-rest",
+     "label": "Wait it out and rest",
+     "depth": 1,
+     "need": "calm",
+     "insight": {
+      "reveal": "You let the cut slow you down instead of winding you up. What can't be done now waits, and you take the pause the day handed you. That ease keeps a hard, ordinary thing from taking more of your evening than it already has.",
+      "otherSide": "Waiting it out can leave your urgent things undone, and they may all land on you at once when it comes back.",
+      "research": "",
+      "source": "",
+      "strength": "none",
+      "step": "Next time it goes off, step outside or to a window for a few minutes and just take in the air."
+     }
+    },
+    {
+     "id": "switch-tasks",
+     "label": "Switch to what I can do without it",
+     "depth": 2,
+     "need": "competence",
+     "traits": {
+      "conscientiousness": 1
+     },
+     "insight": {
+      "reveal": "A cut changes your plan, not your day. You know what still works without power or water and move straight on to it. That quick re-plan is a real skill, and it keeps you moving when the rest of the day is out of your hands.",
+      "otherSide": "Always adapting can mean you never stop, even when the cut was the one break the day was going to give you.",
+      "research": "Across 94 studies, making a specific when-then plan (\"When X happens, I will do Y\") had a medium-to-large effect on reaching goals.",
+      "source": "gollwitzer2006",
+      "strength": "strong",
+      "step": "Tonight, make a when-then plan: 'When the power or water goes, I'll ___.' Keep it to one thing."
+     }
+    },
+    {
+     "id": "check-neighbours",
+     "label": "Check on the neighbours and share what we have",
+     "depth": 3,
+     "need": "belonging",
+     "traits": {
+      "agreeableness": 1
+     },
+     "insight": {
+      "reveal": "When the cut hits everyone, you turn towards the people next door. A torch, a bucket of water, a charged phone or just company on the step: shared, the hard hours pass more easily, for them and for you.",
+      "otherSide": "Sharing what you have can leave you short when the cut runs long, and it's harder for you to ask for some back.",
+      "research": "On days when people had more chats with casual acquaintances, not just close friends, they tended to feel happier and a stronger sense of belonging.",
+      "source": "sandstrom2014",
+      "strength": "moderate",
+      "step": "Next cut, knock on one door you don't usually knock on, just to ask how they're managing."
+     }
+    },
+    {
+     "id": "day-slips",
+     "label": "Feel the day slip away and snap at people",
+     "depth": 4,
+     "need": "calm",
+     "traits": {
+      "neuroticism": 1
+     },
+     "insight": {
+      "reveal": "For you, a cut takes the whole day you'd planned, not just the light. Your frustration makes sense: this is a real loss, and it isn't yours to fix. It's when the frustration lands on the people near you that it costs you twice.",
+      "otherSide": "Snapping can leave the people around you carrying the frustration too, when the cut was nobody's doing in the room.",
+      "research": "In South African household survey data, power cuts led to a significant drop in happiness, mainly because they interrupted cooking.",
+      "source": "zenelabden2026",
+      "strength": "moderate",
+      "step": "Next time it goes off, take three slow breaths before you say anything to anyone."
+     }
+    }
+   ],
+   "region": "africa"
+  },
+  {
+   "id": "africa-someone-leaves",
+   "theme": "ambition-desire",
+   "prompt": "Someone close to you leaves to find work far away. Afterwards, you find yourself…",
+   "options": [
+    {
+     "id": "glad-settled",
+     "label": "Glad for them, and settled where I am",
+     "depth": 1,
+     "need": "calm",
+     "insight": {
+      "reveal": "Their leaving doesn't shake your own ground. You can wish them well with your whole heart because your life here feels like yours, chosen or at least made peace with. Being settled lets you send them off without envy or fear.",
+      "otherSide": "Feeling settled can make it easy to let the contact fade, and distance can thin a bond before you notice.",
+      "research": "Across 142 countries, 58% of people talked daily with family or friends living with or near them, but only 30% did with those far away.",
+      "source": "gallup2023social",
+      "strength": "moderate",
+      "step": "This week, send them one message about something ordinary from home, the kind of news they'll miss."
+     }
+    },
+    {
+     "id": "miss-them",
+     "label": "Missing them already",
+     "depth": 2,
+     "need": "belonging",
+     "traits": {
+      "attachment_anxiety": 1
+     },
+     "insight": {
+      "reveal": "You feel the gap before they've even arrived where they're going. The people around you make up your days, and one missing voice changes how a place sounds. That ache is the size of what they mean to you.",
+      "otherSide": "Missing them can keep your eyes on who's gone, and the people still beside you can get less of you for a while.",
+      "research": "",
+      "source": "",
+      "strength": "none",
+      "step": "This week, tell one person who also misses them how you're feeling; missing someone is lighter when it's shared."
+     }
+    },
+    {
+     "id": "should-i-go",
+     "label": "Wondering whether I should go too",
+     "depth": 3,
+     "need": "freedom",
+     "traits": {
+      "openness": 1
+     },
+     "insight": {
+      "reveal": "Their move makes your own question feel close. Going would mean more room to choose your own path, and seeing someone do it makes that feel real rather than far off. Wondering isn't deciding; it's you checking what you want.",
+      "otherSide": "Wondering without looking closely can keep you half here and half gone, unsettled in both places.",
+      "research": "Across 38 African countries, 55% of 18- to 35-year-olds had thought at least a little about emigrating, most often for better work.",
+      "source": "afrobarometer2026",
+      "strength": "moderate",
+      "step": "Tonight, name what you'd hope to find there, what stands in the way, and one small step you could take this month."
+     }
+    },
+    {
+     "id": "stuck",
+     "label": "Feeling stuck where I am",
+     "depth": 4,
+     "need": "freedom",
+     "traits": {
+      "rumination": 1
+     },
+     "insight": {
+      "reveal": "Their going makes your own staying feel heavier. Stuck isn't the same as idle: it often means the way forward you want costs more than you can reach right now. That's a fact about the road you're on, not a verdict on you.",
+      "otherSide": "Feeling stuck can make every small step here look pointless, even the ones that would widen your choices.",
+      "research": "",
+      "source": "",
+      "strength": "none",
+      "step": "Tonight, name one thing that is still yours to choose this week, however small, and choose it."
+     }
+    }
+   ],
+   "region": "africa"
+  },
+  {
+   "id": "mena-waiting-to-hear",
+   "theme": "plans",
+   "prompt": "While you wait to hear back on a job, a result or papers, you mostly…",
+   "options": [
+    {
+     "id": "get-on",
+     "label": "Get on with other things and try not to check",
+     "depth": 1,
+     "need": "calm",
+     "traits": {
+      "neuroticism": -1
+     },
+     "insight": {
+      "reveal": "You let the wait run in the background while you live your days. You fill the hours with things that need you, so the question doesn't get the whole day. Keeping life moving while something hangs in the air is a real strength, and you can lean on it in other waits too.",
+      "otherSide": "Keeping busy can also mean you never stop to feel how much this answer matters to you, so the feeling waits for you instead.",
+      "research": "People waiting for bar exam results or news of job applications felt less worried and better during spells when they were fully absorbed in something; in a lab test, absorbing play lifted mood but did not ease worry.",
+      "source": "rankin2019",
+      "strength": "moderate",
+      "step": "This week, pick one thing that fully absorbs you, a craft, a game or a task, and lose yourself in it for a while."
+     }
+    },
+    {
+     "id": "second-option",
+     "label": "Line up a second option, just in case",
+     "depth": 2,
+     "need": "security",
+     "traits": {
+      "conscientiousness": 1
+     },
+     "insight": {
+      "reveal": "You don't leave all your hope behind one door. While you wait on it, you knock on another, so a no would sting less and a yes would still be welcome. Planning like that keeps you steady in a stretch where little is in your hands.",
+      "otherSide": "Spreading your hope can thin it out, and you may give the thing you want most less of your heart than it deserves.",
+      "research": "Across 94 studies, making a specific when-then plan ('When X happens, I will do Y') had a medium-to-large effect on reaching goals.",
+      "source": "gollwitzer2006",
+      "strength": "strong",
+      "step": "This week, write one line, 'If the answer is no, my next step is…', and finish it."
+     }
+    },
+    {
+     "id": "pray-or-trust",
+     "label": "Pray, or trust it will come in its own time",
+     "depth": 3,
+     "need": "calm",
+     "insight": {
+      "reveal": "You hand what you can't control to something bigger than the wait. Whether that's prayer or a steady trust that things come when they're due, it lets you do your part and set the rest down. Holding effort and acceptance together is a way of coping, not of giving up.",
+      "otherSide": "Trust in the timing can hide a step that is still yours to take, like one more call or one more form.",
+      "research": "Set rituals, religious or everyday, tend to help people manage worry and feel more in control, a review of ritual research found.",
+      "source": "hobson2018",
+      "strength": "moderate",
+      "step": "This week, name one small part of the wait that is in your hands, do it, then leave the rest where you've put it."
+     }
+    },
+    {
+     "id": "life-on-hold",
+     "label": "Feel my life is on hold until it comes",
+     "depth": 4,
+     "need": "security",
+     "traits": {
+      "rumination": 1
+     },
+     "insight": {
+      "reveal": "So much rides on this answer that your life seems to wait with it. Plans, money and the next step can all feel stuck behind one reply. Waiting like this is real work, not idleness, and the days you spend in it are still part of your life.",
+      "otherSide": "When everything waits on one reply, the good parts of an ordinary day can slip past you unnoticed.",
+      "research": "In a lab game, people's stress rose most when the outcome was least predictable, suggesting that not knowing can be stressful in itself.",
+      "source": "deberker2016",
+      "strength": "early",
+      "step": "Tonight, write down one thing that went right today that had nothing to do with the wait."
+     }
+    }
+   ],
+   "region": "mena"
+  },
+  {
+   "id": "mena-wedding-own-savings",
+   "theme": "money",
+   "prompt": "A relative's wedding needs money you'd put aside for your own plans. You…",
+   "options": [
+    {
+     "id": "give-gladly",
+     "label": "Give it gladly, my plans can wait",
+     "depth": 1,
+     "need": "belonging",
+     "traits": {
+      "agreeableness": 1
+     },
+     "insight": {
+      "reveal": "Your family's big day comes first, and you're glad to give. Putting money into a wedding feels like being part of it, not like losing something. That ease with sharing what you have keeps you close to your people when it counts.",
+      "otherSide": "When your plans always wait, they can wait for years, and you may stop noticing how long it has been.",
+      "research": "In 120 of 136 countries, rich and poor, people who had recently spent money on others tended to feel more satisfied with life.",
+      "source": "aknin2013",
+      "strength": "strong",
+      "step": "This week, write down your own plan and a rough date for it, so it stays in view while you help."
+     }
+    },
+    {
+     "id": "give-part",
+     "label": "Give part, and keep some back for my own plans",
+     "depth": 2,
+     "need": "security",
+     "traits": {
+      "conscientiousness": 1
+     },
+     "insight": {
+      "reveal": "You give, and you also keep something safe for your own future. Holding a share back isn't stinginess; it's how you make sure today's celebration doesn't empty tomorrow. Weighing both sides like that can take more thought than giving it all, and it's fairer to you.",
+      "otherSide": "Holding some back can bring a pinch of guilt on the day, even when you know the split was fair.",
+      "research": "A working paper on youth in the Middle East argued that the cost of marrying, from housing and jewellery to furniture and celebrations, may delay marriage as young people and their families save for years.",
+      "source": "singerman2007",
+      "strength": "early",
+      "step": "This week, write down what you kept back and what it's for, so the choice feels like your own."
+     }
+    },
+    {
+     "id": "time-not-money",
+     "label": "Offer my time and hands instead of more money",
+     "depth": 3,
+     "need": "belonging",
+     "traits": {
+      "agreeableness": 1
+     },
+     "insight": {
+      "reveal": "You find a way to join in that your pocket can carry. Cooking, driving, setting up or running errands becomes your gift, and it's no smaller for costing sweat instead of cash. You know that showing up with your hands can mean as much as an envelope.",
+      "otherSide": "Help given with your hands is easy to overlook in the rush of the day, and you can end up tired with little thanks.",
+      "research": "Across four studies, helping because you chose to lifted the helper's well-being, while helping under pressure did not bring the same benefit.",
+      "source": "weinstein2010",
+      "strength": "moderate",
+      "step": "This week, offer one specific job for the wedding, and say plainly that it's your gift."
+     }
+    },
+    {
+     "id": "strain-to-myself",
+     "label": "Give it all, and keep the strain to myself",
+     "depth": 4,
+     "need": "respect",
+     "traits": {
+      "agreeableness": 1
+     },
+     "insight": {
+      "reveal": "You'd rather carry the cost than be seen counting it. Giving fully keeps your family's day whole and your name in good standing, and the strain stays out of sight. Holding it in keeps the peace, though it can leave you carrying the weight by yourself.",
+      "otherSide": "A strain no one knows about can't be shared, and your own plans can slip without anyone, even you, saying so.",
+      "research": "People who usually hid their feelings tended to feel worse inside, share less and feel less close to friends than people who rethought what upset them.",
+      "source": "gross2003",
+      "strength": "moderate",
+      "step": "This week, write down what the wedding is costing you, money and otherwise, just for yourself to see."
+     }
+    }
+   ],
+   "region": "mena"
+  },
+  {
+   "id": "mena-guests-stay-hours",
+   "theme": "home",
+   "prompt": "Guests drop by and end up staying for hours. You mostly…",
+   "options": [
+    {
+     "id": "sit-and-talk",
+     "label": "Sit with them and enjoy the talk",
+     "depth": 1,
+     "need": "belonging",
+     "traits": {
+      "extraversion": 1
+     },
+     "insight": {
+      "reveal": "For you, a long visit is the point, not the problem. The hours pass in stories, news and laughter, and you're happy for the evening to go wherever the talk takes it. Time given that freely is one of the ways you keep your people close.",
+      "otherSide": "When visits run long, what you meant to do that day can slide to tomorrow, and then the day after.",
+      "research": "When 909 working women went back over their previous day, time relaxing with friends felt the most enjoyable part of it.",
+      "source": "kahneman2004",
+      "strength": "moderate",
+      "step": "Next time guests stay long, notice one story you'd like to remember, and jot it down after they leave."
+     }
+    },
+    {
+     "id": "keep-food-coming",
+     "label": "Keep the tea and food coming",
+     "depth": 2,
+     "need": "belonging",
+     "traits": {
+      "agreeableness": 1,
+      "conscientiousness": 1
+     },
+     "insight": {
+      "reveal": "You show welcome with your hands. A full cup and a full plate are how you say you're glad they came, and guests leave feeling looked after. Serving can also be a comfortable place to stand, busy and useful, a step back from the talk.",
+      "otherSide": "Always serving can mean you miss the visit itself, and the people who came to see you see mostly your back.",
+      "research": "",
+      "source": "",
+      "strength": "none",
+      "step": "Next time guests stay, sit down with them for one full cup before you get up again."
+     }
+    },
+    {
+     "id": "nothing-short",
+     "label": "Make sure nothing runs short, whatever it costs",
+     "depth": 3,
+     "need": "respect",
+     "traits": {
+      "conscientiousness": 1
+     },
+     "insight": {
+      "reveal": "The way you host feels like it speaks for your whole family. You'd rather stretch the budget than have a guest leave thinking you fell short. That care for your household's name runs deep, and guests feel honoured by it, even when it costs you more than they ever see.",
+      "otherSide": "Hosting to a standard no one could fault can leave you short for days after the guests have gone home.",
+      "research": "Students wearing an embarrassing T-shirt guessed about half the room noticed it; only about a quarter did. We feel far more watched than we are.",
+      "source": "gilovich2000",
+      "strength": "moderate",
+      "step": "Next time guests come, leave one small thing out on purpose, and notice whether anyone even mentions it."
+     }
+    },
+    {
+     "id": "own-time-back",
+     "label": "Host them, and long for my own time back",
+     "depth": 4,
+     "need": "freedom",
+     "traits": {
+      "extraversion": -1
+     },
+     "insight": {
+      "reveal": "You welcome them warmly, and part of you is counting the hours. Hosting well and wanting your space back can both be true at once. Needing time to yourself after a long visit says how much you put into it, not how little you care.",
+      "otherSide": "A smile held for hours can leave you drained, and a visit you hosted so well can stay in your memory as a chore.",
+      "research": "Across 95 studies, workers who faked feelings they didn't have, like a forced smile at a rude customer, tended to feel more drained; trying to really feel it cost far less.",
+      "source": "hulsheger2011",
+      "strength": "strong",
+      "step": "Next long visit, give yourself one small break, a moment outside or a short errand, and then come back to them."
+     }
+    }
+   ],
+   "region": "mena"
+  },
+  {
+   "id": "mena-what-will-people-say",
+   "theme": "relatives",
+   "prompt": "You plan something your own way, and a relative asks, 'What will people say?' You…",
+   "options": [
+    {
+     "id": "carry-on",
+     "label": "Carry on; people will talk either way",
+     "depth": 1,
+     "need": "freedom",
+     "traits": {
+      "neuroticism": -1
+     },
+     "insight": {
+      "reveal": "You don't let imagined talk make your choices for you. Talk comes and goes, and you'd rather decide by what fits your own life. That steadiness saves you a lot of second-guessing, and it shows in how you weigh other opinions too.",
+      "otherSide": "Brushing the question aside can leave the relative feeling unheard, even when their worry was really about you.",
+      "research": "Recordings of 467 people's daily talk found they gossiped about 52 minutes a day, mostly neutral chat about people they knew; outgoing people did it most.",
+      "source": "robbins2019",
+      "strength": "moderate",
+      "step": "This week, notice one time you chose by what fits your life, and how it felt a day later."
+     }
+    },
+    {
+     "id": "talk-it-over",
+     "label": "Talk it over until they feel easier about it",
+     "depth": 2,
+     "need": "belonging",
+     "traits": {
+      "agreeableness": 1
+     },
+     "insight": {
+      "reveal": "You want your plan and your family's ease, both at once. So you stay in the conversation, explaining and listening until the worry softens. That patience keeps you close to people whose views you care about, even when you don't share them.",
+      "otherSide": "Talking until everyone is at ease can take a long time, and your plan can stall while you wait for a yes.",
+      "research": "People tend to expect honest talks to hurt their relationships more than they do. In tests, being honest felt better and more connecting than predicted.",
+      "source": "levine2018",
+      "strength": "moderate",
+      "step": "Next time it comes up, ask the relative what exactly worries them, then answer just that one thing."
+     }
+    },
+    {
+     "id": "change-the-plan",
+     "label": "Change the plan so it looks right",
+     "depth": 3,
+     "need": "respect",
+     "traits": {
+      "agreeableness": 1
+     },
+     "insight": {
+      "reveal": "Your family's good name is part of what you look after. You reshape the plan so it sits well with the people around you, and that can be a real way of honouring them. You still keep much of what you wanted, in a shape your family can stand behind.",
+      "otherSide": "Shaping plans around what people would say can leave less and less room for what you want, until you stop asking yourself.",
+      "research": "Across 74 studies of adults from Arab countries, at home and abroad, worry that news of their mental health would get round the community and harm their name was among the reasons people held back from seeking help.",
+      "source": "elkhatib2023",
+      "strength": "moderate",
+      "step": "This week, before you change a plan, write down the version you wanted first, so you know what you gave and why."
+     }
+    },
+    {
+     "id": "drop-and-wonder",
+     "label": "Drop it, and keep wondering what if",
+     "depth": 4,
+     "need": "belonging",
+     "traits": {
+      "rumination": 1
+     },
+     "insight": {
+      "reveal": "You let the plan go to keep the peace, but it hasn't let you go. Putting your family's comfort before your own wish is a real gift, and the 'what if' that follows is part of its price. That wondering tells you the plan mattered more than you let on.",
+      "otherSide": "A 'what if' left alone can grow bigger than the plan ever was, and it can colour how you feel about the relative who asked.",
+      "research": "",
+      "source": "",
+      "strength": "none",
+      "step": "This week, ask yourself whether a smaller piece of that plan could still happen, in a way your family could live with."
+     }
+    }
+   ],
+   "region": "mena"
+  },
+  {
+   "id": "mena-asked-where-going",
+   "theme": "family",
+   "prompt": "As you head out, someone at home asks where you're going and when you'll be back. You…",
+   "options": [
+    {
+     "id": "tell-them",
+     "label": "Tell them; that's how we look out for each other",
+     "depth": 1,
+     "need": "belonging",
+     "traits": {
+      "agreeableness": 1
+     },
+     "insight": {
+      "reveal": "To you, being asked is a sign that someone keeps you in mind. Saying where you're going costs you nothing and lets the people at home rest easy. That easy openness keeps trust flowing both ways in your home.",
+      "otherSide": "Telling every time can turn into a habit you no longer choose, and you may lose a little room that's just yours.",
+      "research": "In a study of 1,186 Swedish 14-year-olds, what parents knew about their teens' lives came mostly from teens choosing to tell them, not from checking up.",
+      "source": "kerr2000",
+      "strength": "moderate",
+      "step": "Next time you head out, ask them one thing about their day too, so the asking goes both ways."
+     }
+    },
+    {
+     "id": "rough-answer",
+     "label": "Give a rough answer and keep the rest to myself",
+     "depth": 2,
+     "need": "freedom",
+     "insight": {
+      "reveal": "You answer enough to settle it, and keep the rest for yourself. A rough time and a general place let you leave without a long talk at the door. That small private space matters to you, and you've found a way to keep it without a quarrel.",
+      "otherSide": "Vague answers can leave the people at home worrying more, and that worry can come back to you as more questions.",
+      "research": "",
+      "source": "",
+      "strength": "none",
+      "step": "Next time you head out, give one clear detail, like when you'll be back, and see whether the questions shrink."
+     }
+    },
+    {
+     "id": "ask-first",
+     "label": "Ask first; that's how it works at home",
+     "depth": 3,
+     "need": "belonging",
+     "traits": {
+      "conscientiousness": 1
+     },
+     "insight": {
+      "reveal": "You check in before you go, as part of how your home runs. Asking first is a way of showing respect, and it keeps everyone at home at ease about where you are. Living by shared rules can be its own comfort, and doing what's expected can feel good in itself.",
+      "otherSide": "When asking first becomes the rule for everything, it can get harder to know which plans are truly your own.",
+      "research": "Comparing Americans and Indians, a review found Americans linked more satisfaction to acting by their own choice than to meeting social expectations, while Indians linked high satisfaction to both.",
+      "source": "miller2017",
+      "strength": "moderate",
+      "step": "This week, notice one choice that is fully yours to make, however small, and make it."
+     }
+    },
+    {
+     "id": "not-my-call",
+     "label": "Stay in, since going out isn't up to me",
+     "depth": 4,
+     "need": "freedom",
+     "insight": {
+      "reveal": "Going out isn't your call right now, and that's a lot to carry. Staying in when you'd rather go can make the days feel smaller and the walls feel close. What you want still counts, even when you can't act on it yet.",
+      "otherSide": "When your days hang on someone else's yes, it can be hard to keep hold of what you'd choose for yourself.",
+      "research": "",
+      "source": "",
+      "strength": "none",
+      "step": "This week, keep one small thing in your day that's fully your choice, like what you read, listen to or write."
+     },
+     "heavy": true
+    }
+   ],
+   "region": "mena"
+  },
+  {
+   "id": "south-asia-relative-asks-parents",
+   "theme": "relatives",
+   "prompt": "A relative asks your parents or elders about your marks, job or marriage while you listen. You…",
+   "options": [
+    {
+     "id": "let-them-answer",
+     "label": "Let them do the answering",
+     "depth": 1,
+     "need": "calm",
+     "traits": {
+      "agreeableness": 1
+     },
+     "insight": {
+      "reveal": "You let your elders take that one. A question about you, asked of them, is partly theirs to answer, and stepping back keeps the moment light for you. It also shows trust: you're at ease with how they speak about you in front of family.",
+      "otherSide": "Their answer can become the version relatives repeat, and it won't always match the life you'd describe.",
+      "research": "",
+      "source": "",
+      "strength": "none",
+      "step": "Next time, add one sentence of your own after they answer, and notice how the room takes it."
+     }
+    },
+    {
+     "id": "proud-answer",
+     "label": "Give the answer that makes them proud",
+     "depth": 2,
+     "need": "respect",
+     "traits": {
+      "agreeableness": 1
+     },
+     "insight": {
+      "reveal": "You answer with your family's good name in mind. You know which part of your news lets them stand a little taller, and you lead with it. Your standing and theirs are tied together, and you look after both at once.",
+      "otherSide": "Leading with the proud part every time can leave the harder parts of your life with nowhere to be said.",
+      "research": "",
+      "source": "",
+      "strength": "none",
+      "step": "Next time, notice which part of your news you reach for first, and which part you keep back."
+     }
+    },
+    {
+     "id": "tell-it-straight",
+     "label": "Tell it straight, impressive or not",
+     "depth": 3,
+     "need": "understood",
+     "traits": {
+      "honesty_humility": 1
+     },
+     "insight": {
+      "reveal": "You'd rather be known than admired. Giving the plain answer, even when it isn't the one the room hoped for, saves you from keeping two versions of your life. With your family listening, that takes some nerve.",
+      "otherSide": "Your elders may be left to handle the looks and questions afterwards, and that part can sting them.",
+      "research": "People tend to expect honest talks to hurt their relationships more than they do; in tests, being honest felt better and more connecting than predicted.",
+      "source": "levine2018",
+      "strength": "moderate",
+      "step": "Before the next gathering, decide on one plain sentence about your life that you're happy to repeat."
+     }
+    },
+    {
+     "id": "letting-family-down",
+     "label": "Feel I'm letting my family down",
+     "depth": 4,
+     "need": "respect",
+     "traits": {
+      "neuroticism": 1,
+      "rumination": 1
+     },
+     "insight": {
+      "reveal": "That question landed on the hopes you carry for your family. Feeling you're letting them down shows how much those hopes matter to you; it isn't proof that you've failed. Marks, work and marriage don't keep one timetable, and none of them is the whole of you.",
+      "otherSide": "When every question feels like a verdict, gatherings can start to fill you with dread, and their warm parts get lost too.",
+      "research": "Across 27 trials, learning to treat yourself with kindness, as a good friend would, reduced self-criticism by moderate to large amounts.",
+      "source": "ferrari2019",
+      "strength": "strong",
+      "step": "Tonight, write down one thing you did this year that no relative has thought to ask about."
+     }
+    }
+   ],
+   "region": "south-asia"
+  },
+  {
+   "id": "south-asia-what-people-think",
+   "theme": "confidence",
+   "prompt": "You're about to do something you want, and the thought comes: what will people think? You…",
+   "options": [
+    {
+     "id": "go-ahead",
+     "label": "Go ahead; people talk anyway",
+     "depth": 1,
+     "need": "freedom",
+     "traits": {
+      "neuroticism": -1
+     },
+     "insight": {
+      "reveal": "You hear the thought and walk on past it. Talk will happen whatever you choose, so you'd rather choose for yourself. That ease tends to show in other places too: in what you wear, what you learn and who you sit beside.",
+      "otherSide": "Brushing the talk aside can miss the times it lands on your family, who may hear it long after you've moved on.",
+      "research": "People tend to overestimate how much others notice them: students in an embarrassing T-shirt guessed about half the room noticed, but only about a quarter did.",
+      "source": "gilovich2000",
+      "strength": "moderate",
+      "step": "Next time the thought comes, ask yourself whose voice it is, then decide as you would have anyway."
+     }
+    },
+    {
+     "id": "ask-at-home",
+     "label": "Check with someone at home first",
+     "depth": 2,
+     "need": "belonging",
+     "traits": {
+      "agreeableness": 1
+     },
+     "insight": {
+      "reveal": "You bring it home before you take it out into the world. Asking someone close turns a lonely worry into a shared one, and their yes gives you firm ground when the talk starts. Your choices are rarely yours alone, and you seem at peace with that.",
+      "otherSide": "Waiting for a yes can stall your wish on the days nobody at home has time to think about it.",
+      "research": "",
+      "source": "",
+      "strength": "none",
+      "step": "Next time you ask, say first what you're hoping to hear, so they know what it means to you."
+     }
+    },
+    {
+     "id": "out-of-sight",
+     "label": "Do it, but keep it out of sight",
+     "depth": 3,
+     "need": "freedom",
+     "traits": {
+      "openness": 1
+     },
+     "insight": {
+      "reveal": "You found a way to have both. The thing you wanted happens, and the peace around you holds. Keeping it out of sight lets you live a little more on your own terms without a public fight, and that takes real planning.",
+      "otherSide": "A part of life kept out of sight can grow heavy, and you can end up thinking about it more than enjoying it.",
+      "research": "People's minds tend to drift back to the secrets they keep far more often than they must hide them, and that drifting, not the hiding, goes with lower well-being.",
+      "source": "slepian2017",
+      "strength": "moderate",
+      "step": "Tonight, name to yourself what this thing gives you that nothing else in your week does."
+     }
+    },
+    {
+     "id": "hold-back",
+     "label": "Hold back, for my family's good name",
+     "depth": 4,
+     "need": "respect",
+     "traits": {
+      "agreeableness": 1,
+      "conscientiousness": 1
+     },
+     "insight": {
+      "reveal": "You put your family's good name ahead of your wish. That's a real choice, made from loyalty, and it can feel right in itself. What's worth noticing is whether the wish settles afterwards, or keeps coming back to you.",
+      "otherSide": "Wishes set aside again and again can pile up, until it's hard to tell which of your choices were truly yours.",
+      "research": "",
+      "source": "",
+      "strength": "none",
+      "step": "Tonight, name the wish you set aside, and ask yourself whether it still matters to you."
+     }
+    }
+   ],
+   "region": "south-asia"
+  },
+  {
+   "id": "south-asia-money-to-family",
+   "theme": "money",
+   "prompt": "When money comes in, does a share of it go to family, near or far?",
+   "options": [
+    {
+     "id": "not-right-now",
+     "label": "Not right now",
+     "depth": 1,
+     "need": "freedom",
+     "insight": {
+      "reveal": "Right now, your money mostly answers to you. That can be a season for learning how your own money moves: what comes in, what goes first, what's left at the end. Whatever the reason, it's an honest place to be.",
+      "otherSide": "Money that answers only to you can drift without a plan, since nobody is waiting on it.",
+      "research": "",
+      "source": "",
+      "strength": "none",
+      "step": "When money next comes in, notice where the first part goes, without changing anything."
+     }
+    },
+    {
+     "id": "goes-first",
+     "label": "Yes, it goes before anything else",
+     "depth": 2,
+     "need": "belonging",
+     "traits": {
+      "agreeableness": 1,
+      "conscientiousness": 1
+     },
+     "insight": {
+      "reveal": "Family comes first in your money as well as your heart. Sending a share before you spend on yourself turns care into a steady habit, and that habit can bring a deep, settled pride to your month.",
+      "otherSide": "When family always comes first, your own cushion can stay thin, and one hard month can hit you twice.",
+      "research": "In 120 of 136 countries, rich and poor, people who had recently spent money on others tended to feel more satisfied with life.",
+      "source": "aknin2013",
+      "strength": "strong",
+      "step": "When money next comes in, set aside a little that stays yours, then send as usual."
+     }
+    },
+    {
+     "id": "go-without",
+     "label": "Yes, and I go without to send it",
+     "depth": 3,
+     "need": "belonging",
+     "traits": {
+      "agreeableness": 1
+     },
+     "insight": {
+      "reveal": "You go short so the people you love don't have to. That's a hard kind of love, carried mostly out of sight, and it says a lot about what you'll bear for family. It also means your own needs keep waiting their turn.",
+      "otherSide": "Going without month after month can wear down your health and patience, and the people you send to may never know the price.",
+      "research": "",
+      "source": "",
+      "strength": "none",
+      "step": "Tonight, write down one thing you went without this month, so the cost is seen, at least by you."
+     }
+    },
+    {
+     "id": "hide-how-tight",
+     "label": "Yes, and I keep how tight it is to myself",
+     "depth": 4,
+     "need": "respect",
+     "traits": {
+      "attachment_avoidance": 1
+     },
+     "insight": {
+      "reveal": "You send it and keep the strain to yourself. Hiding how tight things are spares your family worry and keeps your place as someone who manages. Both come from care, and both have a price: no one gets the chance to help carry it.",
+      "otherSide": "Carrying the strain alone can make the money feel heavier still, and leave you with no one to think it through with.",
+      "research": "People needing help consistently underestimated how willing others were to help and how good helpers would feel, and overestimated how put out helpers would be.",
+      "source": "zhao2022",
+      "strength": "moderate",
+      "step": "Think of one person who'd want to know how this month really went, and simply notice who comes to mind."
+     }
+    }
+   ],
+   "region": "south-asia"
+  },
+  {
+   "id": "south-asia-elder-care",
+   "theme": "family",
+   "prompt": "An older relative needs looking after: meals, medicines, a trip to the doctor. Who does it?",
+   "options": [
+    {
+     "id": "someone-else",
+     "label": "Mostly someone else in the family",
+     "depth": 1,
+     "need": "calm",
+     "insight": {
+      "reveal": "Right now, the care is mostly in hands other than yours. That's simply how it is for now, and it leaves you room for work, learning or the people who depend on you. It also gives you a clear view of how much the main carer is holding.",
+      "otherSide": "From a step away, you can miss how tired the main carer is getting, until it shows all at once.",
+      "research": "Worldwide, unpaid care work like cooking, cleaning and looking after others is shared very unevenly: women do about three quarters of it.",
+      "source": "ilo2018care",
+      "strength": "moderate",
+      "step": "This week, take one small task off the main carer's hands, even for an hour."
+     }
+    },
+    {
+     "id": "take-turns",
+     "label": "We take turns",
+     "depth": 2,
+     "need": "belonging",
+     "traits": {
+      "agreeableness": 1
+     },
+     "insight": {
+      "reveal": "In your family, care is passed from hand to hand. Turns keep anyone from wearing out, and the older person gets to see many faces in a week. It takes some planning, and someone usually keeps the plan going.",
+      "otherSide": "Shared turns can blur who is doing what, and small gaps or unspoken grudges, yours included, can slip in between.",
+      "research": "",
+      "source": "",
+      "strength": "none",
+      "step": "This week, thank the person who keeps the turns organised, by name."
+     }
+    },
+    {
+     "id": "mostly-me-right",
+     "label": "Mostly me, and it feels right",
+     "depth": 3,
+     "need": "belonging",
+     "traits": {
+      "agreeableness": 1,
+      "conscientiousness": 1
+     },
+     "insight": {
+      "reveal": "You've taken on the care, and it sits well with you. Looking after someone who once looked after you can feel like a debt gladly repaid, and it gives your days a clear purpose. That pride is real, even when the work is tiring.",
+      "otherSide": "Carrying most of it can let your own health and rest slip down the list without anyone, you included, noticing.",
+      "research": "In daily diaries from 752 teenagers, days spent helping their family went with more happiness, largely because helping gave them a sense of filling a meaningful role.",
+      "source": "telzer2009",
+      "strength": "moderate",
+      "step": "Today, take ten minutes that are only yours, and let someone else cover them if they can."
+     }
+    },
+    {
+     "id": "worn-out-alone",
+     "label": "Mostly me, worn out, with no one to share it",
+     "depth": 4,
+     "need": "calm",
+     "heavy": true,
+     "traits": {
+      "neuroticism": 1
+     },
+     "insight": {
+      "reveal": "You're carrying the care alone, and it has worn you down. That tiredness comes from giving a great deal for a long time, not from loving less. Your own rest and health matter too, alongside theirs.",
+      "otherSide": "Running on empty for long can wear down your own health, and make the care itself harder to give.",
+      "research": "",
+      "source": "",
+      "strength": "none",
+      "step": "Today, name one task someone else could take on, even once a week, and who that might be."
+     }
+    }
+   ],
+   "region": "south-asia"
+  },
+  {
+   "id": "south-asia-family-decides",
+   "theme": "plans",
+   "prompt": "The family gathers to decide a big step for you, like a course, a job or a marriage. You…",
+   "options": [
+    {
+     "id": "listen-then-speak",
+     "label": "Listen first, then say my piece",
+     "depth": 1,
+     "need": "respect",
+     "traits": {
+      "agreeableness": 1
+     },
+     "insight": {
+      "reveal": "You want a voice in it, not necessarily the last word. Listening first shows respect for the people around you, and it earns your piece a proper hearing when your turn comes. You'd rather be part of the decision than its subject.",
+      "otherSide": "By the time your turn comes, the room may have settled, and your piece can land as an afterthought.",
+      "research": "",
+      "source": "",
+      "strength": "none",
+      "step": "Before the next family talk, put your piece into one sentence, so it's ready when your turn comes."
+     }
+    },
+    {
+     "id": "elders-decide",
+     "label": "Leave it to the elders; that suits me",
+     "depth": 2,
+     "need": "belonging",
+     "traits": {
+      "agreeableness": 1
+     },
+     "insight": {
+      "reveal": "You trust the people who know you best to weigh it up. Handing a big step to your elders isn't giving up; for you it brings relief and a sense of being held. Doing what's expected can be satisfying in itself, and you know that feeling well.",
+      "otherSide": "If you always leave it to them, your own wishes can stay vague, even to you, until the day you need them clear.",
+      "research": "In cross-cultural comparisons, a South Asian sample linked high satisfaction both to meeting social expectations and to acting on their own choices.",
+      "source": "miller2017",
+      "strength": "moderate",
+      "step": "Before the next big talk, note one thing you'd hope for, so the elders can weigh it too."
+     }
+    },
+    {
+     "id": "hold-my-ground",
+     "label": "Say what I want, and hold my ground",
+     "depth": 3,
+     "need": "freedom",
+     "traits": {
+      "extraversion": 1
+     },
+     "insight": {
+      "reveal": "You say what you want, and you stand by it. Speaking up for the life you hope for, with people you love and respect in the room, takes steadiness. It tends to show elsewhere too: you'd rather argue now than live inside a choice that isn't yours.",
+      "otherSide": "Holding your ground can leave someone at home feeling unheard, and the next family talk may start with walls already up.",
+      "research": "",
+      "source": "",
+      "strength": "none",
+      "step": "Next time you hold your ground, ask one elder what worries them most, and listen to the end."
+     }
+    },
+    {
+     "id": "keep-my-wish",
+     "label": "Agree, and keep my own wish to myself",
+     "depth": 4,
+     "need": "belonging",
+     "traits": {
+      "agreeableness": 1
+     },
+     "insight": {
+      "reveal": "You go along to keep the peace, and your own wish stays tucked away. That's often an act of love: you protect the family's calm at a cost only you can see. The wish doesn't vanish, though, and it's worth knowing where it goes.",
+      "otherSide": "A wish kept to yourself for long can turn into distance from the very people you were protecting.",
+      "research": "In four countries, the more freely people endorsed their reasons for following their culture's practices, the higher their well-being tended to be.",
+      "source": "chirkov2003",
+      "strength": "moderate",
+      "step": "Tonight, write your own wish down in one line, for your eyes only, so it stays clear to you."
+     }
+    }
+   ],
+   "region": "south-asia"
+  },
+  {
+   "id": "east-asia-calm-moment",
+   "theme": "happiness",
+   "prompt": "Think of a calm moment from the last day or two. What was happening?",
+   "options": [
+    {
+     "id": "slow-drink-meal",
+     "label": "A drink or a meal, taken slowly",
+     "depth": 1,
+     "need": "calm",
+     "insight": {
+      "reveal": "You found calm by slowing down over something small. A drink or a meal taken without rushing turns an ordinary break into a real pause, and you know how to make one even on a full day. The same slowing down tends to steady you elsewhere, at work or with family.",
+      "otherSide": "When the day gets fuller, small pauses like this are often the first thing you drop, just when you need them most.",
+      "research": "Across 20 trials with 4,805 people, savouring exercises, which train people to notice and enjoy good moments, moderately boosted good feelings and eased low ones.",
+      "source": "chen2026savor",
+      "strength": "strong",
+      "step": "This week, take the first sip or bite of one meal slowly, and notice three things about it."
+     }
+    },
+    {
+     "id": "nothing-asked",
+     "label": "A moment when nothing was asked of me",
+     "depth": 2,
+     "need": "calm",
+     "insight": {
+      "reveal": "Your calm came from a gap in the demands. For a few minutes no one needed an answer, a favour or a decision from you, and that stillness was the good part. You treat a settled, low-key feeling as something good in itself, not just the absence of something bad.",
+      "otherSide": "If calm only arrives when the demands stop, your days can go by with very little of it.",
+      "research": "Pooling 124 datasets and over 31,000 people, the feelings people ideally want, such as calm or excitement, varied across cultures more than the feelings they actually had.",
+      "source": "tsai2025",
+      "strength": "strong",
+      "step": "Today, find five minutes when nothing is asked of you, with your phone face down, and let them be enough."
+     }
+    },
+    {
+     "id": "with-someone",
+     "label": "Sitting with someone, no need to talk",
+     "depth": 3,
+     "need": "belonging",
+     "traits": {
+      "attachment_avoidance": -1
+     },
+     "insight": {
+      "reveal": "Your calm came with company, not away from it. Sitting near someone you're at ease with, without having to fill the silence, is what settled you. Closeness for you doesn't always need words; being there together is often enough.",
+      "otherSide": "Shared silences are easy to take for granted, and the person beside you may not know how much those minutes give you.",
+      "research": "When 909 working women went back over their previous day, time relaxing with friends tended to feel the most enjoyable part of it.",
+      "source": "kahneman2004",
+      "strength": "moderate",
+      "step": "This week, tell the person you sat with that those easy minutes together meant something to you."
+     }
+    },
+    {
+     "id": "none-lately",
+     "label": "Hard to think of one lately",
+     "depth": 4,
+     "need": "calm",
+     "traits": {
+      "neuroticism": 1
+     },
+     "insight": {
+      "reveal": "Calm has been hard for you to find lately. That usually says more about how full your days are than about you, and naming it is a first step back towards it. Even a single minute of calm counts, and small ones are easier to find than a whole free evening.",
+      "otherSide": "When calm is missing for a long stretch, tiredness can start to feel like who you are, not just what your days have been.",
+      "research": "",
+      "source": "",
+      "strength": "none",
+      "step": "Tonight, before sleep, take three slow breaths and name one thing that went all right today."
+     }
+    }
+   ],
+   "region": "east-asia"
+  },
+  {
+   "id": "east-asia-holiday-questions",
+   "theme": "relatives",
+   "prompt": "At a big family holiday, the questions about your life begin. Where do you end up?",
+   "options": [
+    {
+     "id": "in-the-middle",
+     "label": "Right in the middle, answering",
+     "depth": 1,
+     "need": "belonging",
+     "traits": {
+      "extraversion": 1
+     },
+     "insight": {
+      "reveal": "You stay right in the thick of it, questions and all. Being there with the whole family matters more to you than dodging a few awkward minutes, and you take the questions as part of the noise and warmth of the day. That steadiness tends to make you easy company at a crowded gathering.",
+      "otherSide": "Answering everything can mean your news gets told in your relatives' words, and the things that matter most to you go unsaid.",
+      "research": "A review of 50 years of research found holidays and family reunions among the most common family rituals, and keeping rituals went with stronger family bonds.",
+      "source": "fiese2002",
+      "strength": "moderate",
+      "step": "At the next gathering, share one piece of news you chose yourself, before anyone asks."
+     }
+    },
+    {
+     "id": "helping-food",
+     "label": "Helping with the food or the washing-up",
+     "depth": 2,
+     "need": "belonging",
+     "traits": {
+      "agreeableness": 1,
+      "conscientiousness": 1
+     },
+     "insight": {
+      "reveal": "You find your place with busy hands. Helping with the food or the dishes lets you be part of the day without being on show, and the questions pass you by while you work. Being useful can keep your mood steady on a crowded, demanding day.",
+      "otherSide": "If you're always the helper, you can miss the talk and the laughter, and the work may land on you every year.",
+      "research": "In a daily diary study, on stressful days people who did more small helpful acts, like holding a door, kept their mood better than on stressful days when they helped less.",
+      "source": "raposa2016",
+      "strength": "early",
+      "step": "Next holiday, after helping for a while, sit down with a plate and join the talk for ten minutes."
+     }
+    },
+    {
+     "id": "with-children",
+     "label": "With the children, or outside for air",
+     "depth": 3,
+     "need": "calm",
+     "traits": {
+      "attachment_avoidance": 1
+     },
+     "insight": {
+      "reveal": "You drift to where nobody asks you anything. Children and fresh air ask nothing about your plans, your pay or your future, and there you can breathe and enjoy the day on your own terms. It's a way of staying part of the gathering without being questioned by it.",
+      "otherSide": "Slipping away keeps the day bearable, but it can also keep you from the relatives you'd actually enjoy.",
+      "research": "",
+      "source": "",
+      "strength": "none",
+      "step": "Next gathering, bring one relative you like along with you, to the children or for a walk."
+     }
+    },
+    {
+     "id": "wish-they-asked",
+     "label": "Answering, wishing they'd ask what I care about",
+     "depth": 4,
+     "need": "understood",
+     "insight": {
+      "reveal": "You answer, but the questions miss the person you are. Your job, your pay and your plans get asked about, and what you love, what you're proud of and what you're carrying stay unasked. Wanting to be known, not just checked on, is a fair wish, even among people who love you.",
+      "otherSide": "Waiting for the right question can mean it never comes, and your relatives may not know there's more of you to ask about.",
+      "research": "In a 2026 survey of 1,000 Korean adults, 48.5% chose relatives' excessive interference and personal questions as the holiday custom they most wanted changed.",
+      "source": "joongang2026",
+      "strength": "moderate",
+      "step": "Next gathering, tell one relative about something you love doing, without waiting to be asked."
+     }
+    }
+   ],
+   "region": "east-asia"
+  },
+  {
+   "id": "east-asia-senior-slip",
+   "theme": "colleagues",
+   "prompt": "Someone senior at work gets something wrong in front of others. You…",
+   "options": [
+    {
+     "id": "let-it-pass",
+     "label": "Let it pass",
+     "depth": 1,
+     "need": "belonging",
+     "traits": {
+      "agreeableness": 1
+     },
+     "insight": {
+      "reveal": "You let it go and kept the moment smooth. A slip from someone above you doesn't always need an audience, and you'd rather protect the working relationship than win a point. That sense of when to stay out of it keeps a lot of your days running easily.",
+      "otherSide": "If the mistake matters, letting it pass can leave you or someone else carrying the cost later.",
+      "research": "Across four studies, workers held taken-for-granted beliefs that speaking up to those above them is risky, and these beliefs helped explain why they stayed silent.",
+      "source": "detert2011",
+      "strength": "moderate",
+      "step": "Next time, ask yourself one thing before letting it go: will this mistake cost anyone? If so, find a private minute."
+     }
+    },
+    {
+     "id": "fix-it-later",
+     "label": "Fix it myself later, without a word",
+     "depth": 2,
+     "need": "competence",
+     "traits": {
+      "conscientiousness": 1
+     },
+     "insight": {
+      "reveal": "You make sure it comes out right, without a scene. Fixing the slip yourself protects the work and everyone's standing at once, which takes skill and patience. You meet your wish to do well through results, not through being seen to be right.",
+      "otherSide": "Fixing things unseen can leave your work invisible, and the same mistake can come back because no one learned of it.",
+      "research": "",
+      "source": "",
+      "strength": "none",
+      "step": "This week, after you fix something unseen, mention it in one line to the person it would help to know."
+     }
+    },
+    {
+     "id": "tell-privately",
+     "label": "Tell them afterwards, just the two of us",
+     "depth": 3,
+     "need": "respect",
+     "traits": {
+      "agreeableness": 1,
+      "conscientiousness": 1
+     },
+     "insight": {
+      "reveal": "You speak up, but in a way that saves their face. Raising it in private lets you be honest and respectful at once, and that courtesy tends to be remembered. You want to be taken seriously at work, and you get there by being trusted, not by being loud.",
+      "otherSide": "If you wait for a private moment, the wrong version can stand for a while, and that moment doesn't always come.",
+      "research": "",
+      "source": "",
+      "strength": "none",
+      "step": "Next time, open the private word with what you agree with, then name the one thing to change."
+     }
+    },
+    {
+     "id": "speak-up-then",
+     "label": "Point it out there and then",
+     "depth": 4,
+     "need": "competence",
+     "traits": {
+      "honesty_humility": 1
+     },
+     "insight": {
+      "reveal": "You say it in the moment, even to someone above you. Getting it right matters to you more than keeping the room comfortable, and that can take real nerve where rank counts. Said with care, a correction like yours often saves a bigger mess later.",
+      "otherSide": "Correcting someone senior in public can cost them face, and they may remember the moment more than the fix you made.",
+      "research": "In interviews with 40 employees, most had stayed silent about a concern at work, and the top reason was fear of being seen negatively.",
+      "source": "milliken2003",
+      "strength": "early",
+      "step": "Next time, try one line that leaves them room, like 'I may have this wrong, but...', and see how it lands."
+     }
+    }
+   ],
+   "region": "east-asia"
+  },
+  {
+   "id": "east-asia-remembering",
+   "theme": "family",
+   "prompt": "A day comes round for remembering family who have died. You…",
+   "options": [
+    {
+     "id": "let-it-pass",
+     "label": "Let it pass like most days",
+     "depth": 1,
+     "need": "calm",
+     "insight": {
+      "reveal": "You let the day go by without marking it. Remembering, for you, may not belong to one date; it can arrive on any ordinary afternoon instead. Not every bond needs a ritual, and carrying on with your day is its own way of living with a loss.",
+      "otherSide": "If the day passes unmarked every year, you can lose a chance to share a memory with those who knew them too.",
+      "research": "Grieving people tend to move back and forth between facing the loss and getting on with daily life, and taking breaks from grief is a normal part of coping.",
+      "source": "stroebe1999",
+      "strength": "moderate",
+      "step": "This week, if a memory of them comes up on an ordinary day, stop for a moment and let it stay."
+     }
+    },
+    {
+     "id": "join-family",
+     "label": "Join in with what the family does",
+     "depth": 2,
+     "need": "belonging",
+     "traits": {
+      "agreeableness": 1,
+      "conscientiousness": 1
+     },
+     "insight": {
+      "reveal": "You show up for the family's way of remembering. Whether it's a meal, a visit or a prayer, taking part ties you to the living as much as to the person who died. Doing what's expected can be satisfying in itself, and you seem to feel that.",
+      "otherSide": "When you follow the family's way, your own private way of missing them can get little room.",
+      "research": "A review found that set rituals, religious or everyday, tend to help people manage worry, feel more in control and feel bonded to those they share them with.",
+      "source": "hobson2018",
+      "strength": "moderate",
+      "step": "Next time, add one small thing of your own, like a story about them told to a younger relative."
+     }
+    },
+    {
+     "id": "food-or-visit",
+     "label": "Cook their food or visit where they rest",
+     "depth": 3,
+     "need": "belonging",
+     "traits": {
+      "conscientiousness": 1
+     },
+     "insight": {
+      "reveal": "You remember them with your hands and your feet. Cooking what they loved or going to where they rest keeps them part of your life in a way you can touch, taste and walk to. A small act like this gives the missing somewhere to go.",
+      "otherSide": "When you can't get there or can't cook it, a missed year can feel heavier than it needs to.",
+      "research": "People who did a small ritual after a loss felt less grief, mainly because it gave them a sense of control, even if they did not believe in rituals.",
+      "source": "norton2013",
+      "strength": "moderate",
+      "step": "This week, take a few minutes to recall one meal you shared with them, and tell someone about it."
+     }
+    },
+    {
+     "id": "talk-to-them",
+     "label": "Talk to them, in a prayer or in my head",
+     "depth": 4,
+     "need": "belonging",
+     "traits": {
+      "openness": 1
+     },
+     "insight": {
+      "reveal": "You still talk to them, and that keeps them close. Whether it's a prayer, a few words at a photo or a conversation in your head, the bond didn't end with their death; it changed shape. Telling them your news is one way the love keeps going.",
+      "otherSide": "Those conversations can be so private that the people around you never learn how much you still miss them.",
+      "research": "",
+      "source": "",
+      "strength": "none",
+      "step": "Next time you talk to them, tell them one good thing from your week, too."
+     }
+    }
+   ],
+   "region": "east-asia"
+  },
+  {
+   "id": "east-asia-staying-late",
+   "theme": "work-career",
+   "prompt": "Your work for the day is done, but those around you are still working. You…",
+   "options": [
+    {
+     "id": "head-off",
+     "label": "Head off and get on with my day",
+     "depth": 1,
+     "need": "freedom",
+     "traits": {
+      "neuroticism": -1
+     },
+     "insight": {
+      "reveal": "You leave when your work is done. Your hours are for the work, not for being seen, and what comes after belongs to you: rest, family or whatever else your day holds. That clear line tends to leave you with more to give when you come back.",
+      "otherSide": "Where staying late is noticed, leaving on time can be misread, even when your work speaks for itself.",
+      "research": "Across 91 samples of 38,124 workers, people who mentally switched off from work in their free time reported less exhaustion and better sleep.",
+      "source": "wendsche2017",
+      "strength": "strong",
+      "step": "Today, when you leave, say a short goodbye to those still working, so going feels open, not hidden."
+     }
+    },
+    {
+     "id": "help-finish",
+     "label": "Offer to help someone finish",
+     "depth": 2,
+     "need": "belonging",
+     "traits": {
+      "agreeableness": 1
+     },
+     "insight": {
+      "reveal": "You turn spare time into a hand for someone else. Staying to help means everyone gets home sooner, and it says you're in this together. You meet the wish to belong at work by being useful to the people beside you.",
+      "otherSide": "If you always offer, your own evenings can shrink, and the extra help can turn into something expected of you.",
+      "research": "",
+      "source": "",
+      "strength": "none",
+      "step": "This week, help once if you want to, and on another day leave when you're done, then notice how each feels."
+     }
+    },
+    {
+     "id": "go-uneasy",
+     "label": "Go, but feel uneasy about it",
+     "depth": 3,
+     "need": "respect",
+     "traits": {
+      "neuroticism": 1
+     },
+     "insight": {
+      "reveal": "You go, but part of you stays behind wondering how it looks. Being seen as committed matters to you, and leaving first can feel like a mark against you, even when your work is done. The unease is about your standing, not your effort.",
+      "otherSide": "Carrying that unease home can eat into the very rest you left to get.",
+      "research": "Office workers seen at work outside normal hours were judged committed, and those seen in normal hours dependable, often without observers realising they were judging.",
+      "source": "elsbach2010",
+      "strength": "moderate",
+      "step": "Next time you leave on time, tell yourself in one sentence what you finished today."
+     }
+    },
+    {
+     "id": "wait-for-seniors",
+     "label": "Stay until those above me have gone",
+     "depth": 4,
+     "need": "respect",
+     "traits": {
+      "conscientiousness": 1,
+      "agreeableness": 1
+     },
+     "insight": {
+      "reveal": "You stay until those above you have left. Respect for rank matters to you, and going before them would feel like breaking an unwritten rule. You guard your standing and the peace at work with your own time.",
+      "otherSide": "Hours spent waiting come out of your rest, your people and your sleep, and they rarely add much to the work itself.",
+      "research": "Among British munition workers a century ago, output rose with hours up to a point, then more and more slowly as hours got longer.",
+      "source": "pencavel2015",
+      "strength": "moderate",
+      "step": "One day this week, leave ten minutes after your work is done instead of waiting, and notice what actually happens."
+     }
+    }
+   ],
+   "region": "east-asia"
+  },
+  {
+   "id": "latin-america-safer-route",
+   "theme": "getting-around",
+   "prompt": "Part of your usual route doesn't feel safe right now. What do you do?",
+   "options": [
+    {
+     "id": "keep-my-way",
+     "label": "Keep to my usual way",
+     "depth": 1,
+     "need": "freedom",
+     "traits": {
+      "neuroticism": -1
+     },
+     "insight": {
+      "reveal": "You don't let a passing worry redraw your map. You read the street, judge it for yourself and carry on, so your day stays your own. That same steadiness tends to show elsewhere: you size things up, decide, and give a bad feeling no more room than it needs.",
+      "otherSide": "Keeping to your usual way can mean brushing past an uneasy feeling that deserved a second look.",
+      "research": "",
+      "source": "",
+      "strength": "none",
+      "step": "Next time a stretch feels wrong, pause for one breath and ask yourself what you noticed, then decide."
+     }
+    },
+    {
+     "id": "longer-way",
+     "label": "Take a longer way that feels safer",
+     "depth": 2,
+     "need": "security",
+     "traits": {
+      "conscientiousness": 1
+     },
+     "insight": {
+      "reveal": "You'll trade time for peace of mind without a second thought. The busier street, the stop with more light, the way round: you've worked out the routes that get you there steady. That same care tends to run through your plans, where you build in a margin before you need one.",
+      "otherSide": "The safer way can cost you time, fares and energy day after day, and that cost adds up even once you stop noticing it.",
+      "research": "In surveys across Central America, nearly half of the poorest people said they avoided public transport for fear of crime, which may limit their access to school and work.",
+      "source": "insightcrime2017",
+      "strength": "moderate",
+      "step": "Next time you take the longer way, use the extra minutes for something that's yours: a song, a call, or simply looking around."
+     }
+    },
+    {
+     "id": "with-company",
+     "label": "Wait for someone, or ask someone to meet me",
+     "depth": 3,
+     "need": "belonging",
+     "traits": {
+      "attachment_avoidance": -1
+     },
+     "insight": {
+      "reveal": "For you, feeling safe is something you share. You'd rather wait a little or ask someone to walk with you than go it alone, and you'd do the same for them without being asked. That trust in your own people often shows elsewhere too: hard things feel smaller with someone beside you.",
+      "otherSide": "Waiting for company can tie your plans to someone else's timetable, and some evenings you may stay put rather than ask.",
+      "research": "",
+      "source": "",
+      "strength": "none",
+      "step": "This week, thank by name someone who waited for you or walked with you, and offer the same when they need it."
+     }
+    },
+    {
+     "id": "go-out-less",
+     "label": "Go out less, especially at those times",
+     "depth": 4,
+     "need": "security",
+     "traits": {
+      "neuroticism": 1
+     },
+     "insight": {
+      "reveal": "You've let safety set the hours of your day. Staying in when it feels uneasy is a choice you've weighed, not a weakness, and it keeps you steady. You likely bring the same care to the people you love, waiting to hear they're home before you can settle.",
+      "otherSide": "Staying in keeps you safe, and it can also shrink the walks, visits and evenings out that feed you.",
+      "research": "In a study of about 6,500 adults, those with a strong fear of crime saw friends less often, exercised less and took part in fewer social activities.",
+      "source": "stafford2007",
+      "strength": "moderate",
+      "step": "This week, plan one visit or walk at an hour and place that feels right, with someone you like, just for the pleasure of it."
+     }
+    }
+   ],
+   "region": "latin-america"
+  },
+  {
+   "id": "latin-america-far-away",
+   "theme": "family",
+   "prompt": "You think of someone you love who lives far away. What do you usually do?",
+   "options": [
+    {
+     "id": "message",
+     "label": "Send a message, a photo or a voice note",
+     "depth": 1,
+     "need": "belonging",
+     "insight": {
+      "reveal": "You keep the thread going with small things. A photo of lunch, a voice note on the way, a quick hello: you let them into your ordinary day, so the distance feels a little thinner. You tend to love this way close to home too, through many small touches more than grand gestures.",
+      "otherSide": "Little messages can stand in for the longer talk you both need, and a hard week can hide behind a cheerful photo.",
+      "research": "Across 142 countries, 58% of people talked daily with family or friends living with or near them, but only 30% did with those far away.",
+      "source": "gallup2023social",
+      "strength": "moderate",
+      "step": "This week, send them one voice note about something small and ordinary from your day, no news needed."
+     }
+    },
+    {
+     "id": "call",
+     "label": "Call so we can hear each other's voices",
+     "depth": 2,
+     "need": "belonging",
+     "traits": {
+      "extraversion": 1
+     },
+     "insight": {
+      "reveal": "You want their voice, not just their words. When you miss someone, you call, and the laughs, the pauses and the sounds of their home bring them close in a way a message can't. That pull towards real conversation likely shows in your friendships too, where a call often beats a long thread.",
+      "otherSide": "Calls need you both free at once, and across time zones or busy weeks they can slip while you wait for the right moment.",
+      "research": "People expected a call with an old friend to feel more awkward than a text, but calls built a stronger bond and weren't more awkward.",
+      "source": "kumar2020",
+      "strength": "moderate",
+      "step": "This week, if a good call keeps slipping, try a short one: ten minutes, just to hear each other."
+     }
+    },
+    {
+     "id": "send-something",
+     "label": "Send money or something they need",
+     "depth": 3,
+     "need": "belonging",
+     "traits": {
+      "agreeableness": 1
+     },
+     "insight": {
+      "reveal": "You show love by making their life a little easier. Money when it's needed, a parcel, something they mentioned once: your care travels in practical form and says 'I've got you' across the distance. You likely give this way close to home as well, often before anyone has asked.",
+      "otherSide": "Sending can become what everyone expects of you, and your own needs and plans can keep waiting at the back of the queue.",
+      "research": "In 120 of 136 countries, rich and poor, people who had recently spent money on others tended to feel more satisfied with life.",
+      "source": "aknin2013",
+      "strength": "strong",
+      "step": "Next time you send something, add a few words about your own week, so they get a piece of you as well as the help."
+     }
+    },
+    {
+     "id": "miss-moments",
+     "label": "Feel all the moments we're missing",
+     "depth": 4,
+     "need": "belonging",
+     "traits": {
+      "rumination": 1
+     },
+     "insight": {
+      "reveal": "You feel the distance in the moments, not the miles. Birthdays, ordinary dinners, someone growing up on a small screen: you notice each one that happens without you, or without them. Missing someone this way shows how much room they still hold in your life.",
+      "otherSide": "Counting the missed moments can weigh on you for days, and it can make the time you do share feel short before it starts.",
+      "research": "",
+      "source": "",
+      "strength": "none",
+      "step": "This week, ask them to tell you one small thing you missed, and tell them one of yours."
+     }
+    }
+   ],
+   "region": "latin-america"
+  },
+  {
+   "id": "latin-america-strength",
+   "theme": "happiness",
+   "prompt": "A hard day is behind you. What gave you the strength to get through it?",
+   "options": [
+    {
+     "id": "small-joys",
+     "label": "Music, a laugh or something good to eat",
+     "depth": 1,
+     "need": "calm",
+     "insight": {
+      "reveal": "You refill on small good things. A song you love, a joke that lands, a warm plate at the end of it all: you know what lifts you, and you reach for it without making a fuss. That knack for small pleasures tends to carry you through long stretches, one good moment at a time.",
+      "otherSide": "Small lifts can carry you a long way, and on the heaviest days they can also cover up how tired you really are.",
+      "research": "",
+      "source": "",
+      "strength": "none",
+      "step": "Tonight, take one good thing slowly, a song or a bite, and let yourself enjoy it with no hurry."
+     }
+    },
+    {
+     "id": "my-people",
+     "label": "The people who were there for me",
+     "depth": 2,
+     "need": "belonging",
+     "traits": {
+      "attachment_avoidance": -1
+     },
+     "insight": {
+      "reveal": "Your strength comes with faces and names. A call, a hand on your shoulder, someone who sat with you and listened: on a hard day you let people in rather than closing the door. Leaning that way usually means you're there for them too when their turn comes.",
+      "otherSide": "When your strength lives in your people, the days they're busy or far away can feel twice as hard to get through.",
+      "research": "Across 148 studies of over 300,000 people, those with stronger social ties had about 50% better odds of survival.",
+      "source": "holtlunstad2010",
+      "strength": "strong",
+      "step": "This week, tell one person who helped you through a hard day exactly what they did that helped."
+     }
+    },
+    {
+     "id": "faith",
+     "label": "Prayer, or my faith",
+     "depth": 3,
+     "need": "calm",
+     "insight": {
+      "reveal": "You hand part of the weight to something bigger than the day. Prayer or faith gives you somewhere to set things down, and you come back steadier than you went in. That trust can shape how you meet trouble in general: you do your part, then let the rest be held.",
+      "otherSide": "When faith carries so much, a day it feels far away can be lonely, and you may not tell anyone it happened.",
+      "research": "Across 49 studies of 13,512 people, turning to faith for support in hard times went with better adjustment to stress, while feeling punished by God went with more distress.",
+      "source": "ano2005",
+      "strength": "strong",
+      "step": "Tonight, as you pray or reflect, bring to mind one person who helped you today, and let them know tomorrow."
+     }
+    },
+    {
+     "id": "holding-together",
+     "label": "Not much; I'm tired of holding it together",
+     "depth": 4,
+     "need": "calm",
+     "traits": {
+      "neuroticism": 1
+     },
+     "insight": {
+      "reveal": "You've been holding it together for a long time, and it's showing. Saying so is honest, and it matters: getting through a hard day on very little is its own kind of strength, even when it doesn't feel like it. Tiredness like this is a sign you need looking after, not a failing.",
+      "otherSide": "When you're this tired, reaching out can feel like one more job, so the people who'd help may not know you need it.",
+      "research": "",
+      "source": "",
+      "strength": "none",
+      "step": "Tonight, tell one person you trust that you're tired, in a single sentence; you don't have to explain the rest."
+     },
+     "heavy": true
+    }
+   ],
+   "region": "latin-america"
+  },
+  {
+   "id": "latin-america-thin-week",
+   "theme": "money",
+   "prompt": "Less money came in than you needed. What do you do first?",
+   "options": [
+    {
+     "id": "cut-back",
+     "label": "Cut back until things pick up",
+     "depth": 1,
+     "need": "security",
+     "traits": {
+      "conscientiousness": 1,
+      "present_bias": -1
+     },
+     "insight": {
+      "reveal": "You tighten things up and ride it out. Fewer extras, plainer meals, the walk instead of the ride: you know where the give is in your week, and you use it without drama. That same steadiness tends to show in other lean spells, where you adjust first and worry later.",
+      "otherSide": "Cutting back works for a lean week, but if lean weeks keep coming, the small things that keep you going can be the first to go.",
+      "research": "",
+      "source": "",
+      "strength": "none",
+      "step": "This week, keep one small free pleasure on the list while you cut back, a walk, a call, a favourite song, so it isn't all going without."
+     }
+    },
+    {
+     "id": "extra-work",
+     "label": "Look for extra work or something to sell",
+     "depth": 2,
+     "need": "competence",
+     "traits": {
+      "conscientiousness": 1
+     },
+     "insight": {
+      "reveal": "When money is short, you go looking for the next way in. An extra job, a shift, something to sell, a skill someone will pay for: you trust your own hands and wits to close the gap. That habit of finding a way is a real skill, and you've used it more often than you give yourself credit for.",
+      "otherSide": "Always finding one more way in can eat into your rest, and the long days can catch up with your body before the money catches up.",
+      "research": "",
+      "source": "",
+      "strength": "none",
+      "step": "This week, write down three times you found a way when money was short; it's your own record of getting through."
+     }
+    },
+    {
+     "id": "ask-family",
+     "label": "Ask family or a friend to help me through",
+     "depth": 3,
+     "need": "belonging",
+     "traits": {
+      "attachment_avoidance": -1
+     },
+     "insight": {
+      "reveal": "You let the people around you carry some of it. Asking isn't easy, but you know help moves both ways in your circle, and this week it's your turn to receive. That openness often keeps a family close, because the giving and the asking tie everyone to each other.",
+      "otherSide": "Asking can leave you feeling you owe, and it can be harder to say no to them when their turn comes round.",
+      "research": "In representative surveys in three Latin American countries, 86% agreed that in their family 'we help and support each other a lot'.",
+      "source": "rojas2018",
+      "strength": "early",
+      "step": "When the week turns, send the person who helped a short thank-you that says what their help made possible."
+     }
+    },
+    {
+     "id": "sums-at-night",
+     "label": "Go over the sums again and again at night",
+     "depth": 4,
+     "need": "security",
+     "traits": {
+      "rumination": 1,
+      "neuroticism": 1
+     },
+     "insight": {
+      "reveal": "The numbers follow you to bed. You turn them over and over, looking for the version where it all fits, because getting it right matters so much to you. That carefulness has got you through lean times before; at night, though, it tends to keep working long after there's nothing left to solve.",
+      "otherSide": "Doing the sums in the dark can take the sleep you need to face the week, and the answer rarely changes by morning.",
+      "research": "Going over and over a problem in your head without acting on it tends to deepen low mood and makes problems harder to solve.",
+      "source": "nolenhoeksema2008",
+      "strength": "strong",
+      "step": "Tonight, write the sums on paper once, add one thing you'll do tomorrow, then leave the page till morning."
+     }
+    }
+   ],
+   "region": "latin-america"
+  },
+  {
+   "id": "latin-america-family-day",
+   "theme": "relatives",
+   "prompt": "A big family meal takes up most of your day off. How does it usually go?",
+   "options": [
+    {
+     "id": "love-it",
+     "label": "I love it; that's what the day is for",
+     "depth": 1,
+     "need": "belonging",
+     "traits": {
+      "extraversion": 1
+     },
+     "insight": {
+      "reveal": "For you, a long table full of family is a day well spent. The noise, the second helpings, the stories you've heard ten times: you settle into it and let the hours go. That ease in a crowd of your own tends to make you a warm presence at other gatherings too.",
+      "otherSide": "Giving every free day to the family can leave little room for rest or for things only you care about, and you may not notice until you're worn thin.",
+      "research": "In every world region, people who share more meals with others tend to report higher wellbeing, though happier people may simply share more meals.",
+      "source": "whr2025",
+      "strength": "moderate",
+      "step": "At the next family meal, ask an older relative for a story you've never heard, and let it run."
+     }
+    },
+    {
+     "id": "busy-helping",
+     "label": "Keep busy with the food, the children or the dishes",
+     "depth": 2,
+     "need": "competence",
+     "traits": {
+      "conscientiousness": 1,
+      "agreeableness": 1
+     },
+     "insight": {
+      "reveal": "You're most at ease with a job in your hands. Stirring the pot, minding the little ones, clearing plates: being useful lets you enjoy the day in your own way, and the whole thing runs smoother for it. You likely bring that same pitch-in habit to every gathering you're part of.",
+      "otherSide": "Always being busy in the kitchen can mean you miss the talk at the table, and your own tiredness goes unseen.",
+      "research": "",
+      "source": "",
+      "strength": "none",
+      "step": "At the next family meal, sit down for one full round of talk before you get up to help."
+     }
+    },
+    {
+     "id": "time-for-me",
+     "label": "Stay a while, then keep part of the day for me",
+     "depth": 3,
+     "need": "freedom",
+     "insight": {
+      "reveal": "You give the family your time and keep some for yourself. You show up, eat, catch up, then step away to rest, see friends or simply be on your own. Holding both is a balance you've chosen, and you likely guard your time this way in other parts of life too.",
+      "otherSide": "Leaving early can draw a comment or a look, and some days you carry a little guilt home with you.",
+      "research": "",
+      "source": "",
+      "strength": "none",
+      "step": "Next time you leave early, tell one relative something you enjoyed about the day before you go."
+     }
+    },
+    {
+     "id": "because-expected",
+     "label": "Go because it's expected, and come home drained",
+     "depth": 4,
+     "need": "respect",
+     "traits": {
+      "agreeableness": 1
+     },
+     "insight": {
+      "reveal": "You show up because family expects it, and that counts for something. Being there, even tired, keeps your place and your word with them, and it is its own kind of care. Duty runs deep in you, and you likely honour it in other parts of life long after the fun has gone out of it.",
+      "otherSide": "Giving your rest to duty week after week can leave you drained, and the family may not see what it costs you.",
+      "research": "Across four studies, helping because you chose to boosted well-being for both people, while helping under pressure did not bring the same benefits.",
+      "source": "weinstein2010",
+      "strength": "moderate",
+      "step": "Before the next gathering, pick one part of it you'd choose for yourself, a person or a dish, and go for that."
+     }
+    }
+   ],
+   "region": "latin-america"
+  },
+  {
+   "id": "west-shared-meal",
+   "theme": "food",
+   "prompt": "Think of yesterday's meals. Did you share any of them with someone?",
+   "options": [
+    {
+     "id": "at-home",
+     "label": "Yes, with people at home",
+     "depth": 1,
+     "need": "belonging",
+     "insight": {
+      "reveal": "Your meals come with company built in. Eating with the people you live with is part of how your days hold together, even when nobody calls it a plan. A plate and a bit of talk are often where you hear how everyone really is.",
+      "otherSide": "Because it happens every day, a shared meal can slide into routine, and you may miss the evening someone at the table needs more of you.",
+      "research": "Sharing meals with others is strongly linked with wellbeing across all world regions, while the number of people dining alone in the US rose by more than half over two decades.",
+      "source": "whr2025",
+      "strength": "moderate",
+      "step": "At one shared meal this week, ask one person at the table about the best part of their day."
+     }
+    },
+    {
+     "id": "arranged-it",
+     "label": "Yes, I arranged to eat with someone",
+     "depth": 2,
+     "need": "belonging",
+     "traits": {
+      "extraversion": 1
+     },
+     "insight": {
+      "reveal": "You make room for company on purpose. A meal with a friend, a relative or a neighbour didn't just happen; you set it up, and that effort is how you keep people near. Sitting down together gives a friendship time that a message can't.",
+      "otherSide": "If every shared meal depends on you setting it up, a tiring week can leave you eating alone without anyone noticing.",
+      "research": "Sharing more meals went with higher life ratings in almost all world regions, and the link was particularly strong in North America, Australia and New Zealand.",
+      "source": "deneve2025",
+      "strength": "moderate",
+      "step": "This week, ask someone else to choose when you next eat together, so the plan isn't only yours to carry."
+     }
+    },
+    {
+     "id": "quiet-suited",
+     "label": "No, and the quiet suited me",
+     "depth": 3,
+     "need": "calm",
+     "traits": {
+      "extraversion": -1
+     },
+     "insight": {
+      "reveal": "Eating alone yesterday felt like a rest to you, not a gap. A meal on your own gives you room to slow down and follow your own thoughts, and that kind of quiet is something you protect. Time by yourself seems to fill you up rather than drain you.",
+      "otherSide": "When solo meals become the default, weeks can pass without you eating with anyone, and that can creep up before you notice it.",
+      "research": "",
+      "source": "",
+      "strength": "none",
+      "step": "This week, keep your quiet meals, and add one shared one with someone whose company feels easy."
+     }
+    },
+    {
+     "id": "missed-company",
+     "label": "No, and I'd have liked some company",
+     "depth": 4,
+     "need": "belonging",
+     "insight": {
+      "reveal": "Eating alone yesterday left a gap you could feel. For you, a meal is a time for company, so a plate on your own can bring to mind who isn't there. That wish isn't a weakness; it points to people you'd like more time with, and one invitation can be a start.",
+      "otherSide": "Waiting to be asked can stretch the gap, since the people you'd like to see may assume you're fine as you are.",
+      "research": "In 2023, roughly one in four Americans reported eating all of their meals alone the previous day, an increase of 53% since 2003.",
+      "source": "deneve2025",
+      "strength": "moderate",
+      "step": "This week, invite one person to share a simple meal, or call someone while you eat."
+     }
+    }
+   ],
+   "region": "west"
+  },
+  {
+   "id": "west-meet-up",
+   "theme": "friendship",
+   "prompt": "You and a good friend have only messaged for weeks. What happens next?",
+   "options": [
+    {
+     "id": "set-a-day",
+     "label": "One of us sets a day to meet",
+     "depth": 1,
+     "need": "belonging",
+     "traits": {
+      "extraversion": 1
+     },
+     "insight": {
+      "reveal": "Your friendships don't stay on the screen for long. When the messages pile up, one of you turns them into a time and a place, and that habit keeps the friendship real. Seeing each other gives you what a chat can't: a face, a laugh, the whole story.",
+      "otherSide": "When meeting up is how your friendships run, a month too full to meet can leave you feeling out of touch with them.",
+      "research": "In a 2024 US survey, 61% of adults with close friends texted one at least a few times a week, but only 29% saw a close friend in person that often.",
+      "source": "pew2025friends",
+      "strength": "moderate",
+      "step": "Before you part next time, pick the date of the meet-up after it, while you're both there."
+     }
+    },
+    {
+     "id": "we-must-meet",
+     "label": "We say we must meet up, and it stays there",
+     "depth": 2,
+     "need": "calm",
+     "insight": {
+      "reveal": "You keep the friendship warm with words while your weeks stay full. 'We must meet up' is a real wish, not an empty line, and it lets you stay in touch without adding one more thing to plan. For now, the messages carry most of the weight.",
+      "otherSide": "A wish to meet that keeps being said can become a habit of its own, and months can slip by before either of you notices.",
+      "research": "People across OECD countries are meeting in person less often than in the past, and men and young people have seen some of the largest declines in social connection.",
+      "source": "oecd2025social",
+      "strength": "moderate",
+      "step": "Next time one of you says 'we must meet up', reply with a day and a place, and see what they say."
+     }
+    },
+    {
+     "id": "messages-enough",
+     "label": "Messages are enough for us right now",
+     "depth": 3,
+     "need": "belonging",
+     "insight": {
+      "reveal": "For you, a friendship can live in the messages and still be close. You share the day in small pieces, a joke here, a photo there, and right now that feels like enough. Steady contact like that counts, and it keeps the door open for more.",
+      "otherSide": "Typed words carry a lot, but they can also hide a hard week, so a friend may be struggling in ways a chat doesn't show you.",
+      "research": "People expected a phone call with an old friend to feel more awkward than a text or email, but calls built a stronger bond and weren't more awkward.",
+      "source": "kumar2020",
+      "strength": "moderate",
+      "step": "This week, swap one message for a short call or voice note, and notice how it feels."
+     }
+    },
+    {
+     "id": "hold-back",
+     "label": "I'd like to see them, but I hold back from asking",
+     "depth": 4,
+     "need": "belonging",
+     "traits": {
+      "attachment_anxiety": 1
+     },
+     "insight": {
+      "reveal": "You miss them, and you keep it to yourself. Asking to meet can feel like a risk to you: they might be busy, or not keen, and a no would sting. So the wish waits in the messages, though your friend could be glad to be asked.",
+      "otherSide": "Holding back keeps you safe from a no, but it also keeps you from the yes you were hoping for.",
+      "research": "People tend to underestimate how much someone will appreciate a quick message, call or small gift out of the blue, especially when it comes as a surprise.",
+      "source": "liu2022",
+      "strength": "moderate",
+      "step": "This week, send one friend a plain invitation with a day in it, and let them say whether it works."
+     }
+    }
+   ],
+   "region": "west"
+  },
+  {
+   "id": "west-get-it-right",
+   "theme": "confidence",
+   "prompt": "This week, where did you feel you had to get everything exactly right?",
+   "options": [
+    {
+     "id": "nowhere-much",
+     "label": "Nowhere much; good enough was fine",
+     "depth": 1,
+     "need": "calm",
+     "traits": {
+      "neuroticism": -1
+     },
+     "insight": {
+      "reveal": "This week, good enough was good enough for you. You did what needed doing without polishing every edge, and that left you room to breathe. Letting some things be fine rather than perfect is a skill, and it saves your energy for what counts.",
+      "otherSide": "With the bar set comfortably, a task that does need extra care can slip past you, and you may only notice once it's done.",
+      "research": "",
+      "source": "",
+      "strength": "none",
+      "step": "This week, notice one thing you left at 'good enough', and what, if anything, came of it."
+     }
+    },
+    {
+     "id": "work-or-study",
+     "label": "In my work or studies",
+     "depth": 2,
+     "need": "competence",
+     "traits": {
+      "conscientiousness": 1
+     },
+     "insight": {
+      "reveal": "Your work or learning got the full weight of your standards. You wanted it done well, not just done, and you were willing to check, redo and check again. That care is why your work can be trusted, even when it costs you time.",
+      "otherSide": "When every task gets your very best, the small ones can use up the time and energy the important ones needed.",
+      "research": "Across 307 studies of more than 82,000 college students in three English-speaking countries, self-reported perfectionism rose between 1989 and 2024.",
+      "source": "curran2026",
+      "strength": "strong",
+      "step": "Before your next task, decide what 'done' looks like for it, and stop there once you reach it."
+     }
+    },
+    {
+     "id": "how-i-came-across",
+     "label": "In how I looked or came across",
+     "depth": 3,
+     "need": "respect",
+     "traits": {
+      "neuroticism": 1
+     },
+     "insight": {
+      "reveal": "You felt watched this week, and you wanted to get it right. How you looked, what you said and how it landed all seemed to matter a great deal. Caring how you come across is human; it shows how much being well thought of counts for you.",
+      "otherSide": "Checking how you come across takes energy, and it can pull your attention away from the people and moments in front of you.",
+      "research": "Students wearing an embarrassing T-shirt guessed about half the room noticed it; only about a quarter did. We feel far more watched than we are.",
+      "source": "gilovich2000",
+      "strength": "moderate",
+      "step": "Next time you replay how you came across, ask what you'd say to a friend who did the same."
+     }
+    },
+    {
+     "id": "everywhere",
+     "label": "Everywhere; it never really switches off",
+     "depth": 4,
+     "need": "calm",
+     "traits": {
+      "neuroticism": 1,
+      "rumination": 1
+     },
+     "insight": {
+      "reveal": "The pressure to get it right followed you through the whole week. Work, home, friends, even rest can start to feel like something to pass or fail. Carrying that everywhere is tiring, and you deserve some places where nothing is being marked.",
+      "otherSide": "With no place where good enough is allowed, small slips can feel big to you, and rest stops feeling like rest.",
+      "research": "Across 27 trials, learning to treat yourself with kindness, as a good friend would, reduced self-criticism and low mood by moderate to large amounts.",
+      "source": "ferrari2019",
+      "strength": "strong",
+      "step": "This week, pick one small thing to do just well enough on purpose, and notice what happens."
+     }
+    }
+   ],
+   "region": "west"
+  },
+  {
+   "id": "west-leaning-on-you",
+   "theme": "helping",
+   "prompt": "Is someone leaning on you a lot at the moment, for care, errands or company?",
+   "options": [
+    {
+     "id": "not-now",
+     "label": "Not really, not at the moment",
+     "depth": 1,
+     "need": "calm",
+     "insight": {
+      "reveal": "Right now, nobody is leaning hard on you. Your time and energy are more your own, whether that feels like a welcome breather or a slower stretch than you'd like. Either way, this is a season you get to shape.",
+      "otherSide": "With nothing pulling on you, it's easy to miss a friend or relative who's carrying a heavy load and not saying so.",
+      "research": "",
+      "source": "",
+      "strength": "none",
+      "step": "This week, ask one person how they're really managing, and listen to the whole answer."
+     }
+    },
+    {
+     "id": "feels-right",
+     "label": "Yes, and it feels right to be there",
+     "depth": 2,
+     "need": "belonging",
+     "traits": {
+      "agreeableness": 1
+     },
+     "insight": {
+      "reveal": "Someone is leaning on you, and you're glad they can. Showing up for them fits what matters to you, and it feels like your own choice. That sense of choosing it makes a heavy load easier to carry, even on the long days.",
+      "otherSide": "Because it feels right, you can keep saying yes past the point where your own rest gets squeezed out.",
+      "research": "Across four studies, helping because you chose to boosted the well-being of both helper and helped, while helping under pressure did not bring the same benefits.",
+      "source": "weinstein2010",
+      "strength": "moderate",
+      "step": "This week, set aside one hour that's yours alone, and guard it the way you guard theirs."
+     }
+    },
+    {
+     "id": "squeezing",
+     "label": "Yes, and it's squeezing everything else",
+     "depth": 3,
+     "need": "calm",
+     "insight": {
+      "reveal": "The care you're giving is taking up more room than you planned. Sleep, friends and your own plans get fitted around it, and there's little left at the end of the day. Feeling stretched doesn't mean you care less; it means the load is big.",
+      "otherSide": "Running on what's left over can wear you down slowly, and the person you're caring for can feel the strain too.",
+      "research": "In a 2025 US report, nearly one in four adults had given ongoing care to a relative or friend, and six in ten of those carers were also employed.",
+      "source": "aarp2025care",
+      "strength": "moderate",
+      "step": "This week, ask one person for one specific piece of help, like a single errand or an hour of cover."
+     }
+    },
+    {
+     "id": "mostly-alone",
+     "label": "Yes, and I'm carrying it mostly alone",
+     "depth": 4,
+     "need": "belonging",
+     "heavy": true,
+     "insight": {
+      "reveal": "You're carrying someone else, and not much is carrying you. Doing it mostly alone is hard, and the tiredness and worry that come with it make sense. You matter in this too, and one other person who knows what you're managing can make it feel less lonely.",
+      "otherSide": "Doing it alone can make asking feel impossible, so the load keeps growing while your own needs wait.",
+      "research": "In a 2025 US report on family carers, nearly one in four said they felt socially isolated.",
+      "source": "aarp2025care",
+      "strength": "moderate",
+      "step": "This week, tell one person what a normal day of caring looks like for you, so you're not the only one who knows."
+     }
+    }
+   ],
+   "region": "west"
+  },
+  {
+   "id": "west-housing-plans",
+   "theme": "plans",
+   "prompt": "You check what it would cost to live where you'd like to. Then you…",
+   "options": [
+    {
+     "id": "settled",
+     "label": "Let it go; I'm settled where I am",
+     "depth": 1,
+     "need": "calm",
+     "insight": {
+      "reveal": "You looked, then let it go: where you are works for you. Being settled gives you a steady base, and a look at prices is curiosity rather than pressure. That ease is worth noticing, because it frees your energy for other things.",
+      "otherSide": "Feeling settled can make it easy to stop asking whether your place still fits your life, until a change forces the question.",
+      "research": "",
+      "source": "",
+      "strength": "none",
+      "step": "This week, notice one thing about where you live that you'd miss if you moved, and enjoy it."
+     }
+    },
+    {
+     "id": "work-it-out",
+     "label": "Start working out what it would take",
+     "depth": 2,
+     "need": "security",
+     "traits": {
+      "conscientiousness": 1
+     },
+     "insight": {
+      "reveal": "For you, a big cost is a problem to work through, not a shut door. You'd rather know the numbers and make a plan than wonder. Breaking it into steps keeps the goal feeling reachable, even when it's a long way off.",
+      "otherSide": "Living for a far-off goal can squeeze the enjoyment out of the place and the life you have now.",
+      "research": "In 2023, half of US renter households, a record 22.6 million, spent more than 30% of their income on housing and utilities.",
+      "source": "jchs2025housing",
+      "strength": "moderate",
+      "step": "This week, write down one next step towards it that you could take without spending anything."
+     }
+    },
+    {
+     "id": "stay-put",
+     "label": "Stay where I am for longer, with family or housemates",
+     "depth": 3,
+     "need": "security",
+     "insight": {
+      "reveal": "You chose staying put over stretching too far. Living with family or sharing a place for longer keeps your footing steady when costs run high, and it often brings company and support with it. You made that call with your eyes open.",
+      "otherSide": "Staying longer than you'd planned can start to feel like being on hold, even when the reasons are sound and the timing isn't up to you.",
+      "research": "In 2024, young people in the EU left their parents' home at 26.2 years on average, from 21.4 in the earliest country to 31.3 in the latest.",
+      "source": "eurostat2025home",
+      "strength": "moderate",
+      "step": "This week, name one thing your current home gives you that you'd want to keep wherever you go next."
+     }
+    },
+    {
+     "id": "plans-slipping",
+     "label": "Feel the life I'd planned slip further off",
+     "depth": 4,
+     "need": "freedom",
+     "traits": {
+      "neuroticism": 1
+     },
+     "insight": {
+      "reveal": "Seeing those prices made a plan you care about feel further away. A home is tied up with so much: space, independence, the next step in your life. When costs outrun what comes in, feeling boxed in makes sense, and it says nothing about how hard you've tried.",
+      "otherSide": "Feeling stuck can make you stop picturing what you want at all, so the plan fades even if a way in appears later.",
+      "research": "In 2024 the median price of an existing single-family home in the US was about five times the median household income; three times is traditionally seen as affordable.",
+      "source": "jchs2025housing",
+      "strength": "moderate",
+      "step": "This week, write down what the plan was really for, like space or freedom, and one small way to get a piece of it now."
+     }
+    }
+   ],
+   "region": "west"
+  }
+ ]
+}

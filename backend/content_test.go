@@ -53,9 +53,9 @@ func TestValidateBankCatchesBrokenCards(t *testing.T) {
 			return in
 		}
 		return bankQuestion{ID: "money-test", Theme: "money", Prompt: "Payday arrives. What goes first?", Options: []bankOption{
-			{ID: "bills", Label: "Bills", Depth: 1, Insight: card("Your worries go first, then the fun. You probably tidy before guests arrive and answer the hard email first, and a treat tastes better once nothing is hanging over you.", "When money is tight, you may skip every treat, and a month with no small joy in it is harder to keep going.")},
-			{ID: "savings", Label: "Savings", Depth: 2, Insight: cited(card("You trust your future self. You likely plan trips early, and you're often the calm one when a surprise bill lands on everyone at once.", "Saving can turn into never spending, even on the things that would make your life easier now."))},
-			{ID: "treat", Label: "Something for me", Depth: 3, Insight: card("The week took more out of you than you let on. You give a lot at work, and you rarely notice you need a break, so payday becomes the break.", "If payday is your only break, the bills you put off can come back as a bigger worry later in the month.")},
+			{ID: "bills", Label: "Bills", Depth: 1, Need: "security", Insight: card("Your worries go first, then the fun. You probably tidy before guests arrive and answer the hard email first, and a treat tastes better once nothing is hanging over you.", "When money is tight, you may skip every treat, and a month with no small joy in it is harder to keep going.")},
+			{ID: "savings", Label: "Savings", Depth: 2, Need: "security", Insight: cited(card("You trust your future self. You likely plan trips early, and you're often the calm one when a surprise bill lands on everyone at once.", "Saving can turn into never spending, even on the things that would make your life easier now."))},
+			{ID: "treat", Label: "Something for me", Depth: 3, Need: "calm", Insight: card("The week took more out of you than you let on. You give a lot at work, and you rarely notice you need a break, so payday becomes the break.", "If payday is your only break, the bills you put off can come back as a bigger worry later in the month.")},
 		}}
 	}
 	cases := []struct {
@@ -130,6 +130,9 @@ func TestValidateBankCatchesBrokenCards(t *testing.T) {
 			in.Research, in.Source, in.Strength = "Early evidence, standing in here to test the soft-wording rule.", "andrews2015", "early"
 			in.Reveal = "Your worries go first, then the fun. You tidy before guests arrive and answer the hard email first, and a treat tastes better once nothing is hanging over you."
 		}, "the evidence is early, so say it softly"},
+		// Every option says what it reaches for (Stage 2, backend/needs.go).
+		{"no need", func(q *bankQuestion) { q.Options[1].Need = "" }, "is not one of the seven"},
+		{"unknown need", func(q *bankQuestion) { q.Options[2].Need = "status" }, `need "status" is not one of the seven`},
 		{"the app calls itself a therapist", func(q *bankQuestion) {
 			q.Options[2].Insight.Step = "Like a good therapist would say, take one quiet evening for you this week, and notice how payday feels after it."
 		}, "banned word"},
