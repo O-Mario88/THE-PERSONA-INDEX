@@ -58,6 +58,7 @@ export const REGISTRY: Entry[] = [
   { key: 'pi.pulse.', what: 'How many people had answered a question when you last looked, for the day', backup: 'never', merge: 'local', download: false },
   { key: 'pi.windows.', what: 'Which of the day’s five windows you opened, and when, for the day', backup: 'never', merge: 'local', download: false },
   { key: 'pi.seen.v1', what: 'When you last looked at Today, for its “since” line', backup: 'never', merge: 'local', download: false },
+  { key: 'pi.connection.v1', what: 'Your own moves towards friends for a year: the day and the kind (a nod, a share, asking for support, a win), never who', backup: 'always', merge: 'local', download: true },
   { key: 'pi.rings', what: 'Which of your three circles you placed each friend in', backup: 'always', merge: 'local', download: true },
   { key: 'pi.name', what: 'What you asked to be called, for the greeting', backup: 'always', merge: 'local', download: true },
   { key: 'pi.welcomed', what: 'That you saw the welcome before your first sitting', backup: 'never', merge: 'local', download: false },

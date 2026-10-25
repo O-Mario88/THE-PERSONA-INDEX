@@ -882,3 +882,30 @@
   font-size: var(--fs-h3);
   font-weight: 600;
 }
+
+/* Your week in connection: the months of a quarter or a year, a dot a move. */
+.m-connection-months {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: var(--s-2);
+}
+
+.m-connection-months li {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+}
+
+.m-connection-dots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  min-height: 8px;
+}
+
+.m-connection-dots i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--lime);
+}

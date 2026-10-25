@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import {
   ApiError,
   cacheEdition,
@@ -18,18 +18,14 @@ import { QuestionCard, type Done } from './QuestionCard'
 import { closeCard, DayClose, hasOpenStep, StepCheck } from './DayClose'
 import { GoodThings } from './Keep'
 import { PrivacyLine, RestScreen, Upcoming } from './Sittings'
-import { Mirror } from './Mirror'
-import { KeptScreen } from './Kept'
 import { NotebookScreen } from './NotebookScreen'
 import { ReflectGuide } from './ReflectGuide'
 import { pruneNotebook } from './notebook'
-import { PracticeScreen } from './Practice'
 import { InstallInvite } from './pwa/InstallInvite'
 import { ReadScreen, TodaysRead } from './Read'
 import { OpenRead } from './readContext'
 import type { Read } from './reads/types'
 import type { Practice } from './practices'
-import { SettingsScreen } from './Settings'
 import { themeVars } from './themes'
 import { openThisWeek, sendUnsent } from './moves'
 import { forgetPick, loadHistory, todaysPick, writeFirstOf, type Half } from './profile'
@@ -46,8 +42,6 @@ import { PulseAsk, PulseScreen } from './PulseViews'
 import { getPulse, count } from './pulse'
 import { lastSeen, markWindow, noteSeen } from './windows'
 import { Icon, type IconName } from './ui/icons'
-import { AccountScreen } from './Account'
-import { CircleScreen } from './Circle'
 import { FriendQuestion, NodPicker, TogetherAsk, TogetherCard } from './Friends'
 import { useFriendToday, useNods, useTogethers } from './friendsData'
 import { NodCard } from './Friends'
@@ -107,6 +101,7 @@ function useMedia(query: string): boolean {
 }
 
 function App() {
+  useEffect(prefetchScreens, [])
   const [state, setState] = useState<State>({ kind: 'loading' })
   const [attempt, setAttempt] = useState(0)
   const [tab, setTab] = useState<View>('today')
@@ -202,10 +197,32 @@ function App() {
       return
     }
     // The mirror's title arrives with its data, so it starts on its region.
-    const title = document.querySelector<HTMLElement>('main h2') ?? document.querySelector<HTMLElement>('main > section')
-    if (!title) return
-    if (!title.hasAttribute('tabindex')) title.tabIndex = -1
-    title.focus({ preventScroll: true })
+    // A screen still loading its piece is waited for, briefly.
+    // While a piece loads, React hides the screen before it with display:
+    // none; its title is not the one to focus.
+    const shown = (el: HTMLElement) => !el.closest('[style*="display: none"]')
+    const find = () =>
+      [...document.querySelectorAll<HTMLElement>('main h2')].find(shown) ?? [...document.querySelectorAll<HTMLElement>('main > section')].find(shown) ?? null
+    const focusTitle = (title: HTMLElement) => {
+      if (!title.hasAttribute('tabindex')) title.tabIndex = -1
+      title.focus({ preventScroll: true })
+    }
+    const now = find()
+    if (now) return focusTitle(now)
+    const main = document.querySelector('main')
+    if (!main) return
+    const watch = new MutationObserver(() => {
+      const title = find()
+      if (!title) return
+      watch.disconnect()
+      focusTitle(title)
+    })
+    watch.observe(main, { childList: true, subtree: true })
+    const giveUp = setTimeout(() => watch.disconnect(), 3000)
+    return () => {
+      watch.disconnect()
+      clearTimeout(giveUp)
+    }
   }, [tab, flow])
 
   // Another tab on this phone answered, changed a setting or deleted
@@ -717,6 +734,7 @@ function App() {
           ))}
         </nav>
         <main className={`page page-${tab}`}>
+          <Suspense fallback={<div className="screen-reserve" aria-busy="true" />}>
           <h1 className="sr-only">The Persona Index</h1>
 
           {offline && tab === 'today' && (
@@ -785,10 +803,38 @@ function App() {
           {set && tab === 'mirror' && <Mirror today={set.date} onOpenKept={() => open('kept')} onCircle={() => setTab('circle')} />}
 
           {body}
+          </Suspense>
         </main>
       </div>
     </OpenRead.Provider>
   )
+}
+
+// The heavier tab screens load as their own pieces, so the first screen
+// arrives sooner. They are fetched while the phone is idle after Today
+// appears, so switching tabs stays instant; the reserved space below stands
+// in for the moment it takes otherwise, with no spinner and no jump.
+const screens = {
+  mirror: () => import('./Mirror'),
+  kept: () => import('./Kept'),
+  practice: () => import('./Practice'),
+  settings: () => import('./Settings'),
+  account: () => import('./Account'),
+  circle: () => import('./Circle'),
+}
+const Mirror = lazy(() => screens.mirror().then((m) => ({ default: m.Mirror })))
+const KeptScreen = lazy(() => screens.kept().then((m) => ({ default: m.KeptScreen })))
+const PracticeScreen = lazy(() => screens.practice().then((m) => ({ default: m.PracticeScreen })))
+const SettingsScreen = lazy(() => screens.settings().then((m) => ({ default: m.SettingsScreen })))
+const AccountScreen = lazy(() => screens.account().then((m) => ({ default: m.AccountScreen })))
+const CircleScreen = lazy(() => screens.circle().then((m) => ({ default: m.CircleScreen })))
+
+function prefetchScreens() {
+  const all = () => Object.values(screens).forEach((load) => void load().catch(() => {}))
+  if (typeof window === 'undefined') return
+  const idle = (window as Window & { requestIdleCallback?: (cb: () => void) => number }).requestIdleCallback
+  if (idle) idle(all)
+  else setTimeout(all, 1500)
 }
 
 // The sign-in sheet after the first sitting is offered once.

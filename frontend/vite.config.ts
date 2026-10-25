@@ -65,8 +65,23 @@ function offlineWorker(): Plugin {
   }
 }
 
+// Figtree's Latin face is preloaded from the page head, so the first screen
+// draws in it without waiting for the stylesheet to ask, and without a flash
+// of the fallback font.
+function preloadFigtree(): Plugin {
+  return {
+    name: 'persona-preload-figtree',
+    apply: 'build',
+    transformIndexHtml(html, ctx) {
+      const font = Object.keys(ctx.bundle ?? {}).find((f) => /figtree-latin-wght-normal-.*\.woff2$/.test(f))
+      if (!font) return html
+      return { html, tags: [{ tag: 'link', attrs: { rel: 'preload', href: `/${font}`, as: 'font', type: 'font/woff2', crossorigin: '' }, injectTo: 'head-prepend' }] }
+    },
+  }
+}
+
 export default defineConfig({
-  plugins: [react(), readPages(), offlineWorker()],
+  plugins: [react(), readPages(), offlineWorker(), preloadFigtree()],
   server: {
     proxy: { '/api': 'http://localhost:8080' },
   },
