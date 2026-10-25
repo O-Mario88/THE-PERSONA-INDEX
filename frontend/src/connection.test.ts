@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { connectionBetween, connectionLine, noteConnection, CONNECTION_KEY } from './connection'
 
-// "Your week in connection" (Connect 3.0): the person's own moves towards
+// "Your week in connection" (the new Connect): the person's own moves towards
 // friends, counted on this phone only, never with a name, never sent.
 
 beforeEach(() => localStorage.clear())

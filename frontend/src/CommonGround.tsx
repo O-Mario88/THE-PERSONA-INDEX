@@ -6,7 +6,7 @@ import { getCommon, putCommon, setCommonFriend, type CommonView, type FriendView
 import { Avatar } from './ui/Avatar'
 import { Icon } from './ui/icons'
 
-// Our Common Ground (Connect 3.0), the signature of the page: the broad
+// Our Common Ground (the new Connect), the signature of the page: the broad
 // things two friends both value, shown only when each has opted in to the
 // other. The person picks their own tags from a fixed list; the server keeps
 // the tags and whom they opted in to, never an answer. New tags can be added

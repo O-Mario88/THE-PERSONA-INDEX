@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-// Connect 3.0 (Edwin, 2026-10-25): private by default; a selected insight
+// Connect (Edwin, 2026-10-25): private by default; a selected insight
 // shared only with chosen friends and withdrawable; Common Ground only when
 // both people have opted in to each other; and support asked for with a
 // fixed phrase, with no read receipts.

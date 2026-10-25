@@ -6,7 +6,7 @@ import { getReachOuts, putAwayReachOut, type FriendView, type ReachOutView } fro
 import { Avatar } from './ui/Avatar'
 import { Icon } from './ui/icons'
 
-// Support & Celebrate (Connect 3.0): reach out, appreciate progress and be
+// Support & Celebrate (the new Connect): reach out, appreciate progress and be
 // there for each other, with fixed words only. And Closer Together, at the
 // top of the page: at most two quiet cards, from what friends chose to send
 // and from who has not been in the app this week. Silence is never read as

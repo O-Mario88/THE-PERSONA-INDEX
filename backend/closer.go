@@ -11,7 +11,7 @@ import (
 	"unicode/utf8"
 )
 
-// Closer Together (Connect 3.0, Edwin, 2026-10-25). Three permissions, each
+// Closer Together (the new Connect, Edwin, 2026-10-25). Three permissions, each
 // asked for on its own, and each one can be taken back:
 //
 //   - Everything stays private by default.

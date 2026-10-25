@@ -1566,7 +1566,7 @@ describe('the weekly mirror', () => {
     expect(page).not.toHaveTextContent('%')
   })
 
-  // Connect 3.0: the person's own moves towards friends, from this phone.
+  // Connect: the person's own moves towards friends, from this phone.
   it('shows the week in connection from this phone only, never who', async () => {
     localStorage.setItem(
       'pi.connection.v1',

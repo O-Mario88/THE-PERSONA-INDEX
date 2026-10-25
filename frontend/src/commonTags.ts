@@ -1,7 +1,7 @@
 import type { AnswerRecord } from './profile'
 
 // Common Ground suggestions, worked out on this phone from the themes the
-// person has answered most (Connect 3.0). Only a suggestion: the person
+// person has answered most (the new Connect). Only a suggestion: the person
 // reviews them, unticks any and adds from the fixed list, and nothing leaves
 // the phone until they confirm. Intimate themes and cards they called "Not
 // me" never count.

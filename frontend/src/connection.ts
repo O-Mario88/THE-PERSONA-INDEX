@@ -1,6 +1,6 @@
 import { loadJSON, saveJSON } from './storage'
 
-// "Your week in connection" (Connect 3.0): the person's own moves towards
+// "Your week in connection" (the new Connect): the person's own moves towards
 // their friends, noted on this phone when they make them: a quiet nod, a
 // shared insight, asking for support, celebrating a win. Only the day and
 // the kind, never who, and never sent: the server counts none of these. The

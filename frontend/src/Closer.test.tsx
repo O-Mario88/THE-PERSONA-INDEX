@@ -4,7 +4,7 @@ import { AfterReflection, ReachOutPicker, ShareComposer } from './Closer'
 import { ACCOUNT_KEY, type AccountView } from './social'
 import { save, saveJSON } from './storage'
 
-// Closer Together (Connect 3.0) as a person meets it: sharing approved words
+// Closer Together (the new Connect) as a person meets it: sharing approved words
 // with friends they pick, and reaching out with a fixed phrase. The server
 // is faked; what matters is what is sent and what is said.
 

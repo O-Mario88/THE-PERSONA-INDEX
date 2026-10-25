@@ -1,7 +1,7 @@
 import { connectionBetween, connectionLine } from './connection'
 import { accountToken } from './social'
 
-// "Your week in connection" in the Mirrors (Connect 3.0): the person's own
+// "Your week in connection" in the Mirrors (the new Connect): the person's own
 // moves towards friends, from this phone only. The month, quarter and year
 // look further back, month by month. The Outside Mirror stays its own thing.
 

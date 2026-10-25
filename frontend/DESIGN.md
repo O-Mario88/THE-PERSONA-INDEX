@@ -27,7 +27,7 @@ weight.
 | `--accent-ink` | `#2f6d10` | lime | lime's partner for text and icons |
 | `--accent-wash` | `#f4fbe2` | lime at 8% | a chosen option's ground |
 
-| `--warm`, `--warm-ink`, `--warm-wash` | `#f6b73c`, `#8a5300`, `#fff6e3` | amber, amber, amber at 10% | Connect 3.0 only: "Celebrate a win together" and a friend's good news. Never a second accent elsewhere |
+| `--warm`, `--warm-ink`, `--warm-wash` | `#f6b73c`, `#8a5300`, `#fff6e3` | amber, amber, amber at 10% | Connect only: "Celebrate a win together" and a friend's good news. Never a second accent elsewhere |
 
 Lime is never text on white (1.2:1). Every text pair is at least 4.5:1;
 the lowest is muted on `--surface-2` at 4.63:1.

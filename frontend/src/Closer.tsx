@@ -19,7 +19,7 @@ import {
 } from './social'
 import { Avatar } from './ui/Avatar'
 
-// Closer Together (Connect 3.0): the two ways a person gives something to a
+// Closer Together (the new Connect): the two ways a person gives something to a
 // friend. A share is words they approved, to friends they picked, and can be
 // withdrawn; a reach-out is one fixed phrase to one friend. Nothing is ever
 // sent without the person pressing the button, and nothing says whether it

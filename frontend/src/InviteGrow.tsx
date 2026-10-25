@@ -4,7 +4,7 @@ import { ApiError } from './api'
 import { createInvite, inviteLink, joinRoom, openRoom, TAG_NAMES, TAGS, type CircleView, type Tag } from './social'
 import { Icon } from './ui/icons'
 
-// Invite & Grow (Connect 3.0): three ways to bring someone in (a link, a QR
+// Invite & Grow (the new Connect): three ways to bring someone in (a link, a QR
 // code, a room code for a team in one place) and how far the circle is from
 // the Outside Mirror. Once the mirror is open the card shrinks to the three
 // ways in: the page is about the people, not about growing a number.

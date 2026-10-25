@@ -1,4 +1,4 @@
--- Closer Together (Connect 3.0, closer.go). Each table holds only what a
+-- Closer Together (the new Connect, closer.go). Each table holds only what a
 -- person chose to give: the words of a share and whom it went to, broad
 -- Common Ground tags and whom they opted in to, and fixed-phrase reach-outs.
 -- Everything goes with the account; disconnecting drops what two people

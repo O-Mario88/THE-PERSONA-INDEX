@@ -3,7 +3,7 @@ import { ShareComposer } from './Closer'
 import { getShares, withdrawShare, type SharesView, type ShareView } from './social'
 import { Icon } from './ui/icons'
 
-// What Helped Us (Connect 3.0): real perspectives from people the person
+// What Helped Us (the new Connect): real perspectives from people the person
 // trusts. Each one is words a friend approved and chose to share with them,
 // filed under a theme, shown without a name (Edwin's mockup): the server
 // does not send who it was from. No likes, no replies, no counts. The

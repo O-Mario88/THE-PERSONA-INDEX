@@ -270,10 +270,10 @@ describe('the circle', () => {
   })
 })
 
-// Connect 3.0 (Edwin, 2026-10-25): four calm sections and no feed. Common
+// Connect (Edwin, 2026-10-25): four calm sections and no feed. Common
 // Ground only from what both friends opted in to, shares that can be
 // withdrawn, at most two quiet cards, and silence never read as anything.
-describe('connect 3.0', () => {
+describe('the connect page', () => {
   const base = (over: Partial<CircleView> = {}): CircleView => ({
     me: ama,
     friends: [friend('k', 'Kofi'), friend('t', 'Taylor', { tag: 'family' }), friend('d', 'Daniel', { active: false, tag: 'school' })],

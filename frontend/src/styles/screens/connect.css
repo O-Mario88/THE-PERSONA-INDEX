@@ -794,7 +794,7 @@
   line-height: 1.3;
 }
 
-/* Closer Together (Connect 3.0): the share composer, the reach-out picker
+/* Closer Together (the new Connect): the share composer, the reach-out picker
    and the quiet offer after a reflection. */
 .closer-sheet,
 .closer-offer {
@@ -855,7 +855,7 @@
   gap: var(--s-3);
 }
 
-/* Connect 3.0: the page as a grid of calm cards. One column on a phone; two
+/* Connect: the page as a grid of calm cards. One column on a phone; two
    on a tablet; three on a wide screen, as in Edwin's mockup. */
 .connect-grid {
   display: grid;

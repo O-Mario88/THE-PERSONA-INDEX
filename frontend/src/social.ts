@@ -249,7 +249,7 @@ export const answerTogether = (id: string, optionId: string) =>
   call<{ mine: string; theirs: string }>(`/api/together/${encodeURIComponent(id)}`, json('POST', { optionId }))
 export const leaveTogether = (id: string) => call<void>(`/api/together/${encodeURIComponent(id)}`, json('DELETE'))
 
-// ---- Closer Together (Connect 3.0, backend/closer.go) ----
+// ---- Closer Together (the new Connect, backend/closer.go) ----
 // Three permissions, each asked for on its own: a shared insight goes only
 // to the friends picked and can be withdrawn; Common Ground shows only what
 // two friends share, once both opted in; a reach-out is one fixed phrase to

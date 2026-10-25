@@ -31,7 +31,7 @@ import { RingPicker, RingsCard } from './RingsCard'
 import { Avatar } from './ui/Avatar'
 import { Icon } from './ui/icons'
 
-// Connect (Connect 3.0, Edwin, 2026-10-25): a private space for
+// Connect (Edwin, 2026-10-25): a private space for
 // understanding, encouragement and meaningful connection. Four sections,
 // no feed: Your Circle, Our Common Ground, What Helped Us and Support &
 // Celebrate, with at most two quiet "Closer together" cards above them and
