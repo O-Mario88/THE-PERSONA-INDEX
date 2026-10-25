@@ -152,16 +152,17 @@ type shareBody struct {
 	To    []string `json:"to"`
 }
 
-// ShareView is a shared insight as a friend sees it.
+// ShareView is a shared insight as a friend sees it: "A perspective from
+// your circle", with no name (Edwin's mockup). Who it came from stays on the
+// server, for muting and Connect off.
 type ShareView struct {
-	ID    string     `json:"id"`
-	From  FriendView `json:"from"`
-	Kind  string     `json:"kind"`
-	Theme string     `json:"theme"`
-	Text  string     `json:"text"`
-	Why   string     `json:"why,omitempty"`
-	Try   string     `json:"try,omitempty"`
-	Date  string     `json:"date"`
+	ID    string `json:"id"`
+	Kind  string `json:"kind"`
+	Theme string `json:"theme"`
+	Text  string `json:"text"`
+	Why   string `json:"why,omitempty"`
+	Try   string `json:"try,omitempty"`
+	Date  string `json:"date"`
 }
 
 // SentShareView is a shared insight as its sender sees it: with the names
@@ -304,7 +305,7 @@ func (s *Server) GetShares(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	ctx, today := r.Context(), s.today()
+	ctx := r.Context()
 	friends, err1 := s.social.Friends(ctx, acc.ID)
 	received, err2 := s.social.SharesTo(ctx, acc.ID)
 	sent, err3 := s.social.SharesFrom(ctx, acc.ID)
@@ -315,11 +316,10 @@ func (s *Server) GetShares(w http.ResponseWriter, r *http.Request) {
 	}
 	out := SharesView{Themes: ShareThemes, Received: []ShareView{}, Sent: []SentShareView{}}
 	for _, sh := range received {
-		f, ok := visibleFrom(acc, friends, sh.From)
-		if !ok {
+		if _, ok := visibleFrom(acc, friends, sh.From); !ok {
 			continue
 		}
-		out.Received = append(out.Received, ShareView{ID: sh.ID, From: friendView(f, today), Kind: sh.Kind, Theme: sh.Theme, Text: sh.Text, Why: sh.Why, Try: sh.Try, Date: sh.Created.Format(dateLayout)})
+		out.Received = append(out.Received, ShareView{ID: sh.ID, Kind: sh.Kind, Theme: sh.Theme, Text: sh.Text, Why: sh.Why, Try: sh.Try, Date: sh.Created.Format(dateLayout)})
 	}
 	for _, sh := range sent {
 		v := SentShareView{ID: sh.ID, Kind: sh.Kind, Theme: sh.Theme, Text: sh.Text, Why: sh.Why, Try: sh.Try, Date: sh.Created.Format(dateLayout), To: []string{}}

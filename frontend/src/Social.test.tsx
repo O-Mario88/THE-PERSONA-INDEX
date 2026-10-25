@@ -349,6 +349,23 @@ describe('connect 3.0', () => {
     await waitFor(() => expect(calls.find((c) => c.url === '/api/common/friends/k')?.body).toEqual({ on: true }))
   })
 
+  it('suggests tags from this phone’s answers, and sends nothing until saved', async () => {
+    saveJSON('pi.history.v1', {
+      answers: ['family', 'relatives', 'parenting', 'intimacy', 'intimacy', 'intimacy'].map((theme, i) => ({ date: '2026-10-20', questionId: `q${i}`, theme, depth: 1, traits: {} })),
+      skips: [],
+    })
+    serve((c) => (c.url === '/api/common' && c.method === 'GET' ? json(200, { ...common, tags: [...common.tags, { id: 'family', label: 'Family', value: 'family', explore: 'x' }], mine: [], optedIn: [], pairs: [] }) : c.url === '/api/common' && c.method === 'PUT' ? json(204) : undefined))
+    render(<CircleScreen />)
+    const card = await screen.findByRole('region', { name: 'Our Common Ground' })
+    fireEvent.click(await within(card).findByRole('button', { name: 'Choose what matters to you' }))
+    expect(within(card).getByRole('note')).toHaveTextContent('worked out on this phone')
+    expect(within(card).getByRole('button', { name: 'Family' })).toHaveAttribute('aria-pressed', 'true')
+    expect(calls.some((c) => c.url === '/api/common' && c.method === 'PUT')).toBe(false)
+    fireEvent.click(within(card).getByRole('button', { name: 'Personal growth' }))
+    fireEvent.click(within(card).getByRole('button', { name: 'Save' }))
+    await waitFor(() => expect(calls.find((c) => c.url === '/api/common' && c.method === 'PUT')?.body).toEqual({ tags: ['family', 'growth'] }))
+  })
+
   it('says when new Common Ground tags can be added', async () => {
     serve((c) => (c.url === '/api/common' && c.method === 'PUT' ? json(429, { error: 'tags_changed_recently', nextChange: '2026-10-31' }) : undefined))
     render(<CircleScreen />)
@@ -364,7 +381,9 @@ describe('connect 3.0', () => {
     render(<CircleScreen />)
     const card = await screen.findByRole('region', { name: 'What Helped Us' })
     expect(await within(card).findByText('“A short break before replying helped me think more clearly.”')).toBeInTheDocument()
-    expect(card).toHaveTextContent('A perspective from Kofi')
+    expect(card).toHaveTextContent('A perspective from your circle')
+    expect(card).toHaveTextContent('Shared by someone you trust')
+    expect(within(card).queryByText(/Kofi/)).not.toBeInTheDocument()
     expect(card).toHaveTextContent('Why it helped')
     expect(card).toHaveTextContent('with Taylor')
     fireEvent.click(within(card).getByRole('button', { name: 'Withdraw' }))

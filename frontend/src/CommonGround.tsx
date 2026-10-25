@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { ApiError } from './api'
+import { suggestCommonTags } from './commonTags'
+import { loadHistory } from './profile'
 import { getCommon, putCommon, setCommonFriend, type CommonView, type FriendView } from './social'
 import { Avatar } from './ui/Avatar'
 import { Icon } from './ui/icons'
@@ -127,7 +129,10 @@ function EmptyCommon({ view }: { view: CommonView }) {
 }
 
 function TagChooser({ view, onSaved, onCancel }: { view: CommonView; onSaved: () => void; onCancel: () => void }) {
-  const [picked, setPicked] = useState<string[]>(view.mine)
+  // A first choice starts from what the phone suggests; nothing is sent
+  // until Save.
+  const [suggested] = useState(() => (view.mine.length ? [] : suggestCommonTags(loadHistory().answers).filter((id) => view.tags.some((t) => t.id === id))))
+  const [picked, setPicked] = useState<string[]>(view.mine.length ? view.mine : suggested)
   const [error, setError] = useState('')
   const toggle = (id: string) => setPicked(picked.includes(id) ? picked.filter((x) => x !== id) : picked.length < MAX_TAGS ? [...picked, id] : picked)
   function save() {
@@ -138,6 +143,11 @@ function TagChooser({ view, onSaved, onCancel }: { view: CommonView; onSaved: ()
   return (
     <div className="common-choose">
       <p className="muted small">Up to six. Only the ones you share with a friend are ever shown to them.</p>
+      {suggested.length > 0 && (
+        <p className="muted small" role="note">
+          Suggested from the themes you answer most, worked out on this phone. Untick any you’d rather keep to yourself; nothing is shared until you save.
+        </p>
+      )}
       <div className="chips" role="group" aria-label="What matters to you">
         {view.tags.map((t) => (
           <button key={t.id} type="button" className="chip" aria-pressed={picked.includes(t.id)} onClick={() => toggle(t.id)}>

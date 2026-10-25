@@ -257,7 +257,7 @@ export const leaveTogether = (id: string) => call<void>(`/api/together/${encodeU
 
 export type ShareKind = 'helped' | 'win'
 export type ThemeOption = { id: string; label: string }
-export type ShareView = { id: string; from: FriendView; kind: ShareKind; theme: string; text: string; why?: string; try?: string; date: string }
+export type ShareView = { id: string; kind: ShareKind; theme: string; text: string; why?: string; try?: string; date: string }
 export type SentShareView = { id: string; kind: ShareKind; theme: string; text: string; why?: string; try?: string; date: string; to: string[] }
 export type SharesView = { themes: ThemeOption[]; received: ShareView[]; sent: SentShareView[] }
 export type NewShare = { kind: ShareKind; theme: string; text: string; why?: string; try?: string; to: string[] }

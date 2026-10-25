@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
 import { ShareComposer } from './Closer'
 import { getShares, withdrawShare, type SharesView, type ShareView } from './social'
-import { Avatar } from './ui/Avatar'
 import { Icon } from './ui/icons'
 
 // What Helped Us (Connect 3.0): real perspectives from people the person
 // trusts. Each one is words a friend approved and chose to share with them,
-// filed under a theme. No likes, no replies, no counts. The person's own
-// shares show who has them, and each can be withdrawn.
+// filed under a theme, shown without a name (Edwin's mockup): the server
+// does not send who it was from. No likes, no replies, no counts. The
+// person's own shares show exactly who has them, and each can be withdrawn.
 
 export function WhatHelped() {
   const [view, setView] = useState<SharesView | null>(null)
@@ -108,10 +108,12 @@ function HelpedCard({ share: s, title }: { share: ShareView; title: string }) {
   return (
     <li className="helped-card">
       <p className="helped-from">
-        <Avatar name={s.from.name} size={36} />
+        <span className="icon-disc" aria-hidden="true">
+          <Icon name="connect" size={18} />
+        </span>
         <span>
-          <strong>{s.kind === 'win' ? `A win from ${s.from.name}` : `A perspective from ${s.from.name}`}</strong>
-          <span className="muted small"> Shared with you</span>
+          <strong>{s.kind === 'win' ? 'A win from your circle' : 'A perspective from your circle'}</strong>
+          <span className="muted small"> Shared by someone you trust</span>
         </span>
       </p>
       {title && <p className="helped-title">{title}</p>}

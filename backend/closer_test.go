@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"slices"
+	"strings"
 	"testing"
 )
 
@@ -26,8 +27,12 @@ func TestSharedInsights(t *testing.T) {
 		})
 		expectStatus(t, w, http.StatusCreated)
 		got := decode[SharesView](t, send(t, s, "GET", "/api/shares", kofi.AccountToken, nil))
-		if len(got.Received) != 1 || got.Received[0].From.Name != "Ama" || got.Received[0].Theme != "managing-stress" {
+		if len(got.Received) != 1 || got.Received[0].Theme != "managing-stress" || !strings.HasPrefix(got.Received[0].Text, "Taking a short break") {
 			t.Fatalf("Kofi should see Ama's insight, got %+v", got.Received)
+		}
+		// "A perspective from your circle": the name is not sent.
+		if raw := send(t, s, "GET", "/api/shares", kofi.AccountToken, nil).Body.String(); strings.Contains(raw, "Ama") || strings.Contains(raw, ama.Account.ID) {
+			t.Fatalf("a received share must not say who sent it: %s", raw)
 		}
 		if n := len(decode[SharesView](t, send(t, s, "GET", "/api/shares", joel.AccountToken, nil)).Received); n != 0 {
 			t.Fatalf("Joel was not chosen, yet sees %d", n)
