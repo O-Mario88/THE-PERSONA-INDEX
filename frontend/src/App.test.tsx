@@ -960,6 +960,41 @@ describe('answers', () => {
   })
 })
 
+describe('growing together', () => {
+  // Edwin, 2026-10-25: show people they are not the only one, from real
+  // anonymous totals, never a feed and never about a named person.
+  it('shows real totals and who chose the same, only above the minimum', async () => {
+    localStorage.setItem('pi.choice.q-dishes', 'right-away')
+    stubApi({
+      today: { status: 200, body: today },
+      social: (url) =>
+        url === '/api/growing?date=2026-10-12'
+          ? {
+              status: 200,
+              body: {
+                date: '2026-10-12',
+                answers: 70,
+                min: 20,
+                questions: [
+                  { questionId: 'q-dishes', totalVotes: 40, options: [{ optionId: 'right-away', count: 30, percent: 75 }, { optionId: 'end-of-day', count: 10, percent: 25 }] },
+                  { questionId: 'q-bill', totalVotes: 12, options: [] },
+                ],
+              },
+            }
+          : undefined,
+    })
+    render(<App />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Connect' }))
+    const growing = await screen.findByRole('region', { name: 'Growing together' })
+    expect(await within(growing).findByText('70')).toBeInTheDocument()
+    expect(growing).toHaveTextContent('answers to today’s questions')
+    expect(growing).toHaveTextContent('75% of 40 people chose “Right after eating” too. You’re not the only one.')
+    expect(growing).not.toHaveTextContent('12 people')
+    expect(within(growing).getByRole('button', { name: /Share this/ })).toBeInTheDocument()
+    expect(growing).not.toHaveTextContent(/\b(likes?|comments?|followers?|rank)\b/i)
+  })
+})
+
 describe('the evening, from 5 pm', () => {
   it('opens on its own at 5 pm with three new questions, and only three', async () => {
     answeredThisMorning()

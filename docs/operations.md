@@ -129,6 +129,8 @@ Time zones run from UTC-12 to UTC+14, so a date is today somewhere for about 50 
 
 `GET /api/questions/today` still serves the UTC date's set; the app falls back to it when its own date is not open (a phone clock far off).
 
+`GET /api/growing?date=YYYY-MM-DD` (`backend/growing.go`) is Growing Together: the number of answers to that date's questions so far, and the split of each question that has at least 20 answers (the Human Pulse threshold), anonymous totals only, never intimate questions. No pass; `public, max-age=0, s-maxage=30`. The phone says which share chose the same as its own answer; the server is never told which that was beyond the vote it already counted.
+
 `GET /api/regional` serves the questions about everyday life in each part of the world (`backend/regional.go`, content in `backend/content/regional.json`), the same pack for everyone, about 30 KB gzipped: no pass, `public, max-age=3600, s-maxage=3600` and an ETag. The phone maps the country it keeps to a region and picks one now and then; nothing about these questions is ever sent back, so the server cannot tell who answered them or where anyone lives. The server refuses to start if the pack fails its gate.
 
 ## Edge rules (Cloudflare)
@@ -139,7 +141,7 @@ Cloudflare's rate-limiting rules depend on the plan (its documentation, read 202
 
 - Free: one rule for paths starting `/api/`: 50 requests per IP per 10 seconds, block for 10 seconds. A sitting is a handful of requests a minute.
 - Pro: add a second rule for `/api/device`: 10 requests per IP per minute, block for an hour.
-- Cache `GET /api/editions/*`, `GET /api/questions/today`, `GET /api/questions/*/results` and `GET /api/regional` by respecting origin `Cache-Control` (`s-maxage`). Never cache `POST`, `PUT` or `DELETE` routes, `/api/mirror*`, `/api/device/*` or `/api/vault`; they send `no-store`.
+- Cache `GET /api/editions/*`, `GET /api/questions/today`, `GET /api/questions/*/results`, `GET /api/growing` and `GET /api/regional` by respecting origin `Cache-Control` (`s-maxage`). Never cache `POST`, `PUT` or `DELETE` routes, `/api/mirror*`, `/api/device/*` or `/api/vault`; they send `no-store`.
 - Bot Fight Mode on.
 
 ## Insight card ratings

@@ -172,7 +172,8 @@ describe('the circle', () => {
       if (c.url === '/api/circle/connect/j') return json(200, { status: 'asked' })
     }
     render(<CircleScreen />)
-    expect(await screen.findByRole('heading', { name: '3 connected' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Your circle' })).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: 'Your circle in numbers' })).toHaveTextContent('3People in your circle')
     expect(screen.getByText('Your circle · @ama')).toBeInTheDocument()
     expect(screen.getByRole('img', { name: '2 of 3 friends active this week' })).toBeInTheDocument()
     expect(screen.getByText('One more friend unlocks your Outside Mirror')).toBeInTheDocument()
@@ -192,6 +193,33 @@ describe('the circle', () => {
     expect(screen.getByText(/Never your answers, your readings, or who else is here/)).toBeInTheDocument()
   })
 
+  // Edwin, 2026-10-25: three circles, biggest to smallest, and the person
+  // places each friend: inner (trust with a secret), close, and friends.
+  it('lets the person place each friend in one of three circles, kept on this phone', async () => {
+    signedInAs()
+    routes = (c) => (c.url === '/api/circle' ? json(200, circle()) : undefined)
+    render(<CircleScreen />)
+    const rings = await screen.findByRole('group', { name: 'Your three circles' })
+    expect(rings).toHaveTextContent('Inner circle')
+    expect(within(rings).getByRole('img', { name: /Wider circle: Kofi M\., Nakato, Daniel/ })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Kofi M.' }))
+    fireEvent.click(within(screen.getByRole('group', { name: 'Which circle is Kofi M. in?' })).getByRole('button', { name: 'Inner circle' }))
+    expect(within(rings).getByRole('img', { name: /Inner circle: Kofi M\./ })).toBeInTheDocument()
+    expect(JSON.parse(localStorage.getItem('pi.rings')!)).toEqual({ k: 'inner' })
+    // Never sent: no request carries which circle anyone is in.
+    expect(calls.some((c) => JSON.stringify(c.body ?? '').includes('inner'))).toBe(false)
+  })
+
+  it('finds a friend by name', async () => {
+    signedInAs()
+    routes = (c) => (c.url === '/api/circle' ? json(200, circle()) : undefined)
+    render(<CircleScreen />)
+    fireEvent.change(await screen.findByRole('searchbox', { name: 'Search people in your circle' }), { target: { value: 'nak' } })
+    expect(screen.getByRole('button', { name: 'Nakato' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Kofi M.' })).not.toBeInTheDocument()
+  })
+
   it('makes an invite link and a QR code for the tag chosen', async () => {
     signedInAs()
     routes = (c) => {
@@ -199,7 +227,7 @@ describe('the circle', () => {
       if (c.url === '/api/circle/invites') return json(200, { code: 'abcdefghjk', tag: (c.body as { tag: string }).tag, expiresOn: '2026-11-11' })
     }
     render(<CircleScreen />)
-    await screen.findByRole('heading', { name: '3 connected' })
+    await screen.findByRole('heading', { name: 'Your circle' })
     fireEvent.click(screen.getByRole('button', { name: 'My QR' }))
     expect(await screen.findByRole('img', { name: 'QR code for your invite link' })).toBeInTheDocument()
     expect(screen.getByText(/\/c\/abcdefghjk$/)).toBeInTheDocument()
@@ -215,7 +243,7 @@ describe('the circle', () => {
       if (c.url === '/api/circle/rooms/NOPE-11') return json(404, { error: 'no_room' })
     }
     render(<CircleScreen />)
-    await screen.findByRole('heading', { name: '3 connected' })
+    await screen.findByRole('heading', { name: 'Your circle' })
     fireEvent.click(screen.getByRole('button', { name: 'Room code' }))
     const box = screen.getByLabelText(/Join a room/)
     fireEvent.change(box, { target: { value: 'nope-11' } })

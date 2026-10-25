@@ -25,6 +25,10 @@ import {
   type Tag,
 } from './social'
 import { useAccount } from './useAccount'
+import { Growing } from './Growing'
+import type { Question } from './api'
+import { loadRings, placeIn, RING_NAMES, ringOf, type Ring } from './rings'
+import { RingPicker, RingsCard } from './RingsCard'
 import { Avatar } from './ui/Avatar'
 import { Icon } from './ui/icons'
 
@@ -41,11 +45,13 @@ function hoursLeft(expires: string): string {
   return h >= 1 ? `closes in ${h}h` : 'closes within the hour'
 }
 
-export function CircleScreen({ onOpenMirror }: { onOpenMirror?: () => void }) {
+export function CircleScreen({ onOpenMirror, today, questions = [] }: { onOpenMirror?: () => void; today?: string; questions?: Question[] }) {
   const me = useAccount()
   const [circle, setCircle] = useState<CircleView | null>(null)
   const [error, setError] = useState('')
   const [panel, setPanel] = useState<'link' | 'qr' | 'room' | 'why' | null>(null)
+  const [query, setQuery] = useState('')
+  const [rings, setRings] = useState(loadRings)
 
   const refresh = useCallback(() => {
     getCircle().then(
@@ -75,6 +81,7 @@ export function CircleScreen({ onOpenMirror }: { onOpenMirror?: () => void }) {
           be traced. Friends never see your answers or your readings.
         </p>
         <SignInSheet title="Sign in to start your circle." lead="No password: one tap or a 6-digit code. Your answers stay as private as they are now." onDone={() => {}} />
+        {today && <Growing date={today} questions={questions} circle={null} />}
       </section>
     )
   }
@@ -83,6 +90,8 @@ export function CircleScreen({ onOpenMirror }: { onOpenMirror?: () => void }) {
   const need = circle?.need ?? 3
   const unlocked = (circle?.active ?? 0) >= need
   const toGo = Math.max(0, need - (circle?.active ?? 0))
+  const q = query.trim().toLowerCase()
+  const shown = q ? friends.filter((f) => f.name.toLowerCase().includes(q) || (f.handle ?? '').toLowerCase().includes(q)) : friends
 
   return (
     <section className="circle" aria-labelledby="circle-title">
@@ -90,9 +99,9 @@ export function CircleScreen({ onOpenMirror }: { onOpenMirror?: () => void }) {
         <div>
           <p className="label">Your circle{me.handle ? ` · @${me.handle}` : ''}</p>
           <h2 id="circle-title" className="display">
-            {friends.length === 1 ? '1 connected' : `${friends.length} connected`}
+            Your circle
           </h2>
-          <p>Friends see you in ways you don’t.</p>
+          <p>A more intentional circle builds a brighter you.</p>
         </div>
         <div className="row-gap head-actions">
           <button type="button" className="icon-button" aria-label="Join with a room code" onClick={() => setPanel(panel === 'room' ? null : 'room')}>
@@ -104,20 +113,32 @@ export function CircleScreen({ onOpenMirror }: { onOpenMirror?: () => void }) {
         </div>
       </header>
 
-      <div className="stat-tiles" role="group" aria-label="Your circle in numbers">
-        <p className="stat-tile">
+      <div className="circle-stats card" role="group" aria-label="Your circle in numbers">
+        <p className="circle-stat">
           <span className="stat-num">{friends.length}</span>
-          <span className="stat-name">People</span>
+          <span className="stat-name">People in your circle</span>
         </p>
-        <p className="stat-tile">
-          <span className="stat-num">{new Set(friends.map((f) => f.tag)).size}</span>
-          <span className="stat-name">Groups</span>
-        </p>
-        <p className="stat-tile">
+        <p className="circle-stat">
           <span className="stat-num">{circle?.active ?? 0}</span>
           <span className="stat-name">Active this week</span>
         </p>
       </div>
+
+      {friends.length > 0 && (
+        <label className="circle-search">
+          <Icon name="search" size={18} />
+          <input
+            type="search"
+            className="field"
+            aria-label="Search people in your circle"
+            placeholder="Search people in your circle…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </label>
+      )}
+
+      {friends.length > 0 && <RingsCard friends={friends} rings={rings} />}
 
       <InviteWaiting onJoined={refresh} />
 
@@ -199,8 +220,8 @@ export function CircleScreen({ onOpenMirror }: { onOpenMirror?: () => void }) {
           <h3 id="connected-title" className="label">
             Connected
           </h3>
-          {TAGS.filter((t) => friends.some((f) => f.tag === t)).map((t) => {
-            const inTag = friends.filter((f) => f.tag === t)
+          {TAGS.filter((t) => shown.some((f) => f.tag === t)).map((t) => {
+            const inTag = shown.filter((f) => f.tag === t)
             return (
               <details key={t} className="tag-group" open>
                 <summary>
@@ -209,7 +230,7 @@ export function CircleScreen({ onOpenMirror }: { onOpenMirror?: () => void }) {
                 </summary>
                 <ul className="people-list">
                   {inTag.map((f) => (
-                    <FriendRow key={f.id} friend={f} onChange={refresh} />
+                    <FriendRow key={f.id} friend={f} onChange={refresh} ring={ringOf(rings, f.id)} onPlace={(r) => setRings(placeIn(f.id, r))} />
                   ))}
                 </ul>
               </details>
@@ -253,6 +274,8 @@ export function CircleScreen({ onOpenMirror }: { onOpenMirror?: () => void }) {
         <p className="muted">No one yet. Share your link with two or three people you see often: a link works for 30 days.</p>
       )}
 
+      {today && <Growing date={today} questions={questions} circle={circle} />}
+
       <p className="muted small">
         Friends see that you’re connected and the circle tag you gave them. Never your answers, your readings, or who else
         is here.
@@ -261,15 +284,16 @@ export function CircleScreen({ onOpenMirror }: { onOpenMirror?: () => void }) {
   )
 }
 
-function FriendRow({ friend: f, onChange }: { friend: FriendView; onChange: () => void }) {
+function FriendRow({ friend: f, onChange, ring, onPlace }: { friend: FriendView; onChange: () => void; ring: Ring; onPlace: (r: Ring) => void }) {
   const [open, setOpen] = useState(false)
   const set = (p: { tag?: Tag; muted?: boolean }) => patchFriend(f.id, p).then(onChange, () => {})
   return (
     <li className={`person-row${f.muted ? ' is-muted' : ''}`}>
       <Avatar name={f.name} muted={f.muted} size={40} />
-      <button type="button" className="person-text as-button" aria-expanded={open} onClick={() => setOpen(!open)}>
+      <button type="button" className="person-text as-button" aria-label={f.name} aria-expanded={open} onClick={() => setOpen(!open)}>
         <span className="person-name">{f.name}</span>
         <span className="person-sub">{f.muted ? 'Silently muted · they’ll never know' : `${TAG_NAMES[f.tag]} · since ${shortDate(f.since)}`}</span>
+        {!f.muted && <span className="person-sub">{f.active ? 'Active this week' : 'Not seen this week'} · {RING_NAMES[ring]}</span>}
       </button>
       {f.muted ? (
         <button type="button" className="btn small ghost" onClick={() => set({ muted: false })}>
@@ -282,7 +306,9 @@ function FriendRow({ friend: f, onChange }: { friend: FriendView; onChange: () =
       )}
       {open && (
         <div className="person-more">
-          <div className="chips" role="group" aria-label={`How you know ${f.name}`}>
+          <RingPicker name={f.name} ring={ring} onPlace={onPlace} />
+          <div className="chips labelled" role="group" aria-label={`How you know ${f.name}`}>
+            <span className="chips-label">How you know them</span>
             {TAGS.map((t) => (
               <button key={t} type="button" className="chip-toggle" aria-pressed={f.tag === t} onClick={() => set({ tag: t })}>
                 {TAG_NAMES[t]}

@@ -728,7 +728,7 @@ function App() {
 
           {tab === 'notebook' && <NotebookScreen mild={!intimacyOn(prefs)} today={date} />}
 
-          {tab === 'circle' && <CircleScreen onOpenMirror={() => setTab('mirror')} />}
+          {tab === 'circle' && <CircleScreen onOpenMirror={() => setTab('mirror')} today={date} questions={[...morningQs, ...eveningQs]} />}
 
           {tab === 'account' && (
             <AccountScreen
