@@ -114,6 +114,32 @@ public actor APIClient {
         }
     }
 
+    // MARK: Steps and card taps
+
+    /// Starts the small step on an answered card, or says how it went.
+    /// `needStep`: the person chose the step serving what the answer reached for.
+    public func saveStep(questionId: String, optionId: String, status: StepStatus, date: String, needStep: Bool = false) async throws {
+        struct Saved: Decodable { let status: String }
+        struct Body: Encodable {
+            let questionId: String, optionId: String, status: String, date: String, voterId: String
+            let needStep: Bool?
+        }
+        let _: Saved = try await withDevice { voter in
+            let body = Body(questionId: questionId, optionId: optionId, status: status.rawValue, date: date, voterId: voter, needStep: needStep ? true : nil)
+            return try await request("/api/steps", method: "POST", body: try JSONEncoder().encode(body))
+        }
+    }
+
+    /// "That's me", "Partly" or "Not me" under a card: one tap, its own key, never words.
+    public func rate(questionId: String, optionId: String, verdict: Verdict) async throws {
+        struct Accepted: Decodable { let status: String }
+        let key = UUID().uuidString.lowercased()
+        let _: Accepted = try await withDevice { voter in
+            let body = ["questionId": questionId, "optionId": optionId, "verdict": verdict.rawValue, "voterId": voter]
+            return try await request("/api/ratings", method: "POST", headers: ["Idempotency-Key": key], body: try JSONEncoder().encode(body))
+        }
+    }
+
     // MARK: Votes
 
     public func vote(questionId: String, optionId: String, sitting: Sitting?) async throws {

@@ -84,3 +84,16 @@ public struct APIError: Error, Equatable, Sendable {
         self.code = code
     }
 }
+
+/// How a small step went.
+public enum StepStatus: String, Codable, Sendable {
+    case started, helped
+    case noChange = "no_change"
+    case notTried = "not_tried"
+}
+
+/// The one tap under a card: does it fit?
+public enum Verdict: String, Codable, Sendable {
+    case me, partly
+    case notMe = "not_me"
+}

@@ -142,4 +142,33 @@ struct APIClientTests {
         #expect(sent.url?.query == "date=2026-10-18")
         #expect(sent.value(forHTTPHeaderField: "Authorization") == "Device pass-1")
     }
+
+    @Test("starts a small step with the answer it belongs to")
+    func startsStep() async throws {
+        let store = MemoryStore()
+        store.set("pass-1", forKey: APIClient.deviceKey)
+        let api = client(store)
+        StubProtocol.handler = { _ in (200, Self.json(#"{"status":"saved"}"#)) }
+        try await api.saveStep(questionId: "q1", optionId: "a", status: .started, date: "2026-10-24", needStep: true)
+        let sent = try #require(StubProtocol.seen.first { $0.url!.path == "/api/steps" })
+        let body = try #require(JSONSerialization.jsonObject(with: sent.httpBody ?? Data()) as? [String: Any])
+        #expect(body["questionId"] as? String == "q1")
+        #expect(body["status"] as? String == "started")
+        #expect(body["date"] as? String == "2026-10-24")
+        #expect(body["voterId"] as? String == "pass-1")
+        #expect(body["needStep"] as? Bool == true)
+    }
+
+    @Test("sends a card tap with its own idempotency key, never with words")
+    func ratesCard() async throws {
+        let store = MemoryStore()
+        store.set("pass-1", forKey: APIClient.deviceKey)
+        let api = client(store)
+        StubProtocol.handler = { _ in (202, Self.json(#"{"status":"accepted"}"#)) }
+        try await api.rate(questionId: "q1", optionId: "a", verdict: .partly)
+        let sent = try #require(StubProtocol.seen.first { $0.url!.path == "/api/ratings" })
+        #expect(sent.value(forHTTPHeaderField: "Idempotency-Key")?.isEmpty == false)
+        let body = try JSONSerialization.jsonObject(with: sent.httpBody ?? Data()) as? [String: String]
+        #expect(body == ["questionId": "q1", "optionId": "a", "verdict": "partly", "voterId": "pass-1"])
+    }
 }
