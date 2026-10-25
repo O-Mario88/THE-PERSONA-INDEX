@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { dismissMemory, journeyFor, memoryFor, reminderFor } from './journal'
 import { reflections, type Reflection } from './notebook'
 import { dayMonth } from './reflect'
-import type { Noticed } from './ReflectNoticed'
+import type { Noticed } from './noticed'
 import { Icon } from './ui/icons'
 
 // The side of Reflect (below the writing on a phone): earlier words

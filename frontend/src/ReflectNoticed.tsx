@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import type { Reflection, ReflectionArea } from './notebook'
-import { AREA_NAMES, type ReflectionItem } from './reflect'
+import type { ReflectionArea } from './notebook'
+import type { Noticed, NoticedSource } from './noticed'
+import { AREA_NAMES } from './reflect'
 import { Icon, type IconName } from './ui/icons'
 
 // What you've noticed (Reflect): strengths and areas to grow across the
@@ -8,9 +9,6 @@ import { Icon, type IconName } from './ui/icons'
 // your Circle (blended, five friends or more), or your reflections (only if
 // the person turned that on). Areas to grow are opportunities, never
 // judgements, and an area with nothing real to say says so.
-
-export type NoticedSource = 'answers' | 'week' | 'circle' | 'reflections'
-export type Noticed = { area: ReflectionArea; group: 'strength' | 'grow'; text: string; source: NoticedSource }
 
 const AREAS: ReflectionArea[] = ['work', 'school', 'family', 'culture', 'social', 'health', 'money', 'self']
 const ICONS: Record<ReflectionArea, IconName> = {
@@ -31,24 +29,6 @@ const SOURCE: Record<NoticedSource, string> = {
 }
 
 const AREA_SHORT: Record<ReflectionArea, string> = { ...AREA_NAMES, culture: 'Culture', social: 'Social', self: 'Self' }
-
-// noticedFrom turns the reflection items into one line per area and group,
-// adding the person's own reflections only when they chose that.
-export function noticedFrom(items: ReflectionItem[], past: Reflection[], useReflections: boolean, from: string): Noticed[] {
-  const out: Noticed[] = items.map((i) => ({
-    area: i.area,
-    group: i.group === 'grow' ? 'grow' : 'strength',
-    text: i.text,
-    source: i.source === 'circle' ? 'circle' : i.source === 'week' ? 'week' : 'answers',
-  }))
-  if (useReflections) {
-    for (const area of AREAS) {
-      const n = past.filter((r) => r.area === area && r.date >= from).length
-      if (n >= 2) out.push({ area, group: 'strength', text: `You’ve come back to ${AREA_NAMES[area].toLowerCase()} in your writing ${n} times lately.`, source: 'reflections' })
-    }
-  }
-  return out
-}
 
 type Props = { noticed: Noticed[]; onReflect: (n: Noticed) => void }
 

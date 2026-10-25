@@ -36,10 +36,13 @@ describe('reflection', () => {
     expect(reflectionItems('day', [], week(80), null)).toEqual([])
   })
 
-  it('adds what the circle sees, blended, only once the Outside Mirror is open', () => {
-    const closed = reflectionItems('week', [], null, { open: false, friends: 2, need: 3, weeks: 4, traits: [] })
-    expect(closed).toEqual([])
-    const open = reflectionItems('week', [], null, { open: true, friends: 4, need: 3, weeks: 4, traits: [{ trait: 'conscientiousness', position: 25 }] })
+  // Since the October 2026 Reflect, the circle's view needs five friends or
+  // more behind it (CIRCLE_MIN), more than the Outside Mirror's three.
+  it('adds what the circle sees, blended, only with five friends or more behind it', () => {
+    const traits = [{ trait: 'conscientiousness', position: 25 }]
+    expect(reflectionItems('week', [], null, { open: false, friends: 2, need: 3, weeks: 4, traits: [] })).toEqual([])
+    for (const friends of [3, 4]) expect(reflectionItems('week', [], null, { open: true, friends, need: 3, weeks: 4, traits })).toEqual([])
+    const open = reflectionItems('week', [], null, { open: true, friends: 5, need: 3, weeks: 4, traits })
     expect(open.map((i) => [i.group, i.source, i.text])).toEqual([['strength', 'circle', TRAITS.conscientiousness.low.strength]])
   })
 
