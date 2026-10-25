@@ -63,22 +63,34 @@ export function Home({
 }) {
   const now = useNow()
   const nowMin = new Date(now).getHours() * 60 + new Date(now).getMinutes()
+  const items = dayItems(date, w, morning, evening, nowMin)
+  const doneCount = items.filter((i) => i.state === 'done').length
   return (
     <section className="home" aria-labelledby="home-title">
+      <div className="wordmark-row">
+        <span className="wordmark">The Persona Index</span>
+        {!wide && (
+          <button type="button" className="avatar-button" aria-label="Account and settings" onClick={onAccount}>
+            <Avatar name={name || 'You'} size={36} />
+          </button>
+        )}
+      </div>
       <header className="home-head">
-        <div>
-          <p className="label">
+        <div className="home-greeting">
+          <p className="label home-date">
             {wide ? longDateOf(date) : weekdayOf(date)} · {clock(nowMin)}
           </p>
           <h2 id="home-title" className="display">
             {greeting(w, name)}
           </h2>
         </div>
-        {!wide && (
-          <button type="button" className="avatar-button" aria-label="Account and settings" onClick={onAccount}>
-            <Avatar name={name || 'You'} tint="#4f7357" size={44} />
-          </button>
-        )}
+        <Ring
+          part={doneCount / items.length}
+          label={`${doneCount} of ${items.length} windows done today`}
+          big={String(doneCount)}
+          small={`of ${items.length} today`}
+          size={92}
+        />
       </header>
 
       <HeroCard hero={hero} now={now} onOpen={onOpen} />
@@ -106,7 +118,7 @@ export function Home({
 
       <TapestryCard today={date} cols={wide ? 30 : 18} note={wide} />
 
-      <DayLine date={date} window={w} morning={morning} evening={evening} nowMin={nowMin} />
+      <DayLine items={items} />
 
       {children}
     </section>
@@ -157,22 +169,12 @@ function HeroCard({ hero, now, onOpen }: { hero: Hero; now: number; onOpen: () =
   )
 }
 
-// DayLine: the five windows, which are done, which is open and when the rest open.
-function DayLine({
-  date,
-  window: w,
-  morning,
-  evening,
-  nowMin,
-}: {
-  date: string
-  window: Window
-  morning: Progress
-  evening: Progress | null
-  nowMin: number
-}) {
+type DayItem = { k: OpenWindow; name: string; state: 'done' | 'now' | 'open' | 'missed' | 'later'; sub: string }
+
+// dayItems: the five windows, which are done, which is open and when the rest open.
+function dayItems(date: string, w: Window, morning: Progress, evening: Progress | null, nowMin: number): DayItem[] {
   const done = windowsDone(date)
-  const items = WINDOWS.map((k) => {
+  return WINDOWS.map((k) => {
     const info = WINDOW_INFO[k]
     const isDone =
       k === 'morning' ? morning === 'done' : k === 'evening' ? evening === 'done' : done[k] !== undefined
@@ -198,11 +200,22 @@ function DayLine({
               : clock(info.opens)
     return { k, name: info.short, state, sub }
   })
+}
+
+// DayLine: "Today's ritual", the five windows as one stepper.
+function DayLine({ items }: { items: DayItem[] }) {
+  const doneCount = items.filter((i) => i.state === 'done').length
   return (
-    <div className="dayline" role="group" aria-label="Your day">
+    <div className="dayline card" role="group" aria-label="Your day">
+      <div className="row-between">
+        <h3 className="card-title">Today’s ritual</h3>
+        <span className="muted small">
+          {doneCount} of {items.length} complete
+        </span>
+      </div>
       <ol>
         {items.map((i) => (
-          <li key={i.k} className={`dayline-item is-${i.state}`} style={{ ['--tint' as string]: WINDOW_INFO[i.k as OpenWindow].tint }}>
+          <li key={i.k} className={`dayline-item is-${i.state}`}>
             <span className="dayline-dot" aria-hidden="true" />
             <span className="dayline-name">{i.name}</span>
             <span className="dayline-sub">{i.sub}</span>

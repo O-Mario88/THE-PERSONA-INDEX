@@ -45,7 +45,6 @@ import { PulseAsk, PulseScreen } from './PulseViews'
 import { getPulse, count } from './pulse'
 import { lastSeen, markWindow, noteSeen } from './windows'
 import { Icon, type IconName } from './ui/icons'
-import { Avatar } from './ui/Avatar'
 import { AccountScreen } from './Account'
 import { CircleScreen } from './Circle'
 import { FriendQuestion, NodPicker, TogetherAsk, TogetherCard } from './Friends'
@@ -56,10 +55,6 @@ import { inviteFromURL } from './social'
 import { pullSync } from './sync'
 import { useAccount } from './useAccount'
 import { load as loadKey, save as saveKey } from './storage'
-import './App.css'
-import './design.css'
-import './social.css'
-import './reference.css'
 
 type State =
   | { kind: 'loading' }
@@ -75,12 +70,16 @@ type Tab = 'today' | 'mirror' | 'circle' | 'notebook' | 'account'
 const isTab = (v: View): v is Tab =>
   v === 'today' || v === 'mirror' || v === 'circle' || v === 'notebook' || v === 'account'
 
+// The five tabs of the 2026-10-25 redesign, in its order and words.
 const TABS: { tab: Tab; name: string; icon: IconName }[] = [
-  { tab: 'today', name: 'Today', icon: 'today' },
-  { tab: 'mirror', name: 'Mirror', icon: 'mirror' },
-  { tab: 'circle', name: 'Circle', icon: 'circle' },
-  { tab: 'notebook', name: 'Notebook', icon: 'notebook' },
+  { tab: 'today', name: 'Today', icon: 'home' },
+  { tab: 'notebook', name: 'Reflect', icon: 'reflect' },
+  { tab: 'circle', name: 'Connect', icon: 'connect' },
+  { tab: 'mirror', name: 'Insights', icon: 'insights' },
+  { tab: 'account', name: 'You', icon: 'you' },
 ]
+// Tabs that open before today's questions have loaded.
+const ALWAYS_OPEN: Tab[] = ['today', 'circle', 'notebook', 'account']
 
 const themesOf = (qs: Question[]) => qs.map((q) => q.theme).filter((t): t is string => !!t)
 
@@ -676,21 +675,12 @@ function App() {
               className="tab"
               aria-pressed={tab === t.tab}
               onClick={() => goTab(t.tab)}
-              disabled={!set && t.tab !== 'today' && t.tab !== 'circle' && t.tab !== 'notebook'}
+              disabled={!set && !ALWAYS_OPEN.includes(t.tab)}
             >
-              <Icon name={t.icon} size={22} />
+              <Icon name={t.icon} size={24} />
               <span className="tab-name">{t.name}</span>
             </button>
           ))}
-          <button
-            type="button"
-            className="tab rail-account"
-            aria-pressed={tab === 'account'}
-            aria-label="Account"
-            onClick={() => goTab('account')}
-          >
-            <Avatar name={me?.name || 'You'} tint="#4f7357" size={36} />
-          </button>
         </nav>
         <main className={`page page-${tab}`}>
           <h1 className="sr-only">The Persona Index</h1>

@@ -1,0 +1,6 @@
+/* The one stylesheet the app loads (main.tsx). Order matters: tokens, then
+   the shared parts, then the shell, then each screen. */
+@import './tokens.css';
+@import './base.css';
+@import './shell.css';
+@import './screens/home.css';
