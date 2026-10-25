@@ -9,7 +9,7 @@ struct TodayView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Space.s5) {
+            LazyVStack(alignment: .leading, spacing: Space.s5) {
                 Eyebrow(text: "The Persona Index")
                     .padding(.top, Space.s2)
                 header

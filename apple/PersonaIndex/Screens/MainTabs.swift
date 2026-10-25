@@ -144,7 +144,7 @@ struct LaterView<Extra: View>: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Space.s5) {
+            LazyVStack(alignment: .leading, spacing: Space.s5) {
                 Eyebrow(text: "The Persona Index")
                 Text(title).font(.pHero)
                 Text(lead).font(.figtree(17)).foregroundStyle(Palette.muted)

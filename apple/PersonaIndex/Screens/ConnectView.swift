@@ -14,7 +14,7 @@ struct ConnectView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Space.s5) {
+            LazyVStack(alignment: .leading, spacing: Space.s5) {
                 VStack(alignment: .leading, spacing: Space.s2) {
                     Text("Connect").font(.pHero).accessibilityAddTraits(.isHeader)
                     Text("A private space for understanding, encouragement and meaningful connection.")
