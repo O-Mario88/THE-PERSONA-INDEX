@@ -2,7 +2,8 @@ import SwiftUI
 
 /// The one-time welcome, as on the web: what the app is, in three lines.
 struct WelcomeView: View {
-    let onBegin: () -> Void
+    let onBegin: (String) -> Void
+    @State private var name = ""
 
     private let points: [(icon: String, title: String, line: String)] = [
         ("chart.bar", "See your patterns", "What you reached for and how you are changing, week by week."),
@@ -37,8 +38,17 @@ struct WelcomeView: View {
                     }
                 }
                 VStack(spacing: Space.s3) {
-                    Button("Begin your first reflection", action: onBegin).buttonStyle(PrimaryButtonStyle())
-                    Label("Private to you. No account needed.", systemImage: "lock")
+                    VStack(alignment: .leading, spacing: Space.s2) {
+                        Text("What should I call you? (optional)").font(.figtree(14, .bold))
+                        TextField("Your first name", text: $name)
+                            .font(.pBody)
+                            .textContentType(.givenName)
+                            .padding(.horizontal, Space.s4)
+                            .frame(minHeight: 52)
+                            .background(Palette.surface2, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+                    }
+                    Button("Begin your first reflection") { onBegin(name) }.buttonStyle(PrimaryButtonStyle())
+                    Label("Private to you. Your name stays on this device.", systemImage: "lock")
                         .font(.pSmall).foregroundStyle(Palette.muted)
                 }
             }

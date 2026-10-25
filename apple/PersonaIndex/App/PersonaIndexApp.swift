@@ -29,7 +29,10 @@ struct RootView: View {
             if model.welcomed {
                 MainTabs()
             } else {
-                WelcomeView { model.welcomed = true }
+                WelcomeView { name in
+                    model.name = String(name.trimmingCharacters(in: .whitespacesAndNewlines).prefix(30))
+                    model.welcomed = true
+                }
             }
         }
         .font(.pBody)

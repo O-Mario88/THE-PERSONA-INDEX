@@ -21,12 +21,17 @@ final class AppModel {
     var welcomed: Bool {
         didSet { defaults.set(welcomed ? "1" : nil, forKey: Keys.welcomed) }
     }
+    /// What the person asked to be called, for the greeting. On the device only, never sent.
+    var name: String {
+        didSet { defaults.set(name.isEmpty ? nil : name, forKey: Keys.name) }
+    }
 
     private let api: APIClient
     private let defaults: KeyValueStore
 
     enum Keys {
         static let welcomed = "pi.welcomed"
+        static let name = "pi.name"
         static let choice = "pi.choice."
         static let unsent = "pi.unsent."
     }
@@ -35,6 +40,7 @@ final class AppModel {
         self.api = api
         self.defaults = defaults
         self.welcomed = defaults.string(forKey: Keys.welcomed) == "1"
+        self.name = defaults.string(forKey: Keys.name) ?? ""
     }
 
     static func live() -> AppModel {
