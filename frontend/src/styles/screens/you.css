@@ -1,0 +1,371 @@
+/* You and Reflect: the profile (who you are to friends, sign-in and
+   devices, choices, what is kept) and the Notebook (cards, lines, good
+   things and plans, by tab). */
+
+.account {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+}
+
+.profile-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+.profile-id {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+}
+
+.profile-id .avatar {
+  font-size: 2rem !important;
+  box-shadow: 0 0 0 4px var(--accent-wash);
+}
+
+.profile-id .display {
+  font-size: clamp(1.875rem, 1.5rem + 1.6vw, 2.25rem);
+  overflow-wrap: anywhere;
+}
+
+/* A group on the profile: a white card with a spaced label. */
+.account .group,
+.account .col > .group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  padding: var(--s-5);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+}
+
+.account .group > .label,
+.kept-card > .label {
+  color: var(--muted);
+}
+
+.profile-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.field-label > .small {
+  display: block;
+  margin-bottom: var(--s-1);
+}
+
+.kept-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+}
+
+.kept-row > span:first-child {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ok {
+  color: var(--accent-ink);
+  font-weight: 700;
+}
+
+/* A setting with a switch: the words at left, the switch at right. */
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-4);
+  padding: var(--s-3) 0;
+  border-top: 1px solid var(--line);
+  cursor: pointer;
+}
+
+.group > .label + .toggle-row {
+  border-top: 0;
+}
+
+.toggle-row > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.toggle-label {
+  font-weight: 700;
+}
+
+.toggle-note {
+  color: var(--muted);
+  font-size: var(--fs-small);
+}
+
+/* A row that opens a screen: words and a chevron. */
+.row-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  width: 100%;
+  min-height: 52px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font-weight: 700;
+  text-align: left;
+}
+
+.row-button::after {
+  content: '›';
+  font-size: 1.5rem;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+/* What is kept, as a short table */
+.kept-card {
+  gap: var(--s-3);
+}
+
+.kept-table {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--s-2) var(--s-4);
+  margin: 0;
+  font-size: var(--fs-small);
+}
+
+.kept-table dt {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.kept-table dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.danger-card {
+  border-color: color-mix(in srgb, var(--danger) 30%, var(--line));
+}
+
+.danger-card .title {
+  font-size: var(--fs-h2);
+  color: var(--danger);
+}
+
+/* Your people (the heavy-day names) */
+.people {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.people-helps {
+  color: var(--muted);
+  font-size: var(--fs-small);
+}
+
+/* The Notebook */
+.notebook {
+  gap: var(--s-5);
+}
+
+.nb-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.nb-head .label {
+  color: var(--muted);
+}
+
+.nb-tabs {
+  display: flex;
+  gap: var(--s-2);
+  overflow-x: auto;
+  margin: 0 calc(-1 * var(--gutter));
+  padding: 0 var(--gutter) var(--s-1);
+  scrollbar-width: none;
+}
+
+.nb-tab {
+  flex: none;
+  min-height: 40px;
+  padding: 0 var(--s-4);
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: var(--fs-small);
+  font-weight: 700;
+}
+
+.nb-tab[aria-pressed='true'] {
+  background: var(--text);
+  color: var(--bg);
+}
+
+.nb-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.nb-area {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.nb-area-name {
+  font-size: var(--fs-h3);
+  font-weight: 800;
+}
+
+.nb-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.nb-entry {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-4) var(--s-5);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+}
+
+.nb-meta {
+  color: var(--muted);
+  font-size: var(--fs-tiny);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.nb-card-area {
+  color: var(--accent-ink);
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.nb-headline,
+.nb-line {
+  font-size: var(--fs-h3);
+  line-height: 1.35;
+  font-weight: 700;
+}
+
+.nb-prompt {
+  color: var(--text-2);
+  font-weight: 600;
+}
+
+.nb-answer,
+.nb-other {
+  color: var(--text-2);
+  font-size: var(--fs-small);
+}
+
+.nb-other .eyebrow {
+  display: block;
+}
+
+.nb-verdict {
+  color: var(--accent-ink);
+  font-size: var(--fs-small);
+  font-weight: 700;
+}
+
+.nb-show,
+.nb-remove {
+  align-self: flex-start;
+}
+
+.nb-remove {
+  color: var(--muted);
+}
+
+.nb-mirror {
+  border-color: var(--accent-line);
+  background: var(--accent-wash);
+}
+
+.kept-list li.kept-row {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* The one-time welcome */
+.welcome {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-8);
+  min-height: calc(100vh - var(--top) - var(--s-8));
+}
+
+.welcome-words {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+.welcome .display {
+  font-size: clamp(2.5rem, 2rem + 3vw, 3.25rem);
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+}
+
+.welcome-lead {
+  color: var(--muted);
+  font-size: 1.1875rem;
+}
+
+.welcome-points {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+}
+
+.welcome-points li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-4);
+}
+
+.welcome-points .icon-disc {
+  width: 64px;
+  height: 64px;
+}
+
+.welcome-points li > span:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.welcome-points strong {
+  font-size: var(--fs-h3);
+  font-weight: 800;
+}
+
+.welcome-foot {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  margin-top: auto;
+}

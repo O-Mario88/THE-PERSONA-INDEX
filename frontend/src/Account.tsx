@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react'
 import { ApiError } from './api'
 import { blackOn, connectOn, pulseOn, type Prefs } from './prefs'
 import { SignInSheet } from './SignIn'
-import { weekTiles } from './TapestryViews'
+import { TapestryCard, weekTiles } from './TapestryViews'
+import { Avatar } from './ui/Avatar'
+import { Icon } from './ui/icons'
 import { mondayOf } from './profile'
 import { deleteAccount, getAccount, patchAccount, signOut, type AccountDetails, type LoginView } from './social'
 import { syncOff, syncOn, pullSync } from './sync'
@@ -47,8 +49,8 @@ export function Choices({ prefs, onChange }: { prefs: Prefs; onChange: (p: Prefs
         Choices
       </h3>
       <Toggle
-        label="Dark mode · pure black"
-        note="Evening and night windows use true #000, kinder on OLED and at 22:00."
+        label="Dark mode"
+        note="Navy through the evening and night, and whenever your phone is set to dark."
         on={blackOn(prefs)}
         onChange={(on) => onChange(on ? without('black') : { ...prefs, black: false })}
       />
@@ -199,19 +201,28 @@ export function AccountScreen({
           }}
         />
       )}
-      {me && <header className="page-head row-between">
-        <div>
-          <p className="label">Account</p>
-          <h2 id="account-title" className="display">
-            {me ? (me.name ? `${me.name}${me.handle ? ` · @${me.handle}` : ''}` : 'Your account') : 'This phone'}
-          </h2>
-        </div>
-        {me && (
-          <p className="muted small">
-            {me.sync ? 'Everything synced' : 'Notebook on this phone'} · {sessions.length || 1} device{sessions.length === 1 ? '' : 's'}
-          </p>
-        )}
-      </header>}
+      {me && (
+        <header className="profile-head">
+          <div className="wordmark-row">
+            <p className="label">Your profile</p>
+            <button type="button" className="icon-button" aria-label="Settings" onClick={onOpenSettings}>
+              <Icon name="gear" size={22} />
+            </button>
+          </div>
+          <div className="profile-id">
+            <Avatar name={me.name || 'You'} size={84} />
+            <div>
+              <h2 id="account-title" className="display">
+                {me.name ? `${me.name}${me.handle ? ` · @${me.handle}` : ''}` : 'Your account'}
+              </h2>
+              <p className="muted small">
+                {me.sync ? 'Everything synced' : 'Notebook on this phone'} · {sessions.length || 1} device{sessions.length === 1 ? '' : 's'}
+              </p>
+            </div>
+          </div>
+        </header>
+      )}
+      {me && today && <TapestryCard today={today} />}
       <div className="two-col">
         <div className="col">
           {me && (

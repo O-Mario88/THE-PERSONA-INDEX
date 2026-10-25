@@ -54,7 +54,8 @@ import { SignInSheet } from './SignIn'
 import { inviteFromURL } from './social'
 import { pullSync } from './sync'
 import { useAccount } from './useAccount'
-import { load as loadKey, save as saveKey } from './storage'
+import { keys, load as loadKey, save as saveKey } from './storage'
+import { Welcome, WELCOMED } from './Welcome'
 
 type State =
   | { kind: 'loading' }
@@ -123,6 +124,10 @@ function App() {
   // The phone's clock decides the window: five a day, with the morning three
   // open from 5 am to 5 pm and the evening three from 5 pm to midnight.
   const { date, window: win, sitting: clockSitting } = useDay()
+  // The one-time welcome: a first open on a phone with no answers yet.
+  const [welcome, setWelcome] = useState(
+    () => loadKey(WELCOMED) === null && loadHistory().answers.length === 0 && keys('pi.choice.').length === 0,
+  )
   const wide = useMedia(wideQuery)
   const phoneDark = useMedia(darkQuery)
   // Stage 5: the account, if the person signed in, and an invite link they
@@ -665,6 +670,22 @@ function App() {
         </Flow>
       )
     }
+  }
+
+  if (welcome) {
+    return (
+      <div className={`app in-flow${dark ? ' is-dark' : ''}`}>
+        <main className="page page-welcome">
+          <h1 className="sr-only">The Persona Index</h1>
+          <Welcome
+            onBegin={() => {
+              saveKey(WELCOMED, '1')
+              setWelcome(false)
+            }}
+          />
+        </main>
+      </div>
+    )
   }
 
   return (

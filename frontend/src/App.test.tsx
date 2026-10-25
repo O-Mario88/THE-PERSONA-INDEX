@@ -182,6 +182,8 @@ const at = (hour: number, day = 12) => new Date(2026, 9, day, hour, 0)
 
 beforeEach(() => {
   localStorage.clear()
+  // Every test but the welcome's own starts past the one-time welcome.
+  localStorage.setItem('pi.welcomed', '1')
   vi.useFakeTimers({ toFake: ['Date'] })
   vi.setSystemTime(at(9))
 })
@@ -219,6 +221,32 @@ const noClinicianWords = /therap|psycholog|psychiatr|counsel/i
 // the card itself never carries an answer (ShareCard.test.tsx).
 const crowdOrScore = /player|\bcrowd\b|%|\bpts\b|\bpoints\b|bonus|\blevels?\b|compare with/i
 
+
+describe('the welcome', () => {
+  it('greets a first open once, then goes straight to the first sitting', async () => {
+    localStorage.removeItem('pi.welcomed')
+    stubApi({ today: { status: 200, body: sixADay } })
+    const first = render(<App />)
+    expect(await screen.findByRole('heading', { name: 'A calmer you starts with reflection.' })).toBeInTheDocument()
+    expect(screen.queryByRole('navigation', { name: 'Sections' })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Begin your first reflection' }))
+    expect(await screen.findByRole('region', { name: 'When do you wash the dishes?' })).toBeInTheDocument()
+    first.unmount()
+
+    render(<App />)
+    expect(await screen.findByRole('region', { name: 'When do you wash the dishes?' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'A calmer you starts with reflection.' })).not.toBeInTheDocument()
+  })
+
+  it('never shows to someone who has answered before', async () => {
+    localStorage.removeItem('pi.welcomed')
+    answeredThisMorning()
+    stubApi({ today: { status: 200, body: sixADay } })
+    render(<App />)
+    expect(await screen.findByRole('navigation', { name: 'Sections' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'A calmer you starts with reflection.' })).not.toBeInTheDocument()
+  })
+})
 
 describe('the daily questions', () => {
   it('shows one question at a time, with the edition and the day', async () => {

@@ -58,6 +58,7 @@ export const REGISTRY: Entry[] = [
   { key: 'pi.pulse.', what: 'How many people had answered a question when you last looked, for the day', backup: 'never', merge: 'local', download: false },
   { key: 'pi.windows.', what: 'Which of the day’s five windows you opened, and when, for the day', backup: 'never', merge: 'local', download: false },
   { key: 'pi.seen.v1', what: 'When you last looked at Today, for its “since” line', backup: 'never', merge: 'local', download: false },
+  { key: 'pi.welcomed', what: 'That you saw the welcome before your first sitting', backup: 'never', merge: 'local', download: false },
   { key: 'pi.install.v1', what: 'Whether you were invited to add the app to your home screen', backup: 'never', merge: 'local', download: false },
 ]
 
