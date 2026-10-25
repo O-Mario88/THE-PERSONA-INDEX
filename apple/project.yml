@@ -1,0 +1,49 @@
+# The native apps, for XcodeGen: `cd apple && xcodegen` writes
+# PersonaIndex.xcodeproj. One SwiftUI app for iPhone, iPad and Mac, on the
+# PersonaKit package (models, the API client, storage, the day's windows).
+name: PersonaIndex
+options:
+  bundleIdPrefix: com.personaindex
+  deploymentTarget:
+    iOS: "18.0"
+    macOS: "15.0"
+  createIntermediateGroups: true
+packages:
+  PersonaKit:
+    path: PersonaKit
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    CODE_SIGN_STYLE: Automatic
+targets:
+  PersonaIndex:
+    type: application
+    supportedDestinations: [iOS, macOS]
+    sources:
+      - path: PersonaIndex
+    dependencies:
+      - package: PersonaKit
+    info:
+      path: PersonaIndex/Info.plist
+      properties:
+        CFBundleDisplayName: Persona Index
+        LSApplicationCategoryType: public.app-category.lifestyle
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        # Where the Go API lives. A local run talks to `go run .` on this Mac.
+        PIApiBase: http://localhost:8080
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+    entitlements:
+      path: PersonaIndex/PersonaIndex.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.network.client: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.personaindex.app
+        PRODUCT_NAME: PersonaIndex
+        ENABLE_PREVIEWS: YES
+        CODE_SIGN_IDENTITY: "-"

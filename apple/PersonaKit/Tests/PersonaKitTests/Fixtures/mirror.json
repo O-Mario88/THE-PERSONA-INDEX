@@ -1,0 +1,244 @@
+{
+ "date": "2026-10-18",
+ "week": 42,
+ "from": "2026-10-12",
+ "to": "2026-10-18",
+ "editions": [
+  1,
+  6
+ ],
+ "weeksActive": 3,
+ "stats": {
+  "daysActive": 5,
+  "daysActiveLastWeek": 4,
+  "daysSoFar": 6,
+  "answers": 18,
+  "private": 1,
+  "deepest": 5,
+  "me": 12,
+  "partly": 2,
+  "notMe": 1,
+  "rated": 15,
+  "stepsStarted": 3,
+  "stepsTried": 2,
+  "stepsHelped": 1
+ },
+ "days": [
+  {
+   "date": "2026-10-12",
+   "edition": 1,
+   "answers": [
+    {
+     "theme": "habits",
+     "depth": "light"
+    },
+    {
+     "theme": "friendship",
+     "depth": "deep"
+    },
+    {
+     "theme": "intimacy",
+     "depth": "private"
+    }
+   ]
+  },
+  {
+   "date": "2026-10-13",
+   "edition": 2,
+   "answers": [
+    {
+     "theme": "money",
+     "depth": "deeper"
+    }
+   ]
+  },
+  {
+   "date": "2026-10-14",
+   "edition": 3,
+   "answers": []
+  },
+  {
+   "date": "2026-10-15",
+   "edition": 4,
+   "answers": [
+    {
+     "theme": "anger",
+     "depth": "deep"
+    }
+   ]
+  },
+  {
+   "date": "2026-10-16",
+   "edition": 5,
+   "answers": [
+    {
+     "theme": "habits",
+     "depth": "light"
+    }
+   ]
+  },
+  {
+   "date": "2026-10-17",
+   "edition": 6,
+   "answers": [
+    {
+     "theme": "friendship",
+     "depth": "deeper"
+    },
+    {
+     "theme": "money",
+     "depth": "light"
+    }
+   ]
+  },
+  {
+   "date": "2026-10-18",
+   "edition": 0,
+   "answers": []
+  }
+ ],
+ "traits": [
+  {
+   "trait": "conscientiousness",
+   "answers": 14,
+   "days": 9,
+   "weeks": 3,
+   "level": "steady",
+   "score": 74,
+   "change": 4,
+   "history": [
+    {
+     "week": 40,
+     "score": 65
+    },
+    {
+     "week": 41,
+     "score": 70
+    },
+    {
+     "week": 42,
+     "score": 74
+    }
+   ],
+   "evidence": [
+    "Right after eating",
+    "Before bed"
+   ],
+   "theme": "habits",
+   "edition": 1
+  },
+  {
+   "trait": "attachment_anxiety",
+   "answers": 9,
+   "days": 5,
+   "weeks": 2,
+   "level": "pattern",
+   "score": 68,
+   "change": 7,
+   "history": [
+    {
+     "week": 40
+    },
+    {
+     "week": 41,
+     "score": 61
+    },
+    {
+     "week": 42,
+     "score": 68
+    }
+   ],
+   "evidence": [
+    "Check my phone again"
+   ],
+   "theme": "friendship",
+   "edition": 2
+  },
+  {
+   "trait": "extraversion",
+   "answers": 4,
+   "days": 1,
+   "weeks": 1,
+   "level": "hint",
+   "score": 52,
+   "history": [
+    {
+     "week": 40
+    },
+    {
+     "week": 41
+    },
+    {
+     "week": 42,
+     "score": 52
+    }
+   ],
+   "evidence": []
+  }
+ ],
+ "themes": [
+  {
+   "theme": "habits",
+   "area": "everyday",
+   "answers": 5,
+   "depth": "deep"
+  },
+  {
+   "theme": "friendship",
+   "area": "people",
+   "answers": 4,
+   "depth": "deeper"
+  },
+  {
+   "theme": "money",
+   "area": "everyday",
+   "answers": 3,
+   "depth": "light"
+  },
+  {
+   "theme": "intimacy",
+   "area": "desire",
+   "answers": 1,
+   "depth": "private"
+  }
+ ],
+ "steps": [
+  {
+   "questionId": "q-tidy",
+   "optionId": "now",
+   "theme": "habits",
+   "step": "Tonight, leave one small thing undone on purpose.",
+   "started": "2026-10-14",
+   "status": "started",
+   "edition": 3
+  },
+  {
+   "questionId": "q-call",
+   "optionId": "text",
+   "theme": "friendship",
+   "step": "This week, call one friend instead of texting.",
+   "started": "2026-10-13",
+   "status": "helped",
+   "edition": 2
+  }
+ ],
+ "stepRecord": {
+  "started": 4,
+  "tried": 2,
+  "helped": 1
+ },
+ "nextSteps": [
+  {
+   "questionId": "q-money",
+   "optionId": "save",
+   "theme": "money",
+   "step": "This week, move a small amount to savings the day you get paid.",
+   "edition": 6
+  }
+ ],
+ "comingUp": [
+  "money",
+  "dating"
+ ],
+ "lowMood": false
+}
