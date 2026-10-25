@@ -241,9 +241,11 @@ type SocialStore interface {
 	DeleteShare(ctx context.Context, from, id string) (bool, error)
 
 	// Common Ground: a person's tags, whom they opted in to, and CommonWith,
-	// the friends who opted in back, with those friends' tags.
-	PutCommonTags(ctx context.Context, accountID string, tags []string) error
-	CommonTagsOf(ctx context.Context, accountID string) ([]string, error)
+	// the friends who opted in back, with those friends' tags and whether
+	// they muted this person.
+	// PutCommonTags keeps the tags and the day they last changed.
+	PutCommonTags(ctx context.Context, accountID string, set CommonTagSet) error
+	CommonTagsOf(ctx context.Context, accountID string) (CommonTagSet, error)
 	SetCommonConsent(ctx context.Context, a, b string, on bool) error
 	CommonConsent(ctx context.Context, accountID string) ([]string, error)
 	CommonWith(ctx context.Context, accountID string) ([]CommonMatch, error)

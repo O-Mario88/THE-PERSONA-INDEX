@@ -85,13 +85,17 @@ var ReachPhrases = map[string][]Option{
 }
 
 const (
-	shareTextMin   = 10
-	shareTextMax   = 280
-	shareNoteMax   = 160 // "Why it helped" and "Try it for yourself"
-	shareMaxTo     = 12
-	maxOpenShares  = 20 // shared by one person and not withdrawn
-	maxCommonTags  = 6
-	reachShownDays = 7
+	shareTextMin  = 10
+	shareTextMax  = 280
+	shareNoteMax  = 160 // "Why it helped" and "Try it for yourself"
+	shareMaxTo    = 12
+	maxOpenShares = 20 // shared by one person and not withdrawn
+	maxCommonTags = 6
+	// commonChangeDays is how often Common Ground tags may change. Without
+	// it, a friend could swap in new tags and read the other's whole list
+	// from the overlaps (coordinator review of #30).
+	commonChangeDays = 7
+	reachShownDays   = 7
 )
 
 // ErrReachedToday: one reach-out of each kind a day per pair.
@@ -127,8 +131,16 @@ type ReachOut struct {
 // CommonMatch is a friend who opted in to Common Ground with someone who
 // opted in to them, and that friend's tags.
 type CommonMatch struct {
-	Friend Friend
-	Tags   []string
+	Friend    Friend
+	Tags      []string
+	TheyMuted bool // the friend muted this person
+}
+
+// CommonTagSet is a person's Common Ground tags and the day they last
+// changed.
+type CommonTagSet struct {
+	Tags      []string
+	ChangedOn string
 }
 
 type shareBody struct {
@@ -182,10 +194,12 @@ type CommonPair struct {
 
 // CommonView is GET /api/common.
 type CommonView struct {
-	Tags    []CommonTag  `json:"tags"`
-	Mine    []string     `json:"mine"`
-	OptedIn []string     `json:"optedIn"` // friends this person opted in to
-	Pairs   []CommonPair `json:"pairs"`
+	Tags []CommonTag `json:"tags"`
+	Mine []string    `json:"mine"`
+	// NextChange is the first day the tags may change again, once set.
+	NextChange string       `json:"nextChange,omitempty"`
+	OptedIn    []string     `json:"optedIn"` // friends this person opted in to
+	Pairs      []CommonPair `json:"pairs"`
 }
 
 type reachBody struct {
@@ -356,11 +370,43 @@ func (s *Server) PutCommon(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	if err := s.social.PutCommonTags(r.Context(), acc.ID, tags); err != nil {
+	ctx, today := r.Context(), s.today()
+	cur, err := s.social.CommonTagsOf(ctx, acc.ID)
+	if err != nil {
+		writeError(w, http.StatusServiceUnavailable, "unavailable")
+		return
+	}
+	// The same tags, or fewer of them, never probe anything: always fine,
+	// and they leave the clock where it was. New tags wait a week.
+	changedOn := cur.ChangedOn
+	if !isSubset(tags, cur.Tags) {
+		if next := nextCommonChange(cur); next != "" && today < next {
+			writeJSON(w, http.StatusTooManyRequests, map[string]string{"error": "tags_changed_recently", "nextChange": next})
+			return
+		}
+		changedOn = today
+	}
+	if err := s.social.PutCommonTags(ctx, acc.ID, CommonTagSet{Tags: tags, ChangedOn: changedOn}); err != nil {
 		writeError(w, http.StatusServiceUnavailable, "unavailable")
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func isSubset(xs, of []string) bool {
+	for _, x := range xs {
+		if !slices.Contains(of, x) {
+			return false
+		}
+	}
+	return true
+}
+
+func nextCommonChange(cur CommonTagSet) string {
+	if cur.ChangedOn == "" {
+		return ""
+	}
+	return mustDate(cur.ChangedOn).AddDate(0, 0, commonChangeDays).Format(dateLayout)
 }
 
 func (s *Server) PutCommonFriend(w http.ResponseWriter, r *http.Request) {
@@ -402,9 +448,14 @@ func (s *Server) GetCommon(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusServiceUnavailable, "unavailable")
 		return
 	}
-	out := CommonView{Tags: CommonTags, Mine: nonNil(mine), OptedIn: nonNil(optedIn), Pairs: []CommonPair{}}
+	out := CommonView{Tags: CommonTags, Mine: nonNil(mine.Tags), NextChange: nextCommonChange(mine), OptedIn: nonNil(optedIn), Pairs: []CommonPair{}}
 	for _, m := range matches {
-		shared := slices.DeleteFunc(slices.Clone(m.Tags), func(t string) bool { return !slices.Contains(mine, t) })
+		// The same rule as shares and reach-outs, both ways: no one who
+		// muted the other, and no one with Connect off.
+		if !acc.Connect || m.Friend.Muted || !m.Friend.Connect || m.TheyMuted {
+			continue
+		}
+		shared := slices.DeleteFunc(slices.Clone(m.Tags), func(t string) bool { return !slices.Contains(mine.Tags, t) })
 		if len(shared) == 0 {
 			continue
 		}

@@ -12,13 +12,13 @@ import (
 
 type memoryCloser struct {
 	shares  map[string]Share
-	tags    map[string][]string // account -> Common Ground tags
-	consent map[string]bool     // a\x00b: a opted in to Common Ground with b
+	tags    map[string]CommonTagSet // account -> Common Ground tags
+	consent map[string]bool         // a\x00b: a opted in to Common Ground with b
 	reaches map[string]ReachOut
 }
 
 func newMemoryCloser() memoryCloser {
-	return memoryCloser{shares: map[string]Share{}, tags: map[string][]string{}, consent: map[string]bool{}, reaches: map[string]ReachOut{}}
+	return memoryCloser{shares: map[string]Share{}, tags: map[string]CommonTagSet{}, consent: map[string]bool{}, reaches: map[string]ReachOut{}}
 }
 
 func (m *memoryStore) PutShare(_ context.Context, sh Share) error {
@@ -67,17 +67,18 @@ func (m *memoryStore) DeleteShare(_ context.Context, from, id string) (bool, err
 	return true, nil
 }
 
-func (m *memoryStore) PutCommonTags(_ context.Context, id string, tags []string) error {
+func (m *memoryStore) PutCommonTags(_ context.Context, id string, set CommonTagSet) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.closer.tags[id] = slices.Clone(tags)
+	m.closer.tags[id] = CommonTagSet{Tags: slices.Clone(set.Tags), ChangedOn: set.ChangedOn}
 	return nil
 }
 
-func (m *memoryStore) CommonTagsOf(_ context.Context, id string) ([]string, error) {
+func (m *memoryStore) CommonTagsOf(_ context.Context, id string) (CommonTagSet, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return slices.Clone(m.closer.tags[id]), nil
+	set := m.closer.tags[id]
+	return CommonTagSet{Tags: slices.Clone(set.Tags), ChangedOn: set.ChangedOn}, nil
 }
 
 func (m *memoryStore) SetCommonConsent(_ context.Context, a, b string, on bool) error {
@@ -114,7 +115,8 @@ func (m *memoryStore) CommonWith(ctx context.Context, id string) ([]CommonMatch,
 	var out []CommonMatch
 	for _, f := range friends {
 		if m.closer.consent[pair(id, f.AccountID)] && m.closer.consent[pair(f.AccountID, id)] {
-			out = append(out, CommonMatch{Friend: f, Tags: slices.Clone(m.closer.tags[f.AccountID])})
+			back := m.social.friends[f.AccountID][id]
+			out = append(out, CommonMatch{Friend: f, Tags: slices.Clone(m.closer.tags[f.AccountID].Tags), TheyMuted: back.Muted})
 		}
 	}
 	return out, nil

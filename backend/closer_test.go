@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"net/http/httptest"
 	"slices"
 	"testing"
 )
@@ -227,4 +228,66 @@ func TestCloserWordsKeepTheVoice(t *testing.T) {
 	if h != "You both value peace and calm and growing as a person." {
 		t.Fatalf("unexpected headline %q", h)
 	}
+}
+
+// Coordinator review of #30: the overlap must not be a way to read a
+// friend's whole list by swapping one's own tags. Tags change at most once a
+// week; sending the same tags again is fine.
+func TestCommonTagsChangeSlowly(t *testing.T) {
+	s, codes := accountServer(t)
+	ama := named(t, s, codes, "Ama")
+	put := func(tags ...string) *httptest.ResponseRecorder {
+		return send(t, s, "PUT", "/api/common", ama.AccountToken, map[string]any{"tags": tags})
+	}
+	expectStatus(t, put("peace-calm", "growth"), http.StatusNoContent)
+	expectStatus(t, put("growth", "peace-calm"), http.StatusNoContent) // the same set
+	w := put("adventure", "honesty")
+	expectError(t, w, http.StatusTooManyRequests, "tags_changed_recently")
+	if got := decode[CommonView](t, send(t, s, "GET", "/api/common", ama.AccountToken, nil)); !slices.Equal(got.Mine, []string{"growth", "peace-calm"}) || got.NextChange == "" {
+		t.Fatalf("the refused change must leave the tags, and say when they can change: %+v", got)
+	}
+}
+
+// Coordinator review of #30: someone who muted a friend, or turned Connect
+// off, is not shown in that friend's Common Ground, the same rule as shares.
+func TestCommonGroundRespectsMutingAndConnect(t *testing.T) {
+	setup := func(t *testing.T) (*Server, SignedIn, SignedIn) {
+		s, codes := accountServer(t)
+		ama, daniel := named(t, s, codes, "Ama"), named(t, s, codes, "Daniel")
+		befriend(t, s, ama, daniel)
+		for _, who := range []SignedIn{ama, daniel} {
+			expectStatus(t, send(t, s, "PUT", "/api/common", who.AccountToken, map[string]any{"tags": []string{"growth"}}), http.StatusNoContent)
+		}
+		expectStatus(t, send(t, s, "PUT", "/api/common/friends/"+daniel.Account.ID, ama.AccountToken, map[string]bool{"on": true}), http.StatusNoContent)
+		expectStatus(t, send(t, s, "PUT", "/api/common/friends/"+ama.Account.ID, daniel.AccountToken, map[string]bool{"on": true}), http.StatusNoContent)
+		if p := decode[CommonView](t, send(t, s, "GET", "/api/common", ama.AccountToken, nil)).Pairs; len(p) != 1 {
+			t.Fatalf("expected the pair before muting, got %+v", p)
+		}
+		return s, ama, daniel
+	}
+	pairs := func(t *testing.T, s *Server, who SignedIn) []CommonPair {
+		return decode[CommonView](t, send(t, s, "GET", "/api/common", who.AccountToken, nil)).Pairs
+	}
+
+	t.Run("Daniel muted Ama: Ama no longer sees him", func(t *testing.T) {
+		s, ama, daniel := setup(t)
+		expectStatus(t, send(t, s, "PATCH", "/api/circle/friends/"+ama.Account.ID, daniel.AccountToken, map[string]bool{"muted": true}), http.StatusOK)
+		if p := pairs(t, s, ama); len(p) != 0 {
+			t.Fatalf("Daniel muted Ama, yet she sees %+v", p)
+		}
+		if p := pairs(t, s, daniel); len(p) != 0 {
+			t.Fatalf("Daniel muted Ama, yet he still sees her: %+v", p)
+		}
+	})
+
+	t.Run("Daniel turned Connect off: no one sees him, and he sees no one", func(t *testing.T) {
+		s, ama, daniel := setup(t)
+		expectStatus(t, send(t, s, "PATCH", "/api/account", daniel.AccountToken, map[string]bool{"connect": false}), http.StatusOK)
+		if p := pairs(t, s, ama); len(p) != 0 {
+			t.Fatalf("Daniel turned Connect off, yet Ama sees %+v", p)
+		}
+		if p := pairs(t, s, daniel); len(p) != 0 {
+			t.Fatalf("Daniel turned Connect off, yet he sees %+v", p)
+		}
+	})
 }

@@ -52,19 +52,19 @@ func (p *pgStore) DeleteShare(ctx context.Context, from, id string) (bool, error
 	return err == nil && t.RowsAffected() > 0, err
 }
 
-func (p *pgStore) PutCommonTags(ctx context.Context, id string, tags []string) error {
-	_, err := p.pool.Exec(ctx, `INSERT INTO common_tags (account_id, tags) VALUES ($1, $2)
-		ON CONFLICT (account_id) DO UPDATE SET tags = EXCLUDED.tags`, id, nonNil(tags))
+func (p *pgStore) PutCommonTags(ctx context.Context, id string, set CommonTagSet) error {
+	_, err := p.pool.Exec(ctx, `INSERT INTO common_tags (account_id, tags, changed_on) VALUES ($1, $2, $3)
+		ON CONFLICT (account_id) DO UPDATE SET tags = EXCLUDED.tags, changed_on = EXCLUDED.changed_on`, id, nonNil(set.Tags), set.ChangedOn)
 	return err
 }
 
-func (p *pgStore) CommonTagsOf(ctx context.Context, id string) ([]string, error) {
-	var tags []string
-	err := p.pool.QueryRow(ctx, `SELECT tags FROM common_tags WHERE account_id = $1`, id).Scan(&tags)
+func (p *pgStore) CommonTagsOf(ctx context.Context, id string) (CommonTagSet, error) {
+	var set CommonTagSet
+	err := p.pool.QueryRow(ctx, `SELECT tags, changed_on::text FROM common_tags WHERE account_id = $1`, id).Scan(&set.Tags, &set.ChangedOn)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, nil
+		return CommonTagSet{}, nil
 	}
-	return tags, err
+	return set, err
 }
 
 func (p *pgStore) SetCommonConsent(ctx context.Context, a, b string, on bool) error {
@@ -90,20 +90,22 @@ func (p *pgStore) CommonWith(ctx context.Context, id string) ([]CommonMatch, err
 	if err != nil {
 		return nil, err
 	}
-	rows, err := p.pool.Query(ctx, `SELECT c.b, coalesce(t.tags, '{}') FROM common_consent c
+	rows, err := p.pool.Query(ctx, `SELECT c.b, coalesce(t.tags, '{}'), coalesce(f.muted, false) FROM common_consent c
 		JOIN common_consent back ON back.a = c.b AND back.b = c.a
 		LEFT JOIN common_tags t ON t.account_id = c.b
+		LEFT JOIN friendships f ON f.a = c.b AND f.b = c.a
 		WHERE c.a = $1`, id)
 	if err != nil {
 		return nil, err
 	}
 	type row struct {
-		ID   string
-		Tags []string
+		ID    string
+		Tags  []string
+		Muted bool
 	}
 	got, err := pgx.CollectRows(rows, func(r pgx.CollectableRow) (row, error) {
 		var x row
-		return x, r.Scan(&x.ID, &x.Tags)
+		return x, r.Scan(&x.ID, &x.Tags, &x.Muted)
 	})
 	if err != nil {
 		return nil, err
@@ -111,7 +113,7 @@ func (p *pgStore) CommonWith(ctx context.Context, id string) ([]CommonMatch, err
 	var out []CommonMatch
 	for _, f := range friends {
 		if i := slices.IndexFunc(got, func(x row) bool { return x.ID == f.AccountID }); i >= 0 {
-			out = append(out, CommonMatch{Friend: f, Tags: got[i].Tags})
+			out = append(out, CommonMatch{Friend: f, Tags: got[i].Tags, TheyMuted: got[i].Muted})
 		}
 	}
 	return out, nil

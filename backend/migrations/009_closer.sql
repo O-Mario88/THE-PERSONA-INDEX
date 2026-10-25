@@ -25,9 +25,12 @@ CREATE TABLE IF NOT EXISTS share_recipients (
 
 CREATE INDEX IF NOT EXISTS share_recipients_recipient ON share_recipients (recipient);
 
+-- changed_on: new tags may be added once a week, so the overlap cannot be
+-- used to read a friend's whole list.
 CREATE TABLE IF NOT EXISTS common_tags (
     account_id text   PRIMARY KEY REFERENCES accounts (id) ON DELETE CASCADE,
-    tags       text[] NOT NULL
+    tags       text[] NOT NULL,
+    changed_on date   NOT NULL
 );
 
 -- a opted in to Common Ground with b. Shown only when b opted in to a too.
