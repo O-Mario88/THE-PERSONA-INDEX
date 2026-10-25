@@ -1,6 +1,6 @@
 /* The design reference, measured: "The Persona Index — Stage 5 UI Screens"
    (M01-M21 phone, D01-D06 desktop). Loaded last, so these sizes win. Every
-   number here is copied from the reference; the ground stays white
+   number here is copied from the reference; the ground is the reference linen #f6f5f0 (Edwin, 2026-10-25)
    (Edwin, 2026-10-24: "no cream color just green and white"). */
 
 :root {
