@@ -176,3 +176,26 @@ struct ThemePill: View {
             .background(Palette.surface2, in: Capsule())
     }
 }
+
+extension View {
+    /// A sheet's title, small and centred on iPhone so long titles fit.
+    func sheetTitle(_ title: String) -> some View {
+        navigationTitle(title)
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+    }
+}
+
+/// A quiet outlined action, full width.
+struct OutlineButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.figtree(15, .heavy))
+            .foregroundStyle(Palette.text)
+            .frame(maxWidth: .infinity, minHeight: 44)
+            .overlay(Capsule().strokeBorder(Palette.lineStrong, lineWidth: 1.5))
+            .contentShape(Capsule())
+            .opacity(configuration.isPressed ? 0.6 : 1)
+    }
+}
