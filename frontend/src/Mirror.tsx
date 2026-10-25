@@ -199,20 +199,9 @@ function MirrorPage({
 
   // Each section shows only when there is something real in it.
   const parts: Part[] = [
-    { key: 'glance', title: 'Your week at a glance', body: <Glance m={m} />, show: true },
-    { key: 'traits', title: 'Your trait read', body: <Traits m={m} />, show: true },
-    { key: 'moved', title: "How you've moved", body: <Moved m={m} />, show: moved },
-    { key: 'changed', title: 'What changed', body: <Changes changes={changes} />, show: changes.length > 0 },
-    {
-      key: 'reached',
-      title: 'What you reached for',
-      body: <Reached top={needs.top} all={needs.all} safety={needs.safety} week={m.from} />,
-      show: needs.top.length > 0,
-    },
-    { key: 'all', title: 'All of you', body: <AllOfYou themes={m.themes} />, show: m.themes.length > 0 },
     {
       key: 'who',
-      title: 'Who you were this week',
+      title: 'Where you leaned',
       body: <Who leans={lean} date={today} span="week" onVerdict={() => setNotMe(notMeSides(today))} />,
       show: lean.length > 0,
     },
@@ -228,6 +217,23 @@ function MirrorPage({
       body: <SundaySentence week={m.from} starter={starter} />,
       show: (sunday && m.stats.answers > 0) || sentencesBetween(m.from, m.from).length > 0,
     },
+    {
+      key: 'revisit',
+      title: 'Still true?',
+      body: wordsBack && <WordsBackCard item={wordsBack} today={today} />,
+      show: !!wordsBack,
+    },
+    { key: 'glance', title: 'Your week at a glance', body: <Glance m={m} />, show: true },
+    { key: 'traits', title: 'Your trait read', body: <Traits m={m} />, show: true },
+    { key: 'moved', title: "How you've moved", body: <Moved m={m} />, show: moved },
+    { key: 'changed', title: 'What changed', body: <Changes changes={changes} />, show: changes.length > 0 },
+    {
+      key: 'reached',
+      title: 'What you reached for',
+      body: <Reached top={needs.top} all={needs.all} safety={needs.safety} week={m.from} />,
+      show: needs.top.length > 0,
+    },
+    { key: 'all', title: 'All of you', body: <AllOfYou themes={m.themes} />, show: m.themes.length > 0 },
     { key: 'words', title: 'In your own words', body: <OwnWordsList words={words} />, show: words.length > 0 },
     {
       key: 'focus',
@@ -242,18 +248,13 @@ function MirrorPage({
       show: m.steps.length > 0 || m.stepRecord.started > 0 || (m.stats.plansDid ?? 0) + (m.stats.plansNotYet ?? 0) > 0,
     },
     {
-      key: 'revisit',
-      title: 'Still true?',
-      body: wordsBack && <WordsBackCard item={wordsBack} today={today} />,
-      show: !!wordsBack,
-    },
-    {
       key: 'next',
       title: 'Next week',
       body: <NextWeek m={m} today={today} reload={reload} />,
       show: true,
     },
     { key: 'road', title: 'The road ahead', body: <RoadAhead />, show: true },
+
   ]
   const sections = numbered(parts)
 

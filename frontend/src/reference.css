@@ -3925,3 +3925,10 @@
 .signin-overlay .sheet.signin {
   align-content: start;
 }
+/* M10: the week's numbers follow the reading sections, as in the design. */
+.mirror > .m-tiles {
+  order: 3;
+}
+.mirror > .m-footer {
+  order: 4;
+}

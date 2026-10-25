@@ -1291,12 +1291,12 @@ describe('the weekly mirror', () => {
     const page = screen.getByRole('region', { name: 'Your weekly mirror' })
     await within(page).findByRole('heading', { level: 2, name: weekTitle })
     expect(within(page).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual([
-      '01 Your week at a glance',
-      '02 Your trait read',
-      "03 How you've moved",
-      '04 All of you',
-      '05 Who you were this week',
-      '06 One line for your week',
+      '01 Where you leaned',
+      '02 One line for your week',
+      '03 Your week at a glance',
+      '04 Your trait read',
+      "05 How you've moved",
+      '06 All of you',
       '07 Your small steps',
       '08 Next week',
       '09 The road ahead',
@@ -1315,7 +1315,7 @@ describe('the weekly mirror', () => {
     expect(traits).toHaveTextContent('A hint · 4 answers')
     expect(page).toHaveTextContent('compares you only with yourself')
 
-    const who = within(page).getByRole('heading', { name: '05 Who you were this week' }).parentElement!
+    const who = within(page).getByRole('heading', { name: '01 Where you leaned' }).parentElement!
     expect(who).toHaveTextContent('You finish what you start.')
     expect(who).toHaveTextContent('You said: “Right after eating”, “Before bed”')
     expect(who).toHaveTextContent('This keeps showing up: 14 answers over 3 weeks. Worth testing against your real week.')
@@ -2279,15 +2279,15 @@ describe('the app remembers you', () => {
     const page = screen.getByRole('region', { name: 'Your weekly mirror' })
     await within(page).findByRole('heading', { level: 2, name: weekTitle })
     const headings = within(page).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)
-    expect(headings).toContain('04 What changed')
-    expect(headings).toContain("08 What you're working on")
+    expect(headings.some((h) => /^\d\d What changed$/.test(h ?? ''))).toBe(true)
+    expect(headings.some((h) => /^\d\d What you're working on$/.test(h ?? ''))).toBe(true)
 
-    const changed = within(page).getByRole('heading', { name: '04 What changed' }).parentElement!
+    const changed = within(page).getByRole('heading', { name: /^\d\d What changed$/ }).parentElement!
     expect(changed).toHaveTextContent('14 October First time in three weeks your answer leaned towards getting things done.')
     expect(changed).toHaveTextContent('Set against your own earlier answers only.')
 
     // The leaning already being worked on says so, rather than offering a second plan.
-    const who = within(page).getByRole('heading', { name: '06 Who you were this week' }).parentElement!
+    const who = within(page).getByRole('heading', { name: /^\d\d Where you leaned$/ }).parentElement!
     expect(who).toHaveTextContent("You're already working on this one. When I sit down for the evening, I will leave one job for tomorrow.")
     expect(who).toHaveTextContent('Work on this instead?')
 
