@@ -250,3 +250,8 @@
   display: flex;
   gap: var(--s-5);
 }
+
+/* The space a tab screen takes while its piece loads: no spinner, no jump. */
+.screen-reserve {
+  min-height: 60vh;
+}

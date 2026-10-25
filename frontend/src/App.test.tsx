@@ -864,7 +864,7 @@ describe('the daily questions', () => {
 
     // The keep-it-mild switch is always there, on Account, and takes intimacy out again.
     fireEvent.click(screen.getByRole('button', { name: 'You' }))
-    fireEvent.click(screen.getByRole('switch', { name: /Keep it mild \(no intimacy questions\)/ }))
+    fireEvent.click(await screen.findByRole('switch', { name: /Keep it mild \(no intimacy questions\)/ }))
     fireEvent.click(screen.getByRole('button', { name: 'Today' }))
     expect(screen.queryByText(closeness.prompt)).not.toBeInTheDocument()
     unmount()
