@@ -81,9 +81,27 @@ export type Reflection = Stamp & {
   question: string
   answer: string
   followsUp?: string // the id of the earlier reflection this answers
+  free?: true // written freely, with no question (Reflect)
+  why?: string // why the question appeared: "From your answers on Tuesday"
+  thread?: string // the id of the reflection that started its thread
 }
 
-export type NotebookEntry = KeptCard | GoodThings | Sentence | Plan | Name | Practised | Reflection
+// "Something I'd like to try" (Reflect): an intention saved from a
+// reflection, and a gentle check-in a week later. No goals, scores or
+// failure: "let it go" is an answer like any other.
+export type IntentionCheck = 'helped' | 'some' | 'not_yet' | 'let_go'
+export type Intention = Stamp & {
+  kind: 'intention'
+  id: string
+  date: string
+  text: string
+  from: string // the reflection it came from
+  checkOn: string // the day the check-in appears
+  check?: IntentionCheck
+  checkedOn?: string
+}
+
+export type NotebookEntry = KeptCard | GoodThings | Sentence | Plan | Name | Practised | Reflection | Intention
 
 const keyOf = (e: NotebookEntry): string => {
   switch (e.kind) {
@@ -101,6 +119,8 @@ const keyOf = (e: NotebookEntry): string => {
       return `${PREFIX}practice.${e.date}.${e.practice}`
     case 'reflection':
       return `${PREFIX}reflection.${e.id}`
+    case 'intention':
+      return `${PREFIX}intention.${e.id}`
   }
 }
 
@@ -133,6 +153,27 @@ export function keepReflection(r: Omit<Reflection, 'kind' | 'at'>) {
   const answer = r.answer.trim()
   if (answer) write({ ...r, answer, kind: 'reflection', at: 0 })
 }
+
+export function removeReflection(id: string) {
+  drop(`${PREFIX}reflection.${id}`)
+}
+
+const INTENTION_CHECK_DAYS = 7
+
+export const intentions = () => all<Intention>('intention').sort((a, b) => b.date.localeCompare(a.date) || b.at - a.at)
+
+export function keepIntention(i: { id: string; date: string; text: string; from: string }) {
+  const text = i.text.trim()
+  if (text) write({ ...i, text, kind: 'intention', checkOn: addDays(i.date, INTENTION_CHECK_DAYS), at: 0 })
+}
+
+export function checkIntention(id: string, check: IntentionCheck, today: string) {
+  const i = all<Intention>('intention').find((x) => x.id === id)
+  if (i) write({ ...i, check, checkedOn: today })
+}
+
+// The intentions whose gentle check-in is due today, oldest first.
+export const intentionsDue = (today: string) => intentions().filter((i) => !i.check && i.checkOn <= today).reverse()
 
 // Kept cards.
 export const keptCard = (questionId: string) => read<KeptCard>(`${PREFIX}card.${questionId}`, 'card')

@@ -28,6 +28,10 @@ export const SOURCE_NAMES: Record<ReflectionSource, string> = {
   circle: 'From your circle, blended',
 }
 
+// Circle-based reflection needs this many friends behind the blended view
+// (Reflect), more than the Outside Mirror's three, so no one stands out.
+export const CIRCLE_MIN = 5
+
 export const PERIOD_NAMES: Record<ReflectionPeriod, string> = { day: 'Today', week: 'This week', month: 'This month' }
 const THIS: Record<ReflectionPeriod, string> = { day: 'today', week: 'this week', month: 'this month' }
 const NEXT: Record<ReflectionPeriod, string> = { day: 'tomorrow', week: 'next week', month: 'next month' }
@@ -72,7 +76,7 @@ export function reflectionItems(
     }
   }
   // The circle's blended view, only once the Outside Mirror is open.
-  if (period !== 'day' && outside?.open) {
+  if (period !== 'day' && outside?.open && outside.friends >= CIRCLE_MIN) {
     for (const t of outside.traits.filter((t) => TRAITS[t.trait] && Math.abs(t.position - 50) >= 15).slice(0, 3)) {
       const side = t.position >= 50 ? TRAITS[t.trait].high : TRAITS[t.trait].low
       out.push({ id: `circle-${t.trait}`, area: 'social', group: 'strength', source: 'circle', text: side.strength })

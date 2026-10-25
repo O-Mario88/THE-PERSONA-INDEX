@@ -1,0 +1,99 @@
+import { useState } from 'react'
+import type { Reflection, ReflectionArea } from './notebook'
+import { AREA_NAMES, type ReflectionItem } from './reflect'
+import { Icon, type IconName } from './ui/icons'
+
+// What you've noticed (Reflect): strengths and areas to grow across the
+// eight parts of a life. Every item names where it came from: your answers,
+// your Circle (blended, five friends or more), or your reflections (only if
+// the person turned that on). Areas to grow are opportunities, never
+// judgements, and an area with nothing real to say says so.
+
+export type NoticedSource = 'answers' | 'week' | 'circle' | 'reflections'
+export type Noticed = { area: ReflectionArea; group: 'strength' | 'grow'; text: string; source: NoticedSource }
+
+const AREAS: ReflectionArea[] = ['work', 'school', 'family', 'culture', 'social', 'health', 'money', 'self']
+const ICONS: Record<ReflectionArea, IconName> = {
+  work: 'room',
+  school: 'notebook',
+  family: 'heart',
+  culture: 'globe',
+  social: 'connect',
+  health: 'sun',
+  money: 'bars',
+  self: 'you',
+}
+const SOURCE: Record<NoticedSource, string> = {
+  answers: 'From your answers',
+  week: 'From your answers this week',
+  circle: 'From your Circle',
+  reflections: 'From your reflections',
+}
+
+const AREA_SHORT: Record<ReflectionArea, string> = { ...AREA_NAMES, culture: 'Culture', social: 'Social', self: 'Self' }
+
+// noticedFrom turns the reflection items into one line per area and group,
+// adding the person's own reflections only when they chose that.
+export function noticedFrom(items: ReflectionItem[], past: Reflection[], useReflections: boolean, from: string): Noticed[] {
+  const out: Noticed[] = items.map((i) => ({
+    area: i.area,
+    group: i.group === 'grow' ? 'grow' : 'strength',
+    text: i.text,
+    source: i.source === 'circle' ? 'circle' : i.source === 'week' ? 'week' : 'answers',
+  }))
+  if (useReflections) {
+    for (const area of AREAS) {
+      const n = past.filter((r) => r.area === area && r.date >= from).length
+      if (n >= 2) out.push({ area, group: 'strength', text: `You’ve come back to ${AREA_NAMES[area].toLowerCase()} in your writing ${n} times lately.`, source: 'reflections' })
+    }
+  }
+  return out
+}
+
+type Props = { noticed: Noticed[]; onReflect: (n: Noticed) => void }
+
+export function ReflectNoticed({ noticed, onReflect }: Props) {
+  const [group, setGroup] = useState<'strength' | 'grow'>('strength')
+  const shown = AREAS.map((area) => ({ area, item: noticed.find((n) => n.area === area && n.group === group) }))
+  return (
+    <section className="reflect-noticed" aria-labelledby="noticed-title">
+      <div className="card-head">
+        <div>
+          <h3 id="noticed-title" className="title">
+            What you’ve noticed
+          </h3>
+          <p className="muted small">Insights from your answers, your Circle and, if you choose, your reflections.</p>
+        </div>
+      </div>
+      <div className="m-spans is-two" role="group" aria-label="Show">
+        <button type="button" className="m-span" aria-pressed={group === 'strength'} onClick={() => setGroup('strength')}>
+          Strengths
+        </button>
+        <button type="button" className="m-span" aria-pressed={group === 'grow'} onClick={() => setGroup('grow')}>
+          Areas to grow
+        </button>
+      </div>
+      {group === 'grow' && <p className="muted small">Places to grow are openings, not verdicts.</p>}
+      <ul className="noticed-grid" aria-label={group === 'strength' ? 'Strengths' : 'Areas to grow'}>
+        {shown.map(({ area, item }) => (
+          <li key={area} className={item ? 'noticed-card' : 'noticed-card is-empty'}>
+            <p className="noticed-area">
+              <Icon name={ICONS[area]} size={18} /> {AREA_SHORT[area]}
+            </p>
+            {item ? (
+              <>
+                <p className="noticed-text">{item.text}</p>
+                <p className="noticed-source">{SOURCE[item.source]}</p>
+                <button type="button" className="text-button" aria-label={`Reflect on ${AREA_SHORT[area]}`} onClick={() => onReflect(item)}>
+                  Reflect on this <Icon name="chevron" size={14} />
+                </button>
+              </>
+            ) : (
+              <p className="muted small">Nothing here yet.</p>
+            )}
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
