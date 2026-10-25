@@ -8,9 +8,12 @@
 import { keys, PREFIX } from './storage'
 
 // always: in every backup. words: only when the person switches own words
-// on for the backup. never: stays on this phone (a pass to the browser's own
-// lock, a key to resend something, a copy of what the server sends anyway).
-export type Backup = 'always' | 'words' | 'never'
+// on for the backup. journal: the person's writing in Reflect, only in the
+// journal copy, sealed under keys from the phrase that never leave their
+// phones, so never in what easy sync can open (vault.ts). never: stays on
+// this phone (a pass to the browser's own lock, a key to resend something,
+// a copy of what the server sends anyway).
+export type Backup = 'always' | 'words' | 'journal' | 'never'
 
 // How a key is merged when a backup written on another phone comes back:
 // newest keeps the copy changed last (notebook entries carry their own time),
@@ -38,6 +41,7 @@ export const REGISTRY: Entry[] = [
   { key: 'pi.pick.', what: 'Which three questions each sitting showed, for the day', backup: 'always', merge: 'local', download: false },
   { key: 'pi.leaning.', what: 'Whether a leaning in your mirror was you, for five weeks', backup: 'always', merge: 'local', download: true },
   { key: 'pi.safety.', what: 'What you said felt uncertain, when your mirror asked, for five weeks', backup: 'always', merge: 'local', download: true },
+  { key: 'pi.nb.reflection.', what: 'Your written reflections, in your own words', backup: 'journal', merge: 'newest', download: true },
   { key: 'pi.nb.', what: 'Your notebook: cards you kept, good things, Sunday sentences, plans and names', backup: 'always', merge: 'newest', download: true },
   { key: 'pi.read.', what: 'Which reads you opened, so they are not offered twice', backup: 'always', merge: 'local', download: false },
   { key: 'pi.words.', what: 'Answers in your own words', backup: 'words', merge: 'local', download: true },

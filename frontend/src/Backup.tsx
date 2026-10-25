@@ -145,7 +145,7 @@ export function BackupSettings() {
           </label>
           {mode.kind === 'show' ? (
             <>
-              <Phrase phrase={st.phrase} />
+              {st.phrase ? <Phrase phrase={st.phrase} /> : <p className="muted">This phone was restored through sync, so it doesn’t hold your 12 words. Find them where you wrote them down.</p>}
               <button type="button" className="text-button" onClick={() => setMode({ kind: 'idle' })}>
                 Hide my phrase
               </button>

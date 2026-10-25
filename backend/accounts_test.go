@@ -467,3 +467,20 @@ func TestAddressesAndHints(t *testing.T) {
 		t.Fatal(h)
 	}
 }
+
+// Reflect 2.0 (Edwin, 2026-10-25: "Reflections always end-to-end"): easy
+// sync keeps the main backup copy's two keys, never the 12 words, so the
+// server can never open the journal copy.
+func TestSyncKeepsKeysNotTheWords(t *testing.T) {
+	s, codes := accountServer(t)
+	a := signInByCode(t, s, codes, "ama@example.com", "")
+	keys := "sk2." + strings.Repeat("A", 43) + "." + strings.Repeat("b", 43)
+	expectStatus(t, send(t, s, "PUT", "/api/account/sync", a.AccountToken, map[string]string{"phrase": keys}), http.StatusNoContent)
+	got := decode[map[string]string](t, send(t, s, "GET", "/api/account/sync", a.AccountToken, nil))
+	if got["phrase"] != keys {
+		t.Fatalf("expected the keys back, got %q", got["phrase"])
+	}
+	for _, bad := range []string{"sk2." + strings.Repeat("A", 43), "sk2." + strings.Repeat("A", 43) + "." + strings.Repeat("b", 42) + "!", "sk3." + strings.Repeat("A", 43) + "." + strings.Repeat("b", 43)} {
+		expectError(t, send(t, s, "PUT", "/api/account/sync", a.AccountToken, map[string]string{"phrase": bad}), http.StatusBadRequest, "invalid_phrase")
+	}
+}
