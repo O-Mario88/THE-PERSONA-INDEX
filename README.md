@@ -35,3 +35,5 @@ See `CLAUDE.md` for the working rules.
 - [docs/backups.md](docs/backups.md): backup retention, restoring and the
   restore drill.
 - [docs/load-test.md](docs/load-test.md): the load gate and its results.
+- [frontend/DESIGN.md](frontend/DESIGN.md): the design system: colours,
+  type, spacing and the shared parts.
