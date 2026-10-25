@@ -41,7 +41,7 @@ import { outsideMirror, type OutsideMirror as OutsideMirrorData } from './social
 import { useAccount } from './useAccount'
 import { Icon } from './ui/icons'
 import { ShareSheet } from './ShareCard'
-import { weekTiles } from './Tapestry'
+import { weekTiles } from './TapestryViews'
 import {
   CHANGES_NOTE,
   LEANING_REPLIES,

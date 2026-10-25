@@ -5,7 +5,7 @@ import '@fontsource-variable/inter'
 import './index.css'
 import App from './App.tsx'
 import { watchInstall } from './pwa/install'
-import { LockGate } from './pwa/Lock'
+import { LockGate } from './pwa/LockGate'
 
 // The browser's install offer can come before the app has drawn anything.
 watchInstall()

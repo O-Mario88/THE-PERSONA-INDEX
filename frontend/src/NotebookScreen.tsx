@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { DownloadButtons } from './Book'
+import { DownloadButtons } from './BookDownloads'
 import { longDate, weekRange } from './mirrorText'
 import {
   allGoodThings,

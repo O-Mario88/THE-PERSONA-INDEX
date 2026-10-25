@@ -3,7 +3,7 @@ import { clock, left, MORNING_CLOSES, useNow, WINDOW_INFO, WINDOWS, windowCloses
 import { Icon } from './ui/icons'
 import { Ring } from './ui/Ring'
 import { Avatar } from './ui/Avatar'
-import { TapestryCard } from './Tapestry'
+import { TapestryCard } from './TapestryViews'
 import { windowsDone } from './windows'
 
 // Today (Stage 5 screens, "Midday, Ama"): the hub of the five windows. One

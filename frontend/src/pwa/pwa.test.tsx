@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { save, saveJSON } from '../storage'
 import { inviteDue, noteInstall, watchInstall } from './install'
 import { InstallInvite } from './InstallInvite'
-import { LockGate, LockSettings } from './Lock'
+import { LockGate, LockSettings } from './LockGate'
 import { locked, RELOCK_MS } from './lock'
 import { precacheList, serviceWorker } from './serviceWorker'
 
