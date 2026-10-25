@@ -2701,7 +2701,7 @@ describe('Stage 5 in the day', () => {
     })
     await screen.findByRole('heading', { level: 2, name: weekTitle })
     const section = await screen.findByRole('region', { name: /How your circle experiences you/ })
-    expect(within(section).getByText('Opens when 3 friends have answered', { exact: false })).toBeInTheDocument()
+    expect(await within(section).findByText('Opens when 3 friends have answered', { exact: false })).toBeInTheDocument()
     expect(within(section).getByRole('list', { name: '2 of 3 friends have answered' })).toBeInTheDocument()
     expect(within(section).getAllByText('A friend')).toHaveLength(2)
     expect(section).not.toHaveTextContent(/Kofi|Nakato/)
