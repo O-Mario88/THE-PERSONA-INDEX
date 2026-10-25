@@ -171,4 +171,31 @@ struct APIClientTests {
         let body = try JSONSerialization.jsonObject(with: sent.httpBody ?? Data()) as? [String: String]
         #expect(body == ["questionId": "q1", "optionId": "a", "verdict": "partly", "voterId": "pass-1"])
     }
+
+    @Test("treats an answer the server already counted as done, so it is not sent forever")
+    func duplicateVote() async throws {
+        let store = MemoryStore()
+        store.set("pass-1", forKey: APIClient.deviceKey)
+        let api = client(store)
+        StubProtocol.handler = { _ in (409, Self.json(#"{"error":"duplicate_vote"}"#)) }
+        let result = try await api.vote(questionId: "q1", optionId: "a", sitting: .morning)
+        #expect(result == .alreadyCounted)
+    }
+
+    @Test("takes a new key once when an old key belonged to another answer")
+    func reusedKey() async throws {
+        let store = MemoryStore()
+        store.set("pass-1", forKey: APIClient.deviceKey)
+        let api = client(store)
+        StubProtocol.handler = { req in
+            StubProtocol.seen.filter { $0.url!.path == "/api/votes" }.count == 1
+                ? (422, Self.json(#"{"error":"idempotency_key_reused"}"#))
+                : (202, Self.json(#"{"status":"accepted","eventId":"e"}"#))
+        }
+        let result = try await api.vote(questionId: "q1", optionId: "a", sitting: nil)
+        #expect(result == .counted)
+        let votes = StubProtocol.seen.filter { $0.url!.path == "/api/votes" }
+        #expect(votes.count == 2)
+        #expect(votes[0].value(forHTTPHeaderField: "Idempotency-Key") != votes[1].value(forHTTPHeaderField: "Idempotency-Key"))
+    }
 }

@@ -142,14 +142,36 @@ public actor APIClient {
 
     // MARK: Votes
 
-    public func vote(questionId: String, optionId: String, sitting: Sitting?) async throws {
+    /// What became of a vote: counted now, or already counted from this phone.
+    public enum VoteResult: Sendable, Equatable {
+        case counted, alreadyCounted
+    }
+
+    @discardableResult
+    public func vote(questionId: String, optionId: String, sitting: Sitting?) async throws -> VoteResult {
         struct Accepted: Decodable { let status: String }
-        let key = keys.key(questionId: questionId, optionId: optionId)
-        let _: Accepted = try await withDevice { voter in
-            var body = ["questionId": questionId, "optionId": optionId, "voterId": voter]
-            if let sitting { body["sitting"] = sitting.rawValue }
-            return try await request("/api/votes", method: "POST", headers: ["Idempotency-Key": key], body: try JSONEncoder().encode(body))
+        func send() async throws {
+            let key = keys.key(questionId: questionId, optionId: optionId)
+            let _: Accepted = try await withDevice { voter in
+                var body = ["questionId": questionId, "optionId": optionId, "voterId": voter]
+                if let sitting { body["sitting"] = sitting.rawValue }
+                return try await request("/api/votes", method: "POST", headers: ["Idempotency-Key": key], body: try JSONEncoder().encode(body))
+            }
         }
-        keys.done(questionId: questionId)
+        do {
+            do {
+                try await send()
+            } catch let error as APIError where error.code == "idempotency_key_reused" {
+                // A key from before may belong to another answer: a new key, once.
+                keys.done(questionId: questionId)
+                try await send()
+            }
+            keys.done(questionId: questionId)
+            return .counted
+        } catch let error as APIError where error.code == "duplicate_vote" {
+            // This phone's answer is already counted; nothing more to send.
+            keys.done(questionId: questionId)
+            return .alreadyCounted
+        }
     }
 }

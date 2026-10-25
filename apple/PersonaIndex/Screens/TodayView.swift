@@ -50,7 +50,8 @@ struct TodayView: View {
             VStack(alignment: .leading, spacing: Space.s2) {
                 Text("\(weekday) · \(Day.clock(minutes))".uppercased())
                     .font(.pLabel).tracking(1.6).foregroundStyle(Palette.muted)
-                Text(model.window.name).font(.figtree(38, .heavy, relativeTo: .largeTitle))
+                Text(model.window.greeting(name: nil)).font(.figtree(36, .heavy, relativeTo: .largeTitle))
+                    .fixedSize(horizontal: false, vertical: true)
             }
             Spacer()
             DayRing(part: Double(model.doneCount) / 5, big: "\(model.doneCount)", small: "of 5 today")

@@ -29,4 +29,14 @@ struct DayTests {
     func localDate() {
         #expect(Day.localDate(at(9, day: 5)) == "2026-10-05")
     }
+
+    @Test("greets by the time of day, with the name once there is one")
+    func greeting() {
+        #expect(DayWindow.morning.greeting(name: "Ama") == "Good morning, Ama.")
+        #expect(DayWindow.midday.greeting(name: nil) == "Good afternoon.")
+        #expect(DayWindow.afternoon.greeting(name: nil) == "Good afternoon.")
+        #expect(DayWindow.evening.greeting(name: "Ama") == "Good evening, Ama.")
+        #expect(DayWindow.night.greeting(name: nil) == "Night wind-down.")
+        #expect(DayWindow.rest.greeting(name: nil) == "Good night.")
+    }
 }

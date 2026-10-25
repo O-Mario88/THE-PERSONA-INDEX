@@ -34,6 +34,21 @@ public enum DayWindow: String, CaseIterable, Sendable {
         }
     }
 
+    /// Today's title (Edwin, 2026-10-25: "instead of using midday, use
+    /// morning, afternoon and evening"): good afternoon through the midday
+    /// and afternoon windows, the night wind-down, good night after midnight.
+    public func greeting(name: String?) -> String {
+        let words = switch self {
+        case .morning: "Good morning"
+        case .midday, .afternoon: "Good afternoon"
+        case .evening: "Good evening"
+        case .night: "Night wind-down"
+        case .rest: "Good night"
+        }
+        guard let name, !name.isEmpty else { return "\(words)." }
+        return "\(words), \(name)."
+    }
+
     /// The short name under the day's dots ("Pulse" for the afternoon).
     public var short: String { self == .afternoon ? "Pulse" : name }
 
