@@ -132,7 +132,8 @@ describe('What I keep, with backup on', () => {
     const order = server.fetch.mock.calls
       .filter(([, init]) => init?.method === 'DELETE')
       .map(([url]) => url)
-    expect(order).toEqual(['/api/vault', '/api/device/data'])
+    // Both copies of the backup (the main copy, then the journal copy), then the phone's data.
+    expect(order).toEqual(['/api/vault', '/api/vault', '/api/device/data'])
     expect(server.held.size).toBe(0)
     expect(vaultState()).toBeNull()
   })

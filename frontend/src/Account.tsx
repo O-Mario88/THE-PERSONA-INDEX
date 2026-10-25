@@ -9,6 +9,7 @@ import { mondayOf } from './profile'
 import { deleteAccount, getAccount, patchAccount, signOut, type AccountDetails, type LoginView } from './social'
 import { syncOff, syncOn, pullSync } from './sync'
 import { useAccount } from './useAccount'
+import { YourReflections } from './YourReflections'
 
 // Account (the Stage 5 screens, "Ama · @ama"): the two things friends see,
 // how this account signs in and where, the person's choices, what is kept
@@ -90,6 +91,7 @@ const LOGIN_NAMES: Record<LoginView['kind'], string> = { google: 'Google', apple
 // the retention in backend/worker.go (social_retention) and social.go.
 const KEPT: [string, string][] = [
   ['Readings, plans, Notebook', 'Encrypted · until you delete'],
+  ['Written reflections', 'End-to-end encrypted · only your 12 words open them'],
   ['Who’s in your circle', 'Until you disconnect'],
   ['Friend answers about you', 'The week only, no sender · 35 days'],
   ['That you answered a friend question', 'The date only, no question or option · 35 days'],
@@ -274,7 +276,7 @@ export function AccountScreen({
                 </ul>
                 <Toggle
                   label="Sync my Notebook across devices"
-                  note="Keeps your 12 words with your account, sealed, so a new phone restores by signing in. The server could open them; off, only the words can."
+                  note="Keeps the keys to your backup with your account, sealed, so a new phone restores by signing in. The server could open it, except your written reflections: those stay end-to-end encrypted, and only your 12 words open them. Off, only the words open anything."
                   on={me.sync}
                   onChange={(on) => !busy && toggleSync(on)}
                 />
@@ -316,6 +318,7 @@ export function AccountScreen({
           <button type="button" className="btn wide outline" onClick={onOpenKept}>
             {me ? 'Export my Notebook, or delete what this phone keeps' : 'What I keep, and how to delete it'}
           </button>
+          <YourReflections />
           <button type="button" className="btn wide outline" onClick={onOpenSettings}>
             Show my 12-word recovery phrase
           </button>
