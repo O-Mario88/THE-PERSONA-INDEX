@@ -3893,3 +3893,35 @@
   background: transparent;
   border: 0;
 }
+
+/* M03: the thread's per-trait notes fold away under the headline. */
+.thread-more {
+  margin-top: 4px;
+}
+.thread-more > summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-link);
+  cursor: pointer;
+  list-style: none;
+}
+.thread-more > summary::-webkit-details-marker {
+  display: none;
+}
+.thread-more > summary::after {
+  content: ' ›';
+  margin-left: 4px;
+}
+.thread-more[open] > summary::after {
+  content: ' ⌄';
+}
+.signin-overlay .sheet.signin {
+  min-height: calc(100% - 292px);
+  box-sizing: border-box;
+}
+.signin-overlay .sheet.signin {
+  align-content: start;
+}

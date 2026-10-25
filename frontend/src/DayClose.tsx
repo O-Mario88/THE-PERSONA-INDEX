@@ -226,6 +226,9 @@ function Thread({ answers, history, date, paused }: Read) {
     <div className="thread" role="note" aria-label="Today's thread">
       <p className="eyebrow">Today's thread</p>
       <p className="thread-headline">{advice.headline}</p>
+      {advice.points.length > 0 && (
+        <details className="thread-more">
+          <summary>{advice.points.length > 1 ? 'What each could mean' : 'What it could mean'}</summary>
       {advice.points.map((p) => (
         <div key={p.trait} className="thread-point">
           <p className="thread-name">{p.name}</p>
@@ -242,6 +245,8 @@ function Thread({ answers, history, date, paused }: Read) {
           </p>
         </div>
       ))}
+        </details>
+      )}
     </div>
   )
 }
