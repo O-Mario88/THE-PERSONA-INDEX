@@ -970,7 +970,7 @@ describe('the evening, from 5 pm', () => {
     vi.setSystemTime(at(15))
     const fetchMock = stubApi({ today: { status: 200, body: sixADay } })
     render(<App />)
-    expect(await screen.findByRole('heading', { name: 'Afternoon' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Good afternoon.' })).toBeInTheDocument()
     expect(screen.queryByRole('navigation', { name: "Today's questions" })).not.toBeInTheDocument()
 
     vi.setSystemTime(at(17))
@@ -980,7 +980,7 @@ describe('the evening, from 5 pm', () => {
     vi.setSystemTime(at(0, 13))
     fireEvent(document, new Event('visibilitychange'))
     await waitFor(() => expect(calls(fetchMock, '/api/editions/2026-10-13')).toHaveLength(1))
-    expect(await screen.findByRole('heading', { name: 'Night' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Good night.' })).toBeInTheDocument()
     expect(screen.getByRole('group', { name: 'The night is yours' })).toHaveTextContent('Your morning three open at 05:00.')
   })
 
@@ -1780,7 +1780,7 @@ describe('the week', () => {
 
     vi.setSystemTime(new Date(2026, 9, 12, 16, 59))
     const second = render(<App />)
-    expect(await screen.findByRole('heading', { name: 'Afternoon' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Good afternoon.' })).toBeInTheDocument()
     expect(screen.queryByText('Lunch time. What usually happens?')).not.toBeInTheDocument()
     second.unmount()
 
@@ -2553,7 +2553,7 @@ describe('where you live', () => {
     expect(JSON.parse(localStorage.getItem('pi.prefs.v1')!)).toMatchObject({ country: 'none' })
     unmount()
     render(<App />)
-    await screen.findByRole('heading', { name: 'Morning' })
+    await screen.findByRole('heading', { name: 'Good morning.' })
     expect(screen.queryByRole('region', { name: 'Where do you live now?' })).not.toBeInTheDocument()
   })
 
@@ -2696,7 +2696,7 @@ describe('Stage 5 in the day', () => {
     expect(calls(fetchMock, '/api/auth/code')).toHaveLength(0)
     unmount()
     render(<App />)
-    await screen.findByRole('heading', { name: /Morning/ })
+    await screen.findByRole('heading', { name: /morning/i })
     expect(screen.queryByRole('heading', { name: /Keep them everywhere/ })).not.toBeInTheDocument()
   })
 
@@ -2713,7 +2713,7 @@ describe('Stage 5 in the day', () => {
       },
     })
     render(<App />)
-    expect(await screen.findByRole('heading', { name: 'Midday, Ama' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Good afternoon, Ama.' })).toBeInTheDocument()
     expect(await screen.findByText('sent you a quiet nod · “Rooting for you this week.”', { exact: false })).toBeInTheDocument()
     expect(screen.getByRole('region', { name: 'Since you last looked' })).not.toHaveTextContent(/\d+ nods?/)
   })

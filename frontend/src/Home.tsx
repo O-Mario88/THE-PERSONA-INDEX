@@ -28,10 +28,21 @@ const weekdayOf = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateStri
 const longDateOf = (iso: string) =>
   new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' })
 
-// greeting is the title: the window, and the person's name once they gave one.
+// greeting is the title (Edwin, 2026-10-25: "instead of using midday, use
+// morning, afternoon and evening"): good morning, good afternoon through the
+// midday and afternoon windows, good evening, and the night wind-down; after
+// midnight, good night. The person's name once they gave one.
+const GREETINGS: Record<Window, string> = {
+  morning: 'Good morning',
+  midday: 'Good afternoon',
+  afternoon: 'Good afternoon',
+  evening: 'Good evening',
+  night: 'Night wind-down',
+  rest: 'Good night',
+}
+
 export function greeting(w: Window, name?: string | null): string {
-  const part = w === 'rest' ? 'Night' : WINDOW_INFO[w].name
-  return name ? `${part}, ${name}` : part
+  return name ? `${GREETINGS[w]}, ${name}.` : `${GREETINGS[w]}.`
 }
 
 export function Home({
