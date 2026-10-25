@@ -46,11 +46,7 @@ func (s *Server) GrowingTogether(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusServiceUnavailable, "unavailable")
 			return
 		}
-		res := QuestionResults{QuestionID: q.ID, Options: make([]OptionResult, 0, len(q.Options))}
-		for _, o := range q.Options {
-			res.Options = append(res.Options, OptionResult{OptionID: o.ID, Count: counts[o.ID]})
-			res.TotalVotes += counts[o.ID]
-		}
+		res := tally(q, counts)
 		out.Answers += res.TotalVotes
 		if shown := foldFew(res); shown.TotalVotes >= growingMin {
 			out.Questions = append(out.Questions, shown)
