@@ -166,6 +166,7 @@ func (m *memoryStore) DeleteAccount(_ context.Context, id string) error {
 	maps.DeleteFunc(s.prompts, func(k string, _ bool) bool { a, _, _ := strings.Cut(k, "\x00"); return a == id })
 	s.nods = slices.DeleteFunc(s.nods, func(n Nod) bool { return n.From == id || n.To == id })
 	maps.DeleteFunc(s.together, func(_ string, t Together) bool { return t.Asker == id || t.Invitee == id })
+	m.closer.forgetAccount(id)
 	return nil
 }
 
@@ -373,6 +374,7 @@ func (m *memoryStore) Unfriend(_ context.Context, a, b string) error {
 	defer m.mu.Unlock()
 	delete(m.social.friends[a], b)
 	delete(m.social.friends[b], a)
+	m.closer.forgetPair(a, b)
 	return nil
 }
 
@@ -733,6 +735,7 @@ func (m *memoryStore) DeleteSocialBefore(_ context.Context, date string, now tim
 	before = len(s.nods)
 	s.nods = slices.DeleteFunc(s.nods, func(x Nod) bool { return x.Date < date })
 	n += before - len(s.nods)
+	n += m.closer.reachesBefore(date)
 	for id, t := range s.together {
 		if !now.Before(t.Expires.Add(togetherShownAfter)) {
 			delete(s.together, id)

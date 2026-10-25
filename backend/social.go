@@ -166,7 +166,8 @@ type SocialStore interface {
 	// DeleteAccount deletes the account and everything social kept for it:
 	// logins, sessions, the sealed phrase, friendships both ways, mutes,
 	// invites, rooms, requests, every friend answer about it, its prompt
-	// log, nods and Answer Together both ways.
+	// log, nods and Answer Together both ways, its shares and the shares
+	// it received, its Common Ground and reach-outs both ways.
 	DeleteAccount(ctx context.Context, id string) error
 
 	PutSession(ctx context.Context, s Session) error
@@ -232,8 +233,30 @@ type SocialStore interface {
 	DeleteTogether(ctx context.Context, id, asker string) error
 	Togethers(ctx context.Context, accountID string) ([]Together, error)
 
+	// Closer Together (closer.go). A share is kept with its recipients;
+	// DeleteShare is the sender withdrawing it.
+	PutShare(ctx context.Context, sh Share) error
+	SharesTo(ctx context.Context, to string) ([]Share, error)
+	SharesFrom(ctx context.Context, from string) ([]Share, error)
+	DeleteShare(ctx context.Context, from, id string) (bool, error)
+
+	// Common Ground: a person's tags, whom they opted in to, and CommonWith,
+	// the friends who opted in back, with those friends' tags and whether
+	// they muted this person.
+	// PutCommonTags keeps the tags and the day they last changed.
+	PutCommonTags(ctx context.Context, accountID string, set CommonTagSet) error
+	CommonTagsOf(ctx context.Context, accountID string) (CommonTagSet, error)
+	SetCommonConsent(ctx context.Context, a, b string, on bool) error
+	CommonConsent(ctx context.Context, accountID string) ([]string, error)
+	CommonWith(ctx context.Context, accountID string) ([]CommonMatch, error)
+
+	// PutReachOut keeps one a day per pair and kind, or ErrReachedToday.
+	PutReachOut(ctx context.Context, ro ReachOut) error
+	ReachOutsTo(ctx context.Context, to, fromDate string) ([]ReachOut, error)
+	DeleteReachOut(ctx context.Context, to, id string) (bool, error)
+
 	// DeleteSocialBefore applies retention: friend inputs, the prompt log
-	// and nods dated before date, Answer Together, codes and rooms expired
+	// and nods and reach-outs dated before date, Answer Together, codes and rooms expired
 	// before now, invites expired before date.
 	DeleteSocialBefore(ctx context.Context, date string, now time.Time) (int, error)
 }
