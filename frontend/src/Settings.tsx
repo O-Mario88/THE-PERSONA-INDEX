@@ -5,6 +5,7 @@ import { LockSettings } from './pwa/LockGate'
 import { countryOf, WORDS_DAYS, type Prefs, type WordsDays } from './prefs'
 import { regionOf } from './regions'
 import { COUNTRY_SETTING, REGIONAL_SWITCH } from './words'
+import { MAX_NAME } from './Welcome'
 
 // Settings (review of 2026-10-15): the few choices a person can change
 // later. The 18+ answer was a one-time tap; here it can be changed, and how
@@ -18,11 +19,15 @@ export function SettingsScreen({
   onChange,
   onOpenKept,
   onBack,
+  name = '',
+  onName,
 }: {
   prefs: Prefs
   onChange: (p: Prefs) => void
   onOpenKept: () => void
   onBack: () => void
+  name?: string // what the greeting calls the person, kept on this phone
+  onName?: (name: string) => void
 }) {
   return (
     <section className="screen settings" aria-labelledby="settings-title">
@@ -32,6 +37,16 @@ export function SettingsScreen({
       <h2 id="settings-title" className="done-title">
         Settings
       </h2>
+
+      {onName && (
+        <fieldset className="notice">
+          <legend className="eyebrow">What I call you</legend>
+          <label className="field-label">
+            <span className="small muted">Your first name, for the greeting. It stays on this phone.</span>
+            <input className="field" defaultValue={name} maxLength={MAX_NAME} autoComplete="given-name" onBlur={(e) => onName(e.target.value.trim())} />
+          </label>
+        </fieldset>
+      )}
 
       <fieldset className="notice">
         <legend className="eyebrow">Intimacy questions</legend>

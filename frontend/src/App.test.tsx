@@ -238,6 +238,18 @@ describe('the welcome', () => {
     expect(screen.queryByRole('heading', { name: 'A calmer you starts with reflection.' })).not.toBeInTheDocument()
   })
 
+  it('asks what to call the person, greets them by it, and never sends it', async () => {
+    localStorage.removeItem('pi.welcomed')
+    vi.setSystemTime(at(15))
+    const fetchMock = stubApi({ today: { status: 200, body: sixADay } })
+    render(<App />)
+    fireEvent.change(await screen.findByRole('textbox', { name: 'What should I call you? (optional)' }), { target: { value: ' Paul ' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Begin your first reflection' }))
+    expect(await screen.findByRole('heading', { name: 'Good afternoon, Paul.' })).toBeInTheDocument()
+    const sent = fetchMock.mock.calls.map(([u, init]) => `${String(u)} ${String((init as RequestInit | undefined)?.body ?? '')}`)
+    expect(sent.join('\n')).not.toContain('Paul')
+  })
+
   it('never shows to someone who has answered before', async () => {
     localStorage.removeItem('pi.welcomed')
     answeredThisMorning()
@@ -2335,6 +2347,21 @@ describe('the app remembers you', () => {
 })
 
 describe('settings', () => {
+  it('changes what the greeting calls the person, kept on this phone', async () => {
+    vi.setSystemTime(at(15))
+    stubApi({ today: { status: 200, body: sixADay } })
+    render(<App />)
+    expect(await screen.findByRole('heading', { name: 'Good afternoon.' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'You' }))
+    fireEvent.click(await screen.findByRole('button', { name: /^Settings/ }))
+    const field = await screen.findByRole('textbox', { name: /Your first name, for the greeting/ })
+    fireEvent.change(field, { target: { value: 'Paul' } })
+    fireEvent.blur(field)
+    expect(localStorage.getItem('pi.name')).toBe('Paul')
+    fireEvent.click(screen.getByRole('button', { name: 'Today' }))
+    expect(await screen.findByRole('heading', { name: 'Good afternoon, Paul.' })).toBeInTheDocument()
+  })
+
   it('changes the 18+ answer and how long your own words stay on this phone', async () => {
     localStorage.setItem('pi.prefs.v1', JSON.stringify({ adult: true, mild: false }))
     localStorage.setItem('pi.words.q-a', JSON.stringify({ questionId: 'q-a', date: '2026-10-02', prompt: 'P', words: 'Ten days ago' }))
