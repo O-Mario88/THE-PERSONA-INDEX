@@ -68,6 +68,8 @@ import {
 } from './reaching'
 import { helplineHere } from './prefs'
 import { ReadLink } from './Read'
+import { MirrorThreads } from './MirrorThreads'
+import { threadsBetween } from './journal'
 import { InConnection, showConnection } from './MirrorConnection'
 
 type Span = 'week' | Period
@@ -1098,6 +1100,7 @@ function PeriodPage({ p, onOpenKept }: { p: PeriodMirror; onOpenKept: () => void
       show: lean.length > 0,
     },
     { key: 'lines', title: 'In your own words, week by week', body: <WeekLines lines={lines} />, show: lines.length > 0 },
+    { key: 'threads', title: 'Threads you kept going', body: <MirrorThreads from={p.from} to={p.to} span={noun} />, show: threadsBetween(p.from, p.to).length > 0 },
     { key: 'connection', title: `Your ${noun} in connection`, body: <InConnection from={p.from} to={p.to} span={noun} />, show: showConnection(p.from, p.to) },
     { key: 'all', title: 'All of you', body: <AllOfYou themes={p.themes} />, show: p.themes.length > 0 },
     { key: 'steps', title: 'Your small steps', body: <PeriodSteps p={p} />, show: p.stats.stepsStarted > 0 },

@@ -34,9 +34,19 @@ const SNAPSHOT_VERSION = 1
 // several writes go in one backup.
 export const BACKUP_DELAY_MS = 20_000
 
+// Reflect (Edwin, 2026-10-25: "Reflections always end-to-end"): a
+// backup is two sealed copies. The main copy holds everything but the
+// person's writing; the journal copy holds only the writing (registry
+// backup "journal"), under keys from a separate branch of the phrase. Easy
+// sync gives the server the main copy's two keys, never the phrase, so the
+// server can open the main copy (the trade sync has always been) and never
+// the journal. A phone restored through sync has those keys alone, and asks
+// for the 12 words once to bring the writing back.
 export type VaultState = {
-  phrase: string
+  phrase?: string // the 12 words; absent on a phone restored through sync until they are typed
+  sync?: string // the main copy's keys, as the account holds them (syncSecret)
   version: number // the version on the server this phone last wrote or read; 0 before the first
+  journalVersion?: number // the same for the journal copy
   words: boolean // own words in the backup
   savedAt?: number // the last backup that got there, in ms
   dirty?: true // something changed since
@@ -46,7 +56,7 @@ export type Snapshot = { v: number; made: number; words: boolean; entries: Recor
 
 export function vaultState(): VaultState | null {
   const v = loadJSON(STATE_KEY) as VaultState | null
-  return v && typeof v.phrase === 'string' && typeof v.version === 'number' && typeof v.words === 'boolean' ? v : null
+  return v && (typeof v.phrase === 'string' || typeof v.sync === 'string') && typeof v.version === 'number' && typeof v.words === 'boolean' ? v : null
 }
 
 function saveState(s: VaultState) {
@@ -79,10 +89,11 @@ export function phraseProblem(input: string): PhraseProblem | null {
 // The keys.
 
 type Keys = { vaultKey: string; seal: CryptoKey }
-const keyCache = new Map<string, Promise<Keys>>()
+type PhraseKeys = Keys & { sealRaw: string; journal: Keys }
+const keyCache = new Map<string, Promise<PhraseKeys>>()
 const utf8 = (s: string) => new TextEncoder().encode(s)
 
-export function keysFor(phrase: string): Promise<Keys> {
+export function keysFor(phrase: string): Promise<PhraseKeys> {
   const p = normalisePhrase(phrase)
   let k = keyCache.get(p)
   if (!k) {
@@ -93,19 +104,45 @@ export function keysFor(phrase: string): Promise<Keys> {
   return k
 }
 
-async function deriveKeys(phrase: string): Promise<Keys> {
+async function deriveKeys(phrase: string): Promise<PhraseKeys> {
   const seed = await mnemonicToSeedWebcrypto(phrase)
   const base = await crypto.subtle.importKey('raw', bytes(seed), 'HKDF', false, ['deriveBits', 'deriveKey'])
   const salt = utf8('persona-index vault v1')
-  const vaultBits = await crypto.subtle.deriveBits({ name: 'HKDF', hash: 'SHA-256', salt, info: utf8('vault key') }, base, 256)
-  const seal = await crypto.subtle.deriveKey(
-    { name: 'HKDF', hash: 'SHA-256', salt, info: utf8('seal key') },
-    base,
-    { name: 'AES-GCM', length: 256 },
-    false,
-    ['encrypt', 'decrypt'],
-  )
-  return { vaultKey: base64url(new Uint8Array(vaultBits)), seal }
+  const bits = (info: string) => crypto.subtle.deriveBits({ name: 'HKDF', hash: 'SHA-256', salt, info: utf8(info) }, base, 256).then((b) => new Uint8Array(b))
+  // The seal key's bits are the same an AES-GCM deriveKey would give, so
+  // backups made before the October 2026 Reflect still open.
+  const [vaultBits, sealBits, journalVault, journalSeal] = await Promise.all([bits('vault key'), bits('seal key'), bits('journal vault key'), bits('journal seal key')])
+  return {
+    vaultKey: base64url(vaultBits),
+    seal: await aesKey(sealBits),
+    sealRaw: base64url(sealBits),
+    journal: { vaultKey: base64url(journalVault), seal: await aesKey(journalSeal) },
+  }
+}
+
+const aesKey = (raw: Uint8Array) => crypto.subtle.importKey('raw', bytes(raw), { name: 'AES-GCM' }, false, ['encrypt', 'decrypt'])
+
+const SYNC_PREFIX = 'sk2.'
+
+// syncSecret is what easy sync keeps for the account: the main copy's two
+// keys. Never the phrase, and nothing that opens the journal copy.
+export async function syncSecret(phrase: string): Promise<string> {
+  const k = await keysFor(phrase)
+  return `${SYNC_PREFIX}${k.vaultKey}.${k.sealRaw}`
+}
+
+export const isSyncSecret = (s: string) => /^sk2\.[A-Za-z0-9_-]{43}\.[A-Za-z0-9_-]{43}$/.test(s)
+
+export async function keysFromSync(secret: string): Promise<Keys> {
+  const [vaultKey, sealRaw] = secret.slice(SYNC_PREFIX.length).split('.')
+  const raw = Uint8Array.from(atob(sealRaw.replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0))
+  return { vaultKey, seal: await aesKey(raw) }
+}
+
+// mainKeys are the keys for the main copy: from the phrase when this phone
+// has it, else from what sync gave it.
+async function mainKeys(st: VaultState): Promise<Keys> {
+  return st.phrase ? keysFor(st.phrase) : keysFromSync(st.sync!)
 }
 
 // Sealing. A sealed backup is one format byte, a 12-byte nonce and the
@@ -171,12 +208,16 @@ function base64url(b: Uint8Array): string {
 
 const CARD_PREFIX = 'pi.nb.card.'
 
-// snapshot gathers everything the registry backs up from this phone.
-export function snapshot(words: boolean): Snapshot {
+export type Copy = 'main' | 'journal'
+
+// snapshot gathers what the registry backs up from this phone into one
+// copy: the main copy everything but the writing, the journal copy only it.
+export function snapshot(words: boolean, copy: Copy = 'main'): Snapshot {
   const entries: Record<string, string> = {}
   for (const k of keys()) {
     const e = entryFor(k)
     if (!e || e.backup === 'never' || (e.backup === 'words' && !words)) continue
+    if ((e.backup === 'journal') !== (copy === 'journal')) continue
     const v = load(k)
     if (v === null) continue
     entries[k] = words || !k.startsWith(CARD_PREFIX) ? v : withoutWords(v)
@@ -346,42 +387,56 @@ async function backUpOnce(): Promise<BackupResult> {
   let st = vaultState()
   if (!st) return 'off'
   if (!st.dirty) return 'saved' // nothing new since the last backup
-  const k = await keysFor(st.phrase)
   try {
-    for (let attempt = 0; attempt < 4; attempt++) {
-      const seen = generation
-      const sealed = await seal(k.seal, snapshot(st.words))
-      try {
-        const res = await call('PUT', k.vaultKey, {
-          body: sealed,
-          headers: st.version === 0 ? { 'If-None-Match': '*' } : { 'If-Match': `"${st.version}"` },
-        })
-        st = { ...st, version: versionOf(res), savedAt: Date.now() }
-        if (seen === generation) delete st.dirty
-        saveState(st)
-        if (st.dirty) schedule()
-        return 'saved'
-      } catch (e) {
-        if (!(e instanceof VaultError)) throw e
-        if (e.status === 404) {
-          // Deleted on another phone: this one stops backing up.
-          remove(STATE_KEY)
-          return 'gone'
-        }
-        if (e.status !== 412) throw e
-        // Another phone wrote first: take its backup in, then write again.
-        const theirs = await read(k)
-        if (theirs) writeEntries(mergeEntries(localEntries(), theirs.snapshot.entries, 'local'))
-        st = { ...(vaultState() ?? st), version: theirs?.version ?? 0 }
-        saveState(st)
-      }
+    const seen = generation
+    const main = await writeCopy(await mainKeys(st), 'main', st.version, st.words)
+    if (main === 'gone') {
+      // Deleted on another phone: this one stops backing up.
+      remove(STATE_KEY)
+      return 'gone'
     }
+    st = { ...(vaultState() ?? st), version: main }
+    // The journal copy, only with the phrase, and only once there is
+    // writing to keep (or a copy already).
+    if (st.phrase && ((st.journalVersion ?? 0) > 0 || Object.keys(snapshot(st.words, 'journal').entries).length > 0)) {
+      const journal = await writeCopy((await keysFor(st.phrase)).journal, 'journal', st.journalVersion ?? 0, st.words)
+      st = { ...st, journalVersion: journal === 'gone' ? 0 : journal }
+    }
+    st = { ...st, savedAt: Date.now() }
+    if (seen === generation) delete st.dirty
+    saveState(st)
+    if (st.dirty) schedule()
+    return 'saved'
   } catch {
     // offline, busy or refused: try again later
   }
   const now = vaultState()
   if (now) saveState({ ...now, dirty: true })
   return 'later'
+}
+
+// writeCopy seals one copy and puts it, taking in another phone's copy when
+// that one wrote first. It gives the new version, or 'gone' when the copy
+// was deleted elsewhere.
+async function writeCopy(k: Keys, copy: Copy, version: number, words: boolean): Promise<number | 'gone'> {
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const sealed = await seal(k.seal, snapshot(words, copy))
+    try {
+      const res = await call('PUT', k.vaultKey, {
+        body: sealed,
+        headers: version === 0 ? { 'If-None-Match': '*' } : { 'If-Match': `"${version}"` },
+      })
+      return versionOf(res)
+    } catch (e) {
+      if (!(e instanceof VaultError)) throw e
+      if (e.status === 404) return 'gone'
+      if (e.status !== 412) throw e
+      const theirs = await read(k)
+      if (theirs) writeEntries(mergeEntries(localEntries(), theirs.snapshot.entries, 'local'))
+      version = theirs?.version ?? 0
+    }
+  }
+  throw new Error('backup: kept meeting another phone')
 }
 
 let timer: ReturnType<typeof setTimeout> | null = null
@@ -401,7 +456,7 @@ export function startBackups(): () => void {
   const stop = onChange((key) => {
     const st = vaultState()
     const e = entryFor(key)
-    if (!st || !e || e.backup === 'never' || (e.backup === 'words' && !st.words)) return
+    if (!st || !e || e.backup === 'never' || (e.backup === 'words' && !st.words) || (e.backup === 'journal' && !st.phrase)) return
     generation++
     if (!st.dirty) saveState({ ...st, dirty: true })
     schedule()
@@ -439,7 +494,8 @@ export function setWords(words: boolean) {
 export async function turnOff(): Promise<void> {
   const st = vaultState()
   if (!st) return
-  await call('DELETE', (await keysFor(st.phrase)).vaultKey)
+  await call('DELETE', (await mainKeys(st)).vaultKey)
+  if (st.phrase) await call('DELETE', (await keysFor(st.phrase)).journal.vaultKey)
   remove(STATE_KEY)
 }
 
@@ -449,29 +505,76 @@ export const deleteBackup = turnOff
 
 export type RestoreResult = 'restored' | 'none' | 'damaged'
 
-// restore brings back what a backup holds onto this phone: its pass, its
-// settings and notebook, everything the backup carries, merged with anything
-// already here so no answer counts twice. From then on this phone backs up
-// under the same phrase.
-export async function restore(phrase: string): Promise<RestoreResult> {
-  if (phraseProblem(phrase)) throw new Error('not a recovery phrase')
-  const k = await keysFor(phrase)
-  let found: Awaited<ReturnType<typeof read>>
+async function readOrDamaged(k: Keys): Promise<Awaited<ReturnType<typeof read>> | 'damaged'> {
   try {
-    found = await read(k)
+    return await read(k)
   } catch (e) {
     if (e instanceof VaultError) throw e
     if (e instanceof TypeError) throw e // offline
     return 'damaged'
   }
-  if (!found) return 'none'
+}
+
+// takeIn merges a copy into this phone, as a restore does.
+function takeIn(entries: Record<string, string>) {
   const before = load('pi.device.v1')
-  writeEntries(mergeEntries(localEntries(), found.snapshot.entries, 'other'))
+  writeEntries(mergeEntries(localEntries(), entries, 'other'))
   if (load('pi.device.v1') !== before) {
     // Waiting sends belonged to the other pass; the answers they carry are
     // already closed on this phone, so none can count twice.
     for (const p of ['pi.pending.', 'pi.unrated.']) for (const key of keys(p)) remove(key)
   }
-  saveState({ phrase: normalisePhrase(phrase), version: found.version, words: found.snapshot.words, savedAt: Date.now() })
+}
+
+// restore brings back what a backup holds onto this phone: its pass, its
+// settings and notebook, its writing, everything the backup carries, merged
+// with anything already here so no answer counts twice. From then on this
+// phone backs up under the same phrase.
+export async function restore(phrase: string): Promise<RestoreResult> {
+  if (phraseProblem(phrase)) throw new Error('not a recovery phrase')
+  const k = await keysFor(phrase)
+  const found = await readOrDamaged(k)
+  if (found === 'damaged') return 'damaged'
+  if (!found) return 'none'
+  takeIn(found.snapshot.entries)
+  const journal = await readOrDamaged(k.journal)
+  if (journal && journal !== 'damaged') takeIn(journal.snapshot.entries)
+  const sync = vaultState()?.sync
+  saveState({
+    phrase: normalisePhrase(phrase),
+    ...(sync ? { sync } : {}),
+    version: found.version,
+    journalVersion: journal && journal !== 'damaged' ? journal.version : 0,
+    words: found.snapshot.words,
+    savedAt: Date.now(),
+  })
   return 'restored'
+}
+
+// restoreFromSync is a signed-in phone restoring with the keys easy sync
+// keeps: everything but the writing, which waits for the 12 words.
+export async function restoreFromSync(secret: string): Promise<RestoreResult> {
+  const found = await readOrDamaged(await keysFromSync(secret))
+  if (found === 'damaged') return 'damaged'
+  if (!found) return 'none'
+  takeIn(found.snapshot.entries)
+  saveState({ sync: secret, version: found.version, words: found.snapshot.words, savedAt: Date.now() })
+  return 'restored'
+}
+
+// writingWaits reports a phone restored through sync whose reflections are
+// still sealed: Reflect asks for the 12 words, once.
+export function writingWaits(): boolean {
+  const st = vaultState()
+  return !!st && !st.phrase && !!st.sync
+}
+
+// restoreWriting takes the 12 words on such a phone: they must be the ones
+// behind this account's backup. Then the writing comes back, and this phone
+// backs up both copies from now on.
+export async function restoreWriting(phrase: string): Promise<RestoreResult | 'mismatch'> {
+  if (phraseProblem(phrase)) throw new Error('not a recovery phrase')
+  const st = vaultState()
+  if (st?.sync && (await syncSecret(phrase)) !== st.sync) return 'mismatch'
+  return restore(phrase)
 }

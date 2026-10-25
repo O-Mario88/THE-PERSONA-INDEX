@@ -375,14 +375,6 @@
   flex-direction: column;
 }
 
-/* Reflect: the guided reflection at the top of the Reflect tab. */
-.reflect {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-5);
-  padding-bottom: var(--s-6);
-  border-bottom: 1px solid var(--line);
-}
 
 .reflect-group {
   display: flex;
