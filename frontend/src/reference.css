@@ -3379,11 +3379,106 @@
   background: #262626;
   color: #fff;
 }
+/* D06: on a wide screen the login splits in two, the dark half on the left. */
+.signin-hero-foot,
+.signin-body-head {
+  display: none;
+}
 @media (min-width: 900px) {
-  .signin-page {
+  .signin-hero-foot {
+    display: block;
     margin: 0;
-    border-radius: 24px;
-    overflow: hidden;
+    font-size: 13px;
+    color: var(--deep-sub);
+  }
+  .signin-body-head {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 32px;
+  }
+  .signin-body-head p {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink-muted);
+  }
+  .signin-body-head .signin-body-line {
+    font-family: var(--display);
+    font-size: 36px;
+    font-weight: 500;
+    line-height: 1.12;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+  .page.page-account:has(.account.signed-out) {
+    max-width: none;
+    padding: 0 0 64px;
+  }
+  .account.signed-out > .two-col {
+    width: 100%;
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 0 40px;
+    box-sizing: border-box;
+  }
+  .signin-page {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    min-height: 100vh;
+    margin: 0;
+  }
+  .signin-hero {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    box-sizing: border-box;
+    justify-content: space-between;
+    gap: 32px;
+    padding: 48px 56px;
+    box-shadow: none;
+  }
+  .signin-hero-words {
+    gap: 14px;
+    max-width: 520px;
+    margin-top: auto;
+  }
+  .signin-hero-label {
+    font-size: 14px;
+  }
+  .signin-hero h2 {
+    font-size: 64px;
+    line-height: 1.02;
+    letter-spacing: -0.03em;
+  }
+  .signin-hero-lead {
+    font-size: 17px;
+    line-height: 1.55;
+  }
+  .signin-tiles {
+    margin-bottom: auto;
+  }
+  .signin-tiles li {
+    width: 26px;
+    height: 26px;
+  }
+  .signin-page-body {
+    justify-content: center;
+    width: 100%;
+    max-width: 420px;
+    margin: 0 auto;
+    padding: 80px 40px;
+    box-sizing: border-box;
+  }
+  .signin-page-foot {
+    align-items: flex-start;
+    margin-top: 28px;
+    padding-top: 24px;
+    border-top: 1px solid var(--hair);
+    text-align: left;
+  }
+  .signin-page-foot p {
+    font-size: 13px;
   }
 }
 .signin-restore form {
@@ -3441,4 +3536,194 @@
 .app.is-dark .signin-restore .confirm .option[type='submit'] {
   background: #fff;
   color: #000;
+}
+
+/* ---- the desktop shell and Today (D01) ---- */
+.tapestry-note {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+@media (min-width: 900px) {
+  .app {
+    grid-template-columns: 72px minmax(0, 1fr);
+  }
+  .tabs,
+  .app.in-flow .tabs {
+    gap: 8px;
+    padding: 24px 0;
+    background: var(--deep);
+  }
+  .app.is-dark .tabs {
+    background: #141414;
+  }
+  .rail-logo {
+    width: 36px;
+    height: 36px;
+    margin-bottom: 16px;
+    border-radius: 10px;
+    background: #f4eee3;
+    color: var(--deep);
+    font-weight: 600;
+    font-size: 20px;
+  }
+  .tabs .tab {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    color: var(--deep-ink);
+  }
+  .tabs .tab[aria-pressed='true'] {
+    background: #2f5a4e;
+    color: #f4eee3;
+  }
+  .app.is-dark .tabs .tab[aria-pressed='true'] {
+    background: #262626;
+  }
+  .tabs .tab .icon {
+    width: 22px;
+    height: 22px;
+  }
+  .tabs .rail-account {
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    background: none;
+  }
+  .tabs .rail-account .avatar {
+    width: 40px !important;
+    height: 40px !important;
+    font-size: 14px !important;
+    font-weight: 600;
+  }
+  .page {
+    max-width: 840px;
+    padding: 56px 40px 64px;
+  }
+  .page.page-today .home {
+    gap: 36px;
+  }
+  .home-head {
+    align-items: flex-end;
+  }
+  .home-head > div {
+    gap: 6px;
+  }
+  .home-head .label {
+    font-size: 14px;
+  }
+  .home-head .display {
+    font-size: 44px;
+    font-weight: 500;
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+  }
+  .hero-card {
+    margin-top: 0;
+    gap: 24px;
+    padding: 28px 32px;
+    border-radius: 24px;
+    box-shadow: 0 18px 40px rgb(31 58 51 / 0.18);
+  }
+  .hero-card .ring,
+  .hero-card .ring svg {
+    width: 84px !important;
+    height: 84px !important;
+  }
+  .ring-big {
+    font-size: 20px;
+  }
+  .ring-small {
+    font-size: 12px;
+  }
+  .hero-words {
+    gap: 6px;
+  }
+  .hero-eyebrow {
+    font-size: 13px;
+  }
+  .hero-title {
+    font-family: var(--display);
+    font-size: 28px;
+    font-weight: 400;
+    line-height: 1.15;
+  }
+  .hero-sub {
+    font-size: 15px;
+    line-height: 1.35;
+  }
+  .hero-go .hero-open,
+  .hero-card .hero-open {
+    min-height: 52px;
+    padding: 0 22px;
+    border-radius: 14px;
+    background: #f4eee3;
+    color: var(--deep);
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .since {
+    gap: 6px;
+    margin-top: 0;
+  }
+  .since .label {
+    font-size: 14px;
+  }
+  .since-row {
+    min-height: 56px;
+    gap: 14px;
+    border-bottom: 1px solid var(--hair);
+  }
+  .since-row .avatar {
+    width: 36px !important;
+    height: 36px !important;
+    font-size: 13px !important;
+  }
+  .since-icon {
+    width: 36px;
+    height: 36px;
+  }
+  .since-text {
+    font-size: 16px;
+  }
+  .since-aside {
+    font-size: 14px;
+  }
+  .tapestry-card {
+    gap: 14px;
+    padding: 24px 28px;
+    border-radius: 24px;
+  }
+  .tapestry-card .row-between {
+    align-items: center;
+  }
+  .tapestry-card .label {
+    font-size: 14px;
+  }
+  .tapestry {
+    gap: 5px;
+  }
+  .tapestry li {
+    border-radius: 4px;
+  }
+  .dayline {
+    padding: 0 8px;
+  }
+  .dayline-item {
+    width: 100px;
+    gap: 8px;
+  }
+  .dayline-dot {
+    width: 14px;
+    height: 14px;
+  }
+  .dayline-item.is-now .dayline-dot {
+    box-shadow: 0 0 0 5px var(--sage-wash);
+  }
+  .dayline-name {
+    font-size: 13px;
+  }
+  .dayline-sub {
+    font-size: 12px;
+  }
 }

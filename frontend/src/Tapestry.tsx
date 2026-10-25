@@ -35,7 +35,7 @@ export function TapestryGrid({ s, dark, cols = 15, weaving }: { s: Season; dark?
 }
 
 // The pale card on Today.
-export function TapestryCard({ today, onOpen, cols = 18 }: { today: string; onOpen?: () => void; cols?: number }) {
+export function TapestryCard({ today, onOpen, cols = 18, note }: { today: string; onOpen?: () => void; cols?: number; note?: boolean }) {
   const s = season(today)
   return (
     <section className="tapestry-card" aria-labelledby="tapestry-title">
@@ -43,6 +43,7 @@ export function TapestryCard({ today, onOpen, cols = 18 }: { today: string; onOp
         <h2 id="tapestry-title" className="label">
           Season tapestry · day {s.day} of 90
         </h2>
+        {note && !onOpen && <p className="tapestry-note">Each tile is one sitting. A missed day stays linen.</p>}
         {onOpen && (
           <button type="button" className="link-button" onClick={onOpen}>
             Open

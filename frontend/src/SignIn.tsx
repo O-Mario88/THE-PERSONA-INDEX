@@ -265,8 +265,13 @@ export function SignInSheet({
               ))}
             </ol>
           )}
+          <p className="signin-hero-foot">3 questions a morning, 3 an evening · personaindex.com</p>
         </header>
         <div className="signin-page-body">
+          <div className="signin-body-head">
+            <p>Sign in</p>
+            <p className="signin-body-line">No password. One tap or a code.</p>
+          </div>
           {restoring ? (
             <div className="signin-restore">
               <h3 className="title serif">Your 12-word recovery phrase</h3>
