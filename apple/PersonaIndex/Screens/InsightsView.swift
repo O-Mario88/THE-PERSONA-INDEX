@@ -26,7 +26,7 @@ struct InsightsView: View {
                     }
                     .card(fill: Palette.surface2, stroke: .clear)
                 case .ready(let m):
-                    MirrorPage(m: m)
+                    MirrorPage(m: m, connection: connection(m))
                 }
             }
             .padding(Space.gutter)
@@ -36,6 +36,13 @@ struct InsightsView: View {
         .background(Palette.bg)
         .task { await load() }
         .refreshable { await load() }
+    }
+
+    /// "Your week in connection": the person's own moves, from this device.
+    /// Shown once signed in, or once there is a move to show.
+    private func connection(_ m: WeekMirror) -> ConnectionCounts? {
+        let c = model.connect.log.between(m.from, m.to)
+        return model.signedIn || c.total > 0 ? c : nil
     }
 
     private func load() async {
@@ -49,6 +56,7 @@ struct InsightsView: View {
 
 private struct MirrorPage: View {
     let m: WeekMirror
+    let connection: ConnectionCounts?
 
     /// The clearest read, and which end it leans to.
     private var top: (read: WeekMirror.TraitRead, side: Traits.Side)? {
@@ -65,6 +73,7 @@ private struct MirrorPage: View {
             glance
             if !m.traits.isEmpty { traits }
             if !m.steps.isEmpty { steps }
+            if let connection { inConnection(connection) }
             if !m.comingUp.isEmpty { comingUp }
             Text("Nothing on this page is fixed. It's a mirror of one week, and next week you get to answer again. For self-reflection, not a diagnosis.")
                 .font(.pSmall).foregroundStyle(Palette.muted)
@@ -180,8 +189,15 @@ private struct MirrorPage: View {
         }
     }
 
+    private func inConnection(_ c: ConnectionCounts) -> some View {
+        Section(number: m.steps.isEmpty ? 3 : 4, title: "Your week in connection") {
+            Text(ConnectionLog.line(c, span: "week")).font(.figtree(17, .semibold))
+            Text("Only what you did, kept on this device. Never who, and never sent.").font(.pSmall).foregroundStyle(Palette.muted)
+        }
+    }
+
     private var comingUp: some View {
-        Section(number: m.steps.isEmpty ? 3 : 4, title: "Next week") {
+        Section(number: (m.steps.isEmpty ? 3 : 4) + (connection == nil ? 0 : 1), title: "Next week") {
             FlowChips(themes: m.comingUp)
         }
     }

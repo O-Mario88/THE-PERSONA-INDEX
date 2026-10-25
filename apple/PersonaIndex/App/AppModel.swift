@@ -17,6 +17,8 @@ final class AppModel {
     }
 
     private(set) var load: Load = .loading
+    /// Where the person is: a tab on iPhone, the sidebar on a Mac.
+    var section: AppSection = .today
     private(set) var choices: [String: String] = [:]
     private(set) var now = AppModel.clock()
     var welcomed: Bool {
@@ -29,6 +31,10 @@ final class AppModel {
 
     private let api: APIClient
     private let defaults: KeyValueStore
+    /// The new Connect: shares, Common Ground, reach-outs and nods.
+    let connect: ConnectModel
+    /// Reflect: the writing, kept on the device.
+    let reflect: ReflectModel
 
     enum Keys {
         static let welcomed = "pi.welcomed"
@@ -40,6 +46,8 @@ final class AppModel {
     init(api: APIClient, defaults: KeyValueStore) {
         self.api = api
         self.defaults = defaults
+        self.connect = ConnectModel(api: api, defaults: defaults)
+        self.reflect = ReflectModel(defaults: defaults)
         self.welcomed = defaults.string(forKey: Keys.welcomed) == "1"
         self.name = defaults.string(forKey: Keys.name) ?? ""
     }
@@ -97,12 +105,6 @@ final class AppModel {
 
     // MARK: Reflect
 
-    private(set) var reflections: [ReflectionEntry] = []
-
-    private var reflectionStore: ReflectionStore { ReflectionStore(store: defaults) }
-
-    func loadReflections() { reflections = reflectionStore.all() }
-
     /// Today's answers with the option chosen, for what went well and where to grow.
     var answeredToday: [(Question, Option)] {
         guard let set else { return [] }
@@ -110,16 +112,6 @@ final class AppModel {
             guard let id = choices[q.id], let o = q.options.first(where: { $0.id == id }) else { return nil }
             return (q, o)
         }
-    }
-
-    /// Keeps a typed reflection on the device, with today's date.
-    func saveReflection(_ prompt: ReflectionPrompt, answer: String, period: ReflectionPeriod) {
-        let words = answer.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !words.isEmpty else { return }
-        let id = prompt.followsUp.map { "follow-\($0)~\(date)" } ?? "\(date)-\(period.rawValue)-\(prompt.id)"
-        reflectionStore.save(ReflectionEntry(id: id, date: date, period: period, area: prompt.area, kind: prompt.kind,
-                                             source: prompt.source, about: prompt.about, question: prompt.question, answer: words))
-        loadReflections()
     }
 
     // MARK: Signing in, the circle and Growing Together
@@ -138,6 +130,7 @@ final class AppModel {
         guard signedIn else { circle = nil; return }
         do {
             circle = try await api.circle()
+            await connect.load(date: date)
         } catch {
             signedIn = await api.isSignedIn
         }
@@ -199,6 +192,7 @@ final class AppModel {
         #endif
         choices[question.id] = option.id
         defaults.set(option.id, forKey: Keys.choice + question.id)
+        AnswerHistory(store: defaults).record(question, optionId: option.id, date: date)
         defaults.set(sitting.rawValue, forKey: Keys.unsent + question.id)
         await send(question, optionId: option.id, sitting: sitting)
     }

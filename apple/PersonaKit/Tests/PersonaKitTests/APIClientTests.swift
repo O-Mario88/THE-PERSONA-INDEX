@@ -36,7 +36,7 @@ final class StubProtocol: URLProtocol, @unchecked Sendable {
 
 @Suite("The API client", .serialized)
 struct APIClientTests {
-    private func client(_ store: KeyValueStore = MemoryStore()) -> APIClient {
+    func client(_ store: KeyValueStore = MemoryStore()) -> APIClient {
         let config = URLSessionConfiguration.ephemeral
         config.protocolClasses = [StubProtocol.self]
         StubProtocol.seen = []

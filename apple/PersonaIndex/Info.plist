@@ -29,6 +29,10 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Speak lets you dictate a reflection. Your voice is turned into words on this device and never sent or kept.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Speak turns your voice into words on this device only. Nothing you say is sent or kept.</string>
 	<key>PIApiBase</key>
 	<string>http://localhost:8080</string>
 	<key>UIAppFonts</key>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { AfterReflection } from './Closer'
 import { getMirror, recalledChoice, type Mirror, type Question } from './api'
 import { keepReflection, reflections, type ReflectionGroup, type ReflectionPeriod } from './notebook'
 import { AREA_NAMES, dayMonth, PERIOD_NAMES, reflectionItems, reflectionPrompts, SOURCE_NAMES, type ReflectionItem, type ReflectionPrompt } from './reflect'
@@ -18,6 +19,8 @@ export function ReflectGuide({ today, questions }: { today: string; questions: Q
   const [mirror, setMirror] = useState<Mirror | null>(null)
   const [outside, setOutside] = useState<OutsideMirror | null>(null)
   const [, setVersion] = useState(0)
+  // The reflection just kept, for the quiet offer to share it or ask for support.
+  const [kept, setKept] = useState<{ id: string; group: ReflectionGroup; answer: string } | null>(null)
 
   useEffect(() => {
     if (period === 'day') return
@@ -40,8 +43,9 @@ export function ReflectGuide({ today, questions }: { today: string; questions: Q
   const prompts = reflectionPrompts(items, period, past, today).filter((p) => p.followsUp || !done.has(`${p.question}|${p.text}`))
 
   function keep(p: ReflectionPrompt, answer: string) {
+    const id = p.followsUp ? `follow-${p.followsUp}-${today}` : `${today}-${period}-${p.id}`
     keepReflection({
-      id: p.followsUp ? `follow-${p.followsUp}-${today}` : `${today}-${period}-${p.id}`,
+      id,
       date: today,
       period,
       area: p.area,
@@ -52,6 +56,7 @@ export function ReflectGuide({ today, questions }: { today: string; questions: Q
       answer,
       ...(p.followsUp ? { followsUp: p.followsUp } : {}),
     })
+    setKept({ id, group: p.group, answer: answer.trim() })
     setVersion((v) => v + 1)
   }
 
@@ -80,6 +85,8 @@ export function ReflectGuide({ today, questions }: { today: string; questions: Q
       ) : (
         (['learnt', 'strength', 'grow'] as ReflectionGroup[]).map((g) => <ItemGroup key={g} group={g} items={items.filter((i) => i.group === g)} />)
       )}
+
+      {kept && <AfterReflection key={kept.id} group={kept.group} answer={kept.answer} />}
 
       {prompts.length > 0 && (
         <div className="reflect-prompts">

@@ -94,6 +94,7 @@ type OptionResult struct {
 	OptionID string  `json:"optionId"`
 	Count    int     `json:"count"`
 	Percent  float64 `json:"percent"`
+	Few      bool    `json:"few,omitempty"` // Growing Together: fewer than five chose it, so no count is shown
 }
 
 // QuestionResults is the response of GET /api/questions/{questionId}/results.
@@ -262,6 +263,17 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("POST /api/together", s.AskTogether)
 	mux.HandleFunc("POST /api/together/{id}", s.AnswerTogether)
 	mux.HandleFunc("DELETE /api/together/{id}", s.LeaveTogether)
+
+	// Closer Together (closer.go): shared insights, Common Ground, reach-outs.
+	mux.HandleFunc("GET /api/shares", s.GetShares)
+	mux.HandleFunc("POST /api/shares", s.PostShare)
+	mux.HandleFunc("DELETE /api/shares/{id}", s.WithdrawShare)
+	mux.HandleFunc("GET /api/common", s.GetCommon)
+	mux.HandleFunc("PUT /api/common", s.PutCommon)
+	mux.HandleFunc("PUT /api/common/friends/{id}", s.PutCommonFriend)
+	mux.HandleFunc("GET /api/reachouts", s.GetReachOuts)
+	mux.HandleFunc("POST /api/reachouts", s.PostReachOut)
+	mux.HandleFunc("DELETE /api/reachouts/{id}", s.PutAwayReachOut)
 	return mux
 }
 

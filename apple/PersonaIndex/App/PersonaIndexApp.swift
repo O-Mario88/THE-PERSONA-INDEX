@@ -10,9 +10,21 @@ struct PersonaIndexApp: App {
             RootView()
                 .environment(model)
                 .task { await model.refresh() }
+                #if os(macOS) && DEBUG
+                .onAppear { SelfSnapshot.runIfAsked(model) }
+                #endif
         }
         #if os(macOS)
-        .defaultSize(width: 1100, height: 760)
+        .defaultSize(width: 1280, height: 820)
+        .windowResizability(.contentMinSize)
+        .commands {
+            CommandMenu("Go") {
+                ForEach(Array(AppSection.allCases.enumerated()), id: \.element) { i, section in
+                    Button(section.name) { model.section = section }
+                        .keyboardShortcut(KeyEquivalent(Character("\(i + 1)")), modifiers: .command)
+                }
+            }
+        }
         #endif
     }
 }
@@ -35,6 +47,8 @@ struct RootView: View {
         .font(.pBody)
         .foregroundStyle(Palette.text)
         .tint(Palette.accentInk)
+        // Our own field backgrounds, without the Mac's bordered box inside them.
+        .textFieldStyle(.plain)
         .onAppear(perform: Launch.firstScreen)
     }
 }
