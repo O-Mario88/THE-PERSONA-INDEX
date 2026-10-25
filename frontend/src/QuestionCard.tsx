@@ -497,9 +497,19 @@ function Answer({
         />
       )}
       {insight && isLowMood(question.theme, option.depth) && <Helpline />}
+      {/* Next straight under the card, from the moment it opens (Edwin,
+          2026-10-25: "so the users can go to the next questions without going
+          back first"). The step to try and "That's me" follow below it. */}
+      <div className="answer-foot">
+        <button type="button" className="next" onClick={onNext}>
+          {nextLabel !== 'Next' && <span className="sr-only">Next: </span>}
+          {nextLabel}
+        </button>
+        {insight && whole && <KeepThis question={question} option={option} words={words} date={date} />}
+      </div>
       {!whole && (
         <div className="beat-foot">
-          <button type="button" className="btn wide beat-next" onClick={advance}>
+          <button type="button" className="btn wide ghost beat-next" onClick={advance}>
             {beat === 0 && hasBody ? 'Read on' : 'And the other side'}
           </button>
         </div>
@@ -520,13 +530,6 @@ function Answer({
               onVerdict={(v) => setNotMe(v === 'not_me')}
             />
           )}
-          <div className="answer-foot">
-            <button type="button" className="next" onClick={onNext}>
-              {nextLabel !== 'Next' && <span className="sr-only">Next: </span>}
-              {nextLabel}
-            </button>
-            {insight && <KeepThis question={question} option={option} words={words} date={date} />}
-          </div>
         </>
       )}
     </div>

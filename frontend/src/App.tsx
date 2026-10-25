@@ -54,8 +54,8 @@ import { SignInSheet } from './SignIn'
 import { inviteFromURL } from './social'
 import { pullSync } from './sync'
 import { useAccount } from './useAccount'
-import { keys, load as loadKey, save as saveKey } from './storage'
-import { Welcome, WELCOMED } from './Welcome'
+import { keys, load as loadKey, remove as removeKey, save as saveKey } from './storage'
+import { NAME_KEY, Welcome, WELCOMED } from './Welcome'
 
 type State =
   | { kind: 'loading' }
@@ -128,6 +128,8 @@ function App() {
   const [welcome, setWelcome] = useState(
     () => loadKey(WELCOMED) === null && loadHistory().answers.length === 0 && keys('pi.choice.').length === 0,
   )
+  // What the person asked to be called on the welcome, kept on this phone.
+  const [localName, setLocalName] = useState(() => loadKey(NAME_KEY) ?? '')
   const wide = useMedia(wideQuery)
   const phoneDark = useMedia(darkQuery)
   // Stage 5: the account, if the person signed in, and an invite link they
@@ -428,7 +430,7 @@ function App() {
             else if (hero?.opens) setFlow(hero.opens)
           }}
           onAccount={() => setTab('account')}
-          name={me?.name}
+          name={me?.name || localName || null}
           since={since}
           feed={feed}
           morning={morning}
@@ -678,8 +680,12 @@ function App() {
         <main className="page page-welcome">
           <h1 className="sr-only">The Persona Index</h1>
           <Welcome
-            onBegin={() => {
+            onBegin={(name) => {
               saveKey(WELCOMED, '1')
+              if (name) {
+                saveKey(NAME_KEY, name)
+                setLocalName(name)
+              }
               setWelcome(false)
             }}
           />
@@ -741,7 +747,18 @@ function App() {
           )}
 
           {tab === 'settings' && (
-            <SettingsScreen prefs={prefs} onChange={changePrefs} onOpenKept={() => open('kept')} onBack={() => setTab(back)} />
+            <SettingsScreen
+              prefs={prefs}
+              onChange={changePrefs}
+              onOpenKept={() => open('kept')}
+              onBack={() => setTab(back)}
+              name={localName}
+              onName={(n) => {
+                if (n) saveKey(NAME_KEY, n)
+                else removeKey(NAME_KEY)
+                setLocalName(n)
+              }}
+            />
           )}
 
           {loading && (tab === 'today' || tab === 'mirror') && (

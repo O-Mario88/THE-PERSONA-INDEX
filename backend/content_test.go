@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"maps"
 	"os"
 	"reflect"
@@ -100,7 +101,8 @@ func TestValidateBankCatchesBrokenCards(t *testing.T) {
 		{"intimate answer marked heavy", func(q *bankQuestion) { q.Theme, q.Options[2].Heavy = "intimacy", true }, "can be heavy"},
 		{"copied reveal", func(q *bankQuestion) { q.Options[1].Insight.Reveal = q.Options[0].Insight.Reveal }, "repeats"},
 		{"currency", func(q *bankQuestion) { q.Options[2].Label = "Spend $50 on me" }, "currency"},
-		{"too few options", func(q *bankQuestion) { q.Options = q.Options[:2] }, "3 or 4 options"},
+		{"too few options", func(q *bankQuestion) { q.Options = q.Options[:2] }, "3 to 6 options"},
+		{"too many options", func(q *bankQuestion) { q.Options = moreOptions(q.Options, 4) }, "3 to 6 options"},
 		{"unknown trait", func(q *bankQuestion) { q.Options[0].Traits = map[string]int{"zodiac": 1} }, "trait"},
 		{"thin reveal", func(q *bankQuestion) {
 			q.Options[0].Insight.Reveal = "You like to pay your bills before anything else."
@@ -153,6 +155,17 @@ func TestValidateBankCatchesBrokenCards(t *testing.T) {
 		})
 	}
 
+	// Edwin, 2026-10-25: a daily question can have up to six answers.
+	t.Run("a question with six answers passes", func(t *testing.T) {
+		q := good()
+		q.Options = moreOptions(q.Options, 3)
+		for _, err := range validateBank(bankFile{Questions: []bankQuestion{q}}) {
+			if !strings.HasPrefix(err.Error(), "theme ") {
+				t.Fatal(err)
+			}
+		}
+	})
+
 	t.Run("a good question passes every per-question rule", func(t *testing.T) {
 		for _, err := range validateBank(bankFile{Questions: []bankQuestion{good()}}) {
 			if !strings.HasPrefix(err.Error(), "theme ") { // only the bank-size rule may fire
@@ -160,6 +173,23 @@ func TestValidateBankCatchesBrokenCards(t *testing.T) {
 			}
 		}
 	})
+}
+
+// moreOptions adds n deeper answers to a question, each with its own id,
+// label and card, so only the number of options can break a rule.
+func moreOptions(opts []bankOption, n int) []bankOption {
+	out := slices.Clone(opts)
+	lines := []string{"the fourth", "the fifth", "the sixth", "the seventh"}
+	for i := range n {
+		o := opts[len(opts)-1]
+		o.ID = fmt.Sprintf("extra-%d", i+1)
+		o.Label = fmt.Sprintf("Another way, %s", lines[i])
+		o.Depth = 3
+		o.Insight.Reveal = fmt.Sprintf("You keep going until %s thing is done. You give a lot at work, and you rarely stop to notice how tired you are, so the evening becomes the break.", lines[i])
+		o.Insight.OtherSide = fmt.Sprintf("If the evening is your only break, %s worry you put off can come back bigger later in the month.", lines[i])
+		out = append(out, o)
+	}
+	return out
 }
 
 func TestCitationLibrary(t *testing.T) {
