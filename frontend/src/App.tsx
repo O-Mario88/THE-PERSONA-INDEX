@@ -89,16 +89,19 @@ function progressOf(qs: Question[]): Progress {
 }
 
 const wideQuery = '(min-width: 900px)'
-function useWide(): boolean {
-  const [wide, setWide] = useState(() => typeof matchMedia === 'function' && matchMedia(wideQuery).matches)
+const darkQuery = '(prefers-color-scheme: dark)'
+
+// useMedia follows a media query, for the wide layout and the phone's own dark mode.
+function useMedia(query: string): boolean {
+  const [on, setOn] = useState(() => typeof matchMedia === 'function' && matchMedia(query).matches)
   useEffect(() => {
     if (typeof matchMedia !== 'function') return
-    const m = matchMedia(wideQuery)
-    const on = () => setWide(m.matches)
-    m.addEventListener?.('change', on)
-    return () => m.removeEventListener?.('change', on)
-  }, [])
-  return wide
+    const m = matchMedia(query)
+    const change = () => setOn(m.matches)
+    m.addEventListener?.('change', change)
+    return () => m.removeEventListener?.('change', change)
+  }, [query])
+  return on
 }
 
 function App() {
@@ -120,7 +123,8 @@ function App() {
   // The phone's clock decides the window: five a day, with the morning three
   // open from 5 am to 5 pm and the evening three from 5 pm to midnight.
   const { date, window: win, sitting: clockSitting } = useDay()
-  const wide = useWide()
+  const wide = useMedia(wideQuery)
+  const phoneDark = useMedia(darkQuery)
   // Stage 5: the account, if the person signed in, and an invite link they
   // followed (kept until they join or say not now).
   const me = useAccount()
@@ -356,7 +360,9 @@ function App() {
   const read = set && (
     <TodaysRead date={set.date} themes={themesOf([...morningQs, ...eveningQs])} intimacy={intimacyOn(prefs)} />
   )
-  const dark = blackOn(prefs) && (win === 'evening' || win === 'night' || win === 'rest') && tab === 'today'
+  // Navy when the phone asks for dark, and on Today through the evening and night;
+  // the Dark mode switch turns both off.
+  const dark = blackOn(prefs) && (phoneDark || ((win === 'evening' || win === 'night' || win === 'rest') && tab === 'today'))
 
   const hero = set
     ? heroFor({
