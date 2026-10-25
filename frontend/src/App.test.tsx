@@ -195,10 +195,10 @@ afterEach(() => {
 // Taps an answer and waits for its answer screen.
 async function answer(label: string) {
   fireEvent.click(await screen.findByRole('button', { name: label }))
-  await screen.findByRole('button', { name: 'Next' })
+  await screen.findByRole('button', { name: /^Next/ })
 }
 
-const next = () => fireEvent.click(screen.getByRole('button', { name: 'Next' }))
+const next = () => fireEvent.click(screen.getByRole('button', { name: /^Next/ }))
 const skip = async () => fireEvent.click(await screen.findByRole('button', { name: 'Skip this one' }))
 
 // This morning, before 9 am: dishes answered, the bill skipped, alarms answered.
@@ -390,6 +390,27 @@ describe('the daily questions', () => {
       'Something you could try: Next time a small task appears',
     )
     expect(screen.queryByText(/Batching chores/)).not.toBeInTheDocument()
+  })
+
+  it('unfolds the card in three beats, one tap each, when motion is on', async () => {
+    const media = window.matchMedia
+    window.matchMedia = ((q: string) => ({ ...media(q), matches: false })) as typeof window.matchMedia
+    try {
+      stubApi({})
+      render(<App />)
+      fireEvent.click(await screen.findByRole('button', { name: 'Right after eating' }))
+      const insight = await screen.findByRole('note', { name: 'What your answer may say' })
+      expect(within(insight).getByText('You like a clear sink before you relax.')).toBeInTheDocument()
+      expect(within(insight).queryByText('Unfinished tasks are noisier for you than for most.')).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /^Next/ })).not.toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: 'Read on' }))
+      expect(within(insight).getByText('Unfinished tasks are noisier for you than for most.')).toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: 'And the other side' }))
+      expect(screen.getByRole('button', { name: /^Next/ })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /Keep in Notebook/ })).toBeInTheDocument()
+    } finally {
+      window.matchMedia = media
+    }
   })
 
   it("keeps the card's sources out of sight: no research line, evidence label or link", async () => {
@@ -1878,7 +1899,7 @@ describe('a vote never gets stuck', () => {
     expect(await screen.findByRole('textbox', { name: 'In your own words' })).toHaveValue('Honestly, it depends')
     fireEvent.click(screen.getByRole('button', { name: 'Keep my words' }))
     fireEvent.click(await screen.findByRole('button', { name: 'Right after eating' }))
-    await screen.findByRole('button', { name: 'Next' })
+    await screen.findByRole('button', { name: /^Next/ })
     expect(localStorage.getItem('pi.draft.q-dishes')).toBeNull()
   })
 
@@ -2604,7 +2625,7 @@ describe('questions about everyday life where you live', () => {
     fireEvent.change(within(where).getByRole('combobox', { name: 'Country' }), { target: { value: 'KZ' } })
     expect(within(where).queryByRole('checkbox')).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: '← Back' }))
-    fireEvent.click(await screen.findByRole('button', { name: 'Next' }))
+    fireEvent.click(await screen.findByRole('button', { name: /^Next/ }))
     await skip()
     expect(await screen.findByText(homeMoment.prompt)).toBeInTheDocument()
   })

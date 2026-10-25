@@ -103,6 +103,8 @@ export function QuestionCard({
   onNext,
 }: Props) {
   const [choice, setChoice] = useState<string | null>(() => recalledChoice(question.id))
+  // A card answered before (coming back to it) opens whole, not in beats.
+  const [recalled] = useState(() => !!recalledChoice(question.id))
   const [words, setWords] = useState<OwnWords | null>(() => recalledWords(question.id))
   const [draft, setDraft] = useState(() => (recalledChoice(question.id) ? '' : recalledDraft(question.id)))
   // A write-first card opens on a box for one line (Edwin, 2026-10-24); the
@@ -387,8 +389,9 @@ export function QuestionCard({
           words={words}
           date={date}
           wordsDays={wordsDays}
-          still={still}
+          still={still || recalled}
           card={index !== undefined && of ? `Card ${index + 1} of ${of}` : undefined}
+          nextLabel={index !== undefined && of && index + 1 < of ? `Question ${index + 2} of ${of}` : 'Next'}
           pulse={pulse}
           onPulse={onPulse}
           onNext={onNext}
@@ -432,10 +435,12 @@ function Answer({
   wordsDays,
   still,
   card,
+  nextLabel = 'Next',
   pulse,
   onPulse,
   onNext,
 }: {
+  nextLabel?: string
   question: Question
   option: Option
   words: OwnWords | null
@@ -458,8 +463,15 @@ function Answer({
   })
   const [notMe, setNotMe] = useState(() => recalledVerdict(question.id) === 'not_me')
   const counted = hasPulse(question) && !option.heavy
+  // The card unfolds in three beats, each on a tap (M02): the line, then the
+  // reading, then what it reached for and the other side. With "Reduce
+  // motion" on, or coming back to a card, it is all there at once.
+  const hasBody = !!insight && !!splitReveal(insight.reveal).body
+  const [beat, setBeat] = useState(() => (still || !insight ? 2 : 0))
+  const advance = () => setBeat((b) => (b === 0 && hasBody ? 1 : 2))
+  const whole = beat >= 2
   return (
-    <div className={still ? 'answer' : 'answer unfold'}>
+    <div className={still ? 'answer' : 'answer unfold'} data-beat={beat}>
       {card && <p className="card-count label">{card}</p>}
       {words ? (
         <YourWords words={words} />
@@ -481,27 +493,42 @@ function Answer({
           reach={notMe || !isNeed(option.need) ? null : option.need}
           thread={notMe ? null : thread}
           focus={notMe ? null : focus}
+          beat={beat}
         />
       )}
-      {counted && pulse === true && <PulsePill question={question} optionId={option.id} />}
-      {counted && pulse === undefined && onPulse && <PulseAsk onAnswer={onPulse} />}
-      {insight && <KeepThis question={question} option={option} words={words} date={date} />}
       {insight && isLowMood(question.theme, option.depth) && <Helpline />}
-      {insight?.step && (
-        <TryThis question={question} option={option} step={insight.step} needStep={insight.needStep} date={date} />
+      {!whole && (
+        <div className="beat-foot">
+          <button type="button" className="btn wide beat-next" onClick={advance}>
+            {beat === 0 && hasBody ? 'Read on' : 'And the other side'}
+          </button>
+        </div>
       )}
-      {insight && (
-        <Rate
-          question={question}
-          option={option}
-          date={date}
-          wordsDays={wordsDays}
-          onVerdict={(v) => setNotMe(v === 'not_me')}
-        />
+      {whole && (
+        <>
+          {counted && pulse === true && <PulsePill question={question} optionId={option.id} />}
+          {counted && pulse === undefined && onPulse && <PulseAsk onAnswer={onPulse} />}
+          {insight?.step && (
+            <TryThis question={question} option={option} step={insight.step} needStep={insight.needStep} date={date} />
+          )}
+          {insight && (
+            <Rate
+              question={question}
+              option={option}
+              date={date}
+              wordsDays={wordsDays}
+              onVerdict={(v) => setNotMe(v === 'not_me')}
+            />
+          )}
+          <div className="answer-foot">
+            <button type="button" className="next" onClick={onNext}>
+              {nextLabel !== 'Next' && <span className="sr-only">Next: </span>}
+              {nextLabel}
+            </button>
+            {insight && <KeepThis question={question} option={option} words={words} date={date} />}
+          </div>
+        </>
       )}
-      <button type="button" className="next" onClick={onNext}>
-        Next
-      </button>
     </div>
   )
 }
@@ -611,7 +638,9 @@ function InsightPanel({
   reach,
   thread,
   focus,
+  beat = 2,
 }: {
+  beat?: number // 0: the line only, 1: and the reading, 2: all of it
   area: string
   chose?: string // the option tapped, said small in the card's corner
   reveal: string
@@ -633,24 +662,24 @@ function InsightPanel({
         )}
       </p>
       <p className="insight-headline beat-1">{headline}</p>
-      {body && <p className="insight-body beat-2">{body}</p>}
-      {reach && (
+      {body && beat >= 1 && <p className="insight-body beat-2">{body}</p>}
+      {beat >= 2 && reach && (
         <p className="insight-reach beat-3">
           <span className="eyebrow">What it reached for</span> {NEED_PHRASES[reach]}
         </p>
       )}
-      {otherSide && (
+      {beat >= 2 && otherSide && (
         <p className="insight-other beat-3">
           <span className="eyebrow">The other side</span> {otherSide}
         </p>
       )}
-      {thread && (
+      {beat >= 2 && thread && (
         <p className="insight-thread">
           <span aria-hidden="true">↺ </span>
           {thread}
         </p>
       )}
-      {focus && (
+      {beat >= 2 && focus && (
         <p className="insight-thread insight-focus">
           <span aria-hidden="true">→ </span>
           {focusTouch(focus.when, focus.will)}
@@ -704,7 +733,7 @@ function KeepThis({ question, option, words, date }: { question: Question; optio
         </>
       ) : (
         <button type="button" className="chip keep-button" onClick={keep}>
-          <span aria-hidden="true">＋ </span>Keep this
+          <span aria-hidden="true">＋ </span>Keep in Notebook
         </button>
       )}
     </div>
