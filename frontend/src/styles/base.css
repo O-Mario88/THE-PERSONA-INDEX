@@ -530,6 +530,7 @@ svg {
 
 .field,
 .own-box,
+.m-box,
 .own-line,
 .m-input,
 .code-input {
@@ -547,7 +548,8 @@ svg {
 }
 
 textarea.field,
-.own-box {
+.own-box,
+.m-box {
   min-height: 112px;
   resize: vertical;
   line-height: var(--lh-body);
@@ -561,6 +563,7 @@ textarea.field,
 
 .field:focus,
 .own-box:focus,
+.m-box:focus,
 .own-line:focus,
 .m-input:focus,
 .code-input:focus {
