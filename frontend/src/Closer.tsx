@@ -23,6 +23,8 @@ import { Avatar } from './ui/Avatar'
 // sent without the person pressing the button, and nothing says whether it
 // was seen.
 
+const SHARE_NOTE_MAX = 160
+
 const KIND_TITLES: Record<ShareKind, string> = { helped: 'Share what helped', win: 'Share a win' }
 
 function useFriends(): FriendView[] | null {
@@ -52,6 +54,8 @@ export function ShareComposer({ kind, text: initial, onDone, onCancel }: Compose
   const [themes, setThemes] = useState<ThemeOption[]>([])
   const [text, setText] = useState(initial.trim().slice(0, SHARE_TEXT_MAX))
   const [theme, setTheme] = useState('')
+  const [why, setWhy] = useState('')
+  const [tryThis, setTryThis] = useState('')
   const [to, setTo] = useState<string[]>([])
   const [sentTo, setSentTo] = useState<string[] | null>(null)
   const [error, setError] = useState('')
@@ -72,7 +76,8 @@ export function ShareComposer({ kind, text: initial, onDone, onCancel }: Compose
 
   function share() {
     if (!ready || !friends) return
-    postShare({ kind, theme, text: words, to }).then(
+    const notes = { ...(why.trim() ? { why: why.trim() } : {}), ...(tryThis.trim() ? { try: tryThis.trim() } : {}) }
+    postShare({ kind, theme, text: words, ...notes, to }).then(
       () => setSentTo(friends.filter((f) => to.includes(f.id)).map((f) => f.name)),
       (e) => setError(e instanceof ApiError && e.code === 'no_links' ? 'Links can’t be shared here. Say it in your own words.' : 'That didn’t go through. Nothing was shared.'),
     )
@@ -110,6 +115,19 @@ export function ShareComposer({ kind, text: initial, onDone, onCancel }: Compose
       <p className="muted small">
         Exactly these words, and nothing else from your answers. {SHARE_TEXT_MAX - text.length} characters left.
       </p>
+
+      {kind === 'helped' && (
+        <>
+          <label className="field-label" htmlFor="share-why">
+            Why it helped (optional)
+          </label>
+          <input id="share-why" className="field" maxLength={SHARE_NOTE_MAX} value={why} onChange={(e) => setWhy(e.target.value)} />
+          <label className="field-label" htmlFor="share-try">
+            Try it for yourself (optional)
+          </label>
+          <input id="share-try" className="field" maxLength={SHARE_NOTE_MAX} value={tryThis} onChange={(e) => setTryThis(e.target.value)} />
+        </>
+      )}
 
       {themes.length > 0 && (
         <div className="chips" role="group" aria-label="Theme">

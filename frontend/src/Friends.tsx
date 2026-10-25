@@ -135,7 +135,7 @@ function tonightsCards(cards: string[], date: string): number[] {
   return out
 }
 
-export function NodPicker({ date }: { date: string }) {
+export function NodPicker({ date, title }: { date: string; title?: string }) {
   const me = useAccount()
   const [friends, setFriends] = useState<FriendView[] | null>(null)
   const nods = useNods(date)
@@ -168,7 +168,7 @@ export function NodPicker({ date }: { date: string }) {
   return (
     <section className="nod-picker" aria-labelledby="nod-title">
       <h3 id="nod-title" className="nod-title">
-        Send a quiet nod before bed? <span className="muted">No reply needed.</span>
+        {title ?? 'Send a quiet nod before bed?'} <span className="muted">No reply needed.</span>
       </h3>
       <div className="chips" role="group" aria-label="To">
         {friends.map((f) => (

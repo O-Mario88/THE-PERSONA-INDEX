@@ -174,7 +174,7 @@ describe('the circle', () => {
     render(<CircleScreen />)
     expect(await screen.findByRole('heading', { name: 'Your circle' })).toBeInTheDocument()
     expect(screen.getByRole('group', { name: 'Your circle in numbers' })).toHaveTextContent('3People in your circle')
-    expect(screen.getByText('Your circle · @ama')).toBeInTheDocument()
+    expect(screen.getByText('Connect · @ama')).toBeInTheDocument()
     expect(screen.getByRole('img', { name: '2 of 3 friends active this week' })).toBeInTheDocument()
     expect(screen.getByText('One more friend unlocks your Outside Mirror')).toBeInTheDocument()
 
@@ -267,6 +267,126 @@ describe('the circle', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Join Kofi’s circle' }))
     await waitFor(() => expect(calls.find((c) => c.method === 'POST' && c.url.endsWith('abcdefghjk'))?.body).toEqual({ tag: 'work' }))
     expect(load('pi.invite')).toBeNull()
+  })
+})
+
+// Connect 3.0 (Edwin, 2026-10-25): four calm sections and no feed. Common
+// Ground only from what both friends opted in to, shares that can be
+// withdrawn, at most two quiet cards, and silence never read as anything.
+describe('connect 3.0', () => {
+  const base = (over: Partial<CircleView> = {}): CircleView => ({
+    me: ama,
+    friends: [friend('k', 'Kofi'), friend('t', 'Taylor', { tag: 'family' }), friend('d', 'Daniel', { active: false, tag: 'school' })],
+    active: 2,
+    need: 3,
+    joined: [],
+    suggestions: [],
+    ...over,
+  })
+  const common = {
+    tags: [
+      { id: 'peace-calm', label: 'Peace and calm', value: 'peace and calm', explore: 'What small habit has helped you create more peace in your day?' },
+      { id: 'growth', label: 'Personal growth', value: 'growing as a person', explore: 'What is one thing you have changed your mind about this year?' },
+    ],
+    mine: ['peace-calm', 'growth'],
+    optedIn: ['t'],
+    pairs: [
+      {
+        friend: friend('t', 'Taylor'),
+        shared: ['growth', 'peace-calm'],
+        headline: 'You both value peace and calm and growing as a person.',
+        explore: 'What small habit has helped you create more peace in your day?',
+      },
+    ],
+  }
+  const themes = [{ id: 'managing-stress', label: 'Managing stress' }]
+  function serve(extra: (c: Call) => Response | undefined = () => undefined, circleOver: Partial<CircleView> = {}) {
+    signedInAs()
+    routes = (c) =>
+      extra(c) ??
+      (c.url === '/api/circle'
+        ? json(200, base(circleOver))
+        : c.url === '/api/common'
+          ? json(200, common)
+          : c.url === '/api/shares'
+            ? json(200, {
+                themes,
+                received: [{ id: 'sh1', from: friend('k', 'Kofi'), kind: 'helped', theme: 'managing-stress', text: 'A short break before replying helped me think more clearly.', why: 'It gave me space to breathe.', date: '2026-10-24' }],
+                sent: [{ id: 'mine1', kind: 'win', theme: 'managing-stress', text: 'I kept my walk going all week.', date: '2026-10-24', to: ['Taylor'] }],
+              })
+            : c.url === '/api/reachouts'
+              ? json(200, {
+                  phrases: { support: [], celebrate: [] },
+                  received: [
+                    { id: 'r1', from: friend('k', 'Kofi'), kind: 'support', text: 'Could we talk for a few minutes?', date: '2026-10-24' },
+                    { id: 'r2', from: friend('t', 'Taylor'), kind: 'celebrate', text: 'I made progress on something that matters to me.', date: '2026-10-24' },
+                    { id: 'r3', from: friend('d', 'Daniel'), kind: 'support', text: 'I could use some company this week.', date: '2026-10-23' },
+                  ],
+                })
+              : undefined)
+  }
+
+  it('has the four sections, and nothing like a feed', async () => {
+    serve()
+    render(<CircleScreen today="2026-10-25" />)
+    expect(await screen.findByRole('heading', { name: 'Connect', level: 2 })).toBeInTheDocument()
+    for (const name of ['Your circle', 'Our Common Ground', 'What Helped Us', 'Support & Celebrate']) expect(screen.getByRole('heading', { name })).toBeInTheDocument()
+    expect(screen.getByText('A little closer. A little stronger. Together.')).toBeInTheDocument()
+    expect(document.body).not.toHaveTextContent(/\b(likes|comments|followers|feed|trending|leaderboard)\b/i)
+  })
+
+  it('shows Common Ground only as the server returns it, with something to explore together', async () => {
+    serve()
+    render(<CircleScreen />)
+    const card = await screen.findByRole('region', { name: 'Our Common Ground' })
+    expect(await within(card).findByText('You both value peace and calm and growing as a person.')).toBeInTheDocument()
+    expect(within(card).getByText('You & Taylor')).toBeInTheDocument()
+    expect(card).toHaveTextContent('“What small habit has helped you create more peace in your day?”')
+    fireEvent.click(within(card).getByRole('button', { name: 'Who you find it with' }))
+    const kofi = within(card).getByRole('checkbox', { name: 'Find common ground with Kofi' })
+    expect(kofi).not.toBeChecked()
+    fireEvent.click(kofi)
+    await waitFor(() => expect(calls.find((c) => c.url === '/api/common/friends/k')?.body).toEqual({ on: true }))
+  })
+
+  it('says when new Common Ground tags can be added', async () => {
+    serve((c) => (c.url === '/api/common' && c.method === 'PUT' ? json(429, { error: 'tags_changed_recently', nextChange: '2026-10-31' }) : undefined))
+    render(<CircleScreen />)
+    const card = await screen.findByRole('region', { name: 'Our Common Ground' })
+    fireEvent.click(await within(card).findByRole('button', { name: 'What matters to you' }))
+    fireEvent.click(within(card).getByRole('button', { name: 'Personal growth' }))
+    fireEvent.click(within(card).getByRole('button', { name: 'Save' }))
+    expect(await within(card).findByRole('alert')).toHaveTextContent('once a week')
+  })
+
+  it('shows what a friend shared, and lets the person withdraw their own share', async () => {
+    serve((c) => (c.url === '/api/shares/mine1' && c.method === 'DELETE' ? json(204) : undefined))
+    render(<CircleScreen />)
+    const card = await screen.findByRole('region', { name: 'What Helped Us' })
+    expect(await within(card).findByText('“A short break before replying helped me think more clearly.”')).toBeInTheDocument()
+    expect(card).toHaveTextContent('A perspective from Kofi')
+    expect(card).toHaveTextContent('Why it helped')
+    expect(card).toHaveTextContent('with Taylor')
+    fireEvent.click(within(card).getByRole('button', { name: 'Withdraw' }))
+    await waitFor(() => expect(calls.some((c) => c.url === '/api/shares/mine1' && c.method === 'DELETE')).toBe(true))
+  })
+
+  it('shows at most two quiet cards, and putting one away tells no one', async () => {
+    serve((c) => (c.url === '/api/reachouts/r1' && c.method === 'DELETE' ? json(204) : undefined))
+    render(<CircleScreen />)
+    const closer = await screen.findByRole('region', { name: 'Closer together' })
+    await within(closer).findByText('Kofi reached out')
+    expect(within(closer).getAllByRole('listitem')).toHaveLength(2)
+    expect(closer).not.toHaveTextContent('Daniel')
+    fireEvent.click(within(closer).getAllByRole('button', { name: 'Put away' })[0])
+    await waitFor(() => expect(calls.some((c) => c.url === '/api/reachouts/r1' && c.method === 'DELETE')).toBe(true))
+  })
+
+  it('shrinks the invite card once the Outside Mirror is open', async () => {
+    serve(undefined, { active: 3 })
+    render(<CircleScreen />)
+    expect(await screen.findByRole('heading', { name: 'Invite someone' })).toBeInTheDocument()
+    expect(screen.queryByText(/unlocks your Outside Mirror/)).not.toBeInTheDocument()
   })
 })
 
