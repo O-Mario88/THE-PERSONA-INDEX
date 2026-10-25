@@ -182,6 +182,8 @@ const at = (hour: number, day = 12) => new Date(2026, 9, day, hour, 0)
 
 beforeEach(() => {
   localStorage.clear()
+  // Every test but the welcome's own starts past the one-time welcome.
+  localStorage.setItem('pi.welcomed', '1')
   vi.useFakeTimers({ toFake: ['Date'] })
   vi.setSystemTime(at(9))
 })
@@ -219,6 +221,32 @@ const noClinicianWords = /therap|psycholog|psychiatr|counsel/i
 // the card itself never carries an answer (ShareCard.test.tsx).
 const crowdOrScore = /player|\bcrowd\b|%|\bpts\b|\bpoints\b|bonus|\blevels?\b|compare with/i
 
+
+describe('the welcome', () => {
+  it('greets a first open once, then goes straight to the first sitting', async () => {
+    localStorage.removeItem('pi.welcomed')
+    stubApi({ today: { status: 200, body: sixADay } })
+    const first = render(<App />)
+    expect(await screen.findByRole('heading', { name: 'A calmer you starts with reflection.' })).toBeInTheDocument()
+    expect(screen.queryByRole('navigation', { name: 'Sections' })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Begin your first reflection' }))
+    expect(await screen.findByRole('region', { name: 'When do you wash the dishes?' })).toBeInTheDocument()
+    first.unmount()
+
+    render(<App />)
+    expect(await screen.findByRole('region', { name: 'When do you wash the dishes?' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'A calmer you starts with reflection.' })).not.toBeInTheDocument()
+  })
+
+  it('never shows to someone who has answered before', async () => {
+    localStorage.removeItem('pi.welcomed')
+    answeredThisMorning()
+    stubApi({ today: { status: 200, body: sixADay } })
+    render(<App />)
+    expect(await screen.findByRole('navigation', { name: 'Sections' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'A calmer you starts with reflection.' })).not.toBeInTheDocument()
+  })
+})
 
 describe('the daily questions', () => {
   it('shows one question at a time, with the edition and the day', async () => {
@@ -822,7 +850,7 @@ describe('the daily questions', () => {
     expect(screen.queryByRole('region', { name: 'Are you 18 or older?' })).not.toBeInTheDocument()
 
     // The keep-it-mild switch is always there, on Account, and takes intimacy out again.
-    fireEvent.click(screen.getByRole('button', { name: 'Account' }))
+    fireEvent.click(screen.getByRole('button', { name: 'You' }))
     fireEvent.click(screen.getByRole('switch', { name: /Keep it mild \(no intimacy questions\)/ }))
     fireEvent.click(screen.getByRole('button', { name: 'Today' }))
     expect(screen.queryByText(closeness.prompt)).not.toBeInTheDocument()
@@ -942,7 +970,7 @@ describe('the evening, from 5 pm', () => {
     vi.setSystemTime(at(15))
     const fetchMock = stubApi({ today: { status: 200, body: sixADay } })
     render(<App />)
-    expect(await screen.findByRole('heading', { name: 'Afternoon' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Good afternoon.' })).toBeInTheDocument()
     expect(screen.queryByRole('navigation', { name: "Today's questions" })).not.toBeInTheDocument()
 
     vi.setSystemTime(at(17))
@@ -952,7 +980,7 @@ describe('the evening, from 5 pm', () => {
     vi.setSystemTime(at(0, 13))
     fireEvent(document, new Event('visibilitychange'))
     await waitFor(() => expect(calls(fetchMock, '/api/editions/2026-10-13')).toHaveLength(1))
-    expect(await screen.findByRole('heading', { name: 'Night' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Good night.' })).toBeInTheDocument()
     expect(screen.getByRole('group', { name: 'The night is yours' })).toHaveTextContent('Your morning three open at 05:00.')
   })
 
@@ -1249,7 +1277,7 @@ async function openMirror(routes: Parameters<typeof stubApi>[0] = {}) {
   vi.setSystemTime(at(9, 18))
   const fetchMock = stubApi({ edition: { status: 200, body: sunday }, mirror: { status: 200, body: mirror }, ...routes })
   render(<App />)
-  fireEvent.click(await screen.findByRole('button', { name: 'Mirror' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Insights' }))
   return fetchMock
 }
 
@@ -1459,7 +1487,7 @@ describe('the weekly mirror', () => {
     fireEvent.click(screen.getByRole('button', { name: 'What I keep, and how to delete it' }))
     expect(await screen.findByRole('heading', { name: 'What I keep' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: '← Back' }))
-    expect(screen.getByRole('button', { name: 'Mirror' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'Insights' })).toHaveAttribute('aria-pressed', 'true')
   })
 
   it('gets a new token and asks again when the server no longer accepts the old one', async () => {
@@ -1752,7 +1780,7 @@ describe('the week', () => {
 
     vi.setSystemTime(new Date(2026, 9, 12, 16, 59))
     const second = render(<App />)
-    expect(await screen.findByRole('heading', { name: 'Afternoon' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Good afternoon.' })).toBeInTheDocument()
     expect(screen.queryByText('Lunch time. What usually happens?')).not.toBeInTheDocument()
     second.unmount()
 
@@ -1768,7 +1796,7 @@ describe('the week', () => {
     stubApi({ edition: { status: 200, body: sunday }, mirror: { status: 200, body: mirror } })
     render(<App />)
     expect(await screen.findByRole('heading', { level: 2, name: weekTitle })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Mirror' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'Insights' })).toHaveAttribute('aria-pressed', 'true')
 
     fireEvent.click(screen.getByRole('button', { name: 'Today' }))
     const review = screen.getByRole('region', { name: 'Sunday is for looking back.' })
@@ -1779,7 +1807,7 @@ describe('the week', () => {
     expect(review).not.toHaveTextContent(crowdOrScore)
     expect(screen.queryByRole('navigation', { name: "Today's questions" })).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Open: Your Sunday Mirror is ready' }))
-    expect(screen.getByRole('button', { name: 'Mirror' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'Insights' })).toHaveAttribute('aria-pressed', 'true')
   })
 
   it('looks ahead to the review day on Saturday evening', async () => {
@@ -2046,7 +2074,7 @@ describe('accessibility', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }))
     await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('heading', { level: 2, name: 'Settings' })))
     fireEvent.click(screen.getByRole('button', { name: '← Back' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Notebook' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Reflect' }))
     await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('heading', { level: 2, name: 'Notebook' })))
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1)
   })
@@ -2525,7 +2553,7 @@ describe('where you live', () => {
     expect(JSON.parse(localStorage.getItem('pi.prefs.v1')!)).toMatchObject({ country: 'none' })
     unmount()
     render(<App />)
-    await screen.findByRole('heading', { name: 'Morning' })
+    await screen.findByRole('heading', { name: 'Good morning.' })
     expect(screen.queryByRole('region', { name: 'Where do you live now?' })).not.toBeInTheDocument()
   })
 
@@ -2668,7 +2696,7 @@ describe('Stage 5 in the day', () => {
     expect(calls(fetchMock, '/api/auth/code')).toHaveLength(0)
     unmount()
     render(<App />)
-    await screen.findByRole('heading', { name: /Morning/ })
+    await screen.findByRole('heading', { name: /morning/i })
     expect(screen.queryByRole('heading', { name: /Keep them everywhere/ })).not.toBeInTheDocument()
   })
 
@@ -2685,7 +2713,7 @@ describe('Stage 5 in the day', () => {
       },
     })
     render(<App />)
-    expect(await screen.findByRole('heading', { name: 'Midday, Ama' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Good afternoon, Ama.' })).toBeInTheDocument()
     expect(await screen.findByText('sent you a quiet nod · “Rooting for you this week.”', { exact: false })).toBeInTheDocument()
     expect(screen.getByRole('region', { name: 'Since you last looked' })).not.toHaveTextContent(/\d+ nods?/)
   })

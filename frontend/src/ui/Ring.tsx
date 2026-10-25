@@ -22,14 +22,17 @@ export function Ring({
     <span className="ring" role="img" aria-label={label} style={{ width: size, height: size }}>
       <svg viewBox="0 0 64 64" width={size} height={size} aria-hidden="true">
         <circle cx="32" cy="32" r={r} className="ring-track" />
-        <circle
-          cx="32"
-          cy="32"
-          r={r}
-          className="ring-fill"
-          strokeDasharray={`${c * filled} ${c}`}
-          transform="rotate(-90 32 32)"
-        />
+        {/* An empty ring draws no arc: a zero-length stroke still shows its round cap. */}
+        {filled > 0 && (
+          <circle
+            cx="32"
+            cy="32"
+            r={r}
+            className="ring-fill"
+            strokeDasharray={`${c * filled} ${c}`}
+            transform="rotate(-90 32 32)"
+          />
+        )}
       </svg>
       <span className="ring-text" aria-hidden="true">
         <span className="ring-big">{big}</span>

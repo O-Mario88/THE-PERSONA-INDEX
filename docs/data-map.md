@@ -17,6 +17,7 @@ Every key is named in one registry, `frontend/src/registry.ts`, which also says 
 | The backup's 12-word phrase, its version, whether own words go in it, when it last saved | `pi.vault.v1` | Until backup is turned off or the phone is cleared | Never. Only a key derived from the phrase is sent, as the backup's address |
 | The lock: the id of the passkey the phone made for the app | `pi.lock.v1` | Until the lock is turned off or the phone is cleared | Never. The fingerprint, face or PIN check happens on the phone; nothing goes to the server |
 | Whether the home screen invite was answered | `pi.install.v1` | Until deleted | Never |
+| That the welcome was shown before the first sitting | `pi.welcomed` | Until deleted | Never |
 | "Not yet" on the midday step check | `pi.midday.<date>` | The day | Never |
 | Device pass: a server-signed random id, no personal data | `pi.device.v1` | Until "Delete everywhere" | Sent with every vote, step and mirror request |
 | Answers in the person's own words | `pi.words.<questionId>` | 7, 35 (default) or 90 days, chosen in Settings | Never. Only the option the person says comes closest is sent, as their vote |

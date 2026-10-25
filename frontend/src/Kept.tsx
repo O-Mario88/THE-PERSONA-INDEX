@@ -8,7 +8,7 @@ import {
   type Deleted,
   type Kept as ServerKept,
 } from './api'
-import { DownloadButtons } from './Book'
+import { DownloadButtons } from './BookDownloads'
 import { loadMoves } from './moves'
 import { notebookCount } from './notebook'
 import { loadPrefs } from './prefs'

@@ -27,7 +27,6 @@ import {
 import { useAccount } from './useAccount'
 import { Avatar } from './ui/Avatar'
 import { Icon } from './ui/icons'
-import { Ring } from './ui/Ring'
 
 // The Circle tab (Stage 5): the people you're connected with, three ways to
 // bring someone in (a link, a QR code, a room code for a team in one place),
@@ -93,17 +92,40 @@ export function CircleScreen({ onOpenMirror }: { onOpenMirror?: () => void }) {
           <h2 id="circle-title" className="display">
             {friends.length === 1 ? '1 connected' : `${friends.length} connected`}
           </h2>
+          <p>Friends see you in ways you don’t.</p>
         </div>
-        <button type="button" className="icon-button" aria-label="Join with a room code" onClick={() => setPanel(panel === 'room' ? null : 'room')}>
-          <Icon name="scan" />
-        </button>
+        <div className="row-gap head-actions">
+          <button type="button" className="icon-button" aria-label="Join with a room code" onClick={() => setPanel(panel === 'room' ? null : 'room')}>
+            <Icon name="scan" size={22} />
+          </button>
+          <button type="button" className="icon-button" aria-label="Invite someone" onClick={() => setPanel(panel === 'link' ? null : 'link')}>
+            <Icon name="user-plus" size={22} />
+          </button>
+        </div>
       </header>
+
+      <div className="stat-tiles" role="group" aria-label="Your circle in numbers">
+        <p className="stat-tile">
+          <span className="stat-num">{friends.length}</span>
+          <span className="stat-name">People</span>
+        </p>
+        <p className="stat-tile">
+          <span className="stat-num">{new Set(friends.map((f) => f.tag)).size}</span>
+          <span className="stat-name">Groups</span>
+        </p>
+        <p className="stat-tile">
+          <span className="stat-num">{circle?.active ?? 0}</span>
+          <span className="stat-name">Active this week</span>
+        </p>
+      </div>
 
       <InviteWaiting onJoined={refresh} />
 
-      <div className="circle-hero">
-        <Ring part={Math.min(1, (circle?.active ?? 0) / need)} big={`${Math.min(circle?.active ?? 0, need)}/${need}`} label={`${circle?.active ?? 0} of ${need} friends active this week`} size={56} />
-        <div>
+      <div className={unlocked ? 'circle-hero is-open' : 'circle-hero'}>
+        <span className="icon-disc is-solid" aria-hidden="true">
+          <Icon name="connect" size={24} />
+        </span>
+        <div className="circle-hero-words">
           <p className="circle-hero-title">
             {unlocked
               ? 'Three friends are here. Your Outside Mirror fills as they answer'
@@ -112,14 +134,19 @@ export function CircleScreen({ onOpenMirror }: { onOpenMirror?: () => void }) {
                 : `${toGo} more friends unlock your Outside Mirror`}
           </p>
           {unlocked && onOpenMirror ? (
-            <button type="button" className="link-button light" onClick={onOpenMirror}>
+            <button type="button" className="link-button" onClick={onOpenMirror}>
               See it in your mirror →
             </button>
           ) : (
-            <button type="button" className="link-button light" aria-expanded={panel === 'why'} onClick={() => setPanel(panel === 'why' ? null : 'why')}>
+            <button type="button" className="link-button" aria-expanded={panel === 'why'} onClick={() => setPanel(panel === 'why' ? null : 'why')}>
               Why three? →
             </button>
           )}
+          <ol className="unlock-track" role="img" aria-label={`${circle?.active ?? 0} of ${need} friends active this week`}>
+            {Array.from({ length: need }, (_, i) => (
+              <li key={i} className={i < (circle?.active ?? 0) ? 'is-done' : undefined} />
+            ))}
+          </ol>
         </div>
       </div>
       {panel === 'why' && (
@@ -172,11 +199,22 @@ export function CircleScreen({ onOpenMirror }: { onOpenMirror?: () => void }) {
           <h3 id="connected-title" className="label">
             Connected
           </h3>
-          <ul className="people-list">
-            {friends.map((f) => (
-              <FriendRow key={f.id} friend={f} onChange={refresh} />
-            ))}
-          </ul>
+          {TAGS.filter((t) => friends.some((f) => f.tag === t)).map((t) => {
+            const inTag = friends.filter((f) => f.tag === t)
+            return (
+              <details key={t} className="tag-group" open>
+                <summary>
+                  <span className="tag-name">{TAG_NAMES[t]}</span>
+                  <span className="tag-count">{inTag.length}</span>
+                </summary>
+                <ul className="people-list">
+                  {inTag.map((f) => (
+                    <FriendRow key={f.id} friend={f} onChange={refresh} />
+                  ))}
+                </ul>
+              </details>
+            )
+          })}
         </section>
       )}
 

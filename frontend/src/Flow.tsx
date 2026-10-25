@@ -37,7 +37,7 @@ export function Flow({
           {label}
         </p>
         <button type="button" className="icon-button" aria-label="Close" onClick={onClose}>
-          <Icon name="close" />
+          <Icon name="back" size={24} />
         </button>
       </div>
       {bar}

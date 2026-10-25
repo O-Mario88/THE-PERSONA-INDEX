@@ -20,7 +20,7 @@ import { GoodThings } from './Keep'
 import { PrivacyLine, RestScreen, Upcoming } from './Sittings'
 import { Mirror } from './Mirror'
 import { KeptScreen } from './Kept'
-import { NotebookScreen } from './Notebook'
+import { NotebookScreen } from './NotebookScreen'
 import { pruneNotebook } from './notebook'
 import { PracticeScreen } from './Practice'
 import { InstallInvite } from './pwa/InstallInvite'
@@ -32,7 +32,7 @@ import { SettingsScreen } from './Settings'
 import { themeVars } from './themes'
 import { openThisWeek, sendUnsent } from './moves'
 import { forgetPick, loadHistory, todaysPick, writeFirstOf, type Half } from './profile'
-import { CountryAsk } from './Country'
+import { CountryAsk } from './CountryViews'
 import { blackOn, intimacyOn, loadPrefs, pulseOn, regionHere, savePrefs, stillOn, type Prefs } from './prefs'
 import { cachedPack, fetchPack, regionalFor, regionalToday } from './regional'
 import { onOtherTab } from './storage'
@@ -41,11 +41,10 @@ import { Home, heroFor, type FeedItem, type Progress } from './Home'
 import { Flow } from './Flow'
 import { MiddayScreen, StepNudge } from './Midday'
 import { NightScreen } from './Night'
-import { PulseAsk, PulseScreen } from './Pulse'
+import { PulseAsk, PulseScreen } from './PulseViews'
 import { getPulse, count } from './pulse'
 import { lastSeen, markWindow, noteSeen } from './windows'
 import { Icon, type IconName } from './ui/icons'
-import { Avatar } from './ui/Avatar'
 import { AccountScreen } from './Account'
 import { CircleScreen } from './Circle'
 import { FriendQuestion, NodPicker, TogetherAsk, TogetherCard } from './Friends'
@@ -55,11 +54,8 @@ import { SignInSheet } from './SignIn'
 import { inviteFromURL } from './social'
 import { pullSync } from './sync'
 import { useAccount } from './useAccount'
-import { load as loadKey, save as saveKey } from './storage'
-import './App.css'
-import './design.css'
-import './social.css'
-import './reference.css'
+import { keys, load as loadKey, save as saveKey } from './storage'
+import { Welcome, WELCOMED } from './Welcome'
 
 type State =
   | { kind: 'loading' }
@@ -75,12 +71,16 @@ type Tab = 'today' | 'mirror' | 'circle' | 'notebook' | 'account'
 const isTab = (v: View): v is Tab =>
   v === 'today' || v === 'mirror' || v === 'circle' || v === 'notebook' || v === 'account'
 
+// The five tabs of the 2026-10-25 redesign, in its order and words.
 const TABS: { tab: Tab; name: string; icon: IconName }[] = [
-  { tab: 'today', name: 'Today', icon: 'today' },
-  { tab: 'mirror', name: 'Mirror', icon: 'mirror' },
-  { tab: 'circle', name: 'Circle', icon: 'circle' },
-  { tab: 'notebook', name: 'Notebook', icon: 'notebook' },
+  { tab: 'today', name: 'Today', icon: 'home' },
+  { tab: 'notebook', name: 'Reflect', icon: 'reflect' },
+  { tab: 'circle', name: 'Connect', icon: 'connect' },
+  { tab: 'mirror', name: 'Insights', icon: 'insights' },
+  { tab: 'account', name: 'You', icon: 'you' },
 ]
+// Tabs that open before today's questions have loaded.
+const ALWAYS_OPEN: Tab[] = ['today', 'circle', 'notebook', 'account']
 
 const themesOf = (qs: Question[]) => qs.map((q) => q.theme).filter((t): t is string => !!t)
 
@@ -90,16 +90,19 @@ function progressOf(qs: Question[]): Progress {
 }
 
 const wideQuery = '(min-width: 900px)'
-function useWide(): boolean {
-  const [wide, setWide] = useState(() => typeof matchMedia === 'function' && matchMedia(wideQuery).matches)
+const darkQuery = '(prefers-color-scheme: dark)'
+
+// useMedia follows a media query, for the wide layout and the phone's own dark mode.
+function useMedia(query: string): boolean {
+  const [on, setOn] = useState(() => typeof matchMedia === 'function' && matchMedia(query).matches)
   useEffect(() => {
     if (typeof matchMedia !== 'function') return
-    const m = matchMedia(wideQuery)
-    const on = () => setWide(m.matches)
-    m.addEventListener?.('change', on)
-    return () => m.removeEventListener?.('change', on)
-  }, [])
-  return wide
+    const m = matchMedia(query)
+    const change = () => setOn(m.matches)
+    m.addEventListener?.('change', change)
+    return () => m.removeEventListener?.('change', change)
+  }, [query])
+  return on
 }
 
 function App() {
@@ -121,7 +124,12 @@ function App() {
   // The phone's clock decides the window: five a day, with the morning three
   // open from 5 am to 5 pm and the evening three from 5 pm to midnight.
   const { date, window: win, sitting: clockSitting } = useDay()
-  const wide = useWide()
+  // The one-time welcome: a first open on a phone with no answers yet.
+  const [welcome, setWelcome] = useState(
+    () => loadKey(WELCOMED) === null && loadHistory().answers.length === 0 && keys('pi.choice.').length === 0,
+  )
+  const wide = useMedia(wideQuery)
+  const phoneDark = useMedia(darkQuery)
   // Stage 5: the account, if the person signed in, and an invite link they
   // followed (kept until they join or say not now).
   const me = useAccount()
@@ -357,7 +365,9 @@ function App() {
   const read = set && (
     <TodaysRead date={set.date} themes={themesOf([...morningQs, ...eveningQs])} intimacy={intimacyOn(prefs)} />
   )
-  const dark = blackOn(prefs) && (win === 'evening' || win === 'night' || win === 'rest') && tab === 'today'
+  // Navy when the phone asks for dark, and on Today through the evening and night;
+  // the Dark mode switch turns both off.
+  const dark = blackOn(prefs) && (phoneDark || ((win === 'evening' || win === 'night' || win === 'rest') && tab === 'today'))
 
   const hero = set
     ? heroFor({
@@ -662,6 +672,22 @@ function App() {
     }
   }
 
+  if (welcome) {
+    return (
+      <div className={`app in-flow${dark ? ' is-dark' : ''}`}>
+        <main className="page page-welcome">
+          <h1 className="sr-only">The Persona Index</h1>
+          <Welcome
+            onBegin={() => {
+              saveKey(WELCOMED, '1')
+              setWelcome(false)
+            }}
+          />
+        </main>
+      </div>
+    )
+  }
+
   return (
     <OpenRead.Provider value={openRead}>
       <div className={`app${dark ? ' is-dark' : ''}${flow && tab === 'today' ? ' in-flow' : ''}${stillOn(prefs) ? ' is-still' : ''}`} data-window={win}>
@@ -676,21 +702,12 @@ function App() {
               className="tab"
               aria-pressed={tab === t.tab}
               onClick={() => goTab(t.tab)}
-              disabled={!set && t.tab !== 'today' && t.tab !== 'circle' && t.tab !== 'notebook'}
+              disabled={!set && !ALWAYS_OPEN.includes(t.tab)}
             >
-              <Icon name={t.icon} size={22} />
+              <Icon name={t.icon} size={24} />
               <span className="tab-name">{t.name}</span>
             </button>
           ))}
-          <button
-            type="button"
-            className="tab rail-account"
-            aria-pressed={tab === 'account'}
-            aria-label="Account"
-            onClick={() => goTab('account')}
-          >
-            <Avatar name={me?.name || 'You'} tint="#4f7357" size={36} />
-          </button>
         </nav>
         <main className={`page page-${tab}`}>
           <h1 className="sr-only">The Persona Index</h1>

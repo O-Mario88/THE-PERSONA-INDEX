@@ -1,0 +1,296 @@
+/* The quieter full screens: a read, a practice, Settings, What I keep, the
+   lock, the install invite and the backup. Each opens with a back arrow and
+   a big title; its groups are white cards with a spaced label. */
+
+.back {
+  align-self: flex-start;
+  margin-left: -4px;
+  color: var(--text);
+  font-size: var(--fs-body);
+  font-weight: 700;
+}
+
+.back::before {
+  content: '←';
+  margin-right: var(--s-2);
+  font-size: 1.25rem;
+}
+
+.done-title {
+  font-size: clamp(2rem, 1.6rem + 2vw, 2.5rem);
+  line-height: 1.06;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+
+/* Groups on these screens are cards, not grey notes. */
+.settings .notice,
+.kept .notice,
+.account .notice,
+fieldset.notice {
+  gap: var(--s-3);
+  padding: var(--s-5);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--fs-body);
+}
+
+fieldset.notice > legend {
+  float: left;
+  width: 100%;
+  margin-bottom: var(--s-1);
+  padding: 0;
+}
+
+fieldset.notice > legend + * {
+  clear: both;
+}
+
+/* A read */
+.read-topic {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  color: var(--accent-ink);
+  font-size: var(--fs-tiny);
+  font-weight: 800;
+  letter-spacing: var(--track-eyebrow);
+  text-transform: uppercase;
+}
+
+.read-summary {
+  font-size: 1.1875rem;
+  line-height: 1.45;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.read-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  font-size: 1.0625rem;
+  line-height: 1.65;
+}
+
+.read-try {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-5);
+  border-radius: var(--r-lg);
+  background: var(--accent-wash);
+  border: 1.5px solid var(--accent-line);
+}
+
+.read-more ul {
+  display: flex;
+  flex-direction: column;
+}
+
+.read-more li {
+  border-top: 1px solid var(--line);
+}
+
+/* Today's read, offered under a day */
+.read-offer {
+  gap: var(--s-2);
+  padding: var(--s-5);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--fs-body);
+}
+
+.read-offer-title {
+  font-size: 1.25rem;
+  line-height: 1.25;
+  font-weight: 800;
+}
+
+.read-offer .option {
+  margin-top: var(--s-2);
+}
+
+.read-foot-link,
+.read-link,
+.m-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  min-height: 40px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent-ink);
+  font-size: var(--fs-small);
+  font-weight: 700;
+  text-align: left;
+  text-decoration: none;
+}
+
+.read-foot-link:hover,
+.read-link:hover,
+.m-link:hover {
+  text-decoration: underline;
+}
+
+/* A practice */
+.practice-steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  counter-reset: step;
+}
+
+.practice-steps li {
+  position: relative;
+  padding-left: 48px;
+  min-height: 34px;
+  counter-increment: step;
+  font-size: 1.0625rem;
+}
+
+.practice-steps li::before {
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: -2px;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  font-weight: 800;
+  font-size: var(--fs-small);
+}
+
+.practice-steps li:first-child::before {
+  background: var(--lime);
+  color: var(--on-lime);
+}
+
+.practice-timer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-4);
+  padding: var(--s-6);
+  border-radius: var(--r-xl);
+  background: var(--navy);
+  color: var(--on-navy);
+}
+
+.practice-clock {
+  font-size: 3.5rem;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* What I keep */
+.kept-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.kept-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--s-3) 0;
+  border-top: 1px solid var(--line);
+  font-size: var(--fs-small);
+}
+
+.kept-list li:first-child {
+  border-top: 0;
+}
+
+.kept-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.option.danger {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 35%, var(--line));
+}
+
+.option.danger:hover:not(:disabled) {
+  background: var(--danger-wash);
+  border-color: var(--danger);
+}
+
+/* The lock */
+.page.lock {
+  justify-content: center;
+}
+
+.lock-screen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+.brand {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+}
+
+/* The install invite */
+.install {
+  gap: var(--s-3);
+  padding: var(--s-5);
+  border: 1.5px solid var(--accent-line);
+  border-radius: var(--r-lg);
+  background: var(--accent-wash);
+  color: var(--text);
+}
+
+.install-title {
+  font-size: var(--fs-h2);
+  font-weight: 800;
+}
+
+/* The backup phrase: twelve numbered words in two columns. */
+.phrase {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s-2);
+}
+
+.phrase li {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-2);
+  padding: var(--s-3);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+}
+
+.phrase-n {
+  min-width: 1.5em;
+  color: var(--muted);
+  font-size: var(--fs-tiny);
+  font-weight: 700;
+}
+
+.phrase-word {
+  font-weight: 800;
+}
+
+.book-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}

@@ -1,0 +1,252 @@
+/* The shell: the page column, the five tabs (a bar on a phone, a rail on a
+   wide screen), the wordmark header, and a window's full-screen flow. */
+
+.app {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  transition: background var(--t-med) var(--ease);
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+  max-width: var(--page-max);
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: var(--top) max(var(--gutter), env(safe-area-inset-right, 0px))
+    calc(var(--tabbar-h) + var(--s-8) + env(safe-area-inset-bottom, 0px))
+    max(var(--gutter), env(safe-area-inset-left, 0px));
+}
+
+.app.in-flow .page {
+  padding-bottom: calc(var(--s-8) + env(safe-area-inset-bottom, 0px));
+}
+
+/* The wordmark row over Today and the tab screens. */
+.wordmark-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44px;
+}
+
+.wordmark {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+}
+
+/* A tab screen's title block. */
+.page-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.page-head .label {
+  margin-bottom: var(--s-2);
+}
+
+.page-head p:not(.label) {
+  color: var(--muted);
+  font-size: 1.0625rem;
+}
+
+/* The tabs */
+
+.tabs {
+  position: fixed;
+  z-index: 30;
+  inset: auto 0 0 0;
+  display: flex;
+  justify-content: space-around;
+  padding: var(--s-2) var(--s-2) max(var(--s-3), env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg) 94%, transparent);
+  backdrop-filter: saturate(1.4) blur(12px);
+}
+
+.tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-height: 52px;
+  padding: var(--s-1) 0;
+  border: 0;
+  border-radius: var(--r-md);
+  background: transparent;
+  color: var(--muted);
+  font-size: var(--fs-tiny);
+  font-weight: 600;
+  transition: color var(--t-fast) var(--ease);
+}
+
+@media (hover: hover) {
+  .tab:hover:not(:disabled):not([aria-pressed='true']) {
+    color: var(--text);
+  }
+}
+
+.tab[aria-pressed='true'] {
+  color: var(--accent-ink);
+  font-weight: 800;
+}
+
+.tab[aria-pressed='true'] .icon {
+  stroke-width: 2.2;
+}
+
+.tab:disabled {
+  opacity: 0.4;
+}
+
+.rail-logo {
+  display: none;
+}
+
+.app.in-flow .tabs {
+  display: none;
+}
+
+@media (min-width: 900px) {
+  .app {
+    display: grid;
+    grid-template-columns: var(--rail-w) minmax(0, 1fr);
+  }
+
+  .tabs,
+  .app.in-flow .tabs {
+    position: sticky;
+    top: 0;
+    inset: auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: var(--s-2);
+    height: 100vh;
+    padding: var(--s-5) var(--s-2);
+    border-top: 0;
+    border-right: 1px solid var(--line);
+    background: var(--bg);
+    backdrop-filter: none;
+  }
+
+  .rail-logo {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    margin: 0 auto var(--s-6);
+    border-radius: var(--r-md);
+    background: var(--lime);
+    color: var(--on-lime);
+    font-weight: 900;
+    font-size: 1.25rem;
+  }
+
+  .tab {
+    flex: none;
+    min-height: 64px;
+  }
+
+  .tab[aria-pressed='true'] {
+    background: var(--accent-wash);
+  }
+
+  .page {
+    max-width: 720px;
+    padding-top: var(--s-10);
+    padding-bottom: var(--s-10);
+  }
+
+  .page.page-mirror,
+  .page.page-circle {
+    max-width: 880px;
+  }
+}
+
+/* A window's flow: back arrow, the spaced label in the middle, the count
+   at the right, then the segments. */
+
+.flow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+}
+
+.flow-top {
+  position: relative;
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  align-items: center;
+  min-height: 44px;
+}
+
+.flow-top .icon-button {
+  grid-column: 1;
+  grid-row: 1;
+  margin-left: -10px;
+}
+
+.flow-label {
+  grid-column: 2;
+  grid-row: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  white-space: nowrap;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--online);
+  box-shadow: 0 0 0 4px rgb(123 198 45 / 0.2);
+}
+
+.flow-main,
+.flow-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+}
+
+.flow-foot,
+.window-foot {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  color: var(--muted);
+  font-size: var(--fs-small);
+}
+
+/* Offline and loading lines */
+.page > .muted.center {
+  padding: var(--s-10) 0;
+}
+
+/* The privacy line under a day: a lock, the promise, two quiet links. */
+.privacy-line {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  color: var(--muted);
+  font-size: var(--fs-small);
+}
+
+.privacy-links {
+  display: flex;
+  gap: var(--s-5);
+}

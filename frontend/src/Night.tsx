@@ -135,7 +135,7 @@ export function NightScreen({
 
       {nod}
 
-      <button type="button" className="btn wide light" onClick={close}>
+      <button type="button" className="btn wide outline" onClick={close}>
         Close the day
       </button>
     </section>

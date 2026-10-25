@@ -11,6 +11,7 @@ import {
   type FriendToday,
   type FriendView,
   type TogetherView,
+  TAG_NAMES,
 } from './social'
 import { useAccount } from './useAccount'
 import { Avatar } from './ui/Avatar'
@@ -88,9 +89,9 @@ export function FriendQuestion({
   return (
     <section className="card friend-q" aria-labelledby="friend-q-title">
       <p className="friend-q-head">
-        <Avatar name={f.name} size={32} />
+        <Avatar name={f.name} size={48} />
         <span>
-          <strong>Today’s friend · {f.name}</strong> · {f.tag} · one question
+          <strong>Today’s friend · {f.name}</strong> {TAG_NAMES[f.tag]} · one question
         </span>
       </p>
       <h2 id="friend-q-title" className="prompt serif">

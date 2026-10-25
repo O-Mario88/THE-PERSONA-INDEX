@@ -74,5 +74,8 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: './src/setupTests.ts',
+    // The phone's time zone fills in "Where you live", so tests run in UTC
+    // everywhere, as they do in CI, not in the developer's own zone.
+    env: { TZ: 'UTC' },
   },
 })

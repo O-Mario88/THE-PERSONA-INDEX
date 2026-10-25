@@ -11,7 +11,8 @@ export type ShareContent = { eyebrow: string; name: string; line?: string }
 
 type Shape = 'story' | 'square'
 const SIZE: Record<Shape, [number, number]> = { story: [1080, 1920], square: [1080, 1080] }
-const GREEN = '#1f3a33'
+const NAVY = '#0e1b26' // the card is navy with lime, as the app's heroes
+const LIME = '#c6f24e'
 const SITE = 'personaindex.com'
 
 function wrap(ctx: CanvasRenderingContext2D, text: string, width: number): string[] {
@@ -40,23 +41,23 @@ function draw(c: ShareContent, shape: Shape): HTMLCanvasElement | null {
   ctx.fillRect(0, 0, w, h)
   const pad = 90
   const top = shape === 'story' ? 360 : 110
-  ctx.fillStyle = GREEN
+  ctx.fillStyle = NAVY
   ctx.beginPath()
   ctx.roundRect(pad - 30, top - 80, w - 2 * (pad - 30), h - top - (shape === 'story' ? 280 : 80), 48)
   ctx.fill()
-  ctx.fillStyle = '#cfe0d4'
-  ctx.font = '600 34px Inter, system-ui, sans-serif'
+  ctx.fillStyle = LIME
+  ctx.font = '700 34px Figtree, system-ui, sans-serif'
   ctx.fillText(c.eyebrow.toUpperCase(), pad + 20, top + 10)
   ctx.fillStyle = '#ffffff'
-  ctx.font = '500 104px Newsreader, Georgia, serif'
+  ctx.font = '800 104px Figtree, system-ui, sans-serif'
   let y = top + 150
   for (const l of wrap(ctx, c.name, w - 2 * pad - 40)) {
     ctx.fillText(l, pad + 20, y)
     y += 116
   }
   if (c.line) {
-    ctx.font = '400 42px Inter, system-ui, sans-serif'
-    ctx.fillStyle = '#e6efe9'
+    ctx.font = '400 42px Figtree, system-ui, sans-serif'
+    ctx.fillStyle = '#c3cdd6'
     y += 20
     for (const l of wrap(ctx, c.line, w - 2 * pad - 40)) {
       ctx.fillText(l, pad + 20, y)
@@ -64,10 +65,10 @@ function draw(c: ShareContent, shape: Shape): HTMLCanvasElement | null {
     }
   }
   const foot = shape === 'story' ? h - 380 : h - 150
-  ctx.font = '500 34px Inter, system-ui, sans-serif'
-  ctx.fillStyle = '#cfe0d4'
+  ctx.font = '600 34px Figtree, system-ui, sans-serif'
+  ctx.fillStyle = '#c3cdd6'
   ctx.fillText('The Persona Index · 3 questions a morning, 3 an evening', pad + 20, foot)
-  ctx.fillStyle = '#ffffff'
+  ctx.fillStyle = LIME
   ctx.fillText(SITE, pad + 20, foot + 52)
   return canvas
 }
