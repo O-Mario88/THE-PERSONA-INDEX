@@ -7,6 +7,8 @@ public struct AccountView: Codable, Sendable, Hashable {
     public let id: String
     public let name: String
     public let handle: String
+    /// Easy sync is on for this account.
+    public var sync: Bool?
 }
 
 public enum Tag: String, Codable, Sendable, CaseIterable {

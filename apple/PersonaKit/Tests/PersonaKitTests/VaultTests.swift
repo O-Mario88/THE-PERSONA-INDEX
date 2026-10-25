@@ -289,4 +289,47 @@ struct VaultTests {
         _ = await filled().vault.turnOn(phrase: Self.phrase)
         #expect(try await Device().vault.pullSync(false) == .none)
     }
+
+    @Test("Reflections written on two devices all show after a merge or a restore")
+    func indexesJoin() async throws {
+        func entry(_ id: String, _ text: String) -> ReflectionEntry {
+            ReflectionEntry(id: id, date: "2026-10-25", period: .day, area: .self, kind: .learnt, source: .yourAnswers,
+                            about: "", question: "How was today?", answer: text, free: true)
+        }
+        let a = Device()
+        ReflectionStore(store: a.defaults).save(entry("ra", "from the phone"))
+        _ = await a.vault.turnOn(phrase: Self.phrase)
+
+        let b = Device()
+        ReflectionStore(store: b.defaults).save(entry("rb", "from the Mac"))
+        #expect(try await b.vault.restore(phrase: Self.phrase) == .restored)
+        #expect(Set(ReflectionStore(store: b.defaults).all().map(\.id)) == ["ra", "rb"])
+        #expect(await b.vault.backUp() == .saved)
+
+        ReflectionStore(store: a.defaults).save(entry("ra2", "later on the phone"))
+        #expect(await a.vault.backUp() == .saved)
+        #expect(Set(ReflectionStore(store: a.defaults).all().map(\.id)) == ["ra", "rb", "ra2"])
+    }
+
+    @Test("What only the web keeps survives a restore and a backup from this device")
+    func carriesTheWebsKeys() async throws {
+        let keys = VaultKeys(phrase: Self.phrase)
+        let main = Snapshot(made: 1, words: true, entries: ["pi.choice.q1": "o2", "pi.saved.v1": "[\"card-1\"]"])
+        let journal = Snapshot(made: 1, words: true, entries: ["pi.nb.reflection.r1": Self.reflection, "pi.nb.note.n1": "a web note"])
+        VaultServer.copies[keys.main.vaultKey] = (1, try Sealer.seal(main, with: keys.main))
+        VaultServer.copies[keys.journal.vaultKey] = (1, try Sealer.seal(journal, with: keys.journal))
+
+        let d = Device()
+        #expect(try await d.vault.restore(phrase: Self.phrase) == .restored)
+        d.defaults.set("o5", forKey: "pi.choice.q5")
+        #expect(await d.vault.backUp() == .saved)
+
+        let mainAfter = try Sealer.open(try #require(VaultServer.copies[keys.main.vaultKey]).data, with: keys.main)
+        let journalAfter = try Sealer.open(try #require(VaultServer.copies[keys.journal.vaultKey]).data, with: keys.journal)
+        #expect(mainAfter.entries["pi.saved.v1"] == "[\"card-1\"]")
+        #expect(mainAfter.entries["pi.choice.q5"] == "o5")
+        #expect(mainAfter.words)
+        #expect(journalAfter.entries["pi.nb.note.n1"] == "a web note")
+        #expect(mainAfter.entries["pi.nb.note.n1"] == nil)
+    }
 }

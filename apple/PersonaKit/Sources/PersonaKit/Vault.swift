@@ -70,6 +70,8 @@ public actor Vault {
                 if let v = defaults.string(forKey: k) { entries[k] = v }
             }
         }
+        // What only another device knows about rides along untouched.
+        for (k, v) in carried(copy) where entries[k] == nil { entries[k] = v }
         // The pass travels in the main copy, so a restored device keeps its mirror.
         if copy == .main, let pass = secrets.string(forKey: APIClient.deviceKey) { entries[APIClient.deviceKey] = pass }
         return Snapshot(made: Date().timeIntervalSince1970 * 1000, words: words, entries: entries)
@@ -78,16 +80,22 @@ public actor Vault {
     /// Brings a copy in. Restoring prefers the copy's settings; merging
     /// keeps this device's. An answered question stays answered, and the
     /// newer of two notebook entries wins.
-    func takeIn(_ entries: [String: String], preferOther: Bool) {
+    func takeIn(_ entries: [String: String], copy: BackupRegistry.Copy, preferOther: Bool) {
+        var carry = carried(copy)
         for (k, theirs) in entries {
             if k == APIClient.deviceKey {
                 if preferOther { secrets.set(theirs, forKey: k) }
                 continue
             }
-            guard BackupRegistry.copy(of: k) != nil else { continue }
+            guard BackupRegistry.copy(of: k) != nil else {
+                if !k.hasPrefix("pi.vault."), preferOther || carry[k] == nil { carry[k] = theirs }
+                continue
+            }
             guard let mine = defaults.string(forKey: k) else { defaults.set(theirs, forKey: k); continue }
             if k.hasPrefix("pi.nb.") || k == "pi.reflect.settings" {
                 defaults.set(Self.at(theirs) > Self.at(mine) ? theirs : mine, forKey: k)
+            } else if Self.indexes.contains(k) {
+                defaults.set(Self.joinIds(mine, theirs), forKey: k)
             } else if k == AnswerHistory.key {
                 defaults.set(Self.mergeHistory(mine, theirs), forKey: k)
             } else if k.hasPrefix("pi.choice.") {
@@ -96,6 +104,27 @@ public actor Vault {
                 defaults.set(theirs, forKey: k)
             }
         }
+        setCarried(carry, copy)
+    }
+
+    /// Keys a backup holds that this app doesn't use yet (the web's saved
+    /// cards, its own notes), kept so a backup from here never drops them.
+    private func carryKey(_ copy: BackupRegistry.Copy) -> String { copy == .main ? "pi.vault.carry.main" : "pi.vault.carry.journal" }
+
+    func carried(_ copy: BackupRegistry.Copy) -> [String: String] {
+        defaults.string(forKey: carryKey(copy)).flatMap { try? JSONDecoder().decode([String: String].self, from: Data($0.utf8)) } ?? [:]
+    }
+
+    private func setCarried(_ carry: [String: String], _ copy: BackupRegistry.Copy) {
+        let json = carry.isEmpty ? nil : (try? JSONEncoder().encode(carry)).flatMap { String(data: $0, encoding: .utf8) }
+        defaults.set(json, forKey: carryKey(copy))
+    }
+
+    /// Lists of ids, joined so nothing written on either device goes missing.
+    static let indexes: Set<String> = ["pi.reflect.index", "pi.reflect.intentions"]
+
+    static func joinIds(_ a: String, _ b: String) -> String {
+        Set((a + "," + b).split(separator: ",").map(String.init)).sorted().joined(separator: ",")
     }
 
     static func at(_ json: String) -> Double {
@@ -137,7 +166,7 @@ public actor Vault {
             case 404: return nil
             case 412:
                 let theirs = try await read(keys)
-                if let theirs { takeIn(theirs.snapshot.entries, preferOther: false) }
+                if let theirs { takeIn(theirs.snapshot.entries, copy: copy, preferOther: false) }
                 version = theirs?.version ?? 0
             default: throw APIError(status: r.status, code: "unavailable")
             }
@@ -195,9 +224,9 @@ public actor Vault {
         let found: (version: Int, snapshot: Snapshot)?
         do { found = try await read(keys.main) } catch let e as APIError { throw e } catch { return .damaged }
         guard let found else { return .none }
-        takeIn(found.snapshot.entries, preferOther: true)
+        takeIn(found.snapshot.entries, copy: .main, preferOther: true)
         let journal = try? await read(keys.journal)
-        if let journal { takeIn(journal.snapshot.entries, preferOther: true) }
+        if let journal { takeIn(journal.snapshot.entries, copy: .journal, preferOther: true) }
         save(VaultState(phrase: Phrase.normalise(phrase), sync: state?.sync, version: found.version, journalVersion: journal?.version ?? 0,
                         words: found.snapshot.words, savedAt: Date().timeIntervalSince1970 * 1000))
         return .restored
@@ -207,7 +236,7 @@ public actor Vault {
     public func restoreFromSync(_ secret: String) async throws -> Restored {
         guard let main = VaultKeys.main(fromSync: secret) else { return .damaged }
         guard let found = try await read(main) else { return .none }
-        takeIn(found.snapshot.entries, preferOther: true)
+        takeIn(found.snapshot.entries, copy: .main, preferOther: true)
         save(VaultState(sync: secret, version: found.version, words: found.snapshot.words, savedAt: Date().timeIntervalSince1970 * 1000))
         return .restored
     }
