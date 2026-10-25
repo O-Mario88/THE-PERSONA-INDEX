@@ -442,7 +442,8 @@ describe('the daily questions', () => {
       const insight = await screen.findByRole('note', { name: 'What your answer may say' })
       expect(within(insight).getByText('You like a clear sink before you relax.')).toBeInTheDocument()
       expect(within(insight).queryByText('Unfinished tasks are noisier for you than for most.')).not.toBeInTheDocument()
-      expect(screen.queryByRole('button', { name: /^Next/ })).not.toBeInTheDocument()
+      // Next is there from the first beat, under the card (Edwin, 2026-10-25).
+      expect(screen.getByRole('button', { name: /^Next/ })).toBeInTheDocument()
       fireEvent.click(screen.getByRole('button', { name: 'Read on' }))
       expect(within(insight).getByText('Unfinished tasks are noisier for you than for most.')).toBeInTheDocument()
       fireEvent.click(screen.getByRole('button', { name: 'And the other side' }))
@@ -930,6 +931,24 @@ const ring: Question = {
 const sixADay: DailySet = { ...today, evening: [lunch, queue, ring], pool: [...today.questions, lunch, queue, ring] }
 
 describe('answers', () => {
+  // Edwin, 2026-10-25: "add Next button below the insight on mobile screen so
+  // the users can go to the next questions without going back first".
+  it('puts Next straight under the insight, there as soon as the card opens', async () => {
+    stubApi({ today: { status: 200, body: today } })
+    render(<App />)
+    const card = await screen.findByRole('region', { name: 'When do you wash the dishes?' })
+    fireEvent.click(within(card).getByRole('button', { name: 'Right after eating' }))
+    const insight = await within(card).findByRole('note', { name: 'What your answer may say' })
+    const next = within(card).getByRole('button', { name: /Question 2 of 3/ })
+    const follows = (a: Node, b: Node) => !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING)
+    expect(follows(insight, next)).toBe(true)
+    // Before the step to try and the "That's me" row, not after them.
+    expect(follows(next, within(card).getByRole('group', { name: 'Something to try' }))).toBe(true)
+    expect(follows(next, within(card).getByRole('group', { name: /Does this sound like you/ }))).toBe(true)
+    fireEvent.click(next)
+    expect(await screen.findByRole('region', { name: today.questions[1].prompt })).toBeInTheDocument()
+  })
+
   // Edwin, 2026-10-25: a daily question can have up to six answers.
   it('shows every answer of a question with six', async () => {
     const six = ['a', 'b', 'c', 'd', 'e', 'f'].map((id) => ({ id, label: `Answer ${id}`, insight: { reveal: `Card ${id}. More.`, step: 'Try it.' } }))
