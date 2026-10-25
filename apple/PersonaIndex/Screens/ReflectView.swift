@@ -1,187 +1,174 @@
 import PersonaKit
 import SwiftUI
-#if canImport(UIKit)
-import UIKit
-#endif
 
-/// Reflect: how the day, week or month went. What's going well and where
-/// you could grow, from your own answers and your week, each with its
-/// source; then questions you answer in your own words. Every answer is
-/// kept on this device and comes back later. No scores, no labels.
+/// Reflect (Edwin, 2026-10-25): a quiet space for your thoughts. Writing
+/// first, with one question made on this device from the person's own
+/// answers, week and earlier words, or none at all; then what they have
+/// noticed, and earlier words brought back. Two columns on a Mac, one on
+/// iPhone. Everything stays on the device.
 struct ReflectView: View {
     @Environment(AppModel.self) private var model
     @State private var period: ReflectionPeriod = .day
+    @State private var free = false
+    @State private var at = 0
+    @State private var chosen: (thought: Thought, thread: String?)?
+    @State private var openThread: String?
     @State private var mirror: WeekMirror?
+    @State private var confirmDelete = false
 
-    private var items: [ReflectionItem] {
-        Reflection.items(period: period, answered: model.answeredToday, mirror: mirror)
+    private var thoughts: [Thought] {
+        let answered = model.answeredToday.map { Thoughts.Answered(question: $0.0, option: $0.1, date: model.date) }
+        return Thoughts.make(period: period, today: model.date, answered: answered, mirror: mirror, past: model.reflect.reflections, due: model.reflect.due(model.date))
     }
 
-    private var prompts: [ReflectionPrompt] {
-        let done = Set(model.reflections.filter { $0.date == model.date && $0.period == period }.map(\.question))
-        return Reflection.prompts(for: items, period: period, past: model.reflections, today: model.date)
-            .filter { !done.contains($0.question) || $0.followsUp != nil }
+    private var noticed: [Noticed] {
+        var out = Reflection.items(period: period, answered: model.answeredToday, mirror: mirror).map {
+            Noticed(area: $0.area, grow: $0.kind == .grow, text: $0.text, source: $0.source.name)
+        }
+        if model.reflect.settings.reflectionsInNoticed {
+            for area in LifeArea.allCases {
+                let n = model.reflect.reflections.filter { $0.area == area }.count
+                if n >= 2 { out.append(Noticed(area: area, grow: false, text: "You’ve come back to \(area.name.lowercased()) in your writing \(n) times lately.", source: "From your reflections")) }
+            }
+        }
+        return out
     }
 
     var body: some View {
+        let list = thoughts
+        let thought = chosen?.thought ?? list[at % max(list.count, 1)]
         ScrollView {
             VStack(alignment: .leading, spacing: Space.s5) {
-                Eyebrow(text: "Reflect").padding(.top, Space.s2)
-                Text("How did it go?").font(.pHero)
-                Text("What went well, where you could grow, and what you learnt about yourself. In your own words.")
-                    .font(.figtree(17)).foregroundStyle(Palette.muted)
-
-                Picker("Look back over", selection: $period) {
-                    ForEach(ReflectionPeriod.allCases, id: \.self) { Text($0.name).tag($0) }
+                VStack(alignment: .leading, spacing: Space.s2) {
+                    Text("Reflect").font(.pHero).accessibilityAddTraits(.isHeader)
+                    Text("A quiet space for your thoughts.").font(.figtree(17)).foregroundStyle(Palette.muted)
                 }
-                .pickerStyle(.segmented)
+                .padding(.top, Space.s2)
 
-                let learnt = items.filter { $0.kind == .learnt }
-                let well = items.filter { $0.kind == .strength }
-                let grow = items.filter { $0.kind == .grow }
-                if items.isEmpty {
-                    Text(period == .day
-                         ? "Answer today’s questions and what they said about you shows here, ready to reflect on."
-                         : "A few days of answers and your week fills this in.")
-                        .font(.pSmall).foregroundStyle(Palette.text2)
-                        .card(fill: Palette.surface2, stroke: .clear)
-                } else {
-                    ItemList(title: "What you learnt about yourself", items: learnt)
-                    ItemList(title: "What’s going well", items: well)
-                    ItemList(title: "Where you could grow", items: grow)
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: Space.s3) { periodPicker.frame(minWidth: 340); writeFreely }
+                    VStack(alignment: .leading, spacing: Space.s3) { periodPicker; writeFreely }
                 }
 
-                if !prompts.isEmpty {
-                    VStack(alignment: .leading, spacing: Space.s3) {
-                        Text("Reflect on it").font(.pH2)
-                        ForEach(prompts) { prompt in
-                            PromptCard(prompt: prompt) { model.saveReflection(prompt, answer: $0, period: period) }
-                        }
-                    }
+                #if os(macOS)
+                HStack(alignment: .top, spacing: Space.s5) {
+                    main(thought).frame(maxWidth: .infinity)
+                    side.frame(width: 320)
                 }
+                #else
+                VStack(alignment: .leading, spacing: Space.s5) {
+                    main(thought)
+                    side
+                }
+                #endif
 
-                History(entries: model.reflections)
-
-                Label("Kept on this device, and in your backup if you turn it on. Never sent.", systemImage: "lock")
-                    .font(.pSmall).foregroundStyle(Palette.muted)
-                Text("Circle insights arrive here with sign-in, once three friends have answered.")
-                    .font(.figtree(12)).foregroundStyle(Palette.muted)
+                choices
             }
             .padding(Space.gutter)
-            .frame(maxWidth: 680, alignment: .leading)
+            .frame(maxWidth: 1240, alignment: .leading)
             .frame(maxWidth: .infinity)
         }
         .background(Palette.bg)
         .scrollDismissesKeyboard(.interactively)
-        .toolbar {
-            ToolbarItemGroup(placement: .keyboard) {
-                Spacer()
-                Button("Done") { hideKeyboard() }
-            }
-        }
-        .task {
-            model.loadReflections()
-            mirror = try? await model.weekMirror()
+        .task(id: period) { mirror = period == .day ? nil : try? await model.weekMirror() }
+        .onAppear { model.reflect.load() }
+        .sheet(item: Binding(get: { openThread.map(ThreadID.init) }, set: { openThread = $0?.id })) { t in
+            ThreadView(root: t.id, period: period)
         }
     }
-}
 
-/// A list of reflection items: the words, with the area and the source.
-private struct ItemList: View {
-    let title: String
-    let items: [ReflectionItem]
+    private var periodPicker: some View {
+        Picker("Reflect on", selection: $period) {
+            ForEach(ReflectionPeriod.allCases, id: \.self) { Text($0.name).tag($0) }
+        }
+        .pickerStyle(.segmented)
+        .labelsHidden()
+        .onChange(of: period) { _, _ in at = 0; chosen = nil; free = false }
+    }
 
-    var body: some View {
-        if !items.isEmpty {
-            VStack(alignment: .leading, spacing: Space.s3) {
-                Text(title).font(.pH2)
-                ForEach(items) { item in
-                    VStack(alignment: .leading, spacing: Space.s2) {
-                        HStack(spacing: Space.s2) {
-                            Text(item.area.name.uppercased()).font(.figtree(11, .bold)).tracking(1.4).foregroundStyle(Palette.accentInk)
-                            Text("·").foregroundStyle(Palette.muted)
-                            Text(item.source.name).font(.figtree(12)).foregroundStyle(Palette.muted)
-                        }
-                        Text(item.text).font(.figtree(16, .semibold)).fixedSize(horizontal: false, vertical: true)
-                    }
-                    .card(padding: Space.s4, fill: item.kind == .strength ? Palette.accentWash : Palette.surface,
-                          stroke: item.kind == .strength ? Palette.accentLine : Palette.line)
-                    // Strengths in lime; what was learnt and where to grow on white.
-                }
-            }
+    private var writeFreely: some View {
+        Button { free.toggle() } label: { Label("Write freely", systemImage: "square.and.pencil") }
+            .buttonStyle(ChipStyle(on: free))
+            .keyboardShortcut("n", modifiers: .command)
+    }
+
+    private func main(_ thought: Thought) -> some View {
+        VStack(alignment: .leading, spacing: Space.s5) {
+            WritingCard(thought: free ? nil : thought, period: period, free: free, thread: chosen?.thread,
+                        onAnother: { if chosen != nil { chosen = nil } else { at += 1 } },
+                        onDone: { chosen = nil })
+                .id("\(free ? "free" : period.rawValue)-\(thought.id)")
+            NoticedSection(noticed: noticed) { choose(fromNoticed($0)) }
         }
     }
-}
 
-/// One question, answered by typing; saved with today's date.
-private struct PromptCard: View {
-    let prompt: ReflectionPrompt
-    let onSave: (String) -> Void
-    @State private var text = ""
-    @State private var saved = false
-    @FocusState private var writing: Bool
+    private var side: some View {
+        ReflectSide(consider: noticed.first { $0.grow },
+                    onFollowUp: { r in
+                        choose(Thought(id: "follow-\(r.id)", question: "Have you noticed anything changing since?",
+                                       lead: "You wrote: “\(r.answer.prefix(160))”", why: "From your reflection memory",
+                                       source: .reflections, area: r.area, followsUp: r.id), thread: r.root)
+                    },
+                    onOpen: { openThread = $0.root },
+                    onReflect: { choose(fromNoticed($0)) })
+    }
 
-    var body: some View {
+    private var choices: some View {
         VStack(alignment: .leading, spacing: Space.s3) {
-            HStack(alignment: .top, spacing: Space.s3) {
-                InsightMark().padding(.top, 3)
-                VStack(alignment: .leading, spacing: Space.s1) {
-                    if prompt.followsUp == nil {
-                        Text(prompt.about).font(.figtree(14)).foregroundStyle(Palette.text2)
-                    }
-                    Text(prompt.question).font(.pH3).fixedSize(horizontal: false, vertical: true)
+            Text("Your choices").font(.pH2)
+            Toggle(isOn: Binding(get: { model.reflect.settings.reflectionsInNoticed },
+                                 set: { var s = model.reflect.settings; s.reflectionsInNoticed = $0; model.reflect.setSettings(s) })) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Use my reflections in What you’ve noticed").font(.pH3)
+                    Text("Only counts of what you wrote about, worked out on this device. Off unless you turn it on.").font(.pSmall).foregroundStyle(Palette.muted)
                 }
             }
-            if saved {
-                Label("Kept. It will come back to you later.", systemImage: "checkmark.circle.fill")
-                    .font(.figtree(14, .bold)).foregroundStyle(Palette.accentInk)
-            } else {
-                TextField("Write a line or two…", text: $text, axis: .vertical)
-                    .lineLimit(3...8)
-                    .focused($writing)
-                    .font(.pBody)
-                    .padding(Space.s3)
-                    .background(Palette.surface2, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
-                Button("Keep this") {
-                    writing = false
-                    onSave(text)
-                    saved = true
+            Toggle(isOn: Binding(get: { model.reflect.settings.threadsInMirror },
+                                 set: { var s = model.reflect.settings; s.threadsInMirror = $0; model.reflect.setSettings(s) })) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Let my threads add to the longer Mirrors").font(.pH3)
+                    Text("When the longer Mirrors arrive, they can show which threads you kept going. Off unless you turn it on.").font(.pSmall).foregroundStyle(Palette.muted)
                 }
-                .buttonStyle(PrimaryButtonStyle(wide: false))
-                .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+            Label(privacyLine, systemImage: "lock").font(.pSmall).foregroundStyle(Palette.muted)
+            if !model.reflect.reflections.isEmpty || !model.reflect.intentions.isEmpty {
+                HStack(spacing: Space.s4) {
+                    ShareLink(item: ReflectionsFile(data: model.reflect.export()), preview: SharePreview("My reflections")) {
+                        Label("Download my reflections", systemImage: "square.and.arrow.down")
+                    }
+                    Button("Delete my reflections", role: .destructive) { confirmDelete = true }
+                }
+                .font(.figtree(14, .bold))
             }
         }
-        .card()
+        .tint(Palette.accentInk)
+        .confirmationDialog("Delete every reflection?", isPresented: $confirmDelete, titleVisibility: .visible) {
+            Button("Yes, delete them", role: .destructive) { model.reflect.deleteAll() }
+        } message: {
+            Text("This deletes every reflection and everything you wanted to try from this device. It cannot be undone.")
+        }
+    }
+
+    private func choose(_ t: Thought, thread: String? = nil) {
+        free = false
+        chosen = (t, thread)
+    }
+
+    private func fromNoticed(_ n: Noticed) -> Thought {
+        Thought(id: "noticed-\(n.area.rawValue)-\(n.grow)",
+                question: n.grow ? "What is one small thing you could try \(period == .day ? "tomorrow" : period == .week ? "next week" : "next month")?"
+                                 : "Where did this help you \(period == .day ? "today" : period == .week ? "this week" : "this month")?",
+                lead: n.text, why: n.source, source: .answers, area: n.area)
     }
 }
 
-/// Everything written before, newest first, by date.
-private struct History: View {
-    let entries: [ReflectionEntry]
+private struct ThreadID: Identifiable { let id: String }
 
-    var body: some View {
-        if !entries.isEmpty {
-            VStack(alignment: .leading, spacing: Space.s3) {
-                Text("Your reflections").font(.pH2)
-                ForEach(entries) { e in
-                    VStack(alignment: .leading, spacing: Space.s1) {
-                        Text("\(Reflection.dayMonth(e.date)) · \(e.area.name)".uppercased()).font(.figtree(11, .bold)).tracking(1.2).foregroundStyle(Palette.muted)
-                        Text(e.question).font(.figtree(14)).foregroundStyle(Palette.text2)
-                        Text("“\(e.answer)”").font(.figtree(16, .semibold))
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.vertical, Space.s2)
-                    Divider()
-                }
-            }
-        }
+/// The download: a JSON file of the person's reflections and intentions.
+struct ReflectionsFile: Transferable {
+    let data: Data
+    static var transferRepresentation: some TransferRepresentation {
+        DataRepresentation(exportedContentType: .json) { $0.data }
+            .suggestedFileName("my-reflections.json")
     }
-}
-
-/// Closes the keyboard from anywhere on the screen.
-@MainActor
-func hideKeyboard() {
-    #if canImport(UIKit)
-    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-    #endif
 }

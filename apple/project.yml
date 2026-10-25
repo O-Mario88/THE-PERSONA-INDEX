@@ -34,6 +34,9 @@ targets:
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         # Where the Go API lives. A local run talks to `go run .` on this Mac.
         PIApiBase: http://localhost:8080
+        # Speak, in Reflect: on the device only.
+        NSMicrophoneUsageDescription: Speak lets you dictate a reflection. Your voice is turned into words on this device and never sent or kept.
+        NSSpeechRecognitionUsageDescription: Speak turns your voice into words on this device only. Nothing you say is sent or kept.
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
     entitlements:
@@ -41,6 +44,7 @@ targets:
       properties:
         com.apple.security.app-sandbox: true
         com.apple.security.network.client: true
+        com.apple.security.device.audio-input: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.personaindex.app

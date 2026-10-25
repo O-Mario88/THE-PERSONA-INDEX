@@ -112,32 +112,6 @@ public struct ReflectionPrompt: Sendable, Hashable, Identifiable {
     public let followsUp: String?
 }
 
-/// One answer the person typed, kept on the device.
-public struct ReflectionEntry: Codable, Sendable, Hashable, Identifiable {
-    public let id: String
-    public let date: String
-    public let period: ReflectionPeriod
-    public let area: LifeArea
-    public let kind: ReflectionKind
-    public let source: ReflectionSource
-    public let about: String
-    public let question: String
-    public let answer: String
-
-    public init(id: String, date: String, period: ReflectionPeriod, area: LifeArea, kind: ReflectionKind,
-                source: ReflectionSource, about: String, question: String, answer: String) {
-        self.id = id
-        self.date = date
-        self.period = period
-        self.area = area
-        self.kind = kind
-        self.source = source
-        self.about = about
-        self.question = question
-        self.answer = answer
-    }
-}
-
 public enum Reflection {
     /// What went well and where to grow. The day draws on today's answers;
     /// a week or a month adds the week's earned reads (never a hint).
@@ -203,39 +177,3 @@ public enum Reflection {
     }
 }
 
-extension ReflectionEntry {
-    /// A follow-up entry names the reflection it answers in its id: "follow-<id>~<date>".
-    var followUpOf: String? {
-        guard id.hasPrefix("follow-") else { return nil }
-        return id.dropFirst("follow-".count).split(separator: "~").first.map(String.init)
-    }
-}
-
-/// Every reflection, kept on the device under pi.nb.reflection.<id> (the
-/// notebook's own keys, so the encrypted backup carries them).
-public struct ReflectionStore: Sendable {
-    private let store: KeyValueStore
-    static let prefix = "pi.nb.reflection."
-    static let index = "pi.nb.reflections"
-
-    public init(store: KeyValueStore) {
-        self.store = store
-    }
-
-    public func save(_ entry: ReflectionEntry) {
-        guard let data = try? JSONEncoder().encode(entry), let json = String(data: data, encoding: .utf8) else { return }
-        store.set(json, forKey: Self.prefix + entry.id)
-        var ids = Set(store.string(forKey: Self.index)?.split(separator: ",").map(String.init) ?? [])
-        ids.insert(entry.id)
-        store.set(ids.sorted().joined(separator: ","), forKey: Self.index)
-    }
-
-    /// Newest first.
-    public func all() -> [ReflectionEntry] {
-        let ids = store.string(forKey: Self.index)?.split(separator: ",").map(String.init) ?? []
-        return ids.compactMap { id in
-            store.string(forKey: Self.prefix + id).flatMap { try? JSONDecoder().decode(ReflectionEntry.self, from: Data($0.utf8)) }
-        }
-        .sorted { ($0.date, $0.id) > ($1.date, $1.id) }
-    }
-}
