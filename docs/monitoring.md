@@ -46,8 +46,8 @@ never a path, a date, an id, an address or anything a person sent.
 
 The jobs are `tally` (every second) and, every hour in this order,
 `vote_retention`, `mirror_fold`, `week_retention`, `mirror_retention`,
-`backup_retention` and `social_retention` (friend answers, nods, Answer
-Together, sign-in codes, rooms and invites past their time).
+`backup_retention` and `social_retention` (friend answers, nods,
+reach-outs, Answer Together, sign-in codes, rooms and invites past their time).
 
 ## Alerts
 

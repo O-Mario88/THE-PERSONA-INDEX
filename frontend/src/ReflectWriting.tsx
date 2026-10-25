@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { AfterReflection } from './Closer'
 import { draftOf, rootOf, saveDraft, type DraftSpace } from './journal'
 import { checkIntention, keepIntention, keepReflection, reflections, type IntentionCheck, type ReflectionPeriod } from './notebook'
 import { dayMonth } from './reflect'
@@ -181,6 +182,9 @@ function AfterSaving({ id, today, onDone }: { id: string; today: string; onDone:
   const [kept, setKept] = useState(false)
   const [linked, setLinked] = useState('')
   const earlier = reflections().filter((r) => r.id !== id && r.date <= today).slice(0, 8)
+  // The quiet offer to share what helped (Connect). Nothing is sent until the
+  // person presses the button and approves the words.
+  const answer = reflections().find((r) => r.id === id)?.answer.trim() ?? ''
 
   function link(target: string) {
     const r = reflections().find((x) => x.id === id)
@@ -233,6 +237,7 @@ function AfterSaving({ id, today, onDone }: { id: string; today: string; onDone:
         </label>
       )}
       {linked && <p className="muted small">Added to the thread that began with “{linked}”.</p>}
+      {answer && <AfterReflection group="learnt" answer={answer} />}
       <button type="button" className="text-button" onClick={onDone}>
         Done
       </button>

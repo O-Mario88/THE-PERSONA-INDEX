@@ -113,6 +113,7 @@ type memoryStore struct {
 	mirror    memoryMirror           // see mirrorstore.go
 	vaults    map[string]memoryVault // see vault.go
 	social    memorySocial           // see socialmemory.go
+	closer    memoryCloser           // see closermemory.go
 }
 
 func newMemoryStore() *memoryStore {
@@ -123,6 +124,7 @@ func newMemoryStore() *memoryStore {
 			checks: map[string]map[string]PlanCheck{}},
 		vaults: map[string]memoryVault{},
 		social: newMemorySocial(),
+		closer: newMemoryCloser(),
 	}
 }
 

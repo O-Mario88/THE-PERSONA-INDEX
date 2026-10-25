@@ -70,6 +70,7 @@ import { helplineHere } from './prefs'
 import { ReadLink } from './Read'
 import { MirrorThreads } from './MirrorThreads'
 import { threadsBetween } from './journal'
+import { InConnection, showConnection } from './MirrorConnection'
 
 type Span = 'week' | Period
 type State =
@@ -235,6 +236,7 @@ function MirrorPage({
       body: <Reached top={needs.top} all={needs.all} safety={needs.safety} week={m.from} />,
       show: needs.top.length > 0,
     },
+    { key: 'connection', title: 'Your week in connection', body: <InConnection from={m.from} to={m.to} span="week" />, show: showConnection(m.from, m.to) },
     { key: 'all', title: 'All of you', body: <AllOfYou themes={m.themes} />, show: m.themes.length > 0 },
     { key: 'words', title: 'In your own words', body: <OwnWordsList words={words} />, show: words.length > 0 },
     {
@@ -1099,6 +1101,7 @@ function PeriodPage({ p, onOpenKept }: { p: PeriodMirror; onOpenKept: () => void
     },
     { key: 'lines', title: 'In your own words, week by week', body: <WeekLines lines={lines} />, show: lines.length > 0 },
     { key: 'threads', title: 'Threads you kept going', body: <MirrorThreads from={p.from} to={p.to} span={noun} />, show: threadsBetween(p.from, p.to).length > 0 },
+    { key: 'connection', title: `Your ${noun} in connection`, body: <InConnection from={p.from} to={p.to} span={noun} />, show: showConnection(p.from, p.to) },
     { key: 'all', title: 'All of you', body: <AllOfYou themes={p.themes} />, show: p.themes.length > 0 },
     { key: 'steps', title: 'Your small steps', body: <PeriodSteps p={p} />, show: p.stats.stepsStarted > 0 },
   ]

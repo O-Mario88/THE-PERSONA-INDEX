@@ -864,7 +864,7 @@ describe('the daily questions', () => {
 
     // The keep-it-mild switch is always there, on Account, and takes intimacy out again.
     fireEvent.click(screen.getByRole('button', { name: 'You' }))
-    fireEvent.click(screen.getByRole('switch', { name: /Keep it mild \(no intimacy questions\)/ }))
+    fireEvent.click(await screen.findByRole('switch', { name: /Keep it mild \(no intimacy questions\)/ }))
     fireEvent.click(screen.getByRole('button', { name: 'Today' }))
     expect(screen.queryByText(closeness.prompt)).not.toBeInTheDocument()
     unmount()
@@ -995,6 +995,22 @@ describe('reflect', () => {
     expect(within(page).queryByText('A thought for you')).not.toBeInTheDocument()
   })
 
+  it('once signed in, offers to share what helped after a reflection, and sends nothing until asked', async () => {
+    localStorage.setItem('pi.choice.q-dishes', 'right-away')
+    localStorage.setItem('pi.account.v1', 's1.k.sess.sig')
+    localStorage.setItem('pi.account.me', JSON.stringify({ id: 'acc-ama', name: 'Ama', handle: 'ama', suggest: true, connect: true, sync: false }))
+    const fetchMock = stubApi({ today: { status: 200, body: today } })
+    render(<App />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Reflect' }))
+    const page = await screen.findByRole('region', { name: 'Reflect' })
+    const write = within(page).getByRole('region', { name: 'Where did you feel most like yourself today?' })
+    fireEvent.change(within(write).getByRole('textbox', { name: 'Where did you feel most like yourself today?' }), { target: { value: 'Tidied the kitchen before I could sit down.' } })
+    fireEvent.click(within(write).getByRole('button', { name: /Save reflection/ }))
+    const offer = await within(page).findByRole('group', { name: 'Closer together' })
+    expect(within(offer).getByRole('button', { name: 'Share what helped' })).toBeInTheDocument()
+    for (const [, init] of fetchMock.mock.calls) expect(String(init?.body ?? '')).not.toContain('Tidied the kitchen')
+  })
+
 })
 
 describe('growing together', () => {
@@ -1029,6 +1045,30 @@ describe('growing together', () => {
     expect(growing).not.toHaveTextContent('12 people')
     expect(within(growing).getByRole('button', { name: /Share this/ })).toBeInTheDocument()
     expect(growing).not.toHaveTextContent(/\b(likes?|comments?|followers?|rank)\b/i)
+  })
+
+  it('says “a few” with no number when fewer than five chose the same', async () => {
+    localStorage.setItem('pi.choice.q-dishes', 'end-of-day')
+    stubApi({
+      today: { status: 200, body: today },
+      social: (url) =>
+        url === '/api/growing?date=2026-10-12'
+          ? {
+              status: 200,
+              body: {
+                date: '2026-10-12',
+                answers: 33,
+                min: 20,
+                questions: [{ questionId: 'q-dishes', totalVotes: 30, options: [{ optionId: 'right-away', count: 30, percent: 100 }, { optionId: 'end-of-day', count: 0, percent: 0, few: true }] }],
+              },
+            }
+          : undefined,
+    })
+    render(<App />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Connect' }))
+    const growing = await screen.findByRole('region', { name: 'Growing together' })
+    expect(await within(growing).findByText(/A few people chose “At the end of the day” too/)).toBeInTheDocument()
+    expect(growing).not.toHaveTextContent('0%')
   })
 })
 
@@ -1542,6 +1582,22 @@ describe('the weekly mirror', () => {
     expect(within(page).queryByRole('figure', { name: 'One line from this week' })).not.toBeInTheDocument()
     expect(within(page).getByRole('list', { name: 'This week in numbers' })).toHaveTextContent(`That's me–Tap "That's me" on a card that fits`)
     expect(page).not.toHaveTextContent('%')
+  })
+
+  // Connect: the person's own moves towards friends, from this phone.
+  it('shows the week in connection from this phone only, never who', async () => {
+    localStorage.setItem(
+      'pi.connection.v1',
+      JSON.stringify([
+        { d: '2026-10-13', k: 'nod' },
+        { d: '2026-10-15', k: 'share' },
+        { d: '2026-10-02', k: 'nod' },
+      ]),
+    )
+    const fetchMock = await openMirror()
+    const section = await screen.findByRole('region', { name: /Your week in connection/ })
+    expect(section).toHaveTextContent('This week you sent a quiet nod and shared one thing that helped.')
+    for (const [, init] of fetchMock.mock.calls) expect(String(init?.body ?? '')).not.toContain('nod')
   })
 
   it('shows what was written in their own words that week, from this phone only, keeping intimacy answers private', async () => {

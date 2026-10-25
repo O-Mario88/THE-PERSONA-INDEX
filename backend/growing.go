@@ -9,6 +9,11 @@ import (
 // fewer, a split can point at a person.
 const growingMin = 20
 
+// growingFew is the small-group guard: an answer fewer people chose is
+// folded, shown as "a few" with no count, and left out of the question's
+// total, so the total cannot give it away either.
+const growingFew = 5
+
 // Growing is GET /api/growing: anonymous totals for a date's questions.
 type Growing struct {
 	Date      string            `json:"date"`
@@ -47,14 +52,30 @@ func (s *Server) GrowingTogether(w http.ResponseWriter, r *http.Request) {
 			res.TotalVotes += counts[o.ID]
 		}
 		out.Answers += res.TotalVotes
-		if res.TotalVotes < growingMin {
-			continue
+		if shown := foldFew(res); shown.TotalVotes >= growingMin {
+			out.Questions = append(out.Questions, shown)
 		}
-		for i := range res.Options {
-			res.Options[i].Percent = percent(res.Options[i].Count, res.TotalVotes)
-		}
-		out.Questions = append(out.Questions, res)
 	}
 	w.Header().Set("Cache-Control", "public, max-age=0, s-maxage=30")
 	writeJSON(w, http.StatusOK, out)
+}
+
+// foldFew returns the question's split with the small answers folded and
+// the percentages worked out over what is left.
+func foldFew(res QuestionResults) QuestionResults {
+	out := QuestionResults{QuestionID: res.QuestionID, Options: make([]OptionResult, 0, len(res.Options))}
+	for _, o := range res.Options {
+		if o.Count > 0 && o.Count < growingFew {
+			out.Options = append(out.Options, OptionResult{OptionID: o.OptionID, Few: true})
+			continue
+		}
+		out.Options = append(out.Options, o)
+		out.TotalVotes += o.Count
+	}
+	for i := range out.Options {
+		if !out.Options[i].Few {
+			out.Options[i].Percent = percent(out.Options[i].Count, out.TotalVotes)
+		}
+	}
+	return out
 }

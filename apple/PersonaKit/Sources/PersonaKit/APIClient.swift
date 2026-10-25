@@ -46,7 +46,14 @@ public actor APIClient {
 
     // MARK: Requests
 
-    private func request<T: Decodable>(_ path: String, method: String = "GET", query: [String: String] = [:], headers: [String: String] = [:], body: Data? = nil) async throws -> T {
+    /// A request with no body in the answer (204), such as a withdrawal.
+    func send(_ path: String, method: String, headers: [String: String] = [:], body: Data? = nil) async throws {
+        let _: Empty = try await request(path, method: method, headers: headers, body: body, allowEmpty: true)
+    }
+
+    struct Empty: Decodable {}
+
+    func request<T: Decodable>(_ path: String, method: String = "GET", query: [String: String] = [:], headers: [String: String] = [:], body: Data? = nil, allowEmpty: Bool = false) async throws -> T {
         var url = base.appending(path: path)
         if !query.isEmpty { url.append(queryItems: query.map { URLQueryItem(name: $0.key, value: $0.value) }) }
         var req = URLRequest(url: url)
@@ -64,6 +71,7 @@ public actor APIClient {
             }
             throw APIError(status: status, code: code)
         }
+        if allowEmpty, data.isEmpty, let empty = Empty() as? T { return empty }
         return try JSONDecoder().decode(T.self, from: data)
     }
 
@@ -114,7 +122,7 @@ public actor APIClient {
 
     public var isSignedIn: Bool { secrets.string(forKey: Self.accountKey) != nil }
 
-    private var accountHeader: [String: String] {
+    var accountHeader: [String: String] {
         secrets.string(forKey: Self.accountKey).map { ["Authorization": "Account \($0)"] } ?? [:]
     }
 

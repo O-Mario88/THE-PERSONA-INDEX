@@ -25,6 +25,11 @@
   --accent-ink: #2f6d10; /* lime's partner for text and icons on light, 6.4:1 */
   --accent-wash: #f4fbe2; /* a chosen option's ground */
   --accent-line: #b9e44a;
+  /* Celebrate (the new Connect): a warm amber, only on "Share a win". */
+  --warm: #f6b73c;
+  --on-warm: #2a1a00;
+  --warm-ink: #8a5300; /* text and icons on light, 5.6:1 */
+  --warm-wash: #fff6e3;
 
   /* States */
   --danger: #b42318;
@@ -106,6 +111,9 @@
   --accent-ink: var(--lime);
   --accent-wash: rgb(198 242 78 / 0.08);
   --accent-line: var(--lime);
+
+  --warm-ink: var(--warm);
+  --warm-wash: rgb(246 183 60 / 0.1);
 
   --danger: #ff8a7a;
   --danger-wash: rgb(255 138 122 / 0.1);

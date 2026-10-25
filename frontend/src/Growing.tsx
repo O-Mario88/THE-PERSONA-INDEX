@@ -9,7 +9,7 @@ import type { CircleView } from './social'
 // threshold, sent by the server). No feed, no likes, no comments, never a
 // named person, never a rank or a score.
 
-type Split = { questionId: string; totalVotes: number; options: { optionId: string; count: number; percent: number }[] }
+type Split = { questionId: string; totalVotes: number; options: { optionId: string; count: number; percent: number; few?: boolean }[] }
 type GrowingView = { date: string; answers: number; min: number; questions: Split[] }
 
 const mondayOf = (iso: string) => {
@@ -47,10 +47,11 @@ export function Growing({ date, questions, circle }: { date: string; questions: 
       const option = q.options.find((o) => o.id === pick?.optionId)
       if (!pick || !option) return []
       const same = pick.optionId === mine
-      const text = same
-        ? `${Math.round(pick.percent)}% of ${s.totalVotes} people chose “${option.label}” too. You’re not the only one.`
-        : `${Math.round(pick.percent)}% of ${s.totalVotes} people chose “${option.label}”.`
-      return [{ id: q.id, prompt: q.prompt, text, same, percent: Math.round(pick.percent), label: option.label }]
+      // The small-group guard folds an answer fewer than five chose: no number.
+      const share = pick.few ? 'A few people' : `${Math.round(pick.percent)}% of ${s.totalVotes} people`
+      const text = same ? `${share} chose “${option.label}” too. You’re not the only one.` : `${share} chose “${option.label}”.`
+      const card = pick.few ? `A few chose “${option.label}”` : `${Math.round(pick.percent)}% chose “${option.label}”`
+      return [{ id: q.id, prompt: q.prompt, text, same, card }]
     })
 
   return (
@@ -90,7 +91,7 @@ export function Growing({ date, questions, circle }: { date: string; questions: 
               <p className="growing-prompt">{s.prompt}</p>
               <p className="growing-share">{s.text}</p>
               {s.same && <p className="muted small">If it is hard for you, someone in your circle may be carrying the same thing. A quiet nod tonight can help.</p>}
-              <button type="button" className="text-button" onClick={() => setSharing({ name: `${s.percent}% chose “${s.label}”`, line: s.prompt })}>
+              <button type="button" className="text-button" onClick={() => setSharing({ name: s.card, line: s.prompt })}>
                 Share this
               </button>
             </li>
