@@ -960,6 +960,26 @@ describe('answers', () => {
   })
 })
 
+describe('reflect', () => {
+  // Edwin, 2026-10-25: write down how the day went, what you learnt, what is
+  // going well and where you could grow, typed in your own words, kept and
+  // used later.
+  it('asks reflection questions from the day’s answers, keeps the answers on the phone and never sends them', async () => {
+    localStorage.setItem('pi.choice.q-dishes', 'right-away')
+    const fetchMock = stubApi({ today: { status: 200, body: today } })
+    render(<App />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Reflect' }))
+    const guide = await screen.findByRole('region', { name: 'How did it go?' })
+    expect(within(guide).getByRole('group', { name: 'What you learnt about yourself' })).toHaveTextContent('You like a clear sink before you relax.')
+    const box = within(guide).getByRole('textbox', { name: 'Where did you see this in yourself today?' })
+    fireEvent.change(box, { target: { value: 'Tidied the kitchen before I could sit down.' } })
+    fireEvent.click(within(guide).getByRole('button', { name: 'Keep this' }))
+    expect(await within(guide).findByRole('list', { name: 'Your reflections' })).toHaveTextContent('Tidied the kitchen before I could sit down.')
+    expect(Object.keys(localStorage).some((k) => k.startsWith('pi.nb.reflection.'))).toBe(true)
+    for (const [, init] of fetchMock.mock.calls) expect(String(init?.body ?? '')).not.toContain('Tidied the kitchen')
+  })
+})
+
 describe('growing together', () => {
   // Edwin, 2026-10-25: show people they are not the only one, from real
   // anonymous totals, never a feed and never about a named person.
@@ -2153,7 +2173,7 @@ describe('accessibility', () => {
     await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('heading', { level: 2, name: 'Settings' })))
     fireEvent.click(screen.getByRole('button', { name: '← Back' }))
     fireEvent.click(screen.getByRole('button', { name: 'Reflect' }))
-    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('heading', { level: 2, name: 'Notebook' })))
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('heading', { level: 2, name: 'How did it go?' })))
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1)
   })
 })
