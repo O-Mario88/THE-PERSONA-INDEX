@@ -57,7 +57,7 @@ struct VaultCryptoTests {
         #expect(Phrase.problem(p) == nil)
         #expect(Phrase.problem(Self.phrase) == nil)
         #expect(Phrase.problem("legal winner") == .count(2))
-        #expect(Phrase.problem(Self.phrase.replacingOccurrences(of: "yellow", with: "yelow")) == .word("yelow", at: 11))
+        #expect(Phrase.problem(Self.phrase.replacingOccurrences(of: "yellow", with: "yelow")) == .word("yelow", at: 12))
         #expect(Phrase.problem(Self.phrase.replacingOccurrences(of: "yellow", with: "zoo")) == .checksum)
         #expect(Phrase.words(for: [UInt8](repeating: 0x7f, count: 16)) == Self.phrase)
     }

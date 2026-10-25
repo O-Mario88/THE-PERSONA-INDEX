@@ -38,6 +38,7 @@ public enum Phrase {
         input.decomposedStringWithCompatibilityMapping.lowercased().split(whereSeparator: \.isWhitespace).joined(separator: " ")
     }
 
+    /// `at` counts from 1, as a person reads their note.
     public enum Problem: Equatable { case count(Int), word(String, at: Int), checksum }
 
     /// What is wrong with a typed phrase, or nil.
@@ -46,7 +47,7 @@ public enum Phrase {
         guard words.count == 12 else { return .count(words.count) }
         var bits: [UInt8] = []
         for (i, w) in words.enumerated() {
-            guard let n = BIP39Words.english.firstIndex(of: w) else { return .word(w, at: i) }
+            guard let n = BIP39Words.english.firstIndex(of: w) else { return .word(w, at: i + 1) }
             bits += (0..<11).reversed().map { UInt8((n >> $0) & 1) }
         }
         let entropy = stride(from: 0, to: 128, by: 8).map { i in bits[i..<i + 8].reduce(0) { $0 << 1 | $1 } }

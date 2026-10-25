@@ -39,6 +39,10 @@ public actor Vault {
     public enum Restored: Sendable, Equatable { case restored, none, damaged, mismatch }
 
     static let stateKey = "pi.vault.v1"
+    /// Set in settings once this install holds the backup's contents. The
+    /// Keychain outlives a reinstall and settings don't: without this mark a
+    /// reinstalled app would back up its empty settings over the real backup.
+    static let hereKey = "pi.vault.here"
     let api: APIClient
     let defaults: KeyValueStore
     let secrets: KeyValueStore
@@ -54,6 +58,7 @@ public actor Vault {
     }
 
     func save(_ s: VaultState?) {
+        defaults.set(s == nil ? nil : "1", forKey: Self.hereKey)
         secrets.set(s.flatMap { (try? JSONEncoder().encode($0)).flatMap { String(data: $0, encoding: .utf8) } }, forKey: Self.stateKey)
     }
 
@@ -179,6 +184,7 @@ public actor Vault {
     @discardableResult
     public func backUp() async -> Saved {
         guard var st = state else { return .off }
+        guard defaults.string(forKey: Self.hereKey) != nil else { return .later }
         do {
             let main = st.phrase.map { VaultKeys(phrase: $0).main } ?? st.sync.flatMap(VaultKeys.main(fromSync:))
             guard let main else { return .off }
@@ -203,6 +209,23 @@ public actor Vault {
     public func turnOn(phrase: String, words: Bool = false) async -> Saved {
         save(VaultState(phrase: Phrase.normalise(phrase), sync: state?.sync, version: 0, journalVersion: 0, words: words, dirty: true))
         return await backUp()
+    }
+
+    /// After a reinstall: the Keychain still holds the backup's keys, so
+    /// everything comes back before anything is written. Nil when there is
+    /// nothing to do, or the server can't be reached (it tries again next launch).
+    public func resumeAfterInstall() async -> Restored? {
+        guard let st = state, defaults.string(forKey: Self.hereKey) == nil else { return nil }
+        let r: Restored?
+        if let phrase = st.phrase {
+            r = try? await restore(phrase: phrase)
+        } else if let sync = st.sync {
+            r = try? await restoreFromSync(sync)
+        } else {
+            r = nil
+        }
+        if r == Restored.none { save(nil) } // turned off elsewhere: nothing left to keep
+        return r
     }
 
     /// Deletes both copies from the server, then forgets the phrase.
@@ -291,6 +314,11 @@ extension Vault {
         guard let phrase = state?.phrase else { return made }
         try await api.putSync(VaultKeys(phrase: phrase).syncSecret)
         return made
+    }
+
+    /// Whether the account keeps sync keys now.
+    public func syncIsOn() async throws -> Bool {
+        try await api.getSync() != nil
     }
 
     public func syncOff() async throws {

@@ -85,11 +85,13 @@ struct VaultTests {
 
     /// One device: its own settings, its own Keychain, the shared server.
     struct Device {
-        let defaults = MemoryStore()
-        let secrets = MemoryStore()
+        let defaults: MemoryStore
+        let secrets: MemoryStore
         let vault: Vault
 
-        init() {
+        init(defaults: MemoryStore = MemoryStore(), secrets: MemoryStore = MemoryStore()) {
+            self.defaults = defaults
+            self.secrets = secrets
             let config = URLSessionConfiguration.ephemeral
             config.protocolClasses = [VaultServer.self]
             let api = APIClient(base: URL(string: "http://test.local")!, session: URLSession(configuration: config), store: secrets)
@@ -331,5 +333,23 @@ struct VaultTests {
         #expect(mainAfter.words)
         #expect(journalAfter.entries["pi.nb.note.n1"] == "a web note")
         #expect(mainAfter.entries["pi.nb.note.n1"] == nil)
+    }
+
+    @Test("A reinstall keeps the Keychain but not settings: the backup comes back, never overwritten")
+    func reinstall() async throws {
+        let a = filled()
+        _ = await a.vault.turnOn(phrase: Self.phrase)
+
+        let reinstalled = Device(secrets: a.secrets)
+        #expect(await reinstalled.vault.backUp() == .later)
+        let keys = VaultKeys(phrase: Self.phrase)
+        let main = try Sealer.open(try #require(VaultServer.copies[keys.main.vaultKey]).data, with: keys.main)
+        #expect(main.entries["pi.choice.q1"] == "o2")
+
+        #expect(await reinstalled.vault.resumeAfterInstall() == .restored)
+        #expect(reinstalled.defaults.string(forKey: "pi.choice.q1") == "o2")
+        #expect(reinstalled.defaults.string(forKey: "pi.nb.reflection.r1") == Self.reflection)
+        #expect(await reinstalled.vault.backUp() == .saved)
+        #expect(await reinstalled.vault.resumeAfterInstall() == nil)
     }
 }

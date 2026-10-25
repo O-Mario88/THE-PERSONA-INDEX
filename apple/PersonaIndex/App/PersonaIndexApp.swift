@@ -12,7 +12,9 @@ struct PersonaIndexApp: App {
         WindowGroup {
             RootView()
                 .environment(model)
-                .task { await model.refresh() }
+                .task {
+                    if await model.backup.resumeAfterInstall() { await model.reloadAfterRestore() } else { await model.refresh() }
+                }
                 #if os(macOS) && DEBUG
                 .onAppear { SelfSnapshot.runIfAsked(model) }
                 #endif
@@ -32,9 +34,11 @@ struct PersonaIndexApp: App {
     }
 }
 
-/// The welcome once, then the five tabs.
+/// The welcome once, then the five tabs. With the lock on, the app covers
+/// itself whenever it leaves the screen, and backs up quietly as it goes.
 struct RootView: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.scenePhase) private var phase
 
     var body: some View {
         Group {
@@ -52,5 +56,15 @@ struct RootView: View {
         .tint(Palette.accentInk)
         // Our own field backgrounds, without the Mac's bordered box inside them.
         .textFieldStyle(.plain)
+        .overlay {
+            if model.lock.locked || (model.lock.enabled && model.lock.covered) { LockScreen() }
+        }
+        .onChange(of: phase) { _, now in
+            model.lock.covered = now != .active
+            if now == .background {
+                model.lock.lock()
+                Task { await model.backup.backUpQuietly() }
+            }
+        }
     }
 }

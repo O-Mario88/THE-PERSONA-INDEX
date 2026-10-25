@@ -22,11 +22,19 @@ final class BackupModel {
 
     var isOn: Bool { state != nil }
 
-    func refresh(signedIn: Bool) async {
+    func refresh(signedIn: Bool, askSync: Bool = false) async {
         state = await vault.state
         writingWaits = await vault.writingWaits
         self.signedIn = signedIn
-        if !signedIn { sync = false }
+        if !signedIn { sync = false } else if askSync, let on = try? await vault.syncIsOn() { sync = on }
+    }
+
+    /// At launch: a reinstalled app brings its backup back before writing anything.
+    func resumeAfterInstall() async -> Bool {
+        let r = await vault.resumeAfterInstall()
+        state = await vault.state
+        writingWaits = await vault.writingWaits
+        return r == .restored
     }
 
     /// Backs up when something changed, without asking. Failing waits for next time.

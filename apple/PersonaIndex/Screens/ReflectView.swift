@@ -15,6 +15,7 @@ struct ReflectView: View {
     @State private var openThread: String?
     @State private var mirror: WeekMirror?
     @State private var confirmDelete = false
+    @State private var bringingBack: PhraseSheet.Mode?
 
     private var thoughts: [Thought] {
         let answered = model.answeredToday.map { Thoughts.Answered(question: $0.0, option: $0.1, date: model.date) }
@@ -44,6 +45,8 @@ struct ReflectView: View {
                     Text("A quiet space for your thoughts.").font(.figtree(17)).foregroundStyle(Palette.muted)
                 }
                 .padding(.top, Space.s2)
+
+                if model.backup.writingWaits { bringBack }
 
                 ViewThatFits(in: .horizontal) {
                     HStack(spacing: Space.s3) { periodPicker.frame(minWidth: 340); writeFreely }
@@ -75,6 +78,19 @@ struct ReflectView: View {
         .sheet(item: Binding(get: { openThread.map(ThreadID.init) }, set: { openThread = $0?.id })) { t in
             ThreadView(root: t.id, period: period)
         }
+    }
+
+    /// On a device restored through sync the writing is still sealed: the
+    /// 12 words bring it back, once.
+    private var bringBack: some View {
+        VStack(alignment: .leading, spacing: Space.s3) {
+            Label("Your reflections are sealed with your 12 words", systemImage: "lock").font(.pH3)
+            Text("Everything else came back with sync. Your writing is end-to-end encrypted, so only your 12 words can open it. You’ll only need to do this once on this device.")
+                .font(.pSmall).foregroundStyle(Palette.text2)
+            Button("Bring them back") { bringingBack = .writing }.buttonStyle(PrimaryButtonStyle()).frame(maxWidth: 280)
+        }
+        .card(fill: Palette.accentWash, stroke: Palette.accentLine)
+        .sheet(item: $bringingBack) { PhraseSheet(mode: $0) }
     }
 
     private var periodPicker: some View {
@@ -137,6 +153,7 @@ struct ReflectView: View {
                         Label("Download my reflections", systemImage: "square.and.arrow.down")
                     }
                     Button("Delete my reflections", role: .destructive) { confirmDelete = true }
+                        .foregroundStyle(Palette.danger)
                 }
                 .font(.figtree(14, .bold))
             }
