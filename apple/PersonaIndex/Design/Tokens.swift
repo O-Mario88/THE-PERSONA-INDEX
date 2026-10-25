@@ -91,14 +91,6 @@ enum Figtree {
         default: "Figtree-Regular"
         }
     }
-
-    /// Registers the bundled fonts once, at launch, on iPhone and Mac alike.
-    static func register() {
-        let urls = Bundle.main.urls(forResourcesWithExtension: "ttf", subdirectory: nil) ?? []
-        for url in urls where url.lastPathComponent.hasPrefix("Figtree") {
-            CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil)
-        }
-    }
 }
 
 extension Font {

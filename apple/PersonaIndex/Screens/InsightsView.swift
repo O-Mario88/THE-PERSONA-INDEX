@@ -15,7 +15,7 @@ struct InsightsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Space.s5) {
+            LazyVStack(alignment: .leading, spacing: Space.s5) {
                 switch state {
                 case .loading:
                     Text("Putting your week together…").foregroundStyle(Palette.muted).padding(.vertical, Space.s8)

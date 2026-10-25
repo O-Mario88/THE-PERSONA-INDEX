@@ -12,7 +12,7 @@ struct ConnectView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Space.s5) {
+            LazyVStack(alignment: .leading, spacing: Space.s5) {
                 Eyebrow(text: "The Persona Index").padding(.top, Space.s2)
                 Text("Your circle").font(.pHero)
                 Text("A more intentional circle builds a brighter you.").font(.figtree(17)).foregroundStyle(Palette.muted)

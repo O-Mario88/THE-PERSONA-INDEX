@@ -25,7 +25,7 @@ struct ReflectView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Space.s5) {
+            LazyVStack(alignment: .leading, spacing: Space.s5) {
                 Eyebrow(text: "Reflect").padding(.top, Space.s2)
                 Text("How did it go?").font(.pHero)
                 Text("What went well, where you could grow, and what you learnt about yourself. In your own words.")
