@@ -11,6 +11,7 @@
 		180BA927900C8DB708B45017 /* ReflectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F09A5454739BE97B969D5F31 /* ReflectView.swift */; };
 		2B79CDCDC6E41ED0F1DFB900 /* PersonaKit in Frameworks */ = {isa = PBXBuildFile; productRef = EF3AD5D0AC460371D67BCA0C /* PersonaKit */; };
 		428EA353940BB8242CB6575C /* MainTabs.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC5CA5B943743B90359E4D1F /* MainTabs.swift */; };
+		5402D87483F205D138DDF64B /* ConnectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7376D0AB928867A5C1C8CF3 /* ConnectView.swift */; };
 		7087F80F9323837D05BAE3AE /* Figtree-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = BAE1F592572E4AE98093ADC0 /* Figtree-Regular.ttf */; };
 		7984C02E190E06C92BCB5A90 /* Figtree-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = DDE6E0628DDA64A022D9C66F /* Figtree-SemiBold.ttf */; };
 		79D7E26BD8BDEFEC5A1F0774 /* PersonaIndexApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DB7B86359BCF5B3EEA8FD8B /* PersonaIndexApp.swift */; };
@@ -45,6 +46,7 @@
 		DC5CA5B943743B90359E4D1F /* MainTabs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabs.swift; sourceTree = "<group>"; };
 		DDE6E0628DDA64A022D9C66F /* Figtree-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Figtree-SemiBold.ttf"; sourceTree = "<group>"; };
 		E032E74F1B1AAE667A76BAE1 /* SittingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SittingView.swift; sourceTree = "<group>"; };
+		E7376D0AB928867A5C1C8CF3 /* ConnectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectView.swift; sourceTree = "<group>"; };
 		EA239524B566D637BB3D057E /* InsightsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsView.swift; sourceTree = "<group>"; };
 		F09A5454739BE97B969D5F31 /* ReflectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReflectView.swift; sourceTree = "<group>"; };
 		FA036B80EF8AA5CA608780C2 /* PersonaKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = PersonaKit; path = PersonaKit; sourceTree = SOURCE_ROOT; };
@@ -131,6 +133,7 @@
 		BCBB924867672EA02D1F005F /* Screens */ = {
 			isa = PBXGroup;
 			children = (
+				E7376D0AB928867A5C1C8CF3 /* ConnectView.swift */,
 				EA239524B566D637BB3D057E /* InsightsView.swift */,
 				DC5CA5B943743B90359E4D1F /* MainTabs.swift */,
 				F09A5454739BE97B969D5F31 /* ReflectView.swift */,
@@ -237,6 +240,7 @@
 			files = (
 				0A2359BBB052B72766B70DEA /* AppModel.swift in Sources */,
 				D24040AFD24C5228401180BB /* Components.swift in Sources */,
+				5402D87483F205D138DDF64B /* ConnectView.swift in Sources */,
 				A07C2FDC7062F5CBD55B1FA8 /* InsightsView.swift in Sources */,
 				428EA353940BB8242CB6575C /* MainTabs.swift in Sources */,
 				79D7E26BD8BDEFEC5A1F0774 /* PersonaIndexApp.swift in Sources */,

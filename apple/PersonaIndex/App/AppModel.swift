@@ -122,6 +122,49 @@ final class AppModel {
         loadReflections()
     }
 
+    // MARK: Signing in, the circle and Growing Together
+
+    private(set) var signedIn = false
+    private(set) var circle: CircleView?
+    private(set) var growing: Growing?
+    private(set) var rings: [String: Ring] = [:]
+
+    private var ringStore: RingStore { RingStore(store: defaults) }
+
+    func loadConnect() async {
+        signedIn = await api.isSignedIn
+        rings = ringStore.all()
+        growing = try? await api.growing(date)
+        guard signedIn else { circle = nil; return }
+        do {
+            circle = try await api.circle()
+        } catch {
+            signedIn = await api.isSignedIn
+        }
+    }
+
+    func sendCode(to address: String) async throws -> String {
+        try await api.sendCode(to: address)
+    }
+
+    func verifyCode(address: String, code: String) async throws {
+        #if os(iOS)
+        let device = "iPhone"
+        #else
+        let device = "Mac"
+        #endif
+        let me = try await api.verifyCode(address: address, code: code, device: device)
+        if name.isEmpty { name = me.name }
+        await loadConnect()
+    }
+
+    func place(_ friend: FriendView, in ring: Ring) {
+        ringStore.place(friend.id, in: ring)
+        rings = ringStore.all()
+    }
+
+    func ring(of friend: FriendView) -> Ring { rings[friend.id] ?? .outer }
+
     // MARK: The mirror
 
     /// This phone's week, from the server.
