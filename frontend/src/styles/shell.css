@@ -86,8 +86,10 @@
   transition: color var(--t-fast) var(--ease);
 }
 
-.tab:hover:not(:disabled) {
-  color: var(--text);
+@media (hover: hover) {
+  .tab:hover:not(:disabled):not([aria-pressed='true']) {
+    color: var(--text);
+  }
 }
 
 .tab[aria-pressed='true'] {

@@ -1,0 +1,656 @@
+/* Connect: the Circle (numbers, the unlock card, people by tag, ways to
+   invite), today's friend question, quiet nods, Answer Together and the
+   share sheet. */
+
+.circle {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+}
+
+.head-actions {
+  flex-wrap: nowrap;
+  gap: 0;
+  align-self: flex-start;
+}
+
+/* Three numbers in tiles */
+.stat-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--s-3);
+}
+
+.stat-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--s-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+}
+
+.stat-num {
+  font-size: 1.875rem;
+  line-height: 1.05;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.stat-name {
+  color: var(--muted);
+  font-size: var(--fs-small);
+  line-height: 1.25;
+}
+
+/* Unlock Outside Mirror: a lime-edged card with a three-step track. */
+.circle-hero {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-4);
+  padding: var(--s-5);
+  border: 1.5px solid var(--accent-line);
+  border-radius: var(--r-lg);
+  background: var(--accent-wash);
+}
+
+.circle-hero-words {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--s-1);
+  min-width: 0;
+}
+
+.circle-hero-title {
+  font-size: var(--fs-h3);
+  line-height: 1.3;
+  font-weight: 800;
+}
+
+.unlock-track {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--s-3);
+}
+
+.unlock-track::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  right: 14px;
+  height: 3px;
+  margin-top: -1.5px;
+  border-radius: var(--r-pill);
+  background: var(--line-strong);
+}
+
+.unlock-track li {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--line-strong);
+  border-radius: 50%;
+  background: var(--surface);
+}
+
+.unlock-track li.is-done {
+  border-color: var(--lime);
+  background: var(--lime);
+}
+
+.unlock-track li.is-done::after {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 4px;
+  width: 6px;
+  height: 11px;
+  border: solid var(--on-lime);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+/* Ways to bring someone in */
+.circle-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--s-3);
+}
+
+.circle-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s-3);
+  padding: var(--s-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  font-weight: 700;
+  font-size: var(--fs-small);
+  text-align: left;
+}
+
+.circle-tile .icon {
+  width: 36px;
+  height: 36px;
+  padding: 8px;
+  border-radius: 50%;
+  background: var(--accent-wash);
+  color: var(--accent-ink);
+}
+
+.circle-tile[aria-pressed='true'] {
+  border-color: var(--accent-line);
+  background: var(--accent-wash);
+}
+
+.invite-panel,
+.room-panel {
+  gap: var(--s-4);
+}
+
+.invite-link {
+  padding: var(--s-3) var(--s-4);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  font-weight: 700;
+  word-break: break-all;
+}
+
+.qr {
+  align-self: center;
+  padding: var(--s-3);
+  border-radius: var(--r-md);
+  background: #ffffff;
+}
+
+.qr rect,
+.qr path {
+  fill: #0e1a24;
+}
+
+.room-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-4);
+  padding: var(--s-4) var(--s-5);
+  border-radius: var(--r-lg);
+  background: var(--navy);
+  color: var(--on-navy);
+}
+
+.room-code {
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--lime);
+}
+
+.room-code.inline {
+  font-size: inherit;
+  color: var(--accent-ink);
+}
+
+.right {
+  text-align: right;
+}
+
+/* People, grouped by how you know them */
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.tag-group {
+  border-bottom: 1px solid var(--line);
+}
+
+.tag-group > summary {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  min-height: 52px;
+  list-style: none;
+  cursor: pointer;
+}
+
+.tag-group > summary::-webkit-details-marker {
+  display: none;
+}
+
+.tag-group > summary::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  margin: 0 4px;
+  border: solid var(--text);
+  border-width: 0 2px 2px 0;
+  transform: rotate(-45deg);
+  transition: transform var(--t-fast) var(--ease);
+}
+
+.tag-group[open] > summary::before {
+  transform: rotate(45deg);
+}
+
+.tag-name {
+  flex: 1;
+  font-size: var(--fs-h3);
+  font-weight: 800;
+}
+
+.tag-count {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.people-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.person-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  flex-wrap: wrap;
+  padding: var(--s-3) 0;
+}
+
+.person-row .avatar {
+  position: relative;
+}
+
+.person-row.is-muted {
+  opacity: 0.6;
+}
+
+.person-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  min-height: 0;
+  color: var(--text);
+  text-align: left;
+}
+
+.person-name {
+  font-size: var(--fs-h3);
+  font-weight: 700;
+  color: var(--text);
+}
+
+.person-sub {
+  color: var(--muted);
+  font-size: var(--fs-small);
+  font-weight: 500;
+}
+
+.person-more {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  width: 100%;
+  padding: var(--s-2) 0 var(--s-2) 52px;
+}
+
+.invite-waiting {
+  border: 1.5px solid var(--accent-line);
+  background: var(--accent-wash);
+}
+
+/* Today's friend question ("Friend drop") */
+.friend-invite {
+  gap: var(--s-3);
+}
+
+.friend-invite .strong {
+  font-size: var(--fs-h3);
+  font-weight: 800;
+}
+
+.friend-q {
+  gap: var(--s-4);
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.friend-q-head {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+  padding: var(--s-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: var(--fs-small);
+}
+
+.friend-q-head strong {
+  display: block;
+  font-size: var(--fs-h3);
+  font-weight: 800;
+  color: var(--text);
+}
+
+.friend-q .prompt {
+  font-size: 1.375rem;
+}
+
+/* Quiet nods: friends as avatar tiles, then the messages as radio cards. */
+.nod-picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  padding-top: var(--s-2);
+}
+
+.nod-title {
+  font-size: var(--fs-h2);
+  font-weight: 800;
+}
+
+.nod-title .muted {
+  display: block;
+  font-size: var(--fs-small);
+  font-weight: 500;
+}
+
+.nod-picker .chips {
+  flex-wrap: nowrap;
+  gap: var(--s-4);
+  overflow-x: auto;
+  margin: 0 -8px;
+  padding: 8px;
+}
+
+.nod-picker .chip-toggle.with-avatar {
+  flex-direction: column;
+  gap: var(--s-2);
+  min-height: 0;
+  padding: 0;
+  background: none;
+  font-weight: 600;
+}
+
+.nod-picker .chip-toggle.with-avatar .avatar {
+  width: 56px !important;
+  height: 56px !important;
+  font-size: 1.25rem !important;
+  box-shadow: 0 0 0 3px var(--bg);
+}
+
+.nod-picker .chip-toggle.with-avatar[aria-pressed='true'] {
+  background: none;
+  color: var(--text);
+  font-weight: 800;
+}
+
+.nod-picker .chip-toggle.with-avatar[aria-pressed='true'] .avatar {
+  box-shadow:
+    0 0 0 3px var(--bg),
+    0 0 0 5px var(--lime);
+}
+
+.nod-cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.nod-card {
+  position: relative;
+  width: 100%;
+  min-height: 60px;
+  padding: var(--s-4) var(--s-5) var(--s-4) 60px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  font-size: var(--fs-h3);
+  font-weight: 700;
+  text-align: left;
+}
+
+.nod-card::before {
+  content: '';
+  position: absolute;
+  left: var(--s-5);
+  top: 50%;
+  width: 22px;
+  height: 22px;
+  margin-top: -11px;
+  border: 2px solid var(--line-strong);
+  border-radius: 50%;
+}
+
+.nod-card[aria-checked='true'] {
+  border-color: var(--accent-line);
+  background: var(--accent-wash);
+}
+
+.nod-card[aria-checked='true']::before {
+  border-color: var(--on-lime);
+  background: var(--on-lime);
+  box-shadow: inset 0 0 0 4px var(--lime);
+}
+
+/* A nod that arrived */
+.nod-card-in {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-4);
+  border: 1.5px solid var(--accent-line);
+  border-radius: var(--r-lg);
+  background: var(--accent-wash);
+}
+
+.nod-card-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.nod-card-from {
+  color: var(--muted);
+  font-size: var(--fs-tiny);
+  font-weight: 700;
+}
+
+.nod-card-line {
+  font-weight: 800;
+}
+
+.nod-heart {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--lime);
+  color: var(--on-lime);
+}
+
+/* Answer Together: two answers side by side, yours outlined in lime. */
+.together {
+  gap: var(--s-4);
+}
+
+.together .prompt {
+  font-size: 1.5rem;
+}
+
+.together-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s-3);
+}
+
+.together-side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-4);
+  border: 1.5px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+}
+
+.together-side:first-child {
+  border-color: var(--accent-line);
+}
+
+.together-who {
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.together-pick {
+  font-size: var(--fs-h3);
+  line-height: 1.25;
+  font-weight: 800;
+}
+
+.together-pair.sealed .together-side {
+  border-style: dashed;
+}
+
+.together-read {
+  position: relative;
+  padding: var(--s-4) var(--s-4) var(--s-4) 52px;
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+}
+
+.together-read::before {
+  content: '';
+  position: absolute;
+  left: var(--s-4);
+  top: calc(var(--s-4) + 2px);
+  width: 20px;
+  height: 16px;
+  background:
+    linear-gradient(var(--lime-strong), var(--lime-strong)) 0 100% / 4px 40% no-repeat,
+    linear-gradient(var(--lime-strong), var(--lime-strong)) 8px 100% / 4px 70% no-repeat,
+    linear-gradient(var(--lime-strong), var(--lime-strong)) 16px 100% / 4px 100% no-repeat;
+}
+
+.together-wait-head {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+}
+
+.together-avatars {
+  display: flex;
+}
+
+.together-avatars > * + * {
+  margin-left: -10px;
+}
+
+.together-empty {
+  width: 40px;
+  height: 40px;
+  border: 2px dashed var(--line-strong);
+  border-radius: 50%;
+  background: var(--surface);
+}
+
+.together-ask {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+/* The share sheet */
+.share-sheet {
+  gap: var(--s-4);
+}
+
+.share-preview {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--s-3);
+  aspect-ratio: 9 / 13;
+  padding: var(--s-8) var(--s-6);
+  border-radius: var(--r-xl);
+  background: var(--navy);
+  color: var(--on-navy);
+}
+
+.share-preview.square {
+  aspect-ratio: 1;
+}
+
+.share-eyebrow {
+  font-size: var(--fs-tiny);
+  font-weight: 800;
+  letter-spacing: var(--track-eyebrow);
+  text-transform: uppercase;
+  color: var(--lime);
+}
+
+.share-name {
+  font-size: 2.25rem;
+  line-height: 1.05;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.share-line {
+  color: var(--on-navy-2);
+}
+
+.share-foot {
+  margin-top: auto;
+  color: var(--on-navy-2);
+  font-size: var(--fs-tiny);
+}
+
+.share-actions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--s-2);
+}
+
+.share-actions .btn {
+  padding: 0 var(--s-2);
+  font-size: var(--fs-small);
+}
+
+/* A title row with actions at its right. */
+.page-head.row-between {
+  flex-direction: row;
+  align-items: flex-start;
+}
+
+/* A friend's name is a button that opens their tags: left-aligned text. */
+.person-text.as-button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  min-height: 44px;
+  font-weight: 500;
+}
+
+.person-text.as-button:hover {
+  text-decoration: none;
+}
