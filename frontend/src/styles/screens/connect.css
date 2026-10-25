@@ -654,3 +654,142 @@
 .person-text.as-button:hover {
   text-decoration: none;
 }
+
+/* People in your circle · Active this week: one card, two numbers. */
+.circle-stats {
+  flex-direction: row;
+  gap: 0;
+  padding: var(--s-4) var(--s-5);
+}
+
+.circle-stat {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.circle-stat + .circle-stat {
+  padding-left: var(--s-5);
+  border-left: 1px solid var(--line);
+}
+
+.circle-search {
+  position: relative;
+  display: block;
+}
+
+.circle-search .icon {
+  position: absolute;
+  left: var(--s-4);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+}
+
+.circle-search .field {
+  padding-left: 44px;
+  border-radius: var(--r-pill);
+}
+
+/* The three circles */
+.rings {
+  gap: var(--s-4);
+}
+
+.rings-figure svg {
+  width: 100%;
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+.rings-figure .ring-outer {
+  fill: var(--surface-2);
+  stroke: var(--line-strong);
+}
+
+.rings-figure .ring-middle {
+  fill: var(--accent-wash);
+  stroke: var(--accent-line);
+}
+
+.rings-figure .ring-inner {
+  fill: var(--lime);
+  stroke: var(--lime-strong);
+}
+
+.ring-person text {
+  fill: #ffffff;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.ring-person circle {
+  stroke: var(--surface);
+  stroke-width: 3;
+}
+
+.rings-key {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.rings-key li {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-3);
+}
+
+.rings-dot {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.rings-dot.ring-inner {
+  background: var(--lime);
+}
+
+.rings-dot.ring-middle {
+  background: var(--accent-wash);
+  box-shadow: inset 0 0 0 2px var(--accent-line);
+}
+
+.rings-dot.ring-outer {
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 2px var(--line-strong);
+}
+
+/* Growing together */
+.growing {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--line);
+}
+
+.growing-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: var(--s-3);
+}
+
+.growing-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.growing-prompt {
+  color: var(--text-2);
+  font-size: var(--fs-small);
+}
+
+.growing-share {
+  font-size: var(--fs-h3);
+  font-weight: 800;
+  line-height: 1.3;
+}

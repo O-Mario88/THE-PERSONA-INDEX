@@ -374,3 +374,83 @@
   display: flex;
   flex-direction: column;
 }
+
+/* Reflect: the guided reflection at the top of the Reflect tab. */
+.reflect {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+  padding-bottom: var(--s-6);
+  border-bottom: 1px solid var(--line);
+}
+
+.reflect-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.reflect-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+}
+
+.reflect-group.is-strength .reflect-item {
+  border-color: var(--accent-line);
+  background: var(--accent-wash);
+}
+
+.reflect-meta {
+  color: var(--muted);
+  font-size: var(--fs-tiny);
+}
+
+.reflect-area {
+  color: var(--accent-ink);
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.reflect-text {
+  font-size: var(--fs-h3);
+  font-weight: 600;
+}
+
+.reflect-prompts,
+.reflect-history {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.reflect-prompt .btn {
+  align-self: flex-start;
+}
+
+.reflect-question {
+  font-size: var(--fs-h3);
+  font-weight: 800;
+}
+
+.reflect-history ul {
+  display: flex;
+  flex-direction: column;
+}
+
+.reflect-history li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--s-3) 0;
+  border-top: 1px solid var(--line);
+}
+
+.m-spans.is-three {
+  grid-template-columns: repeat(3, 1fr);
+}

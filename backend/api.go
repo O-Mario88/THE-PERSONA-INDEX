@@ -206,6 +206,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/questions/today", s.TodayQuestions)
 	mux.HandleFunc("GET /api/editions/{date}", s.Edition)
 	mux.HandleFunc("GET /api/regional", s.Regional)
+	mux.HandleFunc("GET /api/growing", s.GrowingTogether)
 	mux.HandleFunc("POST /api/device", s.IssueDevice)
 	mux.HandleFunc("POST /api/votes", s.CastVote)
 	mux.HandleFunc("POST /api/ratings", s.RateCard)

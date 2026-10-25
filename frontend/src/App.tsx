@@ -21,6 +21,7 @@ import { PrivacyLine, RestScreen, Upcoming } from './Sittings'
 import { Mirror } from './Mirror'
 import { KeptScreen } from './Kept'
 import { NotebookScreen } from './NotebookScreen'
+import { ReflectGuide } from './ReflectGuide'
 import { pruneNotebook } from './notebook'
 import { PracticeScreen } from './Practice'
 import { InstallInvite } from './pwa/InstallInvite'
@@ -726,9 +727,14 @@ function App() {
 
           {tab === 'kept' && <KeptScreen today={date} mild={!intimacyOn(prefs)} onBack={() => setTab(back)} />}
 
-          {tab === 'notebook' && <NotebookScreen mild={!intimacyOn(prefs)} today={date} />}
+          {tab === 'notebook' && (
+            <>
+              <ReflectGuide today={date} questions={[...morningQs, ...eveningQs]} />
+              <NotebookScreen mild={!intimacyOn(prefs)} today={date} />
+            </>
+          )}
 
-          {tab === 'circle' && <CircleScreen onOpenMirror={() => setTab('mirror')} />}
+          {tab === 'circle' && <CircleScreen onOpenMirror={() => setTab('mirror')} today={date} questions={[...morningQs, ...eveningQs]} />}
 
           {tab === 'account' && (
             <AccountScreen

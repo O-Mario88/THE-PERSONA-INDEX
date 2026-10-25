@@ -516,7 +516,9 @@ svg {
 
 .chip-toggle[aria-pressed='true'],
 .pill-toggle[aria-pressed='true'],
-.chip[aria-pressed='true'] {
+.chip[aria-pressed='true'],
+.chip-toggle[aria-pressed='true']:hover:not(:disabled),
+.chip[aria-pressed='true']:hover:not(:disabled) {
   background: var(--lime);
   color: var(--on-lime);
   font-weight: 700;
@@ -812,4 +814,18 @@ label.field input:focus {
     transition-duration: 0ms !important;
     animation-duration: 0ms !important;
   }
+}
+
+/* A chip row with its words in front: "Circle", "How you know them". */
+.chips.labelled {
+  align-items: center;
+}
+
+.chips-label {
+  flex-basis: 100%;
+  color: var(--muted);
+  font-size: var(--fs-tiny);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }

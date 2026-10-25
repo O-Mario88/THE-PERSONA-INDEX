@@ -63,7 +63,27 @@ export type Plan = Stamp & {
 export type Name = Stamp & { kind: 'name'; week: string; suggested: string; name: string }
 export type Practised = Stamp & { kind: 'practice'; date: string; practice: string }
 
-export type NotebookEntry = KeptCard | GoodThings | Sentence | Plan | Name | Practised
+// A reflection the person typed on the Reflect page (Edwin, 2026-10-25),
+// kept with what it was about, and brought back later.
+export type ReflectionArea = 'work' | 'school' | 'family' | 'culture' | 'social' | 'health' | 'money' | 'self'
+export type ReflectionGroup = 'learnt' | 'strength' | 'grow'
+export type ReflectionSource = 'answers' | 'week' | 'circle'
+export type ReflectionPeriod = 'day' | 'week' | 'month'
+export type Reflection = Stamp & {
+  kind: 'reflection'
+  id: string
+  date: string
+  period: ReflectionPeriod
+  area: ReflectionArea
+  group: ReflectionGroup
+  source: ReflectionSource
+  about: string
+  question: string
+  answer: string
+  followsUp?: string // the id of the earlier reflection this answers
+}
+
+export type NotebookEntry = KeptCard | GoodThings | Sentence | Plan | Name | Practised | Reflection
 
 const keyOf = (e: NotebookEntry): string => {
   switch (e.kind) {
@@ -79,6 +99,8 @@ const keyOf = (e: NotebookEntry): string => {
       return `${PREFIX}name.${e.week}`
     case 'practice':
       return `${PREFIX}practice.${e.date}.${e.practice}`
+    case 'reflection':
+      return `${PREFIX}reflection.${e.id}`
   }
 }
 
@@ -102,6 +124,14 @@ function all<T extends NotebookEntry>(kind: T['kind']): T[] {
     const v = read<T>(k, kind)
     return v ? [v] : []
   })
+}
+
+// Reflections, newest first.
+export const reflections = () => all<Reflection>('reflection').sort((a, b) => b.date.localeCompare(a.date) || b.at - a.at)
+
+export function keepReflection(r: Omit<Reflection, 'kind' | 'at'>) {
+  const answer = r.answer.trim()
+  if (answer) write({ ...r, answer, kind: 'reflection', at: 0 })
 }
 
 // Kept cards.
