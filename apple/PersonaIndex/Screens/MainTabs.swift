@@ -15,7 +15,7 @@ struct MainTabs: View {
                 ReflectView()
             }
             Tab("Connect", systemImage: "person.2", value: .connect) {
-                LaterView(title: "Your circle", lead: "Friends see you in ways you don’t.", arrives: "Your circle arrives with sign-in, in a later build.")
+                ConnectView()
             }
             Tab("Insights", systemImage: "chart.bar", value: .insights) {
                 InsightsView()

@@ -29,6 +29,7 @@ public struct VoteKeys: Sendable {
 /// kept in the Keychain; asked for again only when the server forgets it.
 public actor APIClient {
     public static let deviceKey = "pi.device.v1"
+    public static let accountKey = "pi.account.v1"
 
     private let base: URL
     private let session: URLSession
@@ -57,6 +58,10 @@ public actor APIClient {
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         guard (200..<300).contains(status) else {
             let code = (try? JSONDecoder().decode([String: String].self, from: data))?["error"] ?? "unavailable"
+            // The server ended this session (signed out elsewhere, or deleted).
+            if status == 401, code == "signed_out" || code == "no_account", headers["Authorization"]?.hasPrefix("Account ") == true {
+                secrets.set(nil, forKey: Self.accountKey)
+            }
             throw APIError(status: status, code: code)
         }
         return try JSONDecoder().decode(T.self, from: data)
@@ -103,6 +108,44 @@ public actor APIClient {
         } catch let error as APIError where error.status == 404 {
             return try await today()
         }
+    }
+
+    // MARK: Signing in and the circle
+
+    public var isSignedIn: Bool { secrets.string(forKey: Self.accountKey) != nil }
+
+    private var accountHeader: [String: String] {
+        secrets.string(forKey: Self.accountKey).map { ["Authorization": "Account \($0)"] } ?? [:]
+    }
+
+    /// Sends a 6-digit code; returns "email" or "phone".
+    public func sendCode(to address: String) async throws -> String {
+        struct Sent: Decodable { let kind: String }
+        let sent: Sent = try await request("/api/auth/code", method: "POST", body: try JSONEncoder().encode(["address": address]))
+        return sent.kind
+    }
+
+    /// Checks the code, keeps the account token and the account's device pass,
+    /// and brings this device's answers along (voterId).
+    public func verifyCode(address: String, code: String, device: String) async throws -> AccountView {
+        struct SignedIn: Decodable { let account: AccountView; let accountToken: String; let deviceToken: String }
+        let body = ["address": address, "code": code, "voterId": secrets.string(forKey: Self.deviceKey) ?? "", "device": device]
+        let s: SignedIn = try await request("/api/auth/verify", method: "POST", body: try JSONEncoder().encode(body))
+        secrets.set(s.accountToken, forKey: Self.accountKey)
+        secrets.set(s.deviceToken, forKey: Self.deviceKey)
+        return s.account
+    }
+
+    public func signOut() { secrets.set(nil, forKey: Self.accountKey) }
+
+    public func circle() async throws -> CircleView {
+        try await request("/api/circle", headers: accountHeader)
+    }
+
+    /// Today's anonymous totals: answers so far, and each question's split
+    /// once enough people have answered.
+    public func growing(_ date: String) async throws -> Growing {
+        try await request("/api/growing", query: ["date": date])
     }
 
     // MARK: The mirror

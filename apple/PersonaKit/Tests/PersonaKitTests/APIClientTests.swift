@@ -43,7 +43,7 @@ struct APIClientTests {
         return APIClient(base: URL(string: "http://test.local")!, session: URLSession(configuration: config), store: store)
     }
 
-    private static func json(_ s: String) -> Data { Data(s.utf8) }
+    static func json(_ s: String) -> Data { Data(s.utf8) }
 
     @Test("asks for a device pass once and keeps it")
     func devicePassOnce() async throws {
