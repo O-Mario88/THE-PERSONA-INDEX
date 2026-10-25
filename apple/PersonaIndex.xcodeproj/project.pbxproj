@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		0A2359BBB052B72766B70DEA /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 637CF8C1CA555604D0445CD5 /* AppModel.swift */; };
+		180BA927900C8DB708B45017 /* ReflectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F09A5454739BE97B969D5F31 /* ReflectView.swift */; };
 		2B79CDCDC6E41ED0F1DFB900 /* PersonaKit in Frameworks */ = {isa = PBXBuildFile; productRef = EF3AD5D0AC460371D67BCA0C /* PersonaKit */; };
 		428EA353940BB8242CB6575C /* MainTabs.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC5CA5B943743B90359E4D1F /* MainTabs.swift */; };
 		7087F80F9323837D05BAE3AE /* Figtree-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = BAE1F592572E4AE98093ADC0 /* Figtree-Regular.ttf */; };
@@ -45,6 +46,7 @@
 		DDE6E0628DDA64A022D9C66F /* Figtree-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Figtree-SemiBold.ttf"; sourceTree = "<group>"; };
 		E032E74F1B1AAE667A76BAE1 /* SittingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SittingView.swift; sourceTree = "<group>"; };
 		EA239524B566D637BB3D057E /* InsightsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsView.swift; sourceTree = "<group>"; };
+		F09A5454739BE97B969D5F31 /* ReflectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReflectView.swift; sourceTree = "<group>"; };
 		FA036B80EF8AA5CA608780C2 /* PersonaKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = PersonaKit; path = PersonaKit; sourceTree = SOURCE_ROOT; };
 		FB80FF3432A0E2875A63DB05 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -131,6 +133,7 @@
 			children = (
 				EA239524B566D637BB3D057E /* InsightsView.swift */,
 				DC5CA5B943743B90359E4D1F /* MainTabs.swift */,
+				F09A5454739BE97B969D5F31 /* ReflectView.swift */,
 				E032E74F1B1AAE667A76BAE1 /* SittingView.swift */,
 				C1FFBAB58ADFFB5DE259DCD2 /* TodayView.swift */,
 				D978FEB9E326C63E6D93F817 /* WelcomeView.swift */,
@@ -237,6 +240,7 @@
 				A07C2FDC7062F5CBD55B1FA8 /* InsightsView.swift in Sources */,
 				428EA353940BB8242CB6575C /* MainTabs.swift in Sources */,
 				79D7E26BD8BDEFEC5A1F0774 /* PersonaIndexApp.swift in Sources */,
+				180BA927900C8DB708B45017 /* ReflectView.swift in Sources */,
 				98F97464C9A38DE6BCF6302E /* SittingView.swift in Sources */,
 				F8CA8287A6239627147721D5 /* TodayView.swift in Sources */,
 				D4E9841C7AFCCBA8104898DC /* Tokens.swift in Sources */,

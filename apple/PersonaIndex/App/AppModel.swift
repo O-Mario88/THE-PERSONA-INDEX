@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import OSLog
 import PersonaKit
 
 /// The app's state: today's set from the server, what this phone answered,
@@ -94,6 +95,33 @@ final class AppModel {
         return Date()
     }
 
+    // MARK: Reflect
+
+    private(set) var reflections: [ReflectionEntry] = []
+
+    private var reflectionStore: ReflectionStore { ReflectionStore(store: defaults) }
+
+    func loadReflections() { reflections = reflectionStore.all() }
+
+    /// Today's answers with the option chosen, for what went well and where to grow.
+    var answeredToday: [(Question, Option)] {
+        guard let set else { return [] }
+        return (set.questions + (set.evening ?? [])).compactMap { q in
+            guard let id = choices[q.id], let o = q.options.first(where: { $0.id == id }) else { return nil }
+            return (q, o)
+        }
+    }
+
+    /// Keeps a typed reflection on the device, with today's date.
+    func saveReflection(_ prompt: ReflectionPrompt, answer: String, period: ReflectionPeriod) {
+        let words = answer.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !words.isEmpty else { return }
+        let id = prompt.followsUp.map { "follow-\($0)~\(date)" } ?? "\(date)-\(period.rawValue)-\(prompt.id)"
+        reflectionStore.save(ReflectionEntry(id: id, date: date, period: period, area: prompt.area, kind: prompt.kind,
+                                             source: prompt.source, about: prompt.about, question: prompt.question, answer: words))
+        loadReflections()
+    }
+
     // MARK: The mirror
 
     /// This phone's week, from the server.
@@ -108,6 +136,9 @@ final class AppModel {
         if set == nil { load = .loading }
         do {
             let set = try await api.day(date)
+            #if DEBUG
+            Logger(subsystem: "com.personaindex.app", category: "answers").debug("loaded \(set.date, privacy: .public)")
+            #endif
             choices = Dictionary(uniqueKeysWithValues: (set.questions + (set.evening ?? [])).compactMap { q in
                 defaults.string(forKey: Keys.choice + q.id).map { (q.id, $0) }
             })
@@ -120,6 +151,9 @@ final class AppModel {
 
     /// Keeps the answer on the phone, then sends it.
     func answer(_ question: Question, with option: Option, in sitting: Sitting) async {
+        #if DEBUG
+        Logger(subsystem: "com.personaindex.app", category: "answers").debug("answered \(question.id, privacy: .public) with \(option.id, privacy: .public)")
+        #endif
         choices[question.id] = option.id
         defaults.set(option.id, forKey: Keys.choice + question.id)
         defaults.set(sitting.rawValue, forKey: Keys.unsent + question.id)

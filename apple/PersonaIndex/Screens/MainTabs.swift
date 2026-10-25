@@ -12,7 +12,7 @@ struct MainTabs: View {
                 TodayView()
             }
             Tab("Reflect", systemImage: "doc.text", value: .reflect) {
-                LaterView(title: "Reflect", lead: "Your notebook: cards you kept, good things, Sunday lines and plans.", arrives: "Your notebook arrives in the next build.")
+                ReflectView()
             }
             Tab("Connect", systemImage: "person.2", value: .connect) {
                 LaterView(title: "Your circle", lead: "Friends see you in ways you don’t.", arrives: "Your circle arrives with sign-in, in a later build.")

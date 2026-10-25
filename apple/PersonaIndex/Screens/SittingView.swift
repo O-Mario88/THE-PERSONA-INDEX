@@ -86,6 +86,9 @@ private struct QuestionScreen: View {
     let isLast: Bool
     let onNext: () -> Void
     @Environment(AppModel.self) private var model
+    /// When the question appeared. A tap in the first moment is a touch left
+    /// over from the screen before (a quick double tap on "Next"), never an answer.
+    @State private var shownAt = Date()
 
     var body: some View {
         let chosen = model.choice(for: question)
@@ -94,14 +97,12 @@ private struct QuestionScreen: View {
             Text(question.prompt).font(.figtree(32, .heavy, relativeTo: .largeTitle)).fixedSize(horizontal: false, vertical: true)
                 .padding(.bottom, Space.s2)
             if let chosen, let option = question.options.first(where: { $0.id == chosen }) {
-                AnswerCard(question: question, option: option)
-                Button(isLast ? "Close the sitting" : "Next question") { onNext() }
-                    .buttonStyle(PrimaryButtonStyle())
-                    .padding(.top, Space.s2)
+                AnswerCard(question: question, option: option, nextLabel: isLast ? "Close the sitting" : "Next question", onNext: onNext)
             } else {
                 VStack(spacing: Space.s3) {
                     ForEach(question.options) { option in
                         OptionRow(label: option.label) {
+                            guard Date().timeIntervalSince(shownAt) > 0.5 else { return }
                             Task { await model.answer(question, with: option, in: sitting) }
                         }
                     }
@@ -109,6 +110,7 @@ private struct QuestionScreen: View {
                 Text("What you usually do, not what you wish you did.").font(.pSmall).foregroundStyle(Palette.muted)
             }
         }
+        .onAppear { shownAt = Date() }
     }
 }
 
@@ -117,6 +119,15 @@ private struct QuestionScreen: View {
 private struct AnswerCard: View {
     let question: Question
     let option: Option
+    let nextLabel: String
+    let onNext: () -> Void
+
+    /// Straight under the card, so the next question is one tap away (Edwin, 2026-10-25).
+    private var next: some View {
+        Button(nextLabel, action: onNext)
+            .buttonStyle(PrimaryButtonStyle())
+            .accessibilityIdentifier("next-question")
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.s4) {
@@ -142,6 +153,7 @@ private struct AnswerCard: View {
                         .font(.figtree(16, .bold))
                 }
                 .card(stroke: Palette.lineStrong)
+                next
             } else if let insight = option.insight {
                 let parts = Reveal.split(insight.reveal)
                 HStack(alignment: .top, spacing: Space.s4) {
@@ -161,11 +173,15 @@ private struct AnswerCard: View {
                 }
                 .card()
 
+                next
+
                 VStack(alignment: .leading, spacing: Space.s2) {
                     Text("Something you could try").font(.pH3)
                     Text(insight.step).foregroundStyle(Palette.text2)
                 }
                 .card(fill: Palette.surface2, stroke: .clear)
+            } else {
+                next
             }
         }
     }
