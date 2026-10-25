@@ -278,7 +278,7 @@ function problemText(p: PhraseProblem): string {
   }
 }
 
-function Restore({ onCancel }: { onCancel: () => void }) {
+export function Restore({ onCancel }: { onCancel: () => void }) {
   const [text, setText] = useState('')
   const [problem, setProblem] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)

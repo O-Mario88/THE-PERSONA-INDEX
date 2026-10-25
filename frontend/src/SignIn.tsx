@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Icon } from './ui/icons'
+import { Restore } from './Backup'
 import { ApiError } from './api'
 import { patchAccount, sendCode, signInMethods, signInWithID, verifyCode, type AccountView, type SignInMethods } from './social'
 
@@ -33,7 +34,9 @@ export function SignInSheet({
   onNotNow,
   overlay,
   card,
+  page,
 }: {
+  page?: { label: string; title: string; lead: string; tiles?: { date: string; tint?: string }[] } // the full login page (M20)
   overlay?: boolean // full screen over the close, as in the design (M04)
   card?: { area: string; line: string } // the sitting's first card, shown above the sheet
   title?: string
@@ -49,6 +52,8 @@ export function SignInSheet({
   const [handle, setHandle] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [via, setVia] = useState<'email' | 'phone' | 'whatsapp'>('email')
+  const [restoring, setRestoring] = useState(false)
 
   useEffect(() => {
     let live = true
@@ -231,6 +236,116 @@ export function SignInSheet({
       <p className="muted small center signin-keep">We keep a display name, a handle and your encrypted Notebook. Nothing else.</p>
     </section>
   )
+  if (page && step.at === 'start') {
+    const both = methods?.email && methods.phone
+    const kind = methods && !methods.email ? (via === 'email' ? 'phone' : via) : methods && !methods.phone ? 'email' : via
+    const tabs: { id: 'email' | 'phone' | 'whatsapp'; name: string }[] = [
+      { id: 'email', name: 'Email' },
+      { id: 'phone', name: 'Phone' },
+      { id: 'whatsapp', name: 'WhatsApp' },
+    ]
+    return (
+      <section className="signin-page" aria-labelledby="signin-title">
+        <header className="signin-hero">
+          <p className="signin-brand">
+            <span className="signin-mark" aria-hidden="true">
+              P
+            </span>
+            The Persona Index
+          </p>
+          <div className="signin-hero-words">
+            <p className="signin-hero-label">{page.label}</p>
+            <h2 id="signin-title">{page.title}</h2>
+            <p className="signin-hero-lead">{page.lead}</p>
+          </div>
+          {page.tiles && (
+            <ol className="m-week-tiles signin-tiles" aria-hidden="true">
+              {page.tiles.map((t) => (
+                <li key={t.date} style={t.tint ? { background: t.tint } : undefined} />
+              ))}
+            </ol>
+          )}
+        </header>
+        <div className="signin-page-body">
+          {restoring ? (
+            <div className="signin-restore">
+              <h3 className="title serif">Your 12-word recovery phrase</h3>
+              <Restore onCancel={() => setRestoring(false)} />
+            </div>
+          ) : (
+            <>
+              {!methods && <p className="muted small">One moment…</p>}
+              {none && <p className="notice">{ERRORS.sign_in_unavailable}</p>}
+              {(methods?.google || methods?.apple) && (
+                <div className="signin-providers">
+                  {methods?.google && (
+                    <button type="button" className="signin-provider is-dark" disabled={busy} onClick={() => provider('google')}>
+                      <Icon name="plus-circle" size={18} />
+                      Continue with Google
+                    </button>
+                  )}
+                  {methods?.apple && (
+                    <button type="button" className="signin-provider" disabled={busy} onClick={() => provider('apple')}>
+                      <Icon name="apple" size={18} />
+                      Continue with Apple
+                    </button>
+                  )}
+                </div>
+              )}
+              {codes && (
+                <>
+                  {(methods.google || methods.apple) && (
+                    <p className="signin-or">
+                      <span>or get a code</span>
+                    </p>
+                  )}
+                  <form className="signin-code signin-code-page" onSubmit={send}>
+                    {both && (
+                      <div className="signin-tabs" role="group" aria-label="Send the code by">
+                        {tabs.map((t) => (
+                          <button key={t.id} type="button" className="signin-tab" aria-pressed={via === t.id} onClick={() => setVia(t.id)}>
+                            {t.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <label htmlFor="signin-address" className="signin-field-label">
+                      {kind === 'email' ? 'Email address' : kind === 'whatsapp' ? 'WhatsApp number, with its country code' : 'Phone number, with its country code'}
+                    </label>
+                    <input
+                      id="signin-address"
+                      className="signin-field"
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      placeholder={kind === 'email' ? 'ama@example.com' : '+256 …'}
+                      autoComplete={kind === 'email' ? 'email' : 'tel'}
+                      inputMode={kind === 'email' ? 'email' : 'tel'}
+                    />
+                    <button type="submit" className="signin-send" disabled={busy || !address.trim()}>
+                      Send my 6-digit code
+                    </button>
+                  </form>
+                </>
+              )}
+              {error && (
+                <p className="notice" role="alert">
+                  {error}
+                </p>
+              )}
+            </>
+          )}
+          <div className="signin-page-foot">
+            {!restoring && (
+              <button type="button" className="link-button signin-lost" onClick={() => setRestoring(true)}>
+                Lost access? Use your 12-word recovery phrase
+              </button>
+            )}
+            <p>Signing in syncs your encrypted Notebook to this device. We keep a display name, a handle and that bundle — nothing else.</p>
+          </div>
+        </div>
+      </section>
+    )
+  }
   if (!overlay) return sheet
   return (
     <div className="signin-overlay">

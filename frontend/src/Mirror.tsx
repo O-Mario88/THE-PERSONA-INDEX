@@ -1382,18 +1382,24 @@ function OutsideMirrorSection({ m, onCircle }: { m: MirrorData; onCircle?: () =>
     const rows = Array.from({ length: o.need }, (_, i) => i < o.friends)
     return (
       <div className="m-card outside-locked">
-        <p className="strong">
-          <Icon name="lock" size={16} /> Opens when {o.need} friends have answered
-        </p>
+        <div className="outside-head">
+          <span className="outside-lock" aria-hidden="true">
+            <Icon name="lock" size={20} />
+          </span>
+          <p className="outside-opens">Opens when {o.need} friends have answered</p>
+        </div>
         <ul className="outside-count" aria-label={`${o.friends} of ${o.need} friends have answered`}>
           {rows.map((done, i) => (
-            <li key={i} className="row-between">
-              <span>{done ? 'A friend' : i === o.friends ? 'One more friend' : 'Another friend'}</span>
+            <li key={i} className={done ? 'is-done' : 'is-open'}>
+              <span className="outside-dot" aria-hidden="true">
+                {done && <Icon name="check" size={14} />}
+              </span>
+              <span className="outside-who">{done ? 'A friend' : o.need - o.friends === 1 ? 'One more friend' : 'A friend to invite'}</span>
               {done ? (
-                <span className="small muted">Answered</span>
+                <span className="outside-state">Answered</span>
               ) : (
                 onCircle && (
-                  <button type="button" className="link-button" onClick={onCircle}>
+                  <button type="button" className="link-button outside-state" onClick={onCircle}>
                     Invite
                   </button>
                 )
@@ -1401,10 +1407,15 @@ function OutsideMirrorSection({ m, onCircle }: { m: MirrorData; onCircle?: () =>
             </li>
           ))}
         </ul>
-        <p className="small muted">
+        <p className="outside-why">
           With two friends you could work out who said what by elimination. Three keeps every answer anonymous, by
           arithmetic, not by promise. Answers already given are held until the third friend joins.
         </p>
+        {onCircle && (
+          <button type="button" className="btn wide" onClick={onCircle}>
+            {o.need - o.friends === 1 ? 'Invite one more person' : 'Invite friends'}
+          </button>
+        )}
       </div>
     )
   }

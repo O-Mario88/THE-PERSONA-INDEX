@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { ApiError } from './api'
 import { blackOn, connectOn, pulseOn, type Prefs } from './prefs'
 import { SignInSheet } from './SignIn'
+import { weekTiles } from './Tapestry'
+import { mondayOf } from './profile'
 import { deleteAccount, getAccount, patchAccount, signOut, type AccountDetails, type LoginView } from './social'
 import { syncOff, syncOn, pullSync } from './sync'
 import { useAccount } from './useAccount'
@@ -98,7 +100,9 @@ export function AccountScreen({
   onChange,
   onOpenSettings,
   onOpenKept,
+  today,
 }: {
+  today?: string
   prefs: Prefs
   onChange: (p: Prefs) => void
   onOpenSettings: () => void
@@ -181,8 +185,21 @@ export function AccountScreen({
 
   const sessions = (me && details?.sessions) || []
   return (
-    <section className="account" aria-labelledby="account-title">
-      <header className="page-head row-between">
+    <section className={me ? 'account' : 'account signed-out'} aria-labelledby={me ? 'account-title' : 'signin-title'}>
+      {!me && (
+        <SignInSheet
+          page={{
+            label: 'Sign in, or come back',
+            title: 'Your Notebook is waiting.',
+            lead: 'No password to remember. One tap, or a 6-digit code to your email, phone or WhatsApp.',
+            ...(today ? { tiles: weekTiles(today, mondayOf(today)) } : {}),
+          }}
+          onDone={(acc) => {
+            pullSync(acc.sync).catch(() => {})
+          }}
+        />
+      )}
+      {me && <header className="page-head row-between">
         <div>
           <p className="label">Account</p>
           <h2 id="account-title" className="display">
@@ -194,18 +211,9 @@ export function AccountScreen({
             {me.sync ? 'Everything synced' : 'Notebook on this phone'} · {sessions.length || 1} device{sessions.length === 1 ? '' : 's'}
           </p>
         )}
-      </header>
+      </header>}
       <div className="two-col">
         <div className="col">
-          {!me && (
-            <SignInSheet
-              title="Keep it on every device."
-              lead="Sign in to sync your Notebook and start your circle. No password. Signed out, everything stays on this phone, as now."
-              onDone={(acc) => {
-                pullSync(acc.sync).catch(() => {})
-              }}
-            />
-          )}
           {me && (
             <>
               <section className="group" aria-labelledby="profile-title">

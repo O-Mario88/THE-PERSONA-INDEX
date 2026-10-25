@@ -709,6 +709,7 @@ function App() {
 
           {tab === 'account' && (
             <AccountScreen
+              today={date}
               prefs={prefs}
               onChange={changePrefs}
               onOpenSettings={() => open('settings')}

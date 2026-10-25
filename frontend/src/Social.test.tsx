@@ -96,6 +96,32 @@ describe('signing in', () => {
     expect(patch.auth).toBe('Account s1.k.new.sig')
   })
 
+  it('the login page sends a code by email, phone or WhatsApp, and offers the 12 words for lost access', async () => {
+    routes = (c) => {
+      if (c.url === '/api/auth/methods') return json(200, { email: true, phone: true, google: false, apple: false })
+      if (c.url === '/api/auth/code') return json(202, { status: 'sent', kind: 'phone' })
+    }
+    render(<SignInSheet page={{ label: 'Sign in, or come back', title: 'Your Notebook is waiting.', lead: 'No password.' }} onDone={() => {}} />)
+    expect(screen.getByRole('heading', { name: 'Your Notebook is waiting.' })).toBeInTheDocument()
+    expect(await screen.findByLabelText('Email address')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Continue with/ })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'WhatsApp' }))
+    expect(screen.getByRole('button', { name: 'WhatsApp' })).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.change(screen.getByLabelText('WhatsApp number, with its country code'), { target: { value: '+256700000000' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Send my 6-digit code' }))
+    expect(await screen.findByText('Check your messages')).toBeInTheDocument()
+    expect(calls.find((c) => c.url === '/api/auth/code')!.body).toMatchObject({ address: '+256700000000' })
+  })
+
+  it('lost access on the login page opens the recovery phrase', async () => {
+    routes = (c) => (c.url === '/api/auth/methods' ? json(200, { email: true, phone: false, google: false, apple: false }) : undefined)
+    render(<SignInSheet page={{ label: 'Sign in', title: 'Your Notebook is waiting.', lead: 'No password.' }} onDone={() => {}} />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Lost access? Use your 12-word recovery phrase' }))
+    expect(screen.getByLabelText('Your 12 words')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(await screen.findByLabelText('Email address')).toBeInTheDocument()
+  })
+
   it('a signed-in phone whose pass is gone takes the account’s, never an anonymous one', async () => {
     signedInAs()
     routes = (c) => (c.url === '/api/account/device' ? json(200, { token: 'v2.k.account.sig' }) : undefined)

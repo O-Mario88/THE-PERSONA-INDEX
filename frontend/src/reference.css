@@ -3132,3 +3132,313 @@
   font-size: 15px;
   font-weight: 600;
 }
+
+/* M16: the Outside Mirror before three friends have answered. */
+.m-card.outside-locked {
+  display: grid;
+  gap: 14px;
+  padding: 20px;
+  border-radius: 20px;
+  background: var(--surface, #fff);
+  box-shadow: var(--card-shadow);
+}
+.outside-head { display: flex; align-items: center; gap: 14px; }
+.outside-lock {
+  width: 48px; height: 48px; flex: none; border-radius: 999px;
+  display: grid; place-items: center; background: var(--soft-fill); color: var(--ink);
+}
+.outside-opens { margin: 0; font-size: 13px; line-height: 1.4; color: var(--ink-muted); }
+.outside-locked .outside-count { gap: 0; margin: 0; padding-bottom: 12px; border-bottom: 1px solid var(--hair); }
+.outside-count li { display: flex; align-items: center; gap: 12px; min-height: 38px; }
+.outside-dot {
+  width: 26px; height: 26px; flex: none; border-radius: 999px;
+  display: grid; place-items: center; background: var(--deep-2); color: #fff;
+}
+.outside-count li.is-open .outside-dot { background: transparent; border: 1.5px dashed var(--ink-muted); opacity: 0.6; }
+.outside-who { flex: 1; font-size: 15px; color: var(--ink); }
+.outside-count li.is-open .outside-who { color: var(--ink-muted); }
+.outside-state { font-size: 12px; font-weight: 600; color: var(--ink-link); }
+.outside-count .link-button.outside-state { padding: 0; min-height: 38px; font-size: 12px; }
+.outside-why { margin: 0; font-size: 14px; line-height: 1.6; color: var(--ink); }
+.outside-locked .btn.wide { min-height: 52px; border-radius: 14px; background: var(--deep); color: #fff; font-size: 15px; font-weight: 600; }
+.app.is-dark .m-card.outside-locked { background: #141414; }
+.app.is-dark .outside-locked .btn.wide { background: #fff; color: #000; }
+
+/* ---- M20: the login page (Account, signed out) ---- */
+.page.page-account:has(.account.signed-out) {
+  padding-top: 0;
+}
+.signin-page {
+  display: flex;
+  flex-direction: column;
+  margin: 0 calc(-1 * max(24px, env(safe-area-inset-left, 0px)));
+}
+.signin-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: var(--top) 24px 30px;
+  background: var(--deep);
+  color: #f4eee3;
+  box-shadow: 0 18px 40px rgb(31 58 51 / 0.2);
+}
+.app.is-dark .signin-hero {
+  background: #141414;
+  box-shadow: none;
+}
+.signin-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  margin: 0;
+  font-family: var(--display);
+  font-size: 18px;
+  font-weight: 500;
+}
+.signin-mark {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: #f4eee3;
+  color: var(--deep);
+  font-family: var(--display);
+  font-size: 19px;
+  font-weight: 600;
+}
+.signin-hero-words {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.signin-hero-words p,
+.signin-hero-words h2 {
+  margin: 0;
+}
+.signin-hero-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--deep-ink);
+}
+.signin-hero h2 {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 34px;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: #f4eee3;
+}
+.signin-hero-lead {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--deep-sub);
+}
+.signin-tiles li {
+  width: 22px;
+  height: 22px;
+}
+.signin-page-body {
+  display: flex;
+  flex-direction: column;
+  padding: 28px 24px 0;
+}
+.signin-providers {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.signin-provider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 52px;
+  border: 0;
+  border-radius: 14px;
+  background: #fff;
+  color: var(--ink);
+  font: 600 15px/1.2 Inter, system-ui, sans-serif;
+  box-shadow: var(--card-shadow);
+  cursor: pointer;
+}
+.signin-provider.is-dark {
+  background: var(--deep);
+  color: #f4eee3;
+  box-shadow: none;
+}
+.signin-or {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 24px 0 0;
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+.signin-or::before,
+.signin-or::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--hair);
+}
+.signin-code.signin-code-page {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+}
+.signin-tabs {
+  display: flex;
+  gap: 8px;
+}
+.signin-tab {
+  min-height: 36px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ink);
+  font: 600 13px/1 Inter, system-ui, sans-serif;
+  box-shadow: inset 0 0 0 1px var(--hair);
+  cursor: pointer;
+}
+.signin-tab[aria-pressed='true'] {
+  background: var(--deep);
+  color: #fff;
+  box-shadow: none;
+}
+.signin-field-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+.signin-field {
+  width: 100%;
+  min-height: 54px;
+  box-sizing: border-box;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 14px;
+  background: #fff;
+  color: var(--ink);
+  font: 400 16px/1.2 Inter, system-ui, sans-serif;
+  box-shadow: var(--card-shadow), inset 0 0 0 1px var(--hair);
+}
+.signin-send {
+  min-height: 52px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--soft-fill);
+  color: var(--ink);
+  font: 600 15px/1.2 Inter, system-ui, sans-serif;
+  cursor: pointer;
+}
+.signin-send:not(:disabled) {
+  background: var(--deep);
+  color: #fff;
+}
+.signin-page-foot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 0 30px;
+  text-align: center;
+}
+.signin-page-foot p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink-muted);
+}
+.link-button.signin-lost {
+  min-height: 44px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-link);
+}
+.signin-restore {
+  display: grid;
+  gap: 12px;
+}
+.app.is-dark .signin-provider:not(.is-dark),
+.app.is-dark .signin-tab:not([aria-pressed='true']),
+.app.is-dark .signin-field {
+  background: #141414;
+  color: #fff;
+}
+.app.is-dark .signin-provider.is-dark,
+.app.is-dark .signin-tab[aria-pressed='true'],
+.app.is-dark .signin-send:not(:disabled) {
+  background: #fff;
+  color: #000;
+}
+.app.is-dark .signin-send {
+  background: #262626;
+  color: #fff;
+}
+@media (min-width: 900px) {
+  .signin-page {
+    margin: 0;
+    border-radius: 24px;
+    overflow: hidden;
+  }
+}
+.signin-restore form {
+  display: grid;
+  gap: 12px;
+}
+.signin-restore form > p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink-muted);
+}
+.signin-restore .field {
+  display: grid;
+  gap: 8px;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+.signin-restore textarea {
+  min-height: 96px;
+  padding: 14px 18px;
+  border: 0;
+  border-radius: 14px;
+  background: #fff;
+  color: var(--ink);
+  font: 400 16px/1.5 Inter, system-ui, sans-serif;
+  box-shadow: var(--card-shadow), inset 0 0 0 1px var(--hair);
+  resize: vertical;
+}
+.signin-restore .confirm {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.signin-restore .confirm .option[type='submit'] {
+  flex: 1;
+  justify-content: center;
+  text-align: center;
+  min-height: 52px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--deep);
+  color: #fff;
+  font: 600 15px/1.2 Inter, system-ui, sans-serif;
+  box-shadow: none;
+}
+.app.is-dark .signin-restore textarea {
+  background: #141414;
+  color: #fff;
+}
+.app.is-dark .signin-restore .confirm .option[type='submit'] {
+  background: #fff;
+  color: #000;
+}
