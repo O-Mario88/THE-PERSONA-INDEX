@@ -496,16 +496,6 @@ function Traits({ m }: { m: MirrorData }) {
               <li key={t.trait}>
                 <div className="m-trait-head">
                   <span className="m-trait-name">{text.name}</span>
-                  <span className="m-trait-score">
-                    {t.score}
-                    {t.change !== undefined && t.change !== 0 && (
-                      <span className="m-change">
-                        {' '}
-                        {t.change > 0 ? '+' : '−'}
-                        {Math.abs(t.change)} vs last week
-                      </span>
-                    )}
-                  </span>
                 </div>
                 <span className="m-scale" aria-hidden="true">
                   <span className="m-scale-mid" />
@@ -643,7 +633,7 @@ function Moved({ m }: { m: MirrorData }) {
             <span className="m-trait-name">{TRAITS[t.trait].name}</span>
             <span className="m-minis">
               {t.history.map((h) => (
-                <span key={h.week} className="m-mini" aria-label={`Week ${h.week}: ${h.score ?? 'no read'}`}>
+                <span key={h.week} className="m-mini" aria-label={h.score === undefined ? `Week ${h.week}: no read` : `Week ${h.week}`}>
                   <span className={h.score === undefined ? 'm-mini-track none' : 'm-mini-track'} aria-hidden="true">
                     <span style={{ height: `${h.score ?? 0}%` }} />
                   </span>
@@ -1260,16 +1250,6 @@ function PeriodTraits({ p }: { p: PeriodMirror }) {
             <li key={t.trait}>
               <div className="m-trait-head">
                 <span className="m-trait-name">{text.name}</span>
-                <span className="m-trait-score">
-                  {t.score}
-                  {t.change !== undefined && t.change !== 0 && (
-                    <span className="m-change">
-                      {' '}
-                      {t.change > 0 ? '+' : '−'}
-                      {Math.abs(t.change)} since your first weeks
-                    </span>
-                  )}
-                </span>
               </div>
               <span className="m-scale" aria-hidden="true">
                 <span className="m-scale-mid" />
@@ -1297,7 +1277,7 @@ function PeriodMoved({ p }: { p: PeriodMirror }) {
           <span className="m-trait-name">{TRAITS[t.trait].name}</span>
           <span className="m-minis">
             {t.weekly.map((h) => (
-              <span key={h.week} className="m-mini" aria-label={`Week ${h.week}: ${h.score ?? 'no read'}`}>
+              <span key={h.week} className="m-mini" aria-label={h.score === undefined ? `Week ${h.week}: no read` : `Week ${h.week}`}>
                 <span className={h.score === undefined ? 'm-mini-track none' : 'm-mini-track'} aria-hidden="true">
                   <span style={{ height: `${h.score ?? 0}%` }} />
                 </span>

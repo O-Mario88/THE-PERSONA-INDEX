@@ -12,7 +12,6 @@ import {
   MAX_WORDS,
   OWN_WORDS,
   PRIVATE_OPTION,
-  rateCard,
   recalledChoice,
   recalledDraft,
   recalledInstead,
@@ -21,7 +20,6 @@ import {
   rememberAnswered,
   rememberChoice,
   rememberInstead,
-  rememberRated,
   rememberSkip,
   rememberWords,
   saveDraft,
@@ -40,7 +38,7 @@ import { PulseAsk, PulsePill } from './PulseViews'
 import { hasPulse } from './pulse'
 import { Helpline } from './Helpline'
 import { moveFor, startMove } from './moves'
-import { focusPlan, keepCard, keptCard, makePlan, noteVerdict, unkeepCard, type Plan } from './notebook'
+import { focusPlan, keepCard, keptCard, makePlan, unkeepCard, type Plan } from './notebook'
 import { inOrder } from './order'
 import { loadPeople, namesLine } from './people'
 import { PeopleEditor } from './PeopleEditor'
@@ -50,6 +48,8 @@ import { isNeed, NEED_PHRASES, type Need } from './needs'
 import { splitReveal } from './reveal'
 import { onOtherTab } from './storage'
 import { themeName, themeStyle, themeVars } from './themes'
+import { keepCardText } from './insights'
+import { rateAnswer } from './rating'
 import {
   CRISIS_LINE,
   focusTouch,
@@ -159,6 +159,7 @@ export function QuestionCard({
   function accepted(o: Option, typed?: string) {
     rememberChoice(question.id, o.id)
     recordAnswer(question, o.id, date)
+    keepCardText(question, o.id, date)
     if (typed) keep(typed, o.label)
     setChoice(o.id)
   }
@@ -540,7 +541,7 @@ function Answer({
 // point to people"): no reading, no step, no rating. A plain word, the
 // people the person keeps on this phone (or a way to add them) and where to
 // find a helpline, every time.
-function HeavyCard() {
+export function HeavyCard() {
   const [people, setPeople] = useState(loadPeople)
   const [adding, setAdding] = useState(false)
   const names = people?.names ?? []
@@ -901,15 +902,7 @@ function Rate({
   function tap(v: Verdict) {
     setVerdict(v)
     onVerdict(v)
-    rememberRated(question.id, v)
-    recordVerdict(question.id, v)
-    noteVerdict(question.id, v)
-    // A regional question's tap stays on this phone with its answer.
-    if (question.local) return
-    const sent = question.care === 'intimate' ? PRIVATE_OPTION : option.id
-    rateCard(question.id, sent, v).catch(() => {
-      // a lost tap is not worth bothering anyone about
-    })
+    rateAnswer(question, option.id, v)
   }
   if (verdict === 'not_me') return <Closer question={question} option={option} date={date} wordsDays={wordsDays} />
   if (verdict) return <p className="muted rate-thanks">{VERDICT_REPLIES[verdict]}</p>

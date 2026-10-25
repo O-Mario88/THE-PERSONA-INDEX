@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { recalledChoice, type Question } from './api'
 import { ShareSheet } from './ShareCard'
 import type { CircleView } from './social'
+import { count } from './pulse'
 
 // Growing Together (Edwin, 2026-10-25): real, anonymous totals that show a
 // person they are not the only one going through something. A question's
@@ -48,9 +49,9 @@ export function Growing({ date, questions, circle }: { date: string; questions: 
       if (!pick || !option) return []
       const same = pick.optionId === mine
       // The small-group guard folds an answer fewer than five chose: no number.
-      const share = pick.few ? 'A few people' : `${Math.round(pick.percent)}% of ${s.totalVotes} people`
+      const share = pick.few ? 'A few people' : `${count(pick.count)} of ${count(s.totalVotes)} people`
       const text = same ? `${share} chose “${option.label}” too. You’re not the only one.` : `${share} chose “${option.label}”.`
-      const card = pick.few ? `A few chose “${option.label}”` : `${Math.round(pick.percent)}% chose “${option.label}”`
+      const card = pick.few ? `A few chose “${option.label}”` : `${count(pick.count)} chose “${option.label}”`
       return [{ id: q.id, prompt: q.prompt, text, same, card }]
     })
 
