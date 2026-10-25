@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ApiError } from './api'
+import { noteConnection } from './connection'
+import { localDate } from './day'
 import type { ReflectionGroup } from './notebook'
 import {
   accountToken,
@@ -78,7 +80,10 @@ export function ShareComposer({ kind, text: initial, onDone, onCancel }: Compose
     if (!ready || !friends) return
     const notes = { ...(why.trim() ? { why: why.trim() } : {}), ...(tryThis.trim() ? { try: tryThis.trim() } : {}) }
     postShare({ kind, theme, text: words, ...notes, to }).then(
-      () => setSentTo(friends.filter((f) => to.includes(f.id)).map((f) => f.name)),
+      () => {
+        noteConnection('share', localDate())
+        setSentTo(friends.filter((f) => to.includes(f.id)).map((f) => f.name))
+      },
       (e) => setError(e instanceof ApiError && e.code === 'no_links' ? 'Links can’t be shared here. Say it in your own words.' : 'That didn’t go through. Nothing was shared.'),
     )
   }
@@ -204,7 +209,10 @@ export function ReachOutPicker({ kind, onDone, onCancel }: PickerProps) {
   function send() {
     if (!to || !phrase) return
     sendReachOut(to, kind, phrase).then(
-      () => setSentTo(friends?.find((f) => f.id === to)?.name ?? ''),
+      () => {
+        noteConnection(kind, localDate())
+        setSentTo(friends?.find((f) => f.id === to)?.name ?? '')
+      },
       (e) => setError(e instanceof ApiError && e.code === 'already_reached_out' ? 'You’ve sent them one of these today.' : 'That didn’t go through.'),
     )
   }

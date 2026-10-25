@@ -1566,6 +1566,22 @@ describe('the weekly mirror', () => {
     expect(page).not.toHaveTextContent('%')
   })
 
+  // Connect 3.0: the person's own moves towards friends, from this phone.
+  it('shows the week in connection from this phone only, never who', async () => {
+    localStorage.setItem(
+      'pi.connection.v1',
+      JSON.stringify([
+        { d: '2026-10-13', k: 'nod' },
+        { d: '2026-10-15', k: 'share' },
+        { d: '2026-10-02', k: 'nod' },
+      ]),
+    )
+    const fetchMock = await openMirror()
+    const section = await screen.findByRole('region', { name: /Your week in connection/ })
+    expect(section).toHaveTextContent('This week you sent a quiet nod and shared one thing that helped.')
+    for (const [, init] of fetchMock.mock.calls) expect(String(init?.body ?? '')).not.toContain('nod')
+  })
+
   it('shows what was written in their own words that week, from this phone only, keeping intimacy answers private', async () => {
     const keep = (id: string, w: object) => localStorage.setItem(`pi.words.${id}`, JSON.stringify({ questionId: id, ...w }))
     keep('q-a', { date: '2026-10-13', prompt: 'Payday arrives. What goes first?', theme: 'money', words: 'Rent, then my mum.', closest: 'Bills' })

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { noteConnection } from './connection'
 import { ApiError, recalledChoice, type Question } from './api'
 import { shareable, useNods } from './friendsData'
 import {
@@ -158,6 +159,7 @@ export function NodPicker({ date, title }: { date: string; title?: string }) {
     if (to === null || card === null) return
     sendNod(to, card, date).then(
       () => {
+        noteConnection('nod', date)
         setSent([...sent, to])
         setTo(null)
         setCard(null)

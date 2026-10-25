@@ -58,6 +58,9 @@ describe('sharing an insight', () => {
     const sent = calls.find((c) => c.url === '/api/shares' && c.method === 'POST')!.body
     expect(sent).toEqual({ kind: 'helped', theme: 'managing-stress', text: 'A short walk before replying helped me think more clearly.', to: ['f-kofi'] })
     expect(await screen.findByRole('status')).toHaveTextContent('Shared with Kofi. You can withdraw it any time in Connect.')
+    // A move towards a friend, noted on this phone for the Mirror: the kind and the day, never who.
+    expect(localStorage.getItem('pi.connection.v1')).toMatch(/"k":"share"/)
+    expect(localStorage.getItem('pi.connection.v1')).not.toContain('kofi')
   })
 
   it('offers only friends who are not muted', async () => {
