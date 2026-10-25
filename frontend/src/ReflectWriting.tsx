@@ -30,10 +30,11 @@ type Props = {
   thought: Thought | null
   thread?: string // continuing this thread
   onAnother?: () => void
-  onSaved: () => void
+  onSaved: () => void // something was kept: lists elsewhere can refresh
+  onDone?: () => void // the person is finished with this question
 }
 
-export function ReflectWriting({ today, period, free, thought, thread, onAnother, onSaved }: Props) {
+export function ReflectWriting({ today, period, free, thought, thread, onAnother, onSaved, onDone }: Props) {
   const space: DraftSpace = free ? 'free' : period
   const [text, setText] = useState(() => draftOf(space))
   const [check, setCheck] = useState<IntentionCheck | null>(null)
@@ -78,7 +79,10 @@ export function ReflectWriting({ today, period, free, thought, thread, onAnother
   function save() {
     if (thought?.intention && check) checkIntention(thought.intention, check, today)
     if (!text.trim()) {
-      if (check) onSaved()
+      if (check) {
+        onSaved()
+        onDone?.()
+      }
       return
     }
     const rid = `${today}-${free ? 'free' : period}-${Date.now().toString(36)}`
@@ -103,7 +107,17 @@ export function ReflectWriting({ today, period, free, thought, thread, onAnother
     onSaved()
   }
 
-  if (saved) return <AfterSaving id={saved} today={today} onDone={() => setSaved(null)} />
+  if (saved)
+    return (
+      <AfterSaving
+        id={saved}
+        today={today}
+        onDone={() => {
+          setSaved(null)
+          onDone?.()
+        }}
+      />
+    )
 
   return (
     <section className={free ? 'reflect-write is-free' : 'reflect-write'} aria-labelledby={`${id}-label`}>
@@ -121,7 +135,7 @@ export function ReflectWriting({ today, period, free, thought, thread, onAnother
         </div>
         {!free && onAnother && (
           <button type="button" className="icon-button" aria-label="Another question" onClick={onAnother}>
-            <Icon name="scan" size={18} />
+            <Icon name="refresh" size={18} />
           </button>
         )}
       </div>

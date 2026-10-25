@@ -167,6 +167,10 @@ export function keepIntention(i: { id: string; date: string; text: string; from:
   if (text) write({ ...i, text, kind: 'intention', checkOn: addDays(i.date, INTENTION_CHECK_DAYS), at: 0 })
 }
 
+export function removeIntention(id: string) {
+  drop(`${PREFIX}intention.${id}`)
+}
+
 export function checkIntention(id: string, check: IntentionCheck, today: string) {
   const i = all<Intention>('intention').find((x) => x.id === id)
   if (i) write({ ...i, check, checkedOn: today })

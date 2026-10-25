@@ -38,7 +38,7 @@ export function ReflectSide({ today, consider, onFollowUp, onOpenThread, onRefle
           </p>
           {revisit && <p className="muted small">{dayMonth(memory.reflection.date)} · {memory.reflection.question}</p>}
           <p className="muted">Have you noticed anything changing?</p>
-          <div className="closer-actions">
+          <div className="reflect-actions">
             <button type="button" className="btn small outline" onClick={() => onFollowUp(memory.reflection)}>
               Write a follow-up <Icon name="arrow" size={14} />
             </button>

@@ -964,20 +964,37 @@ describe('reflect', () => {
   // Edwin, 2026-10-25: write down how the day went, what you learnt, what is
   // going well and where you could grow, typed in your own words, kept and
   // used later.
-  it('asks reflection questions from the day’s answers, keeps the answers on the phone and never sends them', async () => {
+  it('writes first: one question for today, saved on the phone and never sent', async () => {
     localStorage.setItem('pi.choice.q-dishes', 'right-away')
     const fetchMock = stubApi({ today: { status: 200, body: today } })
     render(<App />)
     fireEvent.click(await screen.findByRole('button', { name: 'Reflect' }))
-    const guide = await screen.findByRole('region', { name: 'How did it go?' })
-    expect(within(guide).getByRole('group', { name: 'What you learnt about yourself' })).toHaveTextContent('You like a clear sink before you relax.')
-    const box = within(guide).getByRole('textbox', { name: 'Where did you see this in yourself today?' })
-    fireEvent.change(box, { target: { value: 'Tidied the kitchen before I could sit down.' } })
-    fireEvent.click(within(guide).getByRole('button', { name: 'Keep this' }))
-    expect(await within(guide).findByRole('list', { name: 'Your reflections' })).toHaveTextContent('Tidied the kitchen before I could sit down.')
+    const page = await screen.findByRole('region', { name: 'Reflect' })
+    const write = within(page).getByRole('region', { name: 'Where did you feel most like yourself today?' })
+    expect(write).toHaveTextContent('A question for any day')
+    expect(write).toHaveTextContent('Your writing is private, end-to-end encrypted and synced only to your devices.')
+    fireEvent.change(within(write).getByRole('textbox', { name: 'Where did you feel most like yourself today?' }), { target: { value: 'Tidying the kitchen with music on.' } })
+    expect(write).toHaveTextContent('6 words')
+    fireEvent.click(within(write).getByRole('button', { name: /Save reflection/ }))
+    expect(await within(page).findByRole('status')).toHaveTextContent('Saved')
     expect(Object.keys(localStorage).some((k) => k.startsWith('pi.nb.reflection.'))).toBe(true)
-    for (const [, init] of fetchMock.mock.calls) expect(String(init?.body ?? '')).not.toContain('Tidied the kitchen')
+    for (const [, init] of fetchMock.mock.calls) expect(String(init?.body ?? '')).not.toContain('Tidying the kitchen')
+    // What the day's answer said, with where it came from.
+    const noticed = within(page).getByRole('region', { name: 'What you’ve noticed' })
+    expect(noticed).toHaveTextContent('You like a clear sink before you relax.')
+    expect(noticed).toHaveTextContent('From your answers')
   })
+
+  it('writes freely, with no question at all', async () => {
+    stubApi({ today: { status: 200, body: today } })
+    render(<App />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Reflect' }))
+    const page = await screen.findByRole('region', { name: 'Reflect' })
+    fireEvent.click(within(page).getByRole('button', { name: /Write freely/ }))
+    expect(within(page).getByRole('textbox', { name: 'Write freely' })).toBeInTheDocument()
+    expect(within(page).queryByText('A thought for you')).not.toBeInTheDocument()
+  })
+
 })
 
 describe('growing together', () => {
@@ -2173,7 +2190,7 @@ describe('accessibility', () => {
     await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('heading', { level: 2, name: 'Settings' })))
     fireEvent.click(screen.getByRole('button', { name: '← Back' }))
     fireEvent.click(screen.getByRole('button', { name: 'Reflect' }))
-    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('heading', { level: 2, name: 'How did it go?' })))
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('heading', { level: 2, name: 'Reflect' })))
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1)
   })
 })

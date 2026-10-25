@@ -1,9 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fakeServer } from './fakeVault'
-import { keepReflection, reflections } from './notebook'
+import { checkIntention, keepIntention, keepReflection, reflections } from './notebook'
+import { dismissMemory, saveDraft, setReflectSettings } from './journal'
+import { entryFor } from './registry'
 import { keys, load, saveJSON } from './storage'
 import { syncOn } from './sync'
-import { keysFor, keysFromSync, newPhrase, restoreFromSync, restoreWriting, startBackups, syncSecret, turnOn, unseal, vaultState, writingWaits } from './vault'
+import { keysFor, keysFromSync, newPhrase, restoreFromSync, restoreWriting, snapshot, startBackups, syncSecret, turnOn, unseal, vaultState, writingWaits } from './vault'
 
 // Reflect (Edwin, 2026-10-25: "Reflections always end-to-end"): written
 // reflections travel only in the journal copy, sealed under keys from the 12
@@ -96,5 +98,29 @@ describe('reflections, end to end', () => {
     expect(reflections()[0]?.answer).toBe(WRITING)
     expect(writingWaits()).toBe(false)
     expect(vaultState()).toMatchObject({ phrase, sync: secret })
+  })
+})
+
+// Every store Reflect writes holds the person's writing, or what they did
+// with it, so every one must be "journal": carried only in the end-to-end
+// copy. A new store that forgets this fails here.
+describe('every Reflect store is journal-only', () => {
+  beforeEach(() => localStorage.clear())
+
+  it('walks what Reflect writes and finds nothing outside the journal copy', () => {
+    const MARK = 'a private line only I should see'
+    keepReflection({ id: 'r1', date: '2026-10-25', period: 'day', area: 'self', group: 'learnt', source: 'answers', about: '', question: 'q', answer: MARK, free: true, thread: 'r0' })
+    keepIntention({ id: 'i1', date: '2026-10-18', text: MARK, from: 'r1' })
+    checkIntention('i1', 'helped', '2026-10-25')
+    for (const space of ['day', 'week', 'month', 'free'] as const) saveDraft(space, MARK)
+    dismissMemory('r1')
+    setReflectSettings({ threadsInMirror: true, reflectionsInNoticed: true })
+
+    const written = Object.keys(localStorage)
+    expect(written.length).toBeGreaterThanOrEqual(8)
+    for (const k of written) expect(entryFor(k)?.backup, k).toBe('journal')
+    const main = snapshot(true, 'main')
+    expect(Object.keys(main.entries)).toEqual([])
+    expect(JSON.stringify(snapshot(true, 'journal').entries)).toContain(MARK)
   })
 })

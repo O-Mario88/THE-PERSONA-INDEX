@@ -1,5 +1,5 @@
 import { reflections, type Reflection, type ReflectionPeriod } from './notebook'
-import { daysBetween, load, loadJSON, remove, save, saveJSON } from './storage'
+import { daysBetween, keys, load, loadJSON, remove, save, saveJSON } from './storage'
 
 // The quiet machinery of Reflect, all on this phone and all under keys
 // the registry marks "journal", so the person's writing travels only in the
@@ -18,6 +18,12 @@ export const draftOf = (space: DraftSpace) => load(`${DRAFT}${space}`) ?? ''
 export function saveDraft(space: DraftSpace, text: string) {
   if (text.trim()) save(`${DRAFT}${space}`, text)
   else remove(`${DRAFT}${space}`)
+}
+
+// clearReflect removes the drafts, the memories put away and the Reflect
+// choices, when the person deletes their reflections.
+export function clearReflect() {
+  for (const k of keys('pi.reflect.')) remove(k)
 }
 
 const dismissed = (): string[] => {
@@ -57,6 +63,15 @@ export function threadsOf(): { root: Reflection; entries: Reflection[] }[] {
     const entries = threadOf(id)
     return entries[0]?.id === id ? [{ root: entries[0], entries }] : []
   })
+}
+
+// The threads kept going in a span, for the longer Mirrors: only when the
+// person let threads in.
+export function threadsBetween(from: string, to: string) {
+  if (!reflectSettings().threadsInMirror) return []
+  return threadsOf()
+    .map((t) => ({ root: t.root, count: t.entries.filter((e) => e.date >= from && e.date <= to).length }))
+    .filter((t) => t.count > 0)
 }
 
 const MEMORY_MIN_DAYS = 5
