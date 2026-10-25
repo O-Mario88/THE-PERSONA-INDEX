@@ -249,6 +249,40 @@ export const answerTogether = (id: string, optionId: string) =>
   call<{ mine: string; theirs: string }>(`/api/together/${encodeURIComponent(id)}`, json('POST', { optionId }))
 export const leaveTogether = (id: string) => call<void>(`/api/together/${encodeURIComponent(id)}`, json('DELETE'))
 
+// ---- Closer Together (Connect 3.0, backend/closer.go) ----
+// Three permissions, each asked for on its own: a shared insight goes only
+// to the friends picked and can be withdrawn; Common Ground shows only what
+// two friends share, once both opted in; a reach-out is one fixed phrase to
+// one friend, and the sender is never told whether it was seen.
+
+export type ShareKind = 'helped' | 'win'
+export type ThemeOption = { id: string; label: string }
+export type ShareView = { id: string; from: FriendView; kind: ShareKind; theme: string; text: string; why?: string; try?: string; date: string }
+export type SentShareView = { id: string; kind: ShareKind; theme: string; text: string; why?: string; try?: string; date: string; to: string[] }
+export type SharesView = { themes: ThemeOption[]; received: ShareView[]; sent: SentShareView[] }
+export type NewShare = { kind: ShareKind; theme: string; text: string; why?: string; try?: string; to: string[] }
+
+export type CommonTag = { id: string; label: string; value: string; explore: string }
+export type CommonPair = { friend: FriendView; shared: string[]; headline: string; explore: string }
+export type CommonView = { tags: CommonTag[]; mine: string[]; nextChange?: string; optedIn: string[]; pairs: CommonPair[] }
+
+export type ReachKind = 'support' | 'celebrate'
+export type ReachOutView = { id: string; from: FriendView; kind: ReachKind; text: string; date: string }
+export type ReachOutsView = { phrases: Record<ReachKind, ThemeOption[]>; received: ReachOutView[] }
+
+export const SHARE_TEXT_MIN = 10
+export const SHARE_TEXT_MAX = 280
+
+export const getShares = () => call<SharesView>('/api/shares')
+export const postShare = (s: NewShare) => call<{ id: string }>('/api/shares', json('POST', s))
+export const withdrawShare = (id: string) => call<void>(`/api/shares/${encodeURIComponent(id)}`, json('DELETE'))
+export const getCommon = () => call<CommonView>('/api/common')
+export const putCommon = (tags: string[]) => call<void>('/api/common', json('PUT', { tags }))
+export const setCommonFriend = (id: string, on: boolean) => call<void>(`/api/common/friends/${encodeURIComponent(id)}`, json('PUT', { on }))
+export const getReachOuts = () => call<ReachOutsView>('/api/reachouts')
+export const sendReachOut = (to: string, kind: ReachKind, phrase: string) => call<{ status: string }>('/api/reachouts', json('POST', { to, kind, phrase }))
+export const putAwayReachOut = (id: string) => call<void>(`/api/reachouts/${encodeURIComponent(id)}`, json('DELETE'))
+
 // "Ama", "@ama" from a name; initials for an avatar.
 export function initial(name: string): string {
   return (name.trim()[0] ?? '?').toUpperCase()

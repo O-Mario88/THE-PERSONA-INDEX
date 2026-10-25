@@ -978,6 +978,21 @@ describe('reflect', () => {
     expect(Object.keys(localStorage).some((k) => k.startsWith('pi.nb.reflection.'))).toBe(true)
     for (const [, init] of fetchMock.mock.calls) expect(String(init?.body ?? '')).not.toContain('Tidied the kitchen')
   })
+
+  it('once signed in, offers to share what helped after a reflection, and sends nothing until asked', async () => {
+    localStorage.setItem('pi.choice.q-dishes', 'right-away')
+    localStorage.setItem('pi.account.v1', 's1.k.sess.sig')
+    localStorage.setItem('pi.account.me', JSON.stringify({ id: 'acc-ama', name: 'Ama', handle: 'ama', suggest: true, connect: true, sync: false }))
+    const fetchMock = stubApi({ today: { status: 200, body: today } })
+    render(<App />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Reflect' }))
+    const guide = await screen.findByRole('region', { name: 'How did it go?' })
+    fireEvent.change(within(guide).getByRole('textbox', { name: 'Where did you see this in yourself today?' }), { target: { value: 'Tidied the kitchen before I could sit down.' } })
+    fireEvent.click(within(guide).getByRole('button', { name: 'Keep this' }))
+    const offer = await within(guide).findByRole('group', { name: 'Closer together' })
+    expect(within(offer).getByRole('button', { name: 'Share what helped' })).toBeInTheDocument()
+    for (const [, init] of fetchMock.mock.calls) expect(String(init?.body ?? '')).not.toContain('Tidied the kitchen')
+  })
 })
 
 describe('growing together', () => {
