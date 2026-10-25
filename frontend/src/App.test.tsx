@@ -1013,6 +1013,30 @@ describe('growing together', () => {
     expect(within(growing).getByRole('button', { name: /Share this/ })).toBeInTheDocument()
     expect(growing).not.toHaveTextContent(/\b(likes?|comments?|followers?|rank)\b/i)
   })
+
+  it('says “a few” with no number when fewer than five chose the same', async () => {
+    localStorage.setItem('pi.choice.q-dishes', 'end-of-day')
+    stubApi({
+      today: { status: 200, body: today },
+      social: (url) =>
+        url === '/api/growing?date=2026-10-12'
+          ? {
+              status: 200,
+              body: {
+                date: '2026-10-12',
+                answers: 33,
+                min: 20,
+                questions: [{ questionId: 'q-dishes', totalVotes: 30, options: [{ optionId: 'right-away', count: 30, percent: 100 }, { optionId: 'end-of-day', count: 0, percent: 0, few: true }] }],
+              },
+            }
+          : undefined,
+    })
+    render(<App />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Connect' }))
+    const growing = await screen.findByRole('region', { name: 'Growing together' })
+    expect(await within(growing).findByText(/A few people chose “At the end of the day” too/)).toBeInTheDocument()
+    expect(growing).not.toHaveTextContent('0%')
+  })
 })
 
 describe('the evening, from 5 pm', () => {

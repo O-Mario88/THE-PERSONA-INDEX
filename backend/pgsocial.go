@@ -278,8 +278,12 @@ func (p *pgStore) Befriend(ctx context.Context, a, b, tagA, tagB, today string) 
 }
 
 func (p *pgStore) Unfriend(ctx context.Context, a, b string) error {
-	_, err := p.pool.Exec(ctx, `DELETE FROM friendships WHERE (a = $1 AND b = $2) OR (a = $2 AND b = $1)`, a, b)
-	return err
+	return pgx.BeginFunc(ctx, p.pool, func(tx pgx.Tx) error {
+		if _, err := tx.Exec(ctx, `DELETE FROM friendships WHERE (a = $1 AND b = $2) OR (a = $2 AND b = $1)`, a, b); err != nil {
+			return err
+		}
+		return forgetPair(ctx, tx, a, b)
+	})
 }
 
 func (p *pgStore) SetFriend(ctx context.Context, a, b, tag string, muted bool) error {
@@ -609,6 +613,7 @@ func (p *pgStore) DeleteSocialBefore(ctx context.Context, date string, now time.
 		{`DELETE FROM friend_mirror_inputs WHERE monday < $1`, []any{mondayOf(date)}},
 		{`DELETE FROM friend_prompt_log WHERE asked_on < $1`, []any{date}},
 		{`DELETE FROM nods WHERE nodded_on < $1`, []any{date}},
+		{`DELETE FROM reach_outs WHERE reached_on < $1`, []any{date}},
 		{`DELETE FROM together WHERE expires <= $1`, []any{now.Add(-togetherShownAfter)}},
 		{`DELETE FROM login_codes WHERE expires <= $1`, []any{now}},
 		{`DELETE FROM circle_rooms WHERE expires <= $1`, []any{now}},
