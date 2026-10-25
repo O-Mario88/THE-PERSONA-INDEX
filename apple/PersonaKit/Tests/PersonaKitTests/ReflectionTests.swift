@@ -16,15 +16,17 @@ struct ReflectionTests {
          Option(id: "b", label: "I cook", insight: Insight(reveal: "Feeding people is how you care. You start early.", otherSide: nil, step: "Ask someone to help.", needStep: nil))),
     ]
 
-    @Test("finds what's going well and where to grow in the person's own answers, by area")
+    @Test("finds what the person learnt and where to grow in their own answers, by area")
     func fromAnswers() {
         let items = Reflection.items(period: .day, answered: answered, mirror: nil)
-        let well = items.filter { $0.kind == .strength }
+        let learnt = items.filter { $0.kind == .learnt }
         let grow = items.filter { $0.kind == .grow }
-        #expect(well.map(\.area) == [.work, .family])
-        #expect(well.first?.text == "You show up for people at work.")
-        #expect(well.allSatisfy { $0.source == .yourAnswers })
+        #expect(learnt.map(\.area) == [.work, .family])
+        #expect(learnt.first?.text == "You show up for people at work.")
+        #expect(learnt.allSatisfy { $0.source == .yourAnswers })
         #expect(grow.map(\.text) == ["Staying every time can leave little for you."])
+        // A strength comes only from an earned read, never from one answer.
+        #expect(!items.contains { $0.kind == .strength })
     }
 
     @Test("adds the week's clearest reads, kindly worded, for a week or a month")
@@ -40,7 +42,7 @@ struct ReflectionTests {
     func questions() {
         let items = Reflection.items(period: .week, answered: answered, mirror: nil)
         let prompts = Reflection.prompts(for: items, period: .week, past: [], today: "2026-10-25")
-        #expect(prompts.first?.question == "Where did this show up for you this week?")
+        #expect(prompts.first?.question == "Where did you see this in yourself this week?")
         #expect(prompts.contains { $0.question == "What is one small thing you could do differently next week?" })
         #expect(prompts.allSatisfy { !$0.question.contains("%") })
     }
@@ -61,7 +63,7 @@ struct ReflectionTests {
     @Test("keeps every answer on the device with its date, newest first")
     func store() {
         let store = ReflectionStore(store: MemoryStore())
-        store.save(ReflectionEntry(id: "a", date: "2026-10-20", period: .day, area: .self, kind: .strength, source: .yourAnswers,
+        store.save(ReflectionEntry(id: "a", date: "2026-10-20", period: .day, area: .self, kind: .learnt, source: .yourAnswers,
                                    about: "x", question: "q", answer: "first"))
         store.save(ReflectionEntry(id: "b", date: "2026-10-24", period: .week, area: .work, kind: .grow, source: .yourWeek,
                                    about: "y", question: "q", answer: "second"))
@@ -72,5 +74,12 @@ struct ReflectionTests {
     @Test("places every theme in one of the eight areas", arguments: Array(Themes.all.keys))
     func areas(theme: String) {
         #expect(LifeArea.of(theme: theme) != nil)
+    }
+
+    @Test("asks after a strength in the person's own week")
+    func strengthQuestion() throws {
+        let items = Reflection.items(period: .week, answered: [], mirror: try mirror())
+        let prompts = Reflection.prompts(for: items, period: .week, past: [], today: "2026-10-25")
+        #expect(prompts.contains { $0.kind == .strength && $0.question == "Where did this strength help you this week?" })
     }
 }
