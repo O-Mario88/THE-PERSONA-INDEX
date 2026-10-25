@@ -45,8 +45,10 @@ public actor APIClient {
 
     // MARK: Requests
 
-    private func request<T: Decodable>(_ path: String, method: String = "GET", headers: [String: String] = [:], body: Data? = nil) async throws -> T {
-        var req = URLRequest(url: base.appending(path: path))
+    private func request<T: Decodable>(_ path: String, method: String = "GET", query: [String: String] = [:], headers: [String: String] = [:], body: Data? = nil) async throws -> T {
+        var url = base.appending(path: path)
+        if !query.isEmpty { url.append(queryItems: query.map { URLQueryItem(name: $0.key, value: $0.value) }) }
+        var req = URLRequest(url: url)
         req.httpMethod = method
         req.httpBody = body
         for (k, v) in headers { req.setValue(v, forHTTPHeaderField: k) }
@@ -100,6 +102,15 @@ public actor APIClient {
             return try await request("/api/editions/\(date)")
         } catch let error as APIError where error.status == 404 {
             return try await today()
+        }
+    }
+
+    // MARK: The mirror
+
+    /// This phone's week, sent with its pass.
+    public func mirror(_ date: String) async throws -> WeekMirror {
+        try await withDevice { pass in
+            try await request("/api/mirror", query: ["date": date], headers: ["Authorization": "Device \(pass)"])
         }
     }
 

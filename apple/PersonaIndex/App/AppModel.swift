@@ -88,6 +88,13 @@ final class AppModel {
         return Date()
     }
 
+    // MARK: The mirror
+
+    /// This phone's week, from the server.
+    func weekMirror() async throws -> WeekMirror {
+        try await api.mirror(date)
+    }
+
     // MARK: Loading and answering
 
     func refresh() async {

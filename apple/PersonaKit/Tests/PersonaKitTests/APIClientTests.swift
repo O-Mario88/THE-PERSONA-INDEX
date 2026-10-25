@@ -124,4 +124,22 @@ struct APIClientTests {
             _ = try await api.today()
         }
     }
+
+    @Test("asks for the mirror with the device pass")
+    func sendsPass() async throws {
+        let store = MemoryStore()
+        store.set("pass-1", forKey: APIClient.deviceKey)
+        let config = URLSessionConfiguration.ephemeral
+        config.protocolClasses = [StubProtocol.self]
+        StubProtocol.seen = []
+        let body = try Data(contentsOf: try #require(Bundle.module.url(forResource: "mirror", withExtension: "json", subdirectory: "Fixtures")))
+        StubProtocol.handler = { _ in (200, body) }
+        let api = APIClient(base: URL(string: "http://test.local")!, session: URLSession(configuration: config), store: store)
+        let m = try await api.mirror("2026-10-18")
+        #expect(m.week == 42)
+        let sent = try #require(StubProtocol.seen.first)
+        #expect(sent.url?.path == "/api/mirror")
+        #expect(sent.url?.query == "date=2026-10-18")
+        #expect(sent.value(forHTTPHeaderField: "Authorization") == "Device pass-1")
+    }
 }

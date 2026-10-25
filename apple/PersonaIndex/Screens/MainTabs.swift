@@ -18,7 +18,7 @@ struct MainTabs: View {
                 LaterView(title: "Your circle", lead: "Friends see you in ways you don’t.", arrives: "Your circle arrives with sign-in, in a later build.")
             }
             Tab("Insights", systemImage: "chart.bar", value: .insights) {
-                LaterView(title: "Insights", lead: "Your Sunday Mirror: your week, what you reached for and what to try next.", arrives: "The mirror arrives in the next build.")
+                InsightsView()
             }
             Tab("You", systemImage: "person", value: .you) {
                 LaterView(title: "You", lead: "Your profile, choices and what this phone keeps.", arrives: "Settings arrive in a later build.")
