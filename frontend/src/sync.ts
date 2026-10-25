@@ -29,7 +29,7 @@ export async function syncOff(): Promise<void> {
 // pullSync runs after signing in: when the account syncs and this phone has
 // no backup of its own, it restores the account's (all but the writing),
 // then takes the account's pass back (the backup may carry an older one).
-// An account that still holds the 12 words, from before Reflect 2.0, is
+// An account that still holds the 12 words, from before the October 2026 Reflect, is
 // restored with them and then given the keys instead.
 export async function pullSync(sync: boolean): Promise<'restored' | 'none'> {
   if (!sync || vaultState()) {
@@ -46,7 +46,7 @@ export async function pullSync(sync: boolean): Promise<'restored' | 'none'> {
   return r === 'restored' ? 'restored' : 'none'
 }
 
-// upgradeSync replaces the 12 words an account kept before Reflect 2.0 with
+// upgradeSync replaces the 12 words an account kept before the October 2026 Reflect with
 // the main copy's keys, once, from a phone that has the words.
 export async function upgradeSync(sync: boolean): Promise<void> {
   const st = vaultState()

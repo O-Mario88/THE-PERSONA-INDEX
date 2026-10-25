@@ -665,7 +665,7 @@ type syncBody struct {
 	Phrase string `json:"phrase"`
 }
 
-// phrasePattern is what easy sync keeps: since Reflect 2.0 the main backup
+// phrasePattern is what easy sync keeps: since the October 2026 Reflect the main backup
 // copy's two keys ("sk2.<vault key>.<seal key>"), never the 12 words, so the
 // journal copy stays end-to-end; the 12 words are still taken from phones
 // made before, which swap them for the keys on their next sign-in.

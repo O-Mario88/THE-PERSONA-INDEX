@@ -468,7 +468,7 @@ func TestAddressesAndHints(t *testing.T) {
 	}
 }
 
-// Reflect 2.0 (Edwin, 2026-10-25: "Reflections always end-to-end"): easy
+// Reflect (Edwin, 2026-10-25: "Reflections always end-to-end"): easy
 // sync keeps the main backup copy's two keys, never the 12 words, so the
 // server can never open the journal copy.
 func TestSyncKeepsKeysNotTheWords(t *testing.T) {

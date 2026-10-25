@@ -34,7 +34,7 @@ const SNAPSHOT_VERSION = 1
 // several writes go in one backup.
 export const BACKUP_DELAY_MS = 20_000
 
-// Reflect 2.0 (Edwin, 2026-10-25: "Reflections always end-to-end"): a
+// Reflect (Edwin, 2026-10-25: "Reflections always end-to-end"): a
 // backup is two sealed copies. The main copy holds everything but the
 // person's writing; the journal copy holds only the writing (registry
 // backup "journal"), under keys from a separate branch of the phrase. Easy
@@ -110,7 +110,7 @@ async function deriveKeys(phrase: string): Promise<PhraseKeys> {
   const salt = utf8('persona-index vault v1')
   const bits = (info: string) => crypto.subtle.deriveBits({ name: 'HKDF', hash: 'SHA-256', salt, info: utf8(info) }, base, 256).then((b) => new Uint8Array(b))
   // The seal key's bits are the same an AES-GCM deriveKey would give, so
-  // backups made before Reflect 2.0 still open.
+  // backups made before the October 2026 Reflect still open.
   const [vaultBits, sealBits, journalVault, journalSeal] = await Promise.all([bits('vault key'), bits('seal key'), bits('journal vault key'), bits('journal seal key')])
   return {
     vaultKey: base64url(vaultBits),

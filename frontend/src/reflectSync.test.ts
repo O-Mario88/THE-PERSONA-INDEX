@@ -5,7 +5,7 @@ import { keys, load, saveJSON } from './storage'
 import { syncOn } from './sync'
 import { keysFor, keysFromSync, newPhrase, restoreFromSync, restoreWriting, startBackups, syncSecret, turnOn, unseal, vaultState, writingWaits } from './vault'
 
-// Reflect 2.0 (Edwin, 2026-10-25: "Reflections always end-to-end"): written
+// Reflect (Edwin, 2026-10-25: "Reflections always end-to-end"): written
 // reflections travel only in the journal copy, sealed under keys from the 12
 // words. Easy sync holds the main copy's keys and nothing that opens the
 // writing.
