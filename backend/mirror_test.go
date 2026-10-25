@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -692,5 +693,24 @@ func TestMirrorRetention(t *testing.T) {
 	}
 	if mirrorRetention < 35*24*time.Hour {
 		t.Fatal("the mirror reads three weeks of answers for each of the last three weeks, so it needs five weeks kept")
+	}
+}
+
+// Six answers place a read on the same 0-to-1 line as three or four: the
+// ends at the ends, the mean in the middle (Edwin, 2026-10-25: up to six).
+func TestTraitPositionWithSixAnswers(t *testing.T) {
+	weights := []int{-2, -1, 0, 0, 1, 2}
+	q := Question{ID: "six"}
+	for i, w := range weights {
+		q.Options = append(q.Options, Option{ID: fmt.Sprintf("o%d", i), Traits: map[string]int{"conscientiousness": w}})
+	}
+	for _, c := range []struct {
+		option string
+		want   float64
+	}{{"o0", 0}, {"o5", 1}, {"o2", 0.5}, {"o4", 0.75}} {
+		got, ok := traitPosition(q, c.option, "conscientiousness")
+		if !ok || math.Abs(got-c.want) > 1e-9 {
+			t.Errorf("%s: got %v (%v), want %v", c.option, got, ok, c.want)
+		}
 	}
 }

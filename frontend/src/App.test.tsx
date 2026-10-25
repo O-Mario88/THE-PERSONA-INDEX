@@ -929,6 +929,18 @@ const ring: Question = {
 }
 const sixADay: DailySet = { ...today, evening: [lunch, queue, ring], pool: [...today.questions, lunch, queue, ring] }
 
+describe('answers', () => {
+  // Edwin, 2026-10-25: a daily question can have up to six answers.
+  it('shows every answer of a question with six', async () => {
+    const six = ['a', 'b', 'c', 'd', 'e', 'f'].map((id) => ({ id, label: `Answer ${id}`, insight: { reveal: `Card ${id}. More.`, step: 'Try it.' } }))
+    const set: DailySet = { ...today, questions: [{ ...today.questions[0], options: six }, ...today.questions.slice(1)] }
+    stubApi({ today: { status: 200, body: set } })
+    render(<App />)
+    const group = await screen.findByRole('group', { name: 'When do you wash the dishes?' })
+    for (const id of ['a', 'b', 'c', 'd', 'e', 'f']) expect(within(group).getByRole('button', { name: `Answer ${id}` })).toBeInTheDocument()
+  })
+})
+
 describe('the evening, from 5 pm', () => {
   it('opens on its own at 5 pm with three new questions, and only three', async () => {
     answeredThisMorning()

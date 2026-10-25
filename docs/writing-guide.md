@@ -19,7 +19,7 @@ So the app asks, notices and reflects back, and the person finds the answer. Eve
 
 ## What the app is
 
-The app is a private companion that helps a person notice who they are and change a little, week by week. It is not a game, a survey, a feed or a chat. It never calls itself a therapist, never compares the person with anyone else and never shows a citation. Every card ends with "For self-reflection, not a diagnosis."
+The app is a private companion that helps a person notice who they are and change a little, week by week. It is not a game, a survey, a feed or a chat. It never calls itself a therapist, never ranks or scores the person against anyone else (anonymous "you're not alone" totals are the one exception, see below) and never shows a citation. Every card ends with "For self-reflection, not a diagnosis."
 
 Effects in this field are small. The app promises noticing and small shifts, never a changed life.
 
@@ -73,7 +73,7 @@ Rules:
 - Ask what the person **did in a concrete moment**, not why they are the way they are. Abstract "why" thinking feeds brooding. Concrete moments are also what the app can honestly describe.
 - **Every option must be respectable.** Duty and independence, calm and excitement, belief and unbelief are all valid answers. Labels name what you do, never which answer is the good one (no "calmly", "kindly", "a polite excuse").
 - **Include honest low options**, such as "nothing went right today". Don't design out the bad days.
-- Options run **shallow to deep** (depth 1 to 4), and the deepest must reach 3 or 4.
+- A question has **three to six options** (Edwin, 2026-10-25); a friend question has exactly four. Options run **shallow to deep** (depth 1 to 4), and the deepest must reach 3 or 4.
 - **Identity questions** (roots, faith, politics, family roles, body, money, class) need a "doesn't apply" or "I'd rather not say". Never ask which religion, party, ethnicity or nationality someone holds, and never store it.
 - **Politics** is about how you live with it, never which side you are on.
 - **Never presume** a partner, a nuclear family, a formal job with a boss and a salary, or a home that is a safe place.
@@ -184,7 +184,7 @@ The research behind this:
 | Avoid | Why |
 |---|---|
 | Trait labels, type names, anything diagnostic | Verdicts make feedback backfire and labels can become self-fulfilling |
-| Comparison with other users, averages, ranks | A documented cause of feedback backfiring |
+| Comparison with other users, averages, ranks | A documented cause of feedback backfiring. One exception (Edwin, 2026-10-25, Growing Together): anonymous totals that show a person they are not alone ("41% of people chose this too"), only once enough people have answered (the Human Pulse threshold), never about one named person, never as a rank or a score |
 | Vague or flattering insights | People accept them without their being true |
 | Scoring happiness, or telling people to chase it | Prizing happiness head-on backfires; the app serves happiness by helping people meet their needs |
 | Handing out solutions: "you should", "the answer is", "the secret is" | People act on what they find themselves; the app helps them find it (Edwin, 2026-10-24) |

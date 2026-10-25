@@ -232,6 +232,11 @@ func checkSources(fail func(string, ...any)) {
 
 // checkQuestion applies every rule one question and its cards must pass. ids
 // holds the question ids seen so far, across every bank checked together.
+const (
+	minOptions = 3
+	maxOptions = 6
+)
+
 func checkQuestion(fail func(string, ...any), q bankQuestion, ids map[string]bool) {
 	where := q.ID
 	if !idPattern.MatchString(q.ID) || len(q.ID) > 40 {
@@ -248,8 +253,10 @@ func checkQuestion(fail func(string, ...any), q bankQuestion, ids map[string]boo
 	if surveyPrompt.MatchString(q.Prompt) {
 		fail("%s: prompt reads like a survey scale", where)
 	}
-	if n := len(q.Options); n < 3 || n > 4 {
-		fail("%s: needs 3 or 4 options, has %d", where, n)
+	// Three to six answers (Edwin, 2026-10-25: "the questions can have more
+	// than 3 answer options"). Friend questions keep exactly four (friends.go).
+	if n := len(q.Options); n < minOptions || n > maxOptions {
+		fail("%s: needs %d to %d options, has %d", where, minOptions, maxOptions, n)
 	}
 
 	optIDs := map[string]bool{}
