@@ -23,6 +23,21 @@ public struct FriendView: Codable, Sendable, Hashable, Identifiable {
     public let since: String
     public let muted: Bool?
     public let active: Bool
+    public let connect: Bool? // takes nods, shares and reach-outs
+
+    public init(id: String, name: String, handle: String? = nil, tag: Tag, since: String, muted: Bool? = nil, active: Bool, connect: Bool? = true) {
+        self.id = id
+        self.name = name
+        self.handle = handle
+        self.tag = tag
+        self.since = since
+        self.muted = muted
+        self.active = active
+        self.connect = connect
+    }
+
+    /// A friend who can be sent something: not muted, and with Connect on.
+    public var reachable: Bool { muted != true && connect != false }
 }
 
 public struct CircleView: Codable, Sendable, Hashable {
@@ -38,6 +53,8 @@ public struct Growing: Codable, Sendable, Hashable {
             public let optionId: String
             public let count: Int
             public let percent: Double
+            /// The small-group guard: fewer than five chose it, so no count.
+            public let few: Bool?
         }
         public let questionId: String
         public let totalVotes: Int

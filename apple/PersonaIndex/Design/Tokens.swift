@@ -56,6 +56,10 @@ enum Palette {
     static let onNavy = Color(hex: 0xF4F7F9)
     static let onNavy2 = Color(hex: 0xC3CDD6)
     static let danger = Color(light: 0xB42318, dark: 0xFF8A7A)
+    /// Celebrate (the new Connect): a warm amber, only for sharing a win.
+    static let warm = Color(hex: 0xF6B73C)
+    static let warmInk = Color(light: 0x8A5300, dark: 0xF6B73C)
+    static let warmWash = Color(light: 0xFFF6E3, dark: 0x2A2516)
 }
 
 enum Space {

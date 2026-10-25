@@ -29,6 +29,8 @@ final class AppModel {
 
     private let api: APIClient
     private let defaults: KeyValueStore
+    /// The new Connect: shares, Common Ground, reach-outs and nods.
+    let connect: ConnectModel
 
     enum Keys {
         static let welcomed = "pi.welcomed"
@@ -40,6 +42,7 @@ final class AppModel {
     init(api: APIClient, defaults: KeyValueStore) {
         self.api = api
         self.defaults = defaults
+        self.connect = ConnectModel(api: api, defaults: defaults)
         self.welcomed = defaults.string(forKey: Keys.welcomed) == "1"
         self.name = defaults.string(forKey: Keys.name) ?? ""
     }
@@ -138,6 +141,7 @@ final class AppModel {
         guard signedIn else { circle = nil; return }
         do {
             circle = try await api.circle()
+            await connect.load(date: date)
         } catch {
             signedIn = await api.isSignedIn
         }
@@ -199,6 +203,7 @@ final class AppModel {
         #endif
         choices[question.id] = option.id
         defaults.set(option.id, forKey: Keys.choice + question.id)
+        AnswerHistory(store: defaults).record(question, optionId: option.id, date: date)
         defaults.set(sitting.rawValue, forKey: Keys.unsent + question.id)
         await send(question, optionId: option.id, sitting: sitting)
     }
