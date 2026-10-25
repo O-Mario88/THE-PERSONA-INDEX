@@ -17,6 +17,8 @@ final class AppModel {
     }
 
     private(set) var load: Load = .loading
+    /// Where the person is: a tab on iPhone, the sidebar on a Mac.
+    var section: AppSection = .today
     private(set) var choices: [String: String] = [:]
     private(set) var now = AppModel.clock()
     var welcomed: Bool {

@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		067C1F114E6F16DA187A8985 /* SelfSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = F87198315A3F42D2E528B99A /* SelfSnapshot.swift */; };
 		0A2359BBB052B72766B70DEA /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 637CF8C1CA555604D0445CD5 /* AppModel.swift */; };
 		180BA927900C8DB708B45017 /* ReflectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F09A5454739BE97B969D5F31 /* ReflectView.swift */; };
 		2B79CDCDC6E41ED0F1DFB900 /* PersonaKit in Frameworks */ = {isa = PBXBuildFile; productRef = EF3AD5D0AC460371D67BCA0C /* PersonaKit */; };
@@ -61,6 +62,7 @@
 		E7376D0AB928867A5C1C8CF3 /* ConnectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectView.swift; sourceTree = "<group>"; };
 		EA239524B566D637BB3D057E /* InsightsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsView.swift; sourceTree = "<group>"; };
 		F09A5454739BE97B969D5F31 /* ReflectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReflectView.swift; sourceTree = "<group>"; };
+		F87198315A3F42D2E528B99A /* SelfSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelfSnapshot.swift; sourceTree = "<group>"; };
 		FA036B80EF8AA5CA608780C2 /* PersonaKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = PersonaKit; path = PersonaKit; sourceTree = SOURCE_ROOT; };
 		FB80FF3432A0E2875A63DB05 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -91,6 +93,7 @@
 				637CF8C1CA555604D0445CD5 /* AppModel.swift */,
 				C19D9DC70BD8CF7701B23148 /* ConnectModel.swift */,
 				8DB7B86359BCF5B3EEA8FD8B /* PersonaIndexApp.swift */,
+				F87198315A3F42D2E528B99A /* SelfSnapshot.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -275,6 +278,7 @@
 				428EA353940BB8242CB6575C /* MainTabs.swift in Sources */,
 				79D7E26BD8BDEFEC5A1F0774 /* PersonaIndexApp.swift in Sources */,
 				180BA927900C8DB708B45017 /* ReflectView.swift in Sources */,
+				067C1F114E6F16DA187A8985 /* SelfSnapshot.swift in Sources */,
 				98F97464C9A38DE6BCF6302E /* SittingView.swift in Sources */,
 				434B6B5AB6315A79D290BDF1 /* SupportCard.swift in Sources */,
 				F8CA8287A6239627147721D5 /* TodayView.swift in Sources */,
