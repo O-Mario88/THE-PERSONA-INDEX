@@ -29,6 +29,7 @@
 		AD44C77F23F0CC1D4B2C1553 /* Figtree-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 9588A5698FE8694374502898 /* Figtree-Medium.ttf */; };
 		AF83E155C729C7691BFCAF02 /* Dictation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7372EDEC6D9D4B71C0462EFF /* Dictation.swift */; };
 		B4EFC53C6D63FBE49FB8ADD8 /* Figtree-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 8EC58F8519E3DD93027B8932 /* Figtree-ExtraBold.ttf */; };
+		BE865D2D938EE4091CE67B3D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D6E70DFE9CC59514123930D5 /* Assets.xcassets */; };
 		BF8C63B67FDF4C88B46A5496 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D978FEB9E326C63E6D93F817 /* WelcomeView.swift */; };
 		CD868504FFD61E84FD3FDDC8 /* ReflectParts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D7E35BDE335C3BA19A62164 /* ReflectParts.swift */; };
 		D08544895E541B0AED8E6A90 /* ConnectModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C19D9DC70BD8CF7701B23148 /* ConnectModel.swift */; };
@@ -62,6 +63,7 @@
 		C1FFBAB58ADFFB5DE259DCD2 /* TodayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayView.swift; sourceTree = "<group>"; };
 		CDEDBD2C2DC174469D6DBCA2 /* Tokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tokens.swift; sourceTree = "<group>"; };
 		CEB81C37CC2C0AFCDACAD5CA /* CommonGroundCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommonGroundCard.swift; sourceTree = "<group>"; };
+		D6E70DFE9CC59514123930D5 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		D978FEB9E326C63E6D93F817 /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
 		DC5CA5B943743B90359E4D1F /* MainTabs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabs.swift; sourceTree = "<group>"; };
 		DDE6E0628DDA64A022D9C66F /* Figtree-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Figtree-SemiBold.ttf"; sourceTree = "<group>"; };
@@ -163,6 +165,7 @@
 		7651C55D108189F71C8104EB /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				D6E70DFE9CC59514123930D5 /* Assets.xcassets */,
 				66F1637B0DB5A12E7EEDDCB6 /* Fonts */,
 			);
 			path = Resources;
@@ -270,6 +273,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BE865D2D938EE4091CE67B3D /* Assets.xcassets in Resources */,
 				DC9715A8218E881D21F1208B /* Figtree-Black.ttf in Resources */,
 				DD94C641717F7FD2587A2C1A /* Figtree-Bold.ttf in Resources */,
 				B4EFC53C6D63FBE49FB8ADD8 /* Figtree-ExtraBold.ttf in Resources */,
@@ -318,7 +322,7 @@
 		06222D913AF2AEC1BB2326A6 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = "";
 				CODE_SIGN_ENTITLEMENTS = PersonaIndex/PersonaIndex.entitlements;
 				CODE_SIGN_IDENTITY = "-";
 				ENABLE_PREVIEWS = YES;
@@ -408,7 +412,7 @@
 		7F8751595483C96221B46A54 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = "";
 				CODE_SIGN_ENTITLEMENTS = PersonaIndex/PersonaIndex.entitlements;
 				CODE_SIGN_IDENTITY = "-";
 				ENABLE_PREVIEWS = YES;
