@@ -43,6 +43,7 @@
 		A77E9F772E0538EF270D4B74 /* Figtree-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = BAE1F592572E4AE98093ADC0 /* Figtree-Regular.ttf */; };
 		AD44C77F23F0CC1D4B2C1553 /* Figtree-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 9588A5698FE8694374502898 /* Figtree-Medium.ttf */; };
 		AF83E155C729C7691BFCAF02 /* Dictation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7372EDEC6D9D4B71C0462EFF /* Dictation.swift */; };
+		B0162C1A6D832F31E3854BAC /* HelpedSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFE86FA155F4A97C99B93210 /* HelpedSection.swift */; };
 		B14BDA1CAA5AE068960D2C45 /* LockScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A56950EBF463510FAF8D3C7 /* LockScreen.swift */; };
 		B1E4DA417025BEAE24B575F9 /* PhraseSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BB9F50E31CB03D40F8B39A9 /* PhraseSheet.swift */; };
 		B4EFC53C6D63FBE49FB8ADD8 /* Figtree-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 8EC58F8519E3DD93027B8932 /* Figtree-ExtraBold.ttf */; };
@@ -139,6 +140,7 @@
 		E7376D0AB928867A5C1C8CF3 /* ConnectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectView.swift; sourceTree = "<group>"; };
 		E86A53B19DC9F45D4CE94BDB /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		EA239524B566D637BB3D057E /* InsightsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsView.swift; sourceTree = "<group>"; };
+		EFE86FA155F4A97C99B93210 /* HelpedSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelpedSection.swift; sourceTree = "<group>"; };
 		F09A5454739BE97B969D5F31 /* ReflectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReflectView.swift; sourceTree = "<group>"; };
 		F6BEF22EFC2BEF656C33868C /* KeepButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeepButton.swift; sourceTree = "<group>"; };
 		F87198315A3F42D2E528B99A /* SelfSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelfSnapshot.swift; sourceTree = "<group>"; };
@@ -178,6 +180,14 @@
 				6C2571C33B528F584FAD1E39 /* PersonaWidgets.swift */,
 			);
 			path = PersonaWidgets;
+			sourceTree = "<group>";
+		};
+		00B299D9420E9E4536B1941D /* Insights */ = {
+			isa = PBXGroup;
+			children = (
+				EFE86FA155F4A97C99B93210 /* HelpedSection.swift */,
+			);
+			path = Insights;
 			sourceTree = "<group>";
 		};
 		03725B9456839551BF5BB733 /* Frameworks */ = {
@@ -303,6 +313,7 @@
 				D978FEB9E326C63E6D93F817 /* WelcomeView.swift */,
 				FDF00EC06F79706885373CFA /* YouView.swift */,
 				381D68EF02406DD88A95CFE3 /* Connect */,
+				00B299D9420E9E4536B1941D /* Insights */,
 				281B990C6CA281783580012F /* Mirrors */,
 				DF34E7023AB9662BD99F7DD8 /* Reflect */,
 				C3DC2FE116C1A713EBDF8992 /* Settings */,
@@ -483,6 +494,7 @@
 				CF6FAB564EEBD29A2EF7EC27 /* DayWidgetFace.swift in Sources */,
 				AF83E155C729C7691BFCAF02 /* Dictation.swift in Sources */,
 				BBBCC28F3599C2D1EBE9EF2F /* HeavyNote.swift in Sources */,
+				B0162C1A6D832F31E3854BAC /* HelpedSection.swift in Sources */,
 				A07C2FDC7062F5CBD55B1FA8 /* InsightsView.swift in Sources */,
 				509052FE78CF24092BF82C7C /* InviteCard.swift in Sources */,
 				1C8052CEB809B03DFDCA1D20 /* KeepButton.swift in Sources */,
