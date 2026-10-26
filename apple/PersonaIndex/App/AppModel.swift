@@ -21,6 +21,8 @@ final class AppModel {
     var section: AppSection = .today
     /// On iPhone, a page to open on top of Insights (Mirrors and Saved are not tabs there).
     var insightsPage: AppSection?
+    /// Connect opens scrolled to Support & Celebrate (Insights' way in).
+    var focusSupport = false
 
     /// Goes to a section from a link, a reminder or a widget. On iPhone the
     /// Mirrors and Saved open on top of Insights, since they are not tabs.
@@ -340,6 +342,46 @@ final class AppModel {
     func unkeep(_ questionId: String) {
         Notebook(store: defaults).remove(questionId)
         reloadSaved()
+    }
+
+    // MARK: Insights Release 3
+
+    /// Your Growth's pairs, from this device's own record.
+    func growthPairs() -> [GrowthPair] {
+        _ = insightsVersion
+        _ = reflect.settings
+        return Growth.pairs(store: defaults, today: date)
+    }
+
+    /// The patterns the longer Mirrors ask about, and what was said of each.
+    func patterns() -> [NeedPattern] { Patterns.all(store: defaults, today: date) }
+    func patternCheck(_ need: String) -> PatternCheck? { Patterns.checked(need, store: defaults)?.check }
+    func checkPattern(_ need: String, _ check: PatternCheck) {
+        Patterns.check(need, check, today: date, store: defaults)
+        insightsVersion += 1
+    }
+
+    /// The suggestion to encourage someone in the Circle: only with friends,
+    /// and not once put away for the day or for good.
+    private(set) var nudgeVersion = 0
+    var showsNudge: Bool {
+        _ = nudgeVersion
+        return !(circle?.friends.isEmpty ?? true) && ConnectNudge(store: defaults).shows(today: date)
+    }
+    func nudgeNotToday() { ConnectNudge(store: defaults).notToday(date); nudgeVersion += 1 }
+    func nudgeOff() { ConnectNudge(store: defaults).turnOff(); nudgeVersion += 1 }
+
+    /// The circle, for Insights' suggestion, when Connect has not loaded it yet.
+    func loadCircleIfNeeded() async {
+        guard circle == nil else { return }
+        signedIn = await api.isSignedIn
+        guard signedIn else { return }
+        circle = try? await api.circle()
+    }
+
+    func openSupport() {
+        focusSupport = true
+        section = .connect
     }
 
     // MARK: The mirror

@@ -44,6 +44,7 @@ struct InsightsView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     VStack(alignment: .leading, spacing: Space.s5) {
                         NotAloneSection(cards: all)
+                        ConnectNudgeCard()
                         SavedSection()
                     }
                     .frame(width: 320)
@@ -52,6 +53,7 @@ struct InsightsView: View {
                 VStack(alignment: .leading, spacing: Space.s6) {
                     ForYouSection(cards: cards, month: month)
                     NotAloneSection(cards: all)
+                    ConnectNudgeCard()
                     helped
                     growth
                     SavedSection()
@@ -69,9 +71,7 @@ struct InsightsView: View {
         EmptySection(title: "What Helped", line: "This fills in as you and others report back on the small steps you try.")
     }
 
-    private var growth: some View {
-        EmptySection(title: "Your Growth", line: "This fills in over the weeks, from your own earlier and recent answers.")
-    }
+    private var growth: some View { GrowthSection() }
 }
 
 /// A way to another place: on a Mac the sidebar moves there; on iPhone the

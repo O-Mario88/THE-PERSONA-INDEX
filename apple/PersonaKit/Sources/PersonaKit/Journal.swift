@@ -249,7 +249,17 @@ public struct JournalStore: Sendable {
     public struct Settings: Codable, Sendable, Equatable {
         public var threadsInMirror = false
         public var reflectionsInNoticed = false
+        public var reflectionsInGrowth = false
         public init() {}
+
+        /// Choices saved before a newer one existed keep their values; the
+        /// missing one starts off, as on the web.
+        public init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            threadsInMirror = try c.decodeIfPresent(Bool.self, forKey: .threadsInMirror) ?? false
+            reflectionsInNoticed = try c.decodeIfPresent(Bool.self, forKey: .reflectionsInNoticed) ?? false
+            reflectionsInGrowth = try c.decodeIfPresent(Bool.self, forKey: .reflectionsInGrowth) ?? false
+        }
     }
     public var settings: Settings {
         get { store.string(forKey: "pi.reflect.settings").flatMap { try? JSONDecoder().decode(Settings.self, from: Data($0.utf8)) } ?? Settings() }
