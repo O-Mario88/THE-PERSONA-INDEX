@@ -3,7 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Option, Question } from './api'
 import { keepCardText } from './insights'
 import { Insights } from './InsightsPage'
-import { intentions } from './notebook'
+import { setReflectSettings } from './journal'
+import { intentions, keepReflection } from './notebook'
 import type { AnswerRecord } from './profile'
 import { voiceProblems } from './voice'
 
@@ -186,5 +187,52 @@ describe('the words on the page', () => {
     render(<Insights {...props} />)
     const text = document.body.textContent ?? ''
     for (const sentence of text.split(/(?<=[.!?])\s+/)) expect(voiceProblems(sentence)).toEqual([])
+  })
+})
+
+describe('Your Growth', () => {
+  function answeredOn(date: string, id: string, theme: string, prompt: string, label: string) {
+    const h = JSON.parse(localStorage.getItem('pi.history.v1') ?? '{"answers":[],"skips":[]}')
+    h.answers.push({ date, questionId: id, theme, depth: 2, traits: {}, optionId: 'a' })
+    localStorage.setItem('pi.history.v1', JSON.stringify(h))
+    localStorage.setItem(`pi.insight.${id}`, JSON.stringify({ date, questionId: id, theme, prompt, label }))
+  }
+
+  it('shows an earlier and a more recent answer in one part of life, side by side, with nothing added', () => {
+    stubCounts(null)
+    answeredOn('2026-10-05', 'q-old', 'colleagues', 'Stuck on a task for an hour?', 'Stay late alone')
+    answeredOn('2026-10-24', 'q-new', 'colleagues', 'Your idea is ignored?', 'Raise it again')
+    render(<Insights {...props} />)
+    const section = screen.getByRole('region', { name: 'Your Growth' })
+    const pair = within(section).getByRole('article', { name: 'Work' })
+    expect(pair).toHaveTextContent('Earlier · 5 October')
+    expect(pair).toHaveTextContent('Stuck on a task for an hour? You chose “Stay late alone”.')
+    expect(pair).toHaveTextContent('More recent · 24 October')
+    expect(pair).toHaveTextContent('Your idea is ignored? You chose “Raise it again”.')
+    expect(within(section).getByText(/Only your own answers, side by side\. What changed, if anything, is yours to say\./)).toBeInTheDocument()
+  })
+
+  it('says honestly why it is empty until two answers are two weeks apart', () => {
+    stubCounts(null)
+    answeredOn('2026-10-20', 'q-old', 'colleagues', 'A?', 'x')
+    answeredOn('2026-10-24', 'q-new', 'colleagues', 'B?', 'y')
+    render(<Insights {...props} />)
+    const section = screen.getByRole('region', { name: 'Your Growth' })
+    expect(within(section).getByText('This fills in over the weeks, from your own earlier and recent answers.')).toBeInTheDocument()
+    expect(within(section).queryAllByRole('article')).toHaveLength(0)
+  })
+
+  it('includes reflections only once the person turns that on in Reflect', () => {
+    stubCounts(null)
+    keepReflection({ id: 'r1', date: '2026-10-01', period: 'day', area: 'health', group: 'learnt', source: 'answers', about: '', question: 'What did today teach you?', answer: 'I keep staying up.' })
+    keepReflection({ id: 'r2', date: '2026-10-23', period: 'day', area: 'health', group: 'learnt', source: 'answers', about: '', question: 'What did today teach you?', answer: 'I slept better after the walk.' })
+    const { unmount } = render(<Insights {...props} />)
+    expect(screen.queryByText(/I slept better/)).not.toBeInTheDocument()
+    unmount()
+    setReflectSettings({ reflectionsInGrowth: true })
+    render(<Insights {...props} />)
+    const pair = screen.getByRole('article', { name: 'Health, in your reflections' })
+    expect(pair).toHaveTextContent('What did today teach you? “I keep staying up.”')
+    expect(pair).toHaveTextContent('What did today teach you? “I slept better after the walk.”')
   })
 })

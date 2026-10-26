@@ -197,6 +197,13 @@ export function ReflectGuide({ today, questions }: { today: string; questions: Q
         </label>
         <label className="toggle-row">
           <span>
+            <span className="toggle-label">Show my reflections in Your Growth</span>
+            <span className="toggle-note">Insights sets an earlier and a more recent reflection side by side, on this phone only. Off unless you turn it on.</span>
+          </span>
+          <input type="checkbox" role="switch" checked={settings.reflectionsInGrowth} onChange={(e) => changeSettings({ reflectionsInGrowth: e.target.checked })} />
+        </label>
+        <label className="toggle-row">
+          <span>
             <span className="toggle-label">Let my threads add to the longer Mirrors</span>
             <span className="toggle-note">Your month, quarter and year Mirrors show which threads you kept going. Off unless you turn it on.</span>
           </span>

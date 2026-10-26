@@ -6,6 +6,7 @@ import { NEED_NAMES } from './needs'
 import { intentions, keepIntention, keptCards } from './notebook'
 import { loadHistory } from './profile'
 import { count } from './pulse'
+import { GrowthSection } from './GrowthSection'
 import { HeavyCard } from './QuestionCard'
 import { rateAnswer } from './rating'
 import { splitReveal } from './reveal'
@@ -14,7 +15,8 @@ import { NOT_ME_REPLY, VERDICT_REPLIES } from './words'
 // Insights (Edwin, 2026-10-25): its own page, with the Mirrors one tap away.
 // For You is the person's own answers; You're not alone is the server's real
 // counts, shown only to someone who turned the Human Pulse on; What Helped
-// and Your Growth fill in later, and say so rather than show made-up rows.
+// fills in later; Your Growth sets the person's own earlier and recent
+// answers side by side (GrowthSection.tsx). Neither shows made-up rows.
 // On a wide screen the reading has the centre and the counts and saved
 // cards sit quietly beside it.
 
@@ -94,12 +96,7 @@ export function Insights({ today, questions, pulse, onOpenMirror, onOpenKept, on
           <p className="muted empty-note">This fills in as you and others report back on the small steps you try.</p>
         </section>
 
-        <section className="insights-growth" aria-labelledby="growth-title">
-          <h3 id="growth-title" className="section-title">
-            Your Growth
-          </h3>
-          <p className="muted empty-note">This fills in over the weeks, from your own earlier and recent answers.</p>
-        </section>
+        <GrowthSection today={today} />
 
         <Saved onOpenKept={onOpenKept} />
       </div>

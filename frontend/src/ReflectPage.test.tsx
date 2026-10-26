@@ -87,10 +87,13 @@ describe('the Reflect page', () => {
     expect(FakeRecognition.available).toHaveBeenCalledWith(expect.objectContaining({ processLocally: true }))
   })
 
-  it('keeps both Reflect choices off until the person turns them on', () => {
+  it('keeps every Reflect choice off until the person turns it on', () => {
     render(<ReflectGuide today="2026-10-25" questions={[]} />)
     expect(screen.getByRole('switch', { name: /Use my reflections in What you’ve noticed/ })).not.toBeChecked()
+    expect(screen.getByRole('switch', { name: /Show my reflections in Your Growth/ })).not.toBeChecked()
     expect(screen.getByRole('switch', { name: /Let my threads add to the longer Mirrors/ })).not.toBeChecked()
+    fireEvent.click(screen.getByRole('switch', { name: /Show my reflections in Your Growth/ }))
+    expect(screen.getByRole('switch', { name: /Show my reflections in Your Growth/ })).toBeChecked()
   })
 
   it('keeps a half-written reflection when the page is left and opened again', () => {
