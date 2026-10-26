@@ -204,6 +204,13 @@ export function ReflectGuide({ today, questions }: { today: string; questions: Q
         </label>
         <label className="toggle-row">
           <span>
+            <span className="toggle-label">Bring my words back in the Mirrors</span>
+            <span className="toggle-note">A line you wrote comes back in your Sunday, monthly and yearly Mirrors, on this phone only. Off unless you turn it on.</span>
+          </span>
+          <input type="checkbox" role="switch" checked={settings.reflectionsInMirror} onChange={(e) => changeSettings({ reflectionsInMirror: e.target.checked })} />
+        </label>
+        <label className="toggle-row">
+          <span>
             <span className="toggle-label">Let my threads add to the longer Mirrors</span>
             <span className="toggle-note">Your month, quarter and year Mirrors show which threads you kept going. Off unless you turn it on.</span>
           </span>

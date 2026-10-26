@@ -61,8 +61,23 @@ type PeriodMirror struct {
 	PreviousLabel string        `json:"previousLabel,omitempty"`
 	Traits        []PeriodTrait `json:"traits"`
 	Themes        []ThemeRead   `json:"themes"`
-	Moments       []Moment      `json:"moments"` // the answers that said the most, deepest first
-	Helped        []HelpedStep  `json:"helped"`  // newest first
+	Moments       []Moment      `json:"moments"`  // the answers that said the most, deepest first
+	Helped        []HelpedStep  `json:"helped"`   // newest first
+	NoChange      []HelpedStep  `json:"noChange"` // steps tried with no change, newest first
+	// What the period's answers reached for, most first, from the weeks
+	// whose needs are on record (WeekSummary.NeedsKept).
+	Needs []PeriodNeed `json:"needs"`
+	// The same for the month or quarter before, when Previous is given.
+	PreviousNeeds []PeriodNeed `json:"previousNeeds,omitempty"`
+}
+
+// PeriodNeed is one need over a period: how many answers reached for it, on
+// how many days, in how many weeks.
+type PeriodNeed struct {
+	Need    string `json:"need"`
+	Answers int    `json:"answers"`
+	Days    int    `json:"days"`
+	Weeks   int    `json:"weeks"`
 }
 
 type PeriodWeek struct {
@@ -74,6 +89,10 @@ type PeriodWeek struct {
 	Answers    int    `json:"answers"`
 	Deepest    int    `json:"deepest"`
 	StepsTried int    `json:"stepsTried"`
+	// What the week's answers reached for, need -> answers, when its needs
+	// are on record (NeedsOnRecord); otherwise nothing can be said of them.
+	Needs         map[string]int `json:"needs,omitempty"`
+	NeedsOnRecord bool           `json:"needsOnRecord"`
 }
 
 // PeriodStats add up the weeks on record.
@@ -119,6 +138,7 @@ type Moment struct {
 	Depth    int     `json:"depth"`
 	Date     string  `json:"date"`
 	Edition  int     `json:"edition"`
+	Need     string  `json:"need,omitempty"` // what the answer reached for, unless it was heavy
 }
 
 type HelpedStep struct {
@@ -224,10 +244,11 @@ func (s *Server) foldWeek(ctx context.Context, monday time.Time) error {
 // reach outside the week; only the week's own are counted.
 func (s *Server) summarizeWeek(key string, monday time.Time, answers []MirrorAnswer, steps []MirrorStep) WeekSummary {
 	mon, sun := monday.Format(dateLayout), monday.AddDate(0, 0, 6).Format(dateLayout)
-	w := WeekSummary{DeviceKey: key, Monday: mon}
+	w := WeekSummary{DeviceKey: key, Monday: mon, NeedsKept: true}
 	all := s.resolve(answers)
 	var week []answered
 	days := map[string]bool{}
+	needDays := map[string]map[string]bool{}
 	for _, a := range all {
 		if a.Date < mon || a.Date > sun {
 			continue
@@ -260,6 +281,23 @@ func (s *Server) summarizeWeek(key string, monday time.Time, answers []MirrorAns
 		} else if m, ok := momentOf(a); ok {
 			w.Moments = append(w.Moments, m)
 		}
+		if need := needOf(a); need != "" {
+			if w.Needs == nil {
+				w.Needs = map[string]NeedTally{}
+			}
+			t := w.Needs[need]
+			t.N++
+			w.Needs[need] = t
+			if needDays[need] == nil {
+				needDays[need] = map[string]bool{}
+			}
+			needDays[need][a.Date] = true
+		}
+	}
+	for need, ds := range needDays {
+		t := w.Needs[need]
+		t.Days = len(ds)
+		w.Needs[need] = t
 	}
 	w.DaysActive = len(days)
 	w.Moments = topMoments(w.Moments)
@@ -283,17 +321,75 @@ func (s *Server) summarizeWeek(key string, monday time.Time, answers []MirrorAns
 		if st.Tried() {
 			w.StepsTried++
 		}
-		if st.Status != stepHelped {
+		if st.Status != stepHelped && st.Status != stepNoChange {
 			continue
 		}
-		w.StepsHelped++
+		if st.Status == stepHelped {
+			w.StepsHelped++
+		}
 		if a, ok := byQuestion[st.QuestionID]; ok {
 			if text := s.stepFor(a.MirrorAnswer, st.NeedStep); text != "" {
-				w.Helped = append(w.Helped, HelpedStep{Theme: a.Theme, Step: text, Started: st.Started})
+				h := HelpedStep{Theme: a.Theme, Step: text, Started: st.Started}
+				if st.Status == stepHelped {
+					w.Helped = append(w.Helped, h)
+				} else {
+					w.NoChange = append(w.NoChange, h)
+				}
 			}
 		}
 	}
 	return w
+}
+
+// needOf is what an answer reached for, when it may say something about the
+// person: a known, non-private question, not tapped "Not me", and not a
+// heavy answer (a heavy card shows no reading).
+func needOf(a answered) string {
+	if a.Private() || !a.reads() {
+		return ""
+	}
+	o := optionOf(a.q, a.OptionID)
+	if o == nil || o.Heavy || !validNeed(o.Need) {
+		return ""
+	}
+	return o.Need
+}
+
+// periodNeeds adds up the needs of the weeks on record, most answers first.
+func periodNeeds(ws []WeekSummary, kept []bool) []PeriodNeed {
+	total := map[string]*PeriodNeed{}
+	for i, w := range ws {
+		if !kept[i] || !w.NeedsKept {
+			continue
+		}
+		for need, t := range w.Needs {
+			if t.N == 0 {
+				continue
+			}
+			p := total[need]
+			if p == nil {
+				p = &PeriodNeed{Need: need}
+				total[need] = p
+			}
+			p.Answers += t.N
+			p.Days += max(t.Days, 1)
+			p.Weeks++
+		}
+	}
+	out := []PeriodNeed{}
+	for _, p := range total {
+		out = append(out, *p)
+	}
+	slices.SortFunc(out, func(x, y PeriodNeed) int {
+		if c := cmp.Compare(y.Answers, x.Answers); c != 0 {
+			return c
+		}
+		if c := cmp.Compare(y.Days, x.Days); c != 0 {
+			return c
+		}
+		return strings.Compare(x.Need, y.Need)
+	})
+	return out
 }
 
 // momentOf reads an answer as a moment, when its option leans at least
@@ -306,7 +402,7 @@ func momentOf(a answered) (Moment, bool) {
 	if o == nil {
 		return Moment{}, false
 	}
-	m := Moment{Prompt: a.q.Prompt, Label: o.Label, Theme: a.Theme, Depth: a.Depth, Date: a.Date, Edition: editionNumber(a.Date)}
+	m := Moment{Prompt: a.q.Prompt, Label: o.Label, Theme: a.Theme, Depth: a.Depth, Date: a.Date, Edition: editionNumber(a.Date), Need: needOf(a)}
 	if o.Insight != nil {
 		if h := headlinePattern.FindStringSubmatch(o.Insight.Reveal); h != nil {
 			m.Headline = h[1]
@@ -430,7 +526,7 @@ func (s *Server) buildPeriod(ctx context.Context, key, kind, date string) (Perio
 	current, _ := weekOf(date)
 	p := PeriodMirror{Period: kind, Label: label, Date: date, From: first.Format(dateLayout), To: last.AddDate(0, 0, 6).Format(dateLayout),
 		WeeksTotal: int(last.Sub(first).Hours()/24)/7 + 1, Weeks: []PeriodWeek{}, Traits: []PeriodTrait{}, Themes: []ThemeRead{},
-		Moments: []Moment{}, Helped: []HelpedStep{}}
+		Moments: []Moment{}, Helped: []HelpedStep{}, NoChange: []HelpedStep{}, Needs: []PeriodNeed{}}
 	ws, kept, err := s.periodWeeks(ctx, key, first, current)
 	if err != nil {
 		return p, err
@@ -440,7 +536,17 @@ func (s *Server) buildPeriod(ctx context.Context, key, kind, date string) (Perio
 	for i, w := range ws {
 		_, iso := mustDate(w.Monday).ISOWeek()
 		pw := PeriodWeek{Monday: w.Monday, Week: iso, Kept: kept[i], DaysActive: w.DaysActive, DaysSoFar: 6, Answers: w.Answers,
-			Deepest: w.Deepest, StepsTried: w.StepsTried}
+			Deepest: w.Deepest, StepsTried: w.StepsTried, NeedsOnRecord: kept[i] && w.NeedsKept}
+		if pw.NeedsOnRecord {
+			for need, t := range w.Needs {
+				if t.N > 0 {
+					if pw.Needs == nil {
+						pw.Needs = map[string]int{}
+					}
+					pw.Needs[need] = t.N
+				}
+			}
+		}
 		if i == len(ws)-1 {
 			pw.DaysSoFar = daysSoFar
 		}
@@ -457,6 +563,9 @@ func (s *Server) buildPeriod(ctx context.Context, key, kind, date string) (Perio
 		if !slices.Contains(pkept, false) {
 			prev := addUp(pws, pkept, 6)
 			p.Previous, p.PreviousLabel = &prev, plabel
+			if needs := periodNeeds(pws, pkept); len(needs) > 0 {
+				p.PreviousNeeds = needs
+			}
 		}
 	}
 
@@ -468,13 +577,18 @@ func (s *Server) buildPeriod(ctx context.Context, key, kind, date string) (Perio
 	}
 	p.Themes = periodThemes(on)
 	p.Traits = periodTraits(ws, kept)
+	p.Needs = periodNeeds(ws, kept)
 	for _, w := range on {
 		p.Moments = append(p.Moments, w.Moments...)
 		p.Helped = append(p.Helped, w.Helped...)
+		p.NoChange = append(p.NoChange, w.NoChange...)
 	}
 	p.Moments = topMoments(p.Moments)
-	slices.SortStableFunc(p.Helped, func(x, y HelpedStep) int { return strings.Compare(y.Started, x.Started) })
+	newest := func(x, y HelpedStep) int { return strings.Compare(y.Started, x.Started) }
+	slices.SortStableFunc(p.Helped, newest)
 	p.Helped = p.Helped[:min(len(p.Helped), periodHelped)]
+	slices.SortStableFunc(p.NoChange, newest)
+	p.NoChange = p.NoChange[:min(len(p.NoChange), periodHelped)]
 	return p, nil
 }
 
@@ -591,6 +705,20 @@ func (s *Server) MirrorPeriod(w http.ResponseWriter, r *http.Request) {
 	if ok, retry := s.voteLimit.Allow(deviceID, s.clock()); !ok {
 		rateLimited(w, retry)
 		return
+	}
+	back, ok := backParam(r, periodsBack[kind])
+	if !ok {
+		writeError(w, http.StatusBadRequest, "invalid_request")
+		return
+	}
+	if back > 0 {
+		// An earlier period, read whole: the Sunday of its last week.
+		first, _, _ := periodOf(kind, mustDate(date))
+		for range back {
+			first, _, _ = periodOf(kind, first.AddDate(0, 0, -1))
+		}
+		_, last, _ := periodOf(kind, first)
+		date = last.AddDate(0, 0, 6).Format(dateLayout)
 	}
 	p, err := s.buildPeriod(r.Context(), s.devices.mirrorKey(deviceID), kind, date)
 	if err != nil {

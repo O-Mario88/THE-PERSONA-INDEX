@@ -978,7 +978,7 @@ function App() {
               <button type="button" className="text-button back" onClick={() => setTab(mirrorBack)}>
                 ← Back
               </button>
-              <Mirror today={set.date} onOpenKept={() => open('kept')} onCircle={() => setTab('circle')} />
+              <Mirror today={set.date} onOpenKept={() => open('kept')} onCircle={() => setTab('circle')} onOpenSettings={() => open('settings')} />
             </>
           )}
 

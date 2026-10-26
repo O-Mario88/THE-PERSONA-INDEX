@@ -202,8 +202,12 @@ export type Mirror = {
 
 const deviceHeader = (token: string) => ({ Authorization: `Device ${token}` })
 
-export function getMirror(date: string): Promise<Mirror> {
-  return withDevice((token) => request<Mirror>(`/api/mirror?date=${date}`, { headers: deviceHeader(token) }))
+// back reads an earlier week whole: 1 is last week, up to 3 (backend
+// mirrorWeeksBack), while its answers are still kept.
+export const WEEKS_BACK = 3
+export function getMirror(date: string, back = 0): Promise<Mirror> {
+  const b = back > 0 ? `&back=${back}` : ''
+  return withDevice((token) => request<Mirror>(`/api/mirror?date=${date}${b}`, { headers: deviceHeader(token) }))
 }
 
 // The monthly, quarterly and yearly mirrors: this phone's weeks added up,
@@ -236,7 +240,11 @@ export type PeriodWeek = {
   answers: number
   deepest: number
   stepsTried: number
+  needs?: Partial<Record<Need, number>> // what the week's answers reached for, when on record
+  needsOnRecord?: boolean // false for a week folded before needs were counted
 }
+// One need over a period (backend PeriodNeed).
+export type PeriodNeed = { need: Need; answers: number; days: number; weeks: number }
 export type PeriodTrait = {
   trait: string
   answers: number
@@ -258,6 +266,7 @@ export type Moment = {
   depth: number
   date: string
   edition: number
+  need?: Need
 }
 export type PeriodMirror = {
   period: Period
@@ -274,11 +283,18 @@ export type PeriodMirror = {
   themes: ThemeRead[]
   moments: Moment[]
   helped: { theme: string; step: string; started: string }[]
+  noChange?: { theme: string; step: string; started: string }[] // tried, with no change
+  needs?: PeriodNeed[] // most first, from the weeks whose needs are on record
+  previousNeeds?: PeriodNeed[]
 }
 
-export function getPeriodMirror(period: Period, date: string): Promise<PeriodMirror> {
+// How far back each longer mirror can be read (backend periodsBack).
+export const PERIODS_BACK: Record<Period, number> = { month: 12, quarter: 4, year: 1 }
+
+export function getPeriodMirror(period: Period, date: string, back = 0): Promise<PeriodMirror> {
+  const b = back > 0 ? `&back=${back}` : ''
   return withDevice((token) =>
-    request<PeriodMirror>(`/api/mirror/${period}?date=${date}`, { headers: deviceHeader(token) }),
+    request<PeriodMirror>(`/api/mirror/${period}?date=${date}${b}`, { headers: deviceHeader(token) }),
   )
 }
 

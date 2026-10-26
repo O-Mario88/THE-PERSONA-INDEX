@@ -1,0 +1,1046 @@
+/* The story Mirrors (Edwin, 2026-10-26): Weekly, Monthly, Quarterly and
+   Yearly. A midnight story at the top under a drawn horizon, quick ways in,
+   then content on the page itself with hairlines between parts. Tinted
+   boxes only where the eye should rest: the story, a support note and the
+   one direction. A single reading column on a phone; on a wide screen a
+   wider column with a side panel. */
+
+.page.page-mirror {
+  max-width: var(--page-max);
+}
+
+.ms {
+  gap: var(--s-6);
+}
+
+.ms-head h1 {
+  margin: 0;
+}
+
+/* Weekly · Monthly · Quarterly · Yearly, and the range beside them */
+.ms-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+}
+
+.ms-spans {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--s-2);
+  flex: 1 1 420px;
+}
+
+.ms-span {
+  min-height: 44px;
+  padding: 0 var(--s-3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--text-2);
+  font-weight: 700;
+  font-size: var(--fs-small);
+}
+
+.ms-span[aria-pressed='true'] {
+  border-color: var(--btn);
+  background: var(--btn);
+  color: var(--on-btn);
+}
+
+.ms-range {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: 44px;
+  padding: 0 var(--s-2) 0 var(--s-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--fs-small);
+  font-weight: 600;
+}
+
+.ms-range-label {
+  min-width: 9em;
+}
+
+.ms-range-step {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text);
+}
+
+.ms-range-step:disabled {
+  color: var(--line-strong);
+}
+
+.ms-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-6);
+}
+
+/* The story */
+.ms-hero {
+  position: relative;
+  display: grid;
+  overflow: hidden;
+  padding: var(--s-6);
+  border-radius: var(--r-xl);
+  background: var(--navy);
+  color: var(--on-navy);
+}
+
+.ms-hero-art {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 60%;
+  pointer-events: none;
+  opacity: 0.9;
+}
+
+.ms-art-sun {
+  fill: var(--brand-lime);
+  opacity: 0.55;
+}
+
+.ms-art-far {
+  fill: #0d5275;
+  opacity: 0.55;
+}
+
+.ms-art-near {
+  fill: #002b40;
+  opacity: 0.7;
+}
+
+.app.is-dark .ms-art-far {
+  fill: #1a3d54;
+}
+
+.app.is-dark .ms-art-near {
+  fill: #0b1a24;
+}
+
+.ms-hero-body {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  max-width: 62ch;
+}
+
+.ms-eyebrow {
+  font-size: var(--fs-tiny);
+  font-weight: 700;
+  letter-spacing: var(--track-eyebrow);
+  text-transform: uppercase;
+  color: var(--on-navy-2);
+}
+
+.ms-headline {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: clamp(1.75rem, 1.35rem + 2vw, 2.5rem);
+  font-weight: 500;
+  line-height: 1.12;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+.ms-rule {
+  width: 40px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--brand-lime);
+}
+
+.ms-story {
+  margin: 0;
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  color: #eef3f6;
+}
+
+.ms-meta {
+  margin: 0;
+  font-size: var(--fs-small);
+  color: var(--on-navy-2);
+}
+
+.ms-hero-aside {
+  position: relative;
+}
+
+/* Support, when the week was heavy */
+.ms-support {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-4) var(--s-5);
+  border-radius: var(--r-lg);
+  background: var(--rose-wash);
+}
+
+.ms-support a {
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* Quick ways in */
+.ms-jumps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--s-2) var(--s-4);
+}
+
+.ms-jump {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-3) 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.ms-jump-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.ms-jump-title {
+  font-weight: 700;
+}
+
+.ms-jump-note {
+  font-size: var(--fs-small);
+  color: var(--muted);
+}
+
+.ms-jump-chev {
+  color: var(--muted);
+}
+
+/* The two columns */
+.ms-grid {
+  display: grid;
+  gap: var(--s-6);
+}
+
+.ms-main,
+.ms-side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-6);
+  min-width: 0;
+}
+
+/* A part of the page: a disc, a title, a note, and the content on the page */
+.ms-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  padding-top: var(--s-5);
+  border-top: 1px solid var(--line);
+  scroll-margin-top: var(--s-6);
+}
+
+.ms-section:focus {
+  outline: none;
+}
+
+.ms-section-head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-3);
+}
+
+.ms-section-titles {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ms-section-title {
+  margin: 0;
+  font-size: var(--fs-h2);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.ms-section-note {
+  margin: 0;
+  font-size: var(--fs-small);
+  color: var(--muted);
+}
+
+.ms-lead {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 600;
+}
+
+.ms-quiet {
+  margin: 0;
+  color: var(--muted);
+}
+
+.ms-fine {
+  margin: 0;
+  font-size: var(--fs-small);
+  color: var(--muted);
+}
+
+/* Three things your answers revealed */
+.ms-obs-list {
+  display: grid;
+  gap: var(--s-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ms-obs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.ms-obs + .ms-obs {
+  padding-top: var(--s-5);
+  border-top: 1px dashed var(--line);
+}
+
+.ms-obs-title {
+  margin: 0;
+  font-size: var(--fs-h3);
+  font-weight: 800;
+}
+
+.ms-obs-n {
+  color: var(--accent-ink);
+}
+
+.ms-obs-parts {
+  display: grid;
+  gap: var(--s-3);
+  margin: 0;
+}
+
+.ms-obs-parts dt {
+  font-size: var(--fs-small);
+  font-weight: 700;
+  color: var(--leaf);
+}
+
+.ms-obs-parts div + div dt {
+  color: var(--amber-ink);
+}
+
+.ms-obs-parts dd {
+  margin: 2px 0 0;
+  color: var(--text-2);
+}
+
+/* Why am I seeing this? */
+.ms-why-button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent-ink);
+  font-size: var(--fs-small);
+  font-weight: 700;
+}
+
+.ms-why.on-dark .ms-why-button {
+  color: var(--brand-lime);
+}
+
+.ms-why-chev {
+  display: inline-flex;
+  transition: transform var(--t-fast) var(--ease);
+}
+
+.ms-why-chev.open {
+  transform: rotate(90deg);
+}
+
+.ms-why-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  margin-top: var(--s-2);
+  padding: var(--s-3) var(--s-4);
+  border-left: 3px solid var(--accent-line);
+  font-size: var(--fs-small);
+}
+
+.ms-why.on-dark .ms-why-list {
+  border-left-color: var(--brand-lime);
+  color: #eef3f6;
+}
+
+.ms-why-list ul {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ms-why-list li {
+  display: flex;
+  flex-direction: column;
+}
+
+.ms-why-intro,
+.ms-why-more {
+  margin: 0;
+  color: var(--muted);
+}
+
+.ms-why.on-dark .ms-why-intro,
+.ms-why.on-dark .ms-why-more {
+  color: var(--on-navy-2);
+}
+
+.ms-why-date {
+  font-weight: 700;
+}
+
+.ms-why-said {
+  font-style: italic;
+}
+
+/* That's me · Partly · Not me, and other small choices */
+.ms-fit,
+.ms-direction-buttons,
+.ms-theme-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.ms-chip {
+  min-height: 40px;
+  padding: 0 var(--s-4);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--fs-small);
+  font-weight: 700;
+}
+
+.ms-chip:hover {
+  border-color: var(--btn);
+}
+
+.ms-fit-reply {
+  margin: 0;
+  font-size: var(--fs-small);
+  color: var(--muted);
+}
+
+/* What helped */
+.ms-helped {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ms-helped-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-3) 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.ms-helped-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.ms-helped-step {
+  font-weight: 700;
+}
+
+.ms-helped-note {
+  font-size: var(--fs-small);
+  color: var(--muted);
+}
+
+.ms-pill {
+  flex: none;
+  padding: 4px 10px;
+  border-radius: var(--r-pill);
+  font-size: var(--fs-tiny);
+  font-weight: 700;
+  background: var(--surface-2);
+  color: var(--text-2);
+}
+
+.ms-pill.is-helped,
+.ms-pill.is-some {
+  background: var(--accent-wash);
+  color: var(--leaf);
+}
+
+.ms-pill.is-testing {
+  background: var(--amber-wash);
+  color: var(--amber-ink);
+}
+
+/* You're not alone, and what helped others */
+.ms-alone {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ms-alone-count {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.ms-alone-what {
+  margin: 2px 0 var(--s-2);
+  color: var(--text-2);
+}
+
+.ms-bar {
+  display: block;
+  height: 8px;
+  overflow: hidden;
+  border-radius: var(--r-pill);
+  background: var(--surface-3);
+}
+
+.ms-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--leaf);
+}
+
+.ms-bar.small {
+  flex: 1;
+  height: 6px;
+}
+
+.ms-others {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.ms-others-step {
+  margin: 0;
+  font-weight: 700;
+}
+
+.ms-others-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  margin: 0;
+}
+
+.ms-others-row {
+  display: grid;
+  grid-template-columns: 7.5em 1fr;
+  align-items: center;
+  gap: var(--s-3);
+  font-size: var(--fs-small);
+}
+
+.ms-others-row dd {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin: 0;
+}
+
+.ms-others-n {
+  min-width: 3.5em;
+  text-align: right;
+  font-weight: 700;
+}
+
+.ms-others-line {
+  margin: 0;
+  font-size: var(--fs-small);
+}
+
+.ms-circle-line {
+  margin: 0;
+  font-weight: 600;
+}
+
+/* In your own words */
+.ms-quote {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  margin: 0;
+  padding: var(--s-1) 0 var(--s-1) var(--s-4);
+  border-left: 3px solid var(--purple);
+  font-family: var(--serif);
+  font-size: 1.1875rem;
+  line-height: 1.45;
+}
+
+.ms-quote-when {
+  font-family: var(--font);
+  font-size: var(--fs-small);
+  color: var(--muted);
+}
+
+.ms-ask {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.ms-ask-q {
+  margin: 0;
+  font-weight: 700;
+}
+
+.ms-words-off {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s-3);
+  color: var(--text-2);
+}
+
+.ms-words-off p {
+  margin: 0;
+}
+
+.ms-intention {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+/* One gentle direction: one of the few tinted boxes */
+.ms-direction,
+.ms-theme-pick,
+.ms-proud {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  padding: var(--s-5);
+  border-radius: var(--r-lg);
+  background: var(--accent-wash);
+  scroll-margin-top: var(--s-6);
+}
+
+.ms-direction:focus {
+  outline: none;
+}
+
+.ms-themes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+.ms-direction-text {
+  margin: var(--s-1) 0 0;
+  font-size: 1.0625rem;
+  font-weight: 600;
+}
+
+.ms-own {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.ms-own-label {
+  font-weight: 700;
+}
+
+.ms-own textarea,
+.ms-proud textarea,
+.ms-letter textarea {
+  width: 100%;
+  padding: var(--s-3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  resize: vertical;
+}
+
+/* The month: patterns by part of life, and what changed */
+.ms-areas,
+.ms-strengths,
+.ms-needs,
+.ms-moments {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ms-area,
+.ms-strength,
+.ms-need,
+.ms-moment {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding-bottom: var(--s-4);
+  border-bottom: 1px solid var(--line);
+}
+
+.ms-area p,
+.ms-strength p,
+.ms-need p,
+.ms-moment p {
+  margin: 0;
+}
+
+.ms-area-name,
+.ms-need-name,
+.ms-strength-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2);
+  font-weight: 800;
+}
+
+.ms-tag {
+  padding: 2px 10px;
+  border-radius: var(--r-pill);
+  background: var(--accent-wash);
+  color: var(--leaf);
+  font-size: var(--fs-tiny);
+  font-weight: 700;
+}
+
+.ms-tag.is-quiet {
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
+.ms-more summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--accent-ink);
+}
+
+.ms-changes {
+  display: flex;
+  flex-direction: column;
+}
+
+.ms-changes-head {
+  display: none;
+}
+
+.ms-change {
+  display: grid;
+  gap: var(--s-2);
+  padding: var(--s-3) 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.ms-change-area {
+  margin: 0;
+  font-size: var(--fs-small);
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.ms-change [role='cell'] {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ms-change-when {
+  font-size: var(--fs-tiny);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.ms-moment-q {
+  font-weight: 600;
+}
+
+.ms-moment-a {
+  font-family: var(--serif);
+  font-size: 1.0625rem;
+}
+
+/* The year: chapters */
+.ms-chapters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: var(--s-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ms-chapter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding-top: var(--s-3);
+  border-top: 3px solid var(--accent-line);
+}
+
+.ms-chapter.is-told {
+  border-top-color: var(--btn);
+}
+
+.ms-chapter.is-none,
+.ms-chapter.is-later {
+  opacity: 0.75;
+}
+
+.ms-chapter p {
+  margin: 0;
+}
+
+.ms-chapter-months {
+  font-size: var(--fs-tiny);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.ms-chapter-title {
+  font-family: var(--serif);
+  font-size: 1.25rem;
+}
+
+.ms-chapter-moment {
+  font-size: var(--fs-small);
+  color: var(--text-2);
+}
+
+.ms-chapter-helped {
+  font-size: var(--fs-small);
+  font-weight: 600;
+  color: var(--leaf);
+}
+
+.ms-remembered {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--s-5);
+}
+
+.ms-forward {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  padding-top: var(--s-5);
+  border-top: 1px solid var(--line);
+}
+
+.ms-forward-lines {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  margin: 0;
+  padding-left: var(--s-5);
+  font-family: var(--serif);
+  font-size: 1.125rem;
+}
+
+.ms-letter,
+.ms-print {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s-2);
+}
+
+.ms-letter {
+  align-items: stretch;
+}
+
+.ms-print-words {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: var(--fs-small);
+}
+
+/* Essential · Explore deeper */
+.ms-depth {
+  display: inline-flex;
+  align-self: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--r-pill);
+  background: var(--surface-2);
+}
+
+.ms-depth-button {
+  min-height: 40px;
+  padding: 0 var(--s-5);
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--muted);
+  font-weight: 700;
+  font-size: var(--fs-small);
+}
+
+.ms-depth-button[aria-pressed='true'] {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-card);
+}
+
+.ms-deeper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+}
+
+.ms-deeper .m-name {
+  display: inline;
+}
+
+/* Wide screens: a wider reading column and a side panel */
+@media (min-width: 900px) {
+  .page.page-mirror {
+    max-width: 1240px;
+  }
+
+  .ms-hero {
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding: var(--s-8) var(--s-10);
+    min-height: 260px;
+  }
+
+  .ms-changes-head {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--s-5);
+    padding-bottom: var(--s-2);
+    border-bottom: 1px solid var(--line-strong);
+    font-size: var(--fs-small);
+    font-weight: 800;
+  }
+
+  .ms-change {
+    grid-template-columns: 1fr 1fr;
+    column-gap: var(--s-5);
+  }
+
+  .ms-change-area {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 1100px) {
+  .ms-grid {
+    grid-template-columns: minmax(0, 1.7fr) minmax(300px, 1fr);
+    align-items: start;
+  }
+
+  .ms-side {
+    position: sticky;
+    top: var(--s-6);
+  }
+
+  .ms-obs-list {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    column-gap: var(--s-6);
+  }
+
+  .ms-obs + .ms-obs {
+    padding-top: 0;
+    border-top: 0;
+  }
+}
+
+/* The printable year: the page only, and the person's own words only when
+   they ticked "Include my own words". */
+@media print {
+  .tabs,
+  .ms-controls,
+  .ms-jumps,
+  .ms-depth,
+  .ms-print,
+  .ms-letter,
+  .back,
+  button {
+    display: none !important;
+  }
+
+  .ms-hero {
+    background: none;
+    color: #000;
+  }
+
+  .ms-hero-art {
+    display: none;
+  }
+
+  .ms-story,
+  .ms-eyebrow,
+  .ms-meta {
+    color: #000;
+  }
+
+  .ms-print-no-words .ms-quote,
+  .ms-print-no-words .ms-proud,
+  .ms-print-no-words .ms-remembered {
+    display: none !important;
+  }
+}
+
+button.ms-jump {
+  width: 100%;
+  border-width: 0 0 1px;
+  border-style: solid;
+  border-color: var(--line);
+  background: none;
+  font: inherit;
+  text-align: left;
+}

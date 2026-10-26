@@ -35,8 +35,11 @@ export function dismissMemory(id: string) {
   saveJSON(DISMISSED, [...new Set([...dismissed(), id])])
 }
 
-export type ReflectSettings = { threadsInMirror: boolean; reflectionsInNoticed: boolean; reflectionsInGrowth: boolean }
-const DEFAULTS: ReflectSettings = { threadsInMirror: false, reflectionsInNoticed: false, reflectionsInGrowth: false }
+// reflectionsInMirror (Edwin's Mirrors, 2026-10-26): let the Mirrors bring
+// back a line of the person's reflections ("In your own words", "Your words,
+// remembered"). Off until they turn it on; read and shown on this phone only.
+export type ReflectSettings = { threadsInMirror: boolean; reflectionsInNoticed: boolean; reflectionsInGrowth: boolean; reflectionsInMirror: boolean }
+const DEFAULTS: ReflectSettings = { threadsInMirror: false, reflectionsInNoticed: false, reflectionsInGrowth: false, reflectionsInMirror: false }
 
 export function reflectSettings(): ReflectSettings {
   const v = loadJSON(SETTINGS)
