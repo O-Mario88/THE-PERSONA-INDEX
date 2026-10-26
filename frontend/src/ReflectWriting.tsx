@@ -123,8 +123,8 @@ export function ReflectWriting({ today, period, free, thought, thread, onAnother
   return (
     <section className={free ? 'reflect-write is-free' : 'reflect-write'} aria-labelledby={`${id}-label`}>
       <div className="reflect-thought">
-        <span className="icon-disc is-solid" aria-hidden="true">
-          <Icon name={free ? 'reflect' : 'heart'} size={20} />
+        <span className="icon-tile" aria-hidden="true">
+          <Icon name={free ? 'pencil' : 'leaf'} size={24} />
         </span>
         <div>
           <p className="label">{free ? 'Write freely' : thread ? 'Continue the thread' : 'A thought for you'}</p>
@@ -156,7 +156,7 @@ export function ReflectWriting({ today, period, free, thought, thread, onAnother
         <div className="reflect-tools">
           {canSpeak && (
             <button type="button" className="text-button" aria-pressed={speaking} onClick={speak}>
-              <Icon name="chat" size={18} /> {speaking ? 'Stop' : 'Speak'}
+              <Icon name="mic" size={18} /> {speaking ? 'Stop' : 'Speak'}
             </button>
           )}
           <span className="muted small reflect-count">{words(text) === 1 ? '1 word' : `${words(text)} words`}</span>

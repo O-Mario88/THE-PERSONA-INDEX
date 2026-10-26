@@ -32,11 +32,15 @@ export function SignInSheet({
   lead = 'Signing in syncs your Notebook across devices and unlocks your Circle Mirror. No password — one tap or a 6-digit code.',
   onDone,
   onNotNow,
+  notNow = 'Not now — keep it on this phone',
   overlay,
   card,
   page,
 }: {
-  page?: { label: string; title: string; lead: string; tiles?: { date: string; tint?: string }[] } // the full login page (M20)
+  // The full login page (M20). head and points: the sign-up step after a
+  // first glimpse (firstWeek.ts) names what an account keeps.
+  page?: { label: string; title: string; lead: string; tiles?: { date: string; tint?: string }[]; head?: string; points?: string[] }
+  notNow?: string // the words of the "not now" button
   overlay?: boolean // full screen over the close, as in the design (M04)
   card?: { area: string; line: string } // the sitting's first card, shown above the sheet
   title?: string
@@ -238,7 +242,7 @@ export function SignInSheet({
       )}
       {onNotNow && step.at === 'start' && (
         <button type="button" className="link-button strong" onClick={onNotNow}>
-          Not now — keep it on this phone
+          {notNow}
         </button>
       )}
       <p className="muted small center signin-keep">We keep a display name, a handle and your encrypted Notebook. Nothing else.</p>
@@ -266,6 +270,15 @@ export function SignInSheet({
             <h2 id="signin-title">{page.title}</h2>
             <p className="signin-hero-lead">{page.lead}</p>
           </div>
+          {page.points && (
+            <ul className="signin-points">
+              {page.points.map((p) => (
+                <li key={p}>
+                  <Icon name="check" size={16} /> {p}
+                </li>
+              ))}
+            </ul>
+          )}
           {page.tiles && (
             <ol className="m-week-tiles signin-tiles" aria-hidden="true">
               {page.tiles.map((t) => (
@@ -277,7 +290,7 @@ export function SignInSheet({
         </header>
         <div className="signin-page-body">
           <div className="signin-body-head">
-            <p>Sign in</p>
+            <p>{page.head ?? 'Sign in'}</p>
             <p className="signin-body-line">No password. One tap or a code.</p>
           </div>
           {restoring ? (
@@ -356,6 +369,11 @@ export function SignInSheet({
               </button>
             )}
             <p>Signing in syncs your encrypted Notebook to this device. We keep a display name, a handle and that bundle — nothing else.</p>
+            {onNotNow && (
+              <button type="button" className="link-button strong" onClick={onNotNow}>
+                {notNow}
+              </button>
+            )}
           </div>
         </div>
       </section>

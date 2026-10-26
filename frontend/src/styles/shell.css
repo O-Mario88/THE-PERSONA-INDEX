@@ -55,7 +55,8 @@
   font-size: 1.0625rem;
 }
 
-/* The tabs */
+/* The tabs: a white bar on a phone, a forest-green sidebar on a wide
+   screen (the reference designs). */
 
 .tabs {
   position: fixed;
@@ -65,8 +66,7 @@
   justify-content: space-around;
   padding: var(--s-2) var(--s-2) max(var(--s-3), env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--line);
-  background: color-mix(in srgb, var(--bg) 94%, transparent);
-  backdrop-filter: saturate(1.4) blur(12px);
+  background: var(--surface);
 }
 
 .tab {
@@ -83,7 +83,9 @@
   color: var(--muted);
   font-size: var(--fs-tiny);
   font-weight: 600;
-  transition: color var(--t-fast) var(--ease);
+  transition:
+    color var(--t-fast) var(--ease),
+    background var(--t-fast) var(--ease);
 }
 
 @media (hover: hover) {
@@ -98,14 +100,16 @@
 }
 
 .tab[aria-pressed='true'] .icon {
-  stroke-width: 2.2;
+  stroke-width: 2.3;
 }
 
 .tab:disabled {
   opacity: 0.4;
 }
 
-.rail-logo {
+.side-brand,
+.side-only,
+.wide-only {
   display: none;
 }
 
@@ -116,7 +120,7 @@
 @media (min-width: 900px) {
   .app {
     display: grid;
-    grid-template-columns: var(--rail-w) minmax(0, 1fr);
+    grid-template-columns: var(--side-w) minmax(0, 1fr);
   }
 
   .tabs,
@@ -127,46 +131,103 @@
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
-    gap: var(--s-2);
+    gap: var(--s-1);
     height: 100vh;
-    padding: var(--s-5) var(--s-2);
+    padding: var(--s-6) var(--s-4);
     border-top: 0;
-    border-right: 1px solid var(--line);
-    background: var(--bg);
-    backdrop-filter: none;
+    background: var(--side-bg);
+    color: var(--side-ink);
   }
 
-  .rail-logo {
-    display: grid;
-    place-items: center;
-    width: 44px;
-    height: 44px;
-    margin: 0 auto var(--s-6);
-    border-radius: var(--r-md);
-    background: var(--lime);
-    color: var(--on-lime);
-    font-weight: 900;
-    font-size: 1.25rem;
+  .side-brand {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+    margin: 0 var(--s-2) var(--s-8);
+    color: #ffffff;
+    font-size: 0.8125rem;
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .side-brand .icon {
+    color: var(--brand-lime);
+    stroke-width: 2;
+  }
+
+  .side-brand span {
+    max-width: 8.5em;
+  }
+
+  .side-only {
+    display: flex;
+  }
+
+  .phone-only {
+    display: none;
+  }
+
+  .wide-only {
+    display: inline;
   }
 
   .tab {
     flex: none;
-    min-height: 64px;
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: var(--s-3);
+    min-height: 48px;
+    padding: 0 var(--s-4);
+    color: var(--side-ink);
+    font-size: var(--fs-body);
+    font-weight: 600;
+  }
+
+  /* Profile and Settings sit at the foot of the sidebar. */
+  .tab-account {
+    order: 10;
+    margin-top: auto;
+  }
+
+  .side-settings {
+    order: 11;
+  }
+
+  @media (hover: hover) {
+    .tab:hover:not(:disabled):not([aria-pressed='true']) {
+      background: var(--side-on);
+      color: #ffffff;
+    }
   }
 
   .tab[aria-pressed='true'] {
-    background: var(--accent-wash);
+    background: var(--side-on);
+    color: var(--side-on-ink);
+    font-weight: 700;
+  }
+
+  .tab[aria-pressed='true'] .icon {
+    color: var(--brand-lime);
   }
 
   .page {
-    max-width: 720px;
-    padding-top: var(--s-10);
-    padding-bottom: var(--s-10);
+    max-width: 1180px;
+    padding: var(--s-8) var(--s-10) var(--s-10);
   }
 
-  .page.page-mirror,
-  .page.page-circle {
-    max-width: 880px;
+  .page.page-today,
+  .page.page-account,
+  .page.page-settings,
+  .page.page-kept,
+  .page.page-read,
+  .page.page-practice {
+    max-width: 760px;
+  }
+
+  .page.page-mirror {
+    max-width: 920px;
   }
 }
 
@@ -213,7 +274,7 @@
   height: 8px;
   border-radius: 50%;
   background: var(--online);
-  box-shadow: 0 0 0 4px rgb(123 198 45 / 0.2);
+  box-shadow: 0 0 0 4px rgb(63 191 95 / 0.2);
 }
 
 .flow-main,

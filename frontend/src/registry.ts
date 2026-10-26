@@ -71,6 +71,10 @@ export const REGISTRY: Entry[] = [
   { key: 'pi.rings', what: 'Which of your three circles you placed each friend in', backup: 'always', merge: 'local', download: true },
   { key: 'pi.name', what: 'What you asked to be called, for the greeting', backup: 'always', merge: 'local', download: true },
   { key: 'pi.welcomed', what: 'That you saw the welcome before your first sitting', backup: 'never', merge: 'local', download: false },
+  { key: 'pi.started', what: 'The day you began, for your first week', backup: 'always', merge: 'local', download: true },
+  { key: 'pi.showall', what: 'That you asked to see every section before your first week was up', backup: 'never', merge: 'local', download: false },
+  { key: 'pi.connect.open', what: 'That you asked for Connect from your first glimpse', backup: 'never', merge: 'local', download: false },
+  { key: 'pi.glimpse', what: 'Which sitting showed your first glimpse', backup: 'always', merge: 'local', download: false },
   { key: 'pi.install.v1', what: 'Whether you were invited to add the app to your home screen', backup: 'never', merge: 'local', download: false },
 ]
 

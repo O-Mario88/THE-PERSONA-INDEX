@@ -17,6 +17,7 @@
 // - Evening follow-up answers (asked until 2026-10-15, still read while they
 //   are kept) carry trait weights but no depth, so they never move interest.
 
+import { isNewcomer } from './firstWeek'
 import type { Question, Verdict } from './api'
 import { isNeed, type Need } from './needs'
 import { addDays, loadJSON, remove, saveJSON } from './storage'
@@ -150,13 +151,14 @@ export function pickThree(
   adult: boolean,
   taken: Question[] = [],
   offer: Question | null = null,
+  light = false, // a newcomer's very first sitting opens light (firstThree)
 ): Question[] {
   const takenIds = new Set(taken.map((q) => q.id))
   const eligible = pool.filter((q) => (q.care !== 'intimate' || adult) && !takenIds.has(q.id))
   // The shared defaults, less any the morning already took, topped up from the pool.
   const fallback = defaults.filter((q) => !takenIds.has(q.id))
   for (const q of eligible) if (fallback.length < 3 && !fallback.includes(q)) fallback.push(q)
-  if (h.answers.length === 0 && h.skips.length === 0) return fallback
+  if (h.answers.length === 0 && h.skips.length === 0) return light ? firstThree(fallback, eligible) : fallback
   const interest = interestScores(h, today)
   const seen: Record<string, number> = {}
   for (const a of h.answers) if (!a.evening && days(a.date, today) <= 14) seen[a.theme] = (seen[a.theme] ?? 0) + 1
@@ -177,6 +179,38 @@ export function pickThree(
   if (offer && !takenIds.has(offer.id) && !usedThemes.has(offer.theme ?? offer.id)) take(offer)
   else take([...fresh()].sort(bySeen)[0])
   return picked.length === 3 ? picked : fallback
+}
+
+// A newcomer's very first sitting opens light (the day-one review of
+// 2026-10-26: a body worry or an 18+ question is a heavy way to meet
+// someone). The shared three stay, so the Human Pulse counts stay whole,
+// except a tender one, which gives its place to an everyday question from
+// the pool. The full bank is unchanged; tender themes simply come later.
+export const LIGHT_THEMES = new Set([
+  'habits',
+  'sleep-health',
+  'food',
+  'phone',
+  'getting-around',
+  'home',
+  'learning',
+  'work-career',
+  'happiness',
+  'friendship',
+])
+const tenderQ = (q: Question) => q.care === 'intimate' || TENDER_THEMES.has(q.theme ?? '') || q.options.some((o) => o.heavy)
+
+function firstThree(fallback: Question[], eligible: Question[]): Question[] {
+  const themes = new Set(fallback.filter((q) => !tenderQ(q)).map((q) => q.theme))
+  const spare = eligible.filter((q) => !fallback.includes(q) && LIGHT_THEMES.has(q.theme ?? '') && !tenderQ(q))
+  return fallback.map((q) => {
+    if (!tenderQ(q)) return q
+    const swap = spare.find((x) => !themes.has(x.theme))
+    if (!swap) return q
+    spare.splice(spare.indexOf(swap), 1)
+    themes.add(swap.theme)
+    return swap
+  })
 }
 
 // writeFirstOf picks the one card of a sitting that opens with a short box
@@ -203,6 +237,12 @@ export type Half = 'morning' | 'evening'
 
 const pickKey = (today: string, half: Half) => (half === 'morning' ? `pi.pick.${today}` : `pi.pick.${today}.pm`)
 
+// pickedIds is the question ids a half showed today, once it was picked.
+export function pickedIds(today: string, half: Half): string[] {
+  const ids = loadJSON(pickKey(today, half))
+  return Array.isArray(ids) ? ids.filter((x): x is string => typeof x === 'string') : []
+}
+
 // Each half's pick is fixed at first sight, so the three don't change while
 // someone is answering them. The evening is picked once the morning is
 // answered or closed, and never repeats the morning's questions or themes.
@@ -224,9 +264,31 @@ export function todaysPick(
     const qs = ids.map((id) => known.find((q) => q.id === id))
     if (qs.every(Boolean)) return qs as Question[]
   }
-  const qs = pickThree(pool.length ? pool : defaults, defaults, loadHistory(), today, adult, taken, offer)
+  const h = loadHistory()
+  const picked = pickThree(pool.length ? pool : defaults, defaults, h, today, adult, taken, offer, isNewcomer())
+  const qs = isFirstDay(h, today) ? gentleFirst(picked) : picked
   saveJSON(key, qs.map((q) => q.id))
   return qs
+}
+
+// A person's first day: nothing answered or skipped before today (Edwin,
+// 2026-10-26: "do you think the users love it on day one?"). The first day
+// opens gently, keeps insider labels out and closes on a first glimpse.
+export function isFirstDay(h: History, today: string): boolean {
+  return !h.answers.some((a) => a.date < today) && !h.skips.some((s) => s.date < today)
+}
+
+// Themes that ask a lot of someone who has only just arrived. On the first
+// day they come after the everyday ones, never first.
+const TENDER_THEMES = new Set(['body', 'sadness-stress', 'anger', 'partnership', 'dating', 'faith', 'intimacy'])
+const tenderness = (q: Question) => (q.care === 'intimate' ? 2 : TENDER_THEMES.has(q.theme ?? '') ? 1 : 0)
+
+// gentleFirst orders a sitting lightest first, keeping the order within each.
+export function gentleFirst(qs: Question[]): Question[] {
+  return qs
+    .map((q, i) => ({ q, i }))
+    .sort((a, b) => tenderness(a.q) - tenderness(b.q) || a.i - b.i)
+    .map(({ q }) => q)
 }
 
 // forgetPick drops the given halves' picks for today, so they are picked again.

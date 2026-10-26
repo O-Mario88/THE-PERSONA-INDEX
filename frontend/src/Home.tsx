@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { clock, left, MORNING_CLOSES, useNow, WINDOW_INFO, WINDOWS, windowCloses, type OpenWindow, type Window } from './day'
+import { clock, left, MORNING_CLOSES, opensAt, useNow, WINDOW_INFO, WINDOWS, windowCloses, type OpenWindow, type Window } from './day'
 import { Icon } from './ui/icons'
 import { Ring } from './ui/Ring'
 import { Avatar } from './ui/Avatar'
@@ -49,6 +49,7 @@ export function Home({
   date,
   window: w,
   name,
+  note,
   hero,
   onOpen,
   onAccount,
@@ -62,6 +63,7 @@ export function Home({
   date: string
   window: Window
   name?: string | null
+  note?: string | null // a personal line under the greeting
   hero: Hero
   onOpen: () => void
   onAccount: () => void
@@ -94,6 +96,7 @@ export function Home({
           <h2 id="home-title" className="display">
             {greeting(w, name)}
           </h2>
+          {note && <p className="home-note">{note}</p>}
         </div>
         <Ring
           part={doneCount / items.length}
@@ -298,6 +301,8 @@ export function heroFor({
         ? { eyebrow: 'Evening done', title: 'Your evening three are answered', sub: `The night wind-down opens at ${clock(WINDOW_INFO.night.opens)}.`, action: 'See your evening', opens: 'evening' }
         : { ...timed, title: 'Three evening questions', sub: 'One tap on this morning’s step, then three questions.', action: 'Open', opens: 'evening' }
     case 'night':
+      if (windowsDone(date).night !== undefined)
+        return { eyebrow: 'Night done', title: "That's your day", sub: `Sleep well. Your morning three open at ${opensAt('morning')}.`, opens: null }
       return { ...timed, title: 'Three good things from today', sub: 'Then a quiet nod, if you like, and tomorrow.', action: 'Open', opens: 'night' }
   }
 }

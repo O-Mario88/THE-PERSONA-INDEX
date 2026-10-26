@@ -1,7 +1,21 @@
 // The few line icons the app draws: the tabs, share, close, lock and the
 // like. Inline SVG, so they follow the text colour and weigh nothing.
 
-const paths: Record<string, string> = {
+export const paths: Record<string, string> = {
+  leaf: 'M12 21v-8 M12 13c0-4.5 3-7.5 8-8-.2 5-3.5 8-8 8Z M12 15c0-3.4-2.3-5.6-6-6 .2 3.7 2.6 6 6 6Z',
+  bulb: 'M9 18h6 M10 21h4 M12 3a6 6 0 0 0-3.6 10.8c.7.5 1.1 1.3 1.1 2.2h5c0-.9.4-1.7 1.1-2.2A6 6 0 0 0 12 3Z',
+  star: 'M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.7l5.9-.9Z',
+  bookmark: 'M6 3h12v18l-6-4.5L6 21Z',
+  pencil: 'M4 20h4L19 9l-4-4L4 16Z M13.5 6.5l4 4',
+  mic: 'M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Z M5 11a7 7 0 0 0 14 0 M12 18v3',
+  image: 'M4 5h16v14H4Z M4 16l5-5 4 4 2-2 5 5 M15.5 9.5a1.5 1.5 0 1 0 0-.01',
+  briefcase: 'M4 8h16v11H4Z M9 8V5h6v3 M4 13h16',
+  people: 'M8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z M16 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z M2.5 20c.5-3 2.8-5 5.5-5s5 2 5.5 5 M14.5 15.3c.5-.2 1-.3 1.5-.3 2.7 0 5 2 5.5 5',
+  calendar: 'M4 6h16v14H4Z M4 10h16 M8 3v4 M16 3v4',
+  clock: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z M12 7v5l3 2',
+  pin: 'M12 21s-6-5.5-6-11a6 6 0 0 1 12 0c0 5.5-6 11-6 11Z M12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z',
+  doc: 'M6 3h8l4 4v14H6Z M14 3v4h4 M9 12h6 M9 16h6',
+  mountain: 'M3 19l6-9 4 5 3-4 5 8Z',
   today:
     'M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z',
   mirror: 'M12 3c-3.3 0-6 2.9-6 7.5S8.7 21 12 21s6-6 6-10.5S15.3 3 12 3Z M9 9.5c.4-1.6 1.5-2.7 3-3',

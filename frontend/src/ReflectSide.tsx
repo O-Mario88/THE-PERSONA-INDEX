@@ -3,6 +3,7 @@ import { dismissMemory, journeyFor, memoryFor, reminderFor } from './journal'
 import { reflections, type Reflection } from './notebook'
 import { dayMonth } from './reflect'
 import type { Noticed } from './noticed'
+import { Disc } from './ui/Disc'
 import { Icon } from './ui/icons'
 
 // The side of Reflect (below the writing on a phone): earlier words
@@ -29,9 +30,10 @@ export function ReflectSide({ today, consider, onFollowUp, onOpenThread, onRefle
   return (
     <aside className="reflect-side" aria-label="Looking back">
       {memory && (
-        <section className="reflect-card is-memory" aria-labelledby="memory-title">
+        <section className="reflect-card is-memory has-disc" aria-labelledby="memory-title">
+          <Disc icon="clock" tone="purple" />
           <h3 id="memory-title" className="card-title">
-            <Icon name="mirror" size={18} /> Reflection memory
+            Reflection memory
           </h3>
           <p>
             {memory.when} you wrote: “{revisit ? memory.reflection.answer : firstWords(memory.reflection.answer, 120)}”
@@ -39,7 +41,7 @@ export function ReflectSide({ today, consider, onFollowUp, onOpenThread, onRefle
           {revisit && <p className="muted small">{dayMonth(memory.reflection.date)} · {memory.reflection.question}</p>}
           <p className="muted">Have you noticed anything changing?</p>
           <div className="reflect-actions">
-            <button type="button" className="btn small outline" onClick={() => onFollowUp(memory.reflection)}>
+            <button type="button" className="btn small soft" onClick={() => onFollowUp(memory.reflection)}>
               Write a follow-up <Icon name="arrow" size={14} />
             </button>
             {!revisit && (
@@ -61,7 +63,8 @@ export function ReflectSide({ today, consider, onFollowUp, onOpenThread, onRefle
         </section>
       )}
 
-      <section className="reflect-card is-reminder" aria-labelledby="reminder-title">
+      <section className="reflect-card is-reminder has-disc" aria-labelledby="reminder-title">
+        <Disc icon="leaf" tone="amber" />
         <h3 id="reminder-title" className="card-title">
           A gentle reminder
         </h3>
@@ -69,7 +72,8 @@ export function ReflectSide({ today, consider, onFollowUp, onOpenThread, onRefle
       </section>
 
       {journey && (
-        <section className="reflect-card is-journey" aria-labelledby="journey-title">
+        <section className="reflect-card is-journey has-disc" aria-labelledby="journey-title">
+          <Disc icon="mountain" tone="blue" />
           <h3 id="journey-title" className="card-title">
             From your journey
           </h3>
@@ -81,7 +85,7 @@ export function ReflectSide({ today, consider, onFollowUp, onOpenThread, onRefle
               ? `You’ve come back to it ${journey.since === 1 ? 'once' : `${journey.since} times`} since. What feels different now?`
               : 'What feels different now?'}
           </p>
-          <button type="button" className="btn small outline" onClick={() => onOpenThread(journey.reflection)}>
+          <button type="button" className="btn small soft" onClick={() => onOpenThread(journey.reflection)}>
             {journey.since > 0 ? 'Explore this thread' : 'Start a thread from it'} <Icon name="arrow" size={14} />
           </button>
         </section>
@@ -96,6 +100,7 @@ export function ReflectSide({ today, consider, onFollowUp, onOpenThread, onRefle
             {recent.map((r) => (
               <li key={r.id}>
                 <button type="button" className="row-button" onClick={() => onOpenThread(r)}>
+                  <Icon name="doc" size={22} />
                   <span>
                     <span className="muted small">{weekday(r.date)}</span>
                     <span>{firstWords(r.answer, 44)}</span>
@@ -108,12 +113,13 @@ export function ReflectSide({ today, consider, onFollowUp, onOpenThread, onRefle
       )}
 
       {consider && (
-        <section className="reflect-card is-consider" aria-labelledby="consider-title">
+        <section className="reflect-card is-consider has-disc" aria-labelledby="consider-title">
+          <Disc icon="pin" tone="rose" />
           <h3 id="consider-title" className="card-title">
             Something to consider
           </h3>
           <p className="muted">{consider.text}</p>
-          <button type="button" className="btn small outline" onClick={() => onReflect(consider)}>
+          <button type="button" className="btn small soft" onClick={() => onReflect(consider)}>
             Reflect on this <Icon name="arrow" size={14} />
           </button>
         </section>

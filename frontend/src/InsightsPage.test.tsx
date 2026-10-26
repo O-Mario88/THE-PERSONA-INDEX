@@ -65,24 +65,25 @@ afterEach(() => {
 })
 
 describe('Insights', () => {
-  it('has its own page, in the order of the design, with the Mirrors one tap away', () => {
+  it('has its own page, showing only the sections with something in them, with the Mirrors one tap away', () => {
     stubCounts(null)
     const onOpenMirror = vi.fn()
     render(<Insights {...props} onOpenMirror={onOpenMirror} />)
-    expect(screen.getByRole('heading', { level: 2, name: 'Your Insights' })).toBeInTheDocument()
-    expect(screen.getByText('Understand yourself. Discover you’re not alone. Find what helps.')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 2, name: 'Insights' })).toBeInTheDocument()
+    expect(screen.getByText('Understand yourself. Find what helps.')).toBeInTheDocument()
     const sections = screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)
-    expect(sections).toEqual(['For You', 'You’re Not Alone', 'What Helped', 'Your Growth', 'Saved insights'])
+    expect(sections).toEqual(['For You'])
+    expect(screen.queryByRole('navigation', { name: 'Insights sections' })).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Your Mirrors →' }))
     expect(onOpenMirror).toHaveBeenCalled()
   })
 
-  it('says honestly what has no data yet, and never makes rows up', () => {
+  it('says once what has no data yet, hides the empty sections, and never makes rows up', () => {
     stubCounts(null)
     render(<Insights {...props} />)
     expect(screen.getByText(/Answer a few questions and what they may say about you shows here/)).toBeInTheDocument()
-    expect(screen.getByText('This fills in as you and others report back on the small steps you try.')).toBeInTheDocument()
-    expect(screen.getByText('This fills in over the weeks, from your own earlier and recent answers.')).toBeInTheDocument()
+    expect(screen.queryByText(/This fills in/)).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'What Helped' })).not.toBeInTheDocument()
     expect(screen.queryAllByRole('article')).toHaveLength(0)
   })
 
@@ -213,14 +214,12 @@ describe('Your Growth', () => {
     expect(within(section).getByText(/Only your own answers, side by side\. What changed, if anything, is yours to say\./)).toBeInTheDocument()
   })
 
-  it('says honestly why it is empty until two answers are two weeks apart', () => {
+  it('stays hidden until two answers are two weeks apart', () => {
     stubCounts(null)
     answeredOn('2026-10-20', 'q-old', 'colleagues', 'A?', 'x')
     answeredOn('2026-10-24', 'q-new', 'colleagues', 'B?', 'y')
     render(<Insights {...props} />)
-    const section = screen.getByRole('region', { name: 'Your Growth' })
-    expect(within(section).getByText('This fills in over the weeks, from your own earlier and recent answers.')).toBeInTheDocument()
-    expect(within(section).queryAllByRole('article')).toHaveLength(0)
+    expect(screen.queryByRole('region', { name: 'Your Growth' })).not.toBeInTheDocument()
   })
 
   it('includes reflections only once the person turns that on in Reflect', () => {

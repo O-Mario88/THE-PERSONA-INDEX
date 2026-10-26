@@ -1,34 +1,24 @@
-import { useMemo } from 'react'
-import { growthPairs, type GrowthPair, type GrowthSide } from './growth'
-import { reflectSettings } from './journal'
-import { reflections } from './notebook'
-import { loadHistory } from './profile'
+import type { GrowthPair, GrowthSide } from './growth'
 import { AREA_NAMES, dayMonth } from './reflect'
+import { Disc } from './ui/Disc'
 
 // Insights' Your Growth (Release 3): the person's own earlier and more recent
 // entries in one part of life, side by side (growth.ts). Nothing is said
 // about what changed; that is theirs to say.
 
-export function GrowthSection({ today }: { today: string }) {
-  const pairs = useMemo(
-    () => growthPairs(loadHistory(), reflections(), today, undefined, { reflections: reflectSettings().reflectionsInGrowth }),
-    [today],
-  )
+export function GrowthSection({ pairs }: { pairs: GrowthPair[] }) {
   return (
     <section className="insights-growth" aria-labelledby="growth-title">
-      <h3 id="growth-title" className="section-title">
-        Your Growth
-      </h3>
-      {pairs.length === 0 ? (
-        <p className="muted empty-note">This fills in over the weeks, from your own earlier and recent answers.</p>
-      ) : (
-        <>
-          {pairs.map((p) => (
-            <Pair key={`${p.kind}.${p.area}`} pair={p} />
-          ))}
-          <p className="muted small">Only your own answers, side by side. What changed, if anything, is yours to say.</p>
-        </>
-      )}
+      <div className="insight-side-head">
+        <Disc icon="mountain" tone="blue" size={40} />
+        <h3 id="growth-title" className="section-title">
+          Your Growth
+        </h3>
+      </div>
+      {pairs.map((p) => (
+        <Pair key={`${p.kind}.${p.area}`} pair={p} />
+      ))}
+      <p className="muted small">Only your own answers, side by side. What changed, if anything, is yours to say.</p>
     </section>
   )
 }

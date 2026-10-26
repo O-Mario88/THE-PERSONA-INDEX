@@ -4,6 +4,7 @@ import { NodPicker } from './Friends'
 import { ringOf, type Rings } from './rings'
 import { getReachOuts, putAwayReachOut, type FriendView, type ReachOutView } from './social'
 import { Avatar } from './ui/Avatar'
+import { Disc } from './ui/Disc'
 import { Icon } from './ui/icons'
 
 // Support & Celebrate (the new Connect): reach out, appreciate progress and be
@@ -34,19 +35,19 @@ export function SupportCelebrate({ today }: { today?: string }) {
           <div className="support-tiles">
             {today && (
               <div className="support-tile is-encourage">
-                <Icon name="heart" size={22} />
+                <Disc icon="heart" tone="purple" size={44} />
                 <p className="support-title">Is there someone you’d like to encourage?</p>
                 <p className="muted small">A small message can make a big difference.</p>
-                <button type="button" className="btn small" onClick={() => setOpen('encourage')}>
+                <button type="button" className="btn small soft" onClick={() => setOpen('encourage')}>
                   Reach out <Icon name="arrow" size={16} />
                 </button>
               </div>
             )}
             <div className="support-tile is-celebrate">
-              <Icon name="sun" size={22} />
+              <Disc icon="sun" tone="amber" size={44} />
               <p className="support-title">Celebrate a win together</p>
               <p className="muted small">Made progress on something that matters? Tell someone who matters.</p>
-              <button type="button" className="btn small celebrate" onClick={() => setOpen('celebrate')}>
+              <button type="button" className="btn small soft" onClick={() => setOpen('celebrate')}>
                 Share a win <Icon name="arrow" size={16} />
               </button>
             </div>

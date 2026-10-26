@@ -7,6 +7,7 @@ import { GoodThings, PlanCheckCard, PlanOffer } from './Keep'
 import { movesOn, setMoveStatus, startedInEvening, type Move } from './moves'
 import { planToCheck } from './notebook'
 import type { Practice } from './practices'
+import { FirstGlimpse } from './FirstGlimpse'
 import { heavyPause, isLowMood, loadHistory, recordRoute, type AnswerRecord, type History, type Route } from './profile'
 import { NEED_PHRASES, type Need } from './needs'
 import { TapestryGrid } from './TapestryViews'
@@ -36,6 +37,10 @@ import {
 
 type Props = {
   date: string
+  // The close of the person's very first sitting: their first glimpse in
+  // place of the usual thread (firstWeek.ts), with their name if they gave one.
+  glimpse?: { name: string | null }
+  dayWithYou?: number // in the first week, the close counts the person's own days
   questions: Question[] // this sitting's questions
   tomorrowThemes: string[]
   onPractice?: (p: Practice) => void
@@ -58,7 +63,7 @@ const answersIn = (h: History, questions: Question[], date: string): AnswerRecor
   })
 
 export function DayClose(props: Props) {
-  const { date, questions, tomorrowThemes, sitting, onPractice } = props
+  const { date, questions, tomorrowThemes, sitting, onPractice, glimpse, dayWithYou } = props
   const headingId = `close-${sitting}-${date}`
   const [history] = useState(loadHistory)
   // A plan made before this sitting began is asked about at its close.
@@ -70,6 +75,10 @@ export function DayClose(props: Props) {
   // After a heavy answer the close keeps to kind words: no honest part, no
   // plan or practice offered (profile.ts, heavyPause).
   const [paused] = useState(() => heavyPause(history, date))
+  // The close of a person's first sitting opens with a first glimpse of
+  // them (firstWeek.ts); never after a heavy answer, which keeps to kind words.
+  const dayAnswers = props.sitting === 'evening' ? [...answersIn(history, props.morning, date), ...mine] : mine
+  const glimpseFor = glimpse && !heavy ? glimpse : null
 
   let title = "That's your day."
   if (props.sitting === 'morning') {
@@ -87,7 +96,9 @@ export function DayClose(props: Props) {
       <div className="close-hero">
         <div className="close-hero-top">
           <span className="close-hero-label">
-            {sitting === 'morning' ? 'Morning close' : 'Evening close'} · day {s.day} of 90
+            {dayWithYou === 1
+              ? `Your first ${sitting}`
+              : `${sitting === 'morning' ? 'Morning close' : 'Evening close'} · ${dayWithYou ? `your day ${dayWithYou}` : `day ${s.day} of 90`}`}
           </span>
           {questions.length > 0 && (
             <span className="close-hero-pill">
@@ -115,8 +126,13 @@ export function DayClose(props: Props) {
 
       {props.sitting === 'morning' ? (
         <>
-          <Thread answers={mine} history={history} date={date} paused={paused} />
-          <MorningMoves date={date} />
+          {glimpseFor ? (
+            <FirstGlimpse answers={mine} history={history} date={date} name={glimpseFor.name} />
+          ) : (
+            <Thread answers={mine} history={history} date={date} paused={paused} />
+          )}
+          {/* On the first glimpse an empty list of steps is left out. */}
+          {!(glimpseFor && movesOn(date).length === 0) && <MorningMoves date={date} />}
           {eveningThemes && (
             <Upcoming
               label={`Your evening three · ${opensAt('evening')}`}
@@ -127,6 +143,7 @@ export function DayClose(props: Props) {
         </>
       ) : (
         <>
+          {glimpseFor && <FirstGlimpse answers={dayAnswers} history={history} date={date} name={glimpseFor.name} />}
           <MoveCheck date={date} />
           {!paused && <RouteCheck date={date} morning={props.morning} />}
           <ForTomorrow

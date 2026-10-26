@@ -8,33 +8,38 @@ never in a screen file.
 
 ## Direction
 
-Calm and confident: a white page (light) or navy (dark), bold geometric
-type, generous cards on a hairline, and one accent, lime, used only where
-the person acts or progresses (primary buttons, a chosen answer, a done
-window, progress). Everything else is ink and grey. Navy heroes (the close,
-the practice timer, the room code, the share card) give each day a moment of
-weight.
+Since 2026-10-26 the app copies Edwin's second set of references (Connect,
+Your Circle, Insights and Reflect, light and dark). A warm cream page,
+white cards on a hairline with a soft lift, a deep forest sidebar on a wide
+screen, midnight primary buttons and chosen tabs, soft celeste boxes, and pastel
+discs (green, blue, purple, rose, amber) behind line icons. Dark mode is a
+deep midnight, where the filled accent turns marigold. Three rules stay
+where the references differ: initials instead of photos, no feed of shared
+moments, and only real counts (no invented numbers or percentages).
 
 ## Colour
 
+Midnight & Cream (Edwin chose it 2026-10-26 14:40, replacing green, lime and
+teal): midnight for trust and depth, a warm cream page like a notebook, herb
+for growth, marigold for warmth and celebrating, terracotta for "the other
+side". Red is for real warnings only.
+
 | Token | Light | Dark | Use |
 |---|---|---|---|
-| `--bg`, `--surface` | `#ffffff` | `#0e1b26`, `#13222f` | page, cards |
-| `--surface-2` | `#f3f5f7` | `#1a2b3a` | fields, quiet pills, tracks |
-| `--text` | `#0e1a24` | `#f4f7f9` | body and titles |
-| `--muted` | `#64707c` | `#93a1ae` | captions |
-| `--lime` | `#c6f24e` | same | fills only, always under `--on-lime` ink |
-| `--accent-ink` | `#2f6d10` | lime | lime's partner for text and icons |
-| `--accent-wash` | `#f4fbe2` | lime at 8% | a chosen option's ground |
+| `--bg`, `--surface` | `#fbf7f0`, `#fffdf9` | `#0b1a24`, `#102330` | page (cream / deep midnight) |
+| `--surface-2`, `--surface-3` | `#f4ede1`, `#ebe2d3` | `#16303f`, `#1d3a4b` | fields, tracks |
+| `--text`, `--text-2`, `--muted` | `#12283a`, `#3d4f5c`, `#69737c` | `#f6efe3`, `#d6d2c9`, `#9eaab3` | words |
+| `--forest`, `--forest-2` | `#013d5a` (Midnight), `#0d5275` | same, `#13506f` | sidebar, primary buttons, chosen tabs |
+| `--lime` | midnight (the filled accent) | `#f4a258` (Marigold) | filled accents, always under `--on-lime` |
+| `--brand-lime` | `#f4a258` | same | the leaf and active icon on the midnight sidebar |
+| `--leaf` | `#5f7d58` (Herb) | `#a9c3a1` | icons, checks, progress |
+| `--accent-ink`, `--accent-wash`, `--accent-line` | `#0b4f70`, `#e7f0ed`, `#bdd3ce` (Celeste) | marigold, `#183242`, `#2a4a5c` | links, soft boxes, tags |
+| `--amber` (Marigold), `--rose` (Terracotta), `--blue`, `--purple` (Lavender) + `-wash` | ink on a pale wash | darker washes | discs and tinted boxes |
+| `--danger` | `#b42318` | `#ff8a7a` | warnings only |
 
-| `--warm`, `--warm-ink`, `--warm-wash` | `#f6b73c`, `#8a5300`, `#fff6e3` | amber, amber, amber at 10% | Connect only: "Celebrate a win together" and a friend's good news. Never a second accent elsewhere |
-
-Lime is never text on white (1.2:1). Every text pair is at least 4.5:1;
-the lowest is muted on `--surface-2` at 4.63:1.
-
-Dark mode is navy, not black. It turns on when the phone asks for dark, and
-on Today through the evening and night; Account's "Dark mode" switch turns
-both off.
+Every text pair is at least 4.5:1. Discs carry a line icon in the tone's ink
+on its wash (`ui/Disc.tsx`). Shared reference styles live last, in
+`styles/screens/reference.css`.
 
 ## Type
 
@@ -51,11 +56,11 @@ plus a soft 4% lift in light, and none in dark.
 
 ## Parts
 
-- **Buttons**: `.btn` is the lime primary; `.btn.wide` and `.next` fill the
+- **Buttons**: `.btn` is the forest primary (lime in dark); `.btn.soft` is mint; `.btn.wide` and `.next` fill the
   width at 56px; `.ghost`, `.outline` and `.danger` are quieter.
 - **Options**: a card per answer with an empty ring that fills on choice
   (`.options .option`). Plain `.option` rows elsewhere end in a chevron.
-- **Chips**: grey pills; pressed ones turn lime.
+- **Chips**: white pills on a hairline; pressed ones turn forest (lime in dark).
 - **Progress**: segments under a sitting, the five-dot "Today's ritual", the
   three-step unlock track, rings for the day and countdowns.
 - **Insight mark**: three rising bars in lime before an insight, a thread or
@@ -69,3 +74,6 @@ by school/company" list. The writing guide forbids streaks, scores and
 comparison, and the circle shows who answered, never what. Those places
 show the day's "N of 5" ring, the person's own words and patterns, initials
 on a tint, and suggestions from shared circles only.
+
+
+Most of the page sits on the background with hairlines; only a few highlights keep a tinted box. Settings shows three everyday choices and folds the rest under "More settings".

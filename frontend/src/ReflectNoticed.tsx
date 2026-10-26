@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { ReflectionArea } from "./notebook";
 import type { Noticed, NoticedSource } from "./noticed";
 import { AREA_NAMES } from "./reflect";
+import { Disc, type Tone } from "./ui/Disc";
 import { Icon, type IconName } from "./ui/icons";
 
 // What you've noticed (Reflect): strengths and areas to grow across the
@@ -21,14 +22,24 @@ const AREAS: ReflectionArea[] = [
   "self",
 ];
 const ICONS: Record<ReflectionArea, IconName> = {
-  work: "room",
+  work: "briefcase",
   school: "notebook",
   family: "heart",
   culture: "globe",
-  social: "connect",
-  health: "sun",
+  social: "people",
+  health: "leaf",
   money: "bars",
   self: "you",
+};
+const TONES: Record<ReflectionArea, Tone> = {
+  work: "blue",
+  school: "blue",
+  family: "rose",
+  culture: "blue",
+  social: "blue",
+  health: "green",
+  money: "amber",
+  self: "purple",
 };
 const SOURCE: Record<NoticedSource, string> = {
   answers: "From your answers",
@@ -65,10 +76,10 @@ export function ReflectNoticed({ noticed, onReflect }: Props) {
           </p>
         </div>
       </div>
-      <div className="m-spans is-two" role="group" aria-label="Show">
+      <div className="u-tabs" role="group" aria-label="Show">
         <button
           type="button"
-          className="m-span"
+          className="u-tab"
           aria-pressed={group === "strength"}
           onClick={() => setGroup("strength")}
         >
@@ -76,7 +87,7 @@ export function ReflectNoticed({ noticed, onReflect }: Props) {
         </button>
         <button
           type="button"
-          className="m-span"
+          className="u-tab"
           aria-pressed={group === "grow"}
           onClick={() => setGroup("grow")}
         >
@@ -105,7 +116,7 @@ export function ReflectNoticed({ noticed, onReflect }: Props) {
               className={item ? "noticed-card" : "noticed-card is-empty"}
             >
               <p className="noticed-area">
-                <Icon name={ICONS[area]} size={18} /> {AREA_SHORT[area]}
+                <Disc icon={ICONS[area]} tone={TONES[area]} size={30} /> {AREA_SHORT[area]}
               </p>
               {item ? (
                 <>
@@ -117,7 +128,7 @@ export function ReflectNoticed({ noticed, onReflect }: Props) {
                     aria-label={`Reflect on ${AREA_SHORT[area]}`}
                     onClick={() => onReflect(item)}
                   >
-                    Reflect on this <Icon name="chevron" size={14} />
+                    <Icon name="chevron" size={16} />
                   </button>
                 </>
               ) : (

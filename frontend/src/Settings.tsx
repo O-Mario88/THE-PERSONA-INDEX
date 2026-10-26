@@ -4,7 +4,7 @@ import { PeopleEditor } from './PeopleEditor'
 import { LockSettings } from './pwa/LockGate'
 import { countryOf, WORDS_DAYS, type Prefs, type WordsDays } from './prefs'
 import { regionOf } from './regions'
-import { COUNTRY_SETTING, REGIONAL_SWITCH } from './words'
+import { REGIONAL_SWITCH } from './words'
 import { MAX_NAME } from './Welcome'
 
 // Settings (review of 2026-10-15): the few choices a person can change
@@ -21,6 +21,7 @@ export function SettingsScreen({
   onBack,
   name = '',
   onName,
+  onShowAll,
 }: {
   prefs: Prefs
   onChange: (p: Prefs) => void
@@ -28,6 +29,7 @@ export function SettingsScreen({
   onBack: () => void
   name?: string // what the greeting calls the person, kept on this phone
   onName?: (name: string) => void
+  onShowAll?: () => void // in the first week: show every section now (firstWeek.ts)
 }) {
   return (
     <section className="screen settings" aria-labelledby="settings-title">
@@ -37,12 +39,13 @@ export function SettingsScreen({
       <h2 id="settings-title" className="done-title">
         Settings
       </h2>
+      <p className="muted settings-lead">Everything here is optional. Change it whenever you like.</p>
 
       {onName && (
         <fieldset className="notice">
-          <legend className="eyebrow">What I call you</legend>
+          <legend className="eyebrow">Your name</legend>
           <label className="field-label">
-            <span className="small muted">Your first name, for the greeting. It stays on this phone.</span>
+            <span className="small muted">For the greeting. It stays on this phone.</span>
             <input className="field" defaultValue={name} maxLength={MAX_NAME} autoComplete="given-name" onBlur={(e) => onName(e.target.value.trim())} />
           </label>
         </fieldset>
@@ -50,9 +53,7 @@ export function SettingsScreen({
 
       <fieldset className="notice">
         <legend className="eyebrow">Intimacy questions</legend>
-        <p className="muted">
-          Some questions are about intimacy and sex: frank, never graphic, and kept only as "a private answer".
-        </p>
+        <p className="muted small">Frank, never graphic, and always kept private.</p>
         <label className="switch">
           <input
             type="radio"
@@ -80,26 +81,8 @@ export function SettingsScreen({
       </fieldset>
 
       <fieldset className="notice">
-        <legend className="eyebrow">Your own words</legend>
-        <p className="muted">
-          They stay on this phone, and go in your backup only if you choose that below. Choose how long they stay.
-        </p>
-        {WORDS_DAYS.map((d) => (
-          <label key={d} className="switch">
-            <input
-              type="radio"
-              name="words-days"
-              checked={prefs.wordsDays === d}
-              onChange={() => onChange({ ...prefs, wordsDays: d })}
-            />
-            {WORDS_NAMES[d]}
-          </label>
-        ))}
-      </fieldset>
-
-      <fieldset className="notice">
         <legend className="eyebrow">Where you live</legend>
-        <p className="muted">{COUNTRY_SETTING}</p>
+        <p className="muted small">So I can point you to the right helpline on a hard day. It stays on this phone.</p>
         <CountrySelect value={prefs.country ?? ''} withNone onChange={(country) => onChange({ ...prefs, country })} />
         {regionOf(countryOf(prefs)) && (
           <label className="switch">
@@ -116,18 +99,47 @@ export function SettingsScreen({
         )}
       </fieldset>
 
+      <details className="settings-more">
+        <summary>More settings</summary>
+      <fieldset className="notice">
+        <legend className="eyebrow">Your own words</legend>
+        <p className="muted small">How long the words you type stay on this phone.</p>
+        {WORDS_DAYS.map((d) => (
+          <label key={d} className="switch">
+            <input
+              type="radio"
+              name="words-days"
+              checked={prefs.wordsDays === d}
+              onChange={() => onChange({ ...prefs, wordsDays: d })}
+            />
+            {WORDS_NAMES[d]}
+          </label>
+        ))}
+      </fieldset>
+
       <fieldset className="notice">
         <legend className="eyebrow">Your people</legend>
-        <p className="muted">
-          When an answer sounds heavy, I'll name them instead of giving you an insight. They stay on this phone, and go
-          in your backup only if your own words do.
-        </p>
+        <p className="muted small">People I'll point you to if an answer sounds heavy. They stay on this phone.</p>
         <PeopleEditor />
       </fieldset>
+
+      {onShowAll && (
+        <fieldset className="notice">
+          <legend className="eyebrow">Your first week</legend>
+          <p className="muted small">
+            For your first week the app keeps to Today, Reflect and Insights. Connect and your Mirrors arrive as they fill in.
+          </p>
+          <button type="button" className="btn small soft" onClick={onShowAll}>
+            Show every section now
+          </button>
+        </fieldset>
+      )}
 
       <BackupSettings />
 
       <LockSettings />
+
+      </details>
 
       <button type="button" className="option" onClick={onOpenKept}>
         What I keep, and how to delete it
