@@ -23,8 +23,12 @@ targets:
     supportedDestinations: [iOS, macOS]
     sources:
       - path: PersonaIndex
+      # The widget faces, for the debug snapshot of them on a Mac.
+      - path: PersonaWidgets/DayWidgetFace.swift
     dependencies:
       - package: PersonaKit
+      - target: PersonaWidgets
+        embed: true
     info:
       path: PersonaIndex/Info.plist
       properties:
@@ -47,6 +51,10 @@ targets:
         NSSpeechRecognitionUsageDescription: Speak turns your voice into words on this device only. Nothing you say is sent or kept.
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
+        # The widgets open the app at Today or the Mirrors.
+        CFBundleURLTypes:
+          - CFBundleURLName: com.personaindex.app
+            CFBundleURLSchemes: [personaindex]
     entitlements:
       path: PersonaIndex/PersonaIndex.entitlements
       properties:
@@ -60,4 +68,35 @@ targets:
         # No app icon yet; the asset catalog holds only the launch colour.
         ASSETCATALOG_COMPILER_APPICON_NAME: ""
         ENABLE_PREVIEWS: YES
+        CODE_SIGN_IDENTITY: "-"
+  # The widgets: what the clock knows, never anything the person answered.
+  PersonaWidgets:
+    type: app-extension
+    supportedDestinations: [iOS, macOS]
+    sources:
+      - path: PersonaWidgets
+      - path: PersonaIndex/Design/Tokens.swift
+      - path: PersonaIndex/Resources/Fonts
+        buildPhase: resources
+    dependencies:
+      - package: PersonaKit
+      - sdk: WidgetKit.framework
+      - sdk: SwiftUI.framework
+    info:
+      path: PersonaWidgets/Info.plist
+      properties:
+        CFBundleDisplayName: Persona Index
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+        UIAppFonts: [Figtree-Regular.ttf, Figtree-Medium.ttf, Figtree-SemiBold.ttf, Figtree-Bold.ttf, Figtree-ExtraBold.ttf, Figtree-Black.ttf]
+        ATSApplicationFontsPath: "."
+    entitlements:
+      path: PersonaWidgets/PersonaWidgets.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.personaindex.app.widgets
+        PRODUCT_NAME: PersonaWidgets
+        SKIP_INSTALL: YES
         CODE_SIGN_IDENTITY: "-"

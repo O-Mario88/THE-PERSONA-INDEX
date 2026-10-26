@@ -54,6 +54,25 @@ struct MainTabs: View {
     }
 }
 
+#if os(iOS)
+/// Insights on iPhone, with the Mirrors and Saved opened on top by a link,
+/// a reminder or a widget.
+private struct InsightsStack: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        @Bindable var model = model
+        NavigationStack {
+            InsightsView()
+                .toolbar(.hidden, for: .navigationBar)
+                .navigationDestination(item: $model.insightsPage) { page in
+                    if page == .saved { SavedView() } else { MirrorsView() }
+                }
+        }
+    }
+}
+#endif
+
 /// The screen for a section, the same on iPhone and Mac.
 struct SectionView: View {
     let section: AppSection
@@ -66,7 +85,7 @@ struct SectionView: View {
         case .insights:
             #if os(iOS)
             // On iPhone, the Mirrors, Saved and Reflect open on top of Insights, with Back.
-            NavigationStack { InsightsView().toolbar(.hidden, for: .navigationBar) }
+            InsightsStack()
             #else
             InsightsView()
             #endif
