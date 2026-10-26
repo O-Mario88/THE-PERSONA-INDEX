@@ -9,6 +9,7 @@ final class RecordingStore: KeyValueStore, @unchecked Sendable {
     var keys: [String] { lock.withLock { Array(values.keys) } }
     func string(forKey key: String) -> String? { lock.withLock { values[key] } }
     func set(_ value: String?, forKey key: String) { lock.withLock { values[key] = value } }
+    func keys(withPrefix prefix: String) -> [String] { lock.withLock { values.keys.filter { $0.hasPrefix(prefix) } } }
 }
 
 @Suite("Reflect's writing on the device")
