@@ -29,6 +29,7 @@
 		6CB7F0BD38627D2A325E2F05 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A12281AF68FC42D9DDCCAEA0 /* WidgetKit.framework */; };
 		6CEEDC020BF967AFE3AC6340 /* Figtree-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = DDE6E0628DDA64A022D9C66F /* Figtree-SemiBold.ttf */; };
 		7087F80F9323837D05BAE3AE /* Figtree-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = BAE1F592572E4AE98093ADC0 /* Figtree-Regular.ttf */; };
+		72F71453A52FECD2D2A1D1AB /* PatternsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 589E0332853352FDA800EFF3 /* PatternsSection.swift */; };
 		7984C02E190E06C92BCB5A90 /* Figtree-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = DDE6E0628DDA64A022D9C66F /* Figtree-SemiBold.ttf */; };
 		79D7E26BD8BDEFEC5A1F0774 /* PersonaIndexApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DB7B86359BCF5B3EEA8FD8B /* PersonaIndexApp.swift */; };
 		82874F0CCCD938B93A08D7E6 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E86A53B19DC9F45D4CE94BDB /* SwiftUI.framework */; };
@@ -46,6 +47,7 @@
 		B14BDA1CAA5AE068960D2C45 /* LockScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A56950EBF463510FAF8D3C7 /* LockScreen.swift */; };
 		B1E4DA417025BEAE24B575F9 /* PhraseSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BB9F50E31CB03D40F8B39A9 /* PhraseSheet.swift */; };
 		B4EFC53C6D63FBE49FB8ADD8 /* Figtree-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 8EC58F8519E3DD93027B8932 /* Figtree-ExtraBold.ttf */; };
+		B56F6FB399D01CE349E8101B /* GrowthSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AD5C4F97DAD7D84EAE3BE1C /* GrowthSection.swift */; };
 		BBBCC28F3599C2D1EBE9EF2F /* HeavyNote.swift in Sources */ = {isa = PBXBuildFile; fileRef = B18360B08FF3C4F629FFF6D5 /* HeavyNote.swift */; };
 		BE865D2D938EE4091CE67B3D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D6E70DFE9CC59514123930D5 /* Assets.xcassets */; };
 		BF8C63B67FDF4C88B46A5496 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D978FEB9E326C63E6D93F817 /* WelcomeView.swift */; };
@@ -103,6 +105,7 @@
 		4D7E35BDE335C3BA19A62164 /* ReflectParts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReflectParts.swift; sourceTree = "<group>"; };
 		54779884F3CF5113D8603F2E /* ReminderScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderScheduler.swift; sourceTree = "<group>"; };
 		56E04314E6E77555685610A4 /* PersonaIndex.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PersonaIndex.entitlements; sourceTree = "<group>"; };
+		589E0332853352FDA800EFF3 /* PatternsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatternsSection.swift; sourceTree = "<group>"; };
 		5BB9F50E31CB03D40F8B39A9 /* PhraseSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhraseSheet.swift; sourceTree = "<group>"; };
 		5C8C112AE3F39E2B249F141A /* OFL.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = OFL.txt; sourceTree = "<group>"; };
 		637CF8C1CA555604D0445CD5 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
@@ -114,6 +117,7 @@
 		8EC58F8519E3DD93027B8932 /* Figtree-ExtraBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Figtree-ExtraBold.ttf"; sourceTree = "<group>"; };
 		9588A5698FE8694374502898 /* Figtree-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Figtree-Medium.ttf"; sourceTree = "<group>"; };
 		9A741E3C4747907CC6FC91EC /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		9AD5C4F97DAD7D84EAE3BE1C /* GrowthSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrowthSection.swift; sourceTree = "<group>"; };
 		9CE05FDB9A2CDC0A4669EECA /* BackupModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackupModel.swift; sourceTree = "<group>"; };
 		A12281AF68FC42D9DDCCAEA0 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		A8D975F5233DDA80D1D18013 /* InviteCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InviteCard.swift; sourceTree = "<group>"; };
@@ -180,6 +184,14 @@
 			path = PersonaWidgets;
 			sourceTree = "<group>";
 		};
+		00B299D9420E9E4536B1941D /* Insights */ = {
+			isa = PBXGroup;
+			children = (
+				9AD5C4F97DAD7D84EAE3BE1C /* GrowthSection.swift */,
+			);
+			path = Insights;
+			sourceTree = "<group>";
+		};
 		03725B9456839551BF5BB733 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
@@ -201,6 +213,7 @@
 		281B990C6CA281783580012F /* Mirrors */ = {
 			isa = PBXGroup;
 			children = (
+				589E0332853352FDA800EFF3 /* PatternsSection.swift */,
 				D8ED1B412C2B8F4B7CB97E31 /* PeriodMirrorViews.swift */,
 			);
 			path = Mirrors;
@@ -303,6 +316,7 @@
 				D978FEB9E326C63E6D93F817 /* WelcomeView.swift */,
 				FDF00EC06F79706885373CFA /* YouView.swift */,
 				381D68EF02406DD88A95CFE3 /* Connect */,
+				00B299D9420E9E4536B1941D /* Insights */,
 				281B990C6CA281783580012F /* Mirrors */,
 				DF34E7023AB9662BD99F7DD8 /* Reflect */,
 				C3DC2FE116C1A713EBDF8992 /* Settings */,
@@ -482,6 +496,7 @@
 				5402D87483F205D138DDF64B /* ConnectView.swift in Sources */,
 				CF6FAB564EEBD29A2EF7EC27 /* DayWidgetFace.swift in Sources */,
 				AF83E155C729C7691BFCAF02 /* Dictation.swift in Sources */,
+				B56F6FB399D01CE349E8101B /* GrowthSection.swift in Sources */,
 				BBBCC28F3599C2D1EBE9EF2F /* HeavyNote.swift in Sources */,
 				A07C2FDC7062F5CBD55B1FA8 /* InsightsView.swift in Sources */,
 				509052FE78CF24092BF82C7C /* InviteCard.swift in Sources */,
@@ -489,6 +504,7 @@
 				B14BDA1CAA5AE068960D2C45 /* LockScreen.swift in Sources */,
 				428EA353940BB8242CB6575C /* MainTabs.swift in Sources */,
 				4AE36D19290FBF3D85ECF321 /* MirrorsView.swift in Sources */,
+				72F71453A52FECD2D2A1D1AB /* PatternsSection.swift in Sources */,
 				383BD813053A879C84B61FB1 /* PeriodMirrorViews.swift in Sources */,
 				79D7E26BD8BDEFEC5A1F0774 /* PersonaIndexApp.swift in Sources */,
 				B1E4DA417025BEAE24B575F9 /* PhraseSheet.swift in Sources */,

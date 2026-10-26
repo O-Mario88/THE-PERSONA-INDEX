@@ -10,9 +10,18 @@ import SwiftUI
 struct ConnectView: View {
     @Environment(AppModel.self) private var model
 
+    private static let supportID = "support"
+
+    private func scrollToSupport(_ proxy: ScrollViewProxy) {
+        guard model.focusSupport, !(model.circle?.friends.isEmpty ?? true) else { return }
+        model.focusSupport = false
+        withAnimation { proxy.scrollTo(Self.supportID, anchor: .top) }
+    }
+
     private let columns = [GridItem(.adaptive(minimum: 340, maximum: 560), spacing: Space.s5, alignment: .top)]
 
     var body: some View {
+        ScrollViewReader { proxy in
         ScrollView {
             LazyVStack(alignment: .leading, spacing: Space.s5) {
                 VStack(alignment: .leading, spacing: Space.s2) {
@@ -30,7 +39,7 @@ struct ConnectView: View {
                         if !circle.friends.isEmpty {
                             CommonGroundCard(friends: circle.friends)
                             WhatHelpedCard()
-                            SupportCard()
+                            SupportCard().id(Self.supportID)
                         }
                         InviteCard(circle: circle)
                     }
@@ -55,6 +64,10 @@ struct ConnectView: View {
         }
         .background(Palette.bg)
         .scrollDismissesKeyboard(.interactively)
+        // Opened from Insights' suggestion: straight to Support & Celebrate once it is there.
+        .onChange(of: model.circle) { _, _ in scrollToSupport(proxy) }
+        .onAppear { scrollToSupport(proxy) }
+        }
         .task { await model.loadConnect() }
         .refreshable { await model.loadConnect() }
     }

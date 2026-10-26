@@ -77,7 +77,7 @@ public struct CardTexts: Sendable {
 }
 
 /// How sure a card can be, from the person's own answers in the last 30 days.
-public enum Evidence: Sendable, Equatable {
+public enum Evidence: Sendable, Hashable {
     case thought, noticing, pattern
 }
 
@@ -141,17 +141,44 @@ public enum Insights {
 
     public static func needName(_ need: String) -> String? { needNames[need] }
 
+    /// The seven needs in the web's order (frontend/src/needs.ts).
+    public static let needOrder = ["freedom", "belonging", "respect", "competence", "security", "calm", "understood"]
+
+    /// The needs as they read inside a sentence (the web's NEED_PHRASES).
+    public static let needPhrases: [String: String] = [
+        "freedom": "choosing for yourself",
+        "belonging": "being close to people",
+        "respect": "being respected",
+        "competence": "doing well",
+        "security": "feeling safe",
+        "calm": "feeling settled",
+        "understood": "being understood",
+    ]
+
     static let noticingAnswers = 3 // the same need across several answers…
     static let noticingDays = 2 // …on more than one day
     static let patternSpan = 7 // and, to be a pattern, at least a week apart
 
-    public static func evidence(_ answers: [AnswerHistory.Answer], need: String, today: String) -> Evidence {
-        let recent = answers.filter { $0.need == need && $0.theme != "intimacy" && !$0.heavy && daysBetween($0.date, today) < CardTexts.days }
-        // "Not me" on any of them: the person has said this is not a pattern.
-        if recent.contains(where: { $0.verdict == Verdict.notMe.rawValue }) { return .thought }
+    /// How sure a need can be, and the answers behind it. After a No in the
+    /// longer Mirrors (Patterns), only answers dated after it count.
+    public static func evidenceDetail(_ answers: [AnswerHistory.Answer], need: String, today: String, retiredAfter: String? = nil)
+        -> (evidence: Evidence, answers: Int, days: Int, since: String) {
+        let recent = answers.filter { a in
+            a.need == need && a.theme != "intimacy" && !a.heavy && daysBetween(a.date, today) < CardTexts.days
+                && daysBetween(a.date, today) >= 0 && (retiredAfter.map { a.date > $0 } ?? true)
+        }
         let days = Array(Set(recent.map(\.date))).sorted()
-        guard recent.count >= noticingAnswers, days.count >= noticingDays, let first = days.first, let last = days.last else { return .thought }
-        return daysBetween(first, last) >= patternSpan ? .pattern : .noticing
+        let counts = (answers: recent.count, days: days.count, since: days.first ?? "")
+        // "Not me" on any of them: the person has said this is not a pattern.
+        if recent.contains(where: { $0.verdict == Verdict.notMe.rawValue }) { return (.thought, counts.answers, counts.days, counts.since) }
+        guard recent.count >= noticingAnswers, days.count >= noticingDays, let first = days.first, let last = days.last else {
+            return (.thought, counts.answers, counts.days, counts.since)
+        }
+        return (daysBetween(first, last) >= patternSpan ? .pattern : .noticing, counts.answers, counts.days, counts.since)
+    }
+
+    public static func evidence(_ answers: [AnswerHistory.Answer], need: String, today: String, retiredAfter: String? = nil) -> Evidence {
+        evidenceDetail(answers, need: need, today: today, retiredAfter: retiredAfter).evidence
     }
 
     public static func label(_ e: Evidence, date: String, today: String) -> String {
@@ -176,7 +203,9 @@ public enum Insights {
             let fallback = questions.first { $0.id == a.questionId }.flatMap { CardText($0, optionId: optionId, date: a.date) }
             guard let text = texts.text(a.questionId) ?? fallback else { return nil }
             let need = text.need ?? a.need
-            let evidence = need.map { text.heavy == true ? Evidence.thought : Self.evidence(answers, need: $0, today: today) } ?? .thought
+            let evidence = need.map { n in
+                text.heavy == true ? Evidence.thought : Self.evidence(answers, need: n, today: today, retiredAfter: Patterns.retired(n, store: store))
+            } ?? .thought
             return ForYouCard(text: text, optionId: optionId, evidence: evidence, verdict: a.verdict, regional: a.regional)
         }
         return cards.sorted { $0.text.date > $1.text.date }

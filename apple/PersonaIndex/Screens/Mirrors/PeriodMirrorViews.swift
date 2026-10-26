@@ -36,6 +36,7 @@ struct PeriodMirrorTab: View {
 
 private struct PeriodPage: View {
     let p: PeriodMirror
+    @Environment(AppModel.self) private var model
 
     private var adjective: String {
         switch p.period {
@@ -70,6 +71,7 @@ private struct PeriodPage: View {
         var out = [Part(title: "Week by week", body: AnyView(weekByWeek)),
                    Part(title: "Your trait read", body: AnyView(traits))]
         if !p.moments.isEmpty { out.append(Part(title: "The answers that said the most", body: AnyView(moments))) }
+        if !model.patterns().isEmpty { out.append(Part(title: "Patterns in your answers", body: AnyView(PatternsSection()))) }
         if p.stats.stepsStarted > 0 { out.append(Part(title: "Your small steps", body: AnyView(steps))) }
         return out
     }

@@ -139,6 +139,13 @@ struct ReflectView: View {
                     Text("Only counts of what you wrote about, worked out on this device. Off unless you turn it on.").font(.pSmall).foregroundStyle(Palette.muted)
                 }
             }
+            Toggle(isOn: Binding(get: { model.reflect.settings.reflectionsInGrowth },
+                                 set: { var s = model.reflect.settings; s.reflectionsInGrowth = $0; model.reflect.setSettings(s) })) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Show my reflections in Your Growth").font(.pH3)
+                    Text("Insights sets an earlier and a more recent reflection side by side, on this device only. Off unless you turn it on.").font(.pSmall).foregroundStyle(Palette.muted)
+                }
+            }
             Toggle(isOn: Binding(get: { model.reflect.settings.threadsInMirror },
                                  set: { var s = model.reflect.settings; s.threadsInMirror = $0; model.reflect.setSettings(s) })) {
                 VStack(alignment: .leading, spacing: 2) {
