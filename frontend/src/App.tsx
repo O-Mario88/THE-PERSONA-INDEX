@@ -134,6 +134,8 @@ function App() {
   // Stage 5: the account, if the person signed in, and an invite link they
   // followed (kept until they join or say not now).
   const me = useAccount()
+  // Where Connect opens to, when Insights points there.
+  const [circleFocus, setCircleFocus] = useState<'support' | null>(null)
   const [invited] = useState(inviteFromURL)
   useEffect(() => {
     if (invited && !me) setTab('circle')
@@ -365,6 +367,7 @@ function App() {
   }
 
   function goTab(t: Tab) {
+    if (t !== 'circle') setCircleFocus(null)
     setTab(t)
     if (t === 'today' && tab === 'today') setFlow(null)
     window.scrollTo?.({ top: 0 })
@@ -760,7 +763,9 @@ function App() {
             </>
           )}
 
-          {tab === 'circle' && <CircleScreen onOpenMirror={() => open('mirror')} today={date} questions={[...morningQs, ...eveningQs]} />}
+          {tab === 'circle' && (
+            <CircleScreen onOpenMirror={() => open('mirror')} today={date} questions={[...morningQs, ...eveningQs]} focus={circleFocus ?? undefined} />
+          )}
 
           {tab === 'account' && (
             <AccountScreen
@@ -817,6 +822,10 @@ function App() {
               onOpenKept={() => open('kept')}
               onOpenReflect={() => goTab('notebook')}
               onOpenSettings={() => open('settings')}
+              onOpenSupport={() => {
+                setCircleFocus('support')
+                goTab('circle')
+              }}
             />
           )}
 

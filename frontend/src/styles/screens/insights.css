@@ -17,13 +17,14 @@
 
 .insights-layout {
   display: grid;
-  grid-template-areas: 'for-you' 'not-alone' 'helped' 'growth' 'saved';
+  grid-template-areas: 'for-you' 'not-alone' 'nudge' 'helped' 'growth' 'saved';
   gap: var(--s-6);
   align-items: start;
 }
 
 .insights-for-you { grid-area: for-you; }
 .insights-not-alone { grid-area: not-alone; }
+.connect-nudge { grid-area: nudge; }
 .insights-helped { grid-area: helped; }
 .insights-growth { grid-area: growth; }
 .insights-saved { grid-area: saved; }
@@ -147,6 +148,7 @@
     grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
     grid-template-areas:
       'for-you not-alone'
+      'for-you nudge'
       'for-you saved'
       'helped saved'
       'growth saved';
@@ -155,4 +157,61 @@
   .page.page-insights {
     max-width: 1240px;
   }
+}
+
+/* Your Growth: an earlier and a more recent entry, side by side. */
+.growth-pair {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  padding: var(--s-5);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+}
+
+.growth-sides {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--s-3);
+}
+
+.growth-side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  padding: var(--s-4);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+}
+
+.growth-when {
+  font-size: var(--fs-small);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.growth-words {
+  font-weight: 700;
+}
+
+/* A way into Connect: quiet, warm, and easy to put away. */
+.connect-nudge {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-5);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--warm-wash);
+}
+
+.connect-nudge-line {
+  font-weight: 700;
+}
+
+.connect-nudge .chips {
+  align-items: center;
 }

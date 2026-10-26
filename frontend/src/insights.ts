@@ -10,6 +10,7 @@
 
 import type { Question } from './api'
 import type { Need } from './needs'
+import { evidenceFor, type Evidence } from './patterns'
 import type { History } from './profile'
 import { dayMonth } from './reflect'
 import { daysBetween, keys, loadJSON, remove, saveJSON } from './storage'
@@ -71,21 +72,9 @@ export function pruneCardTexts(today: string) {
   }
 }
 
-// How sure a card can be, from the person's own answers in the last 30 days.
-export type Evidence = 'thought' | 'noticing' | 'pattern'
-
-const NOTICING_ANSWERS = 3 // the same need across several answers…
-const NOTICING_DAYS = 2 // …on more than one day
-const PATTERN_SPAN = 7 // and, to be a pattern, at least a week apart
-
-export function evidenceFor(h: History, need: Need, today: string): Evidence {
-  const recent = h.answers.filter((a) => a.need === need && a.theme !== 'intimacy' && !a.heavy && daysBetween(a.date, today) < CARD_DAYS)
-  // "Not me" on any of them: the person has said this is not a pattern.
-  if (recent.some((a) => a.verdict === 'not_me')) return 'thought'
-  const days = [...new Set(recent.map((a) => a.date))].sort()
-  if (recent.length < NOTICING_ANSWERS || days.length < NOTICING_DAYS) return 'thought'
-  return daysBetween(days[0], days[days.length - 1]) >= PATTERN_SPAN ? 'pattern' : 'noticing'
-}
+// How sure a card can be, from the person's own answers in the last 30 days
+// (patterns.ts, where the longer Mirrors can retire a pattern).
+export { evidenceFor, type Evidence }
 
 export function evidenceLabel(e: Evidence, date: string, today: string): string {
   if (e === 'pattern') return 'A pattern worth exploring'

@@ -35,8 +35,8 @@ export function dismissMemory(id: string) {
   saveJSON(DISMISSED, [...new Set([...dismissed(), id])])
 }
 
-export type ReflectSettings = { threadsInMirror: boolean; reflectionsInNoticed: boolean }
-const DEFAULTS: ReflectSettings = { threadsInMirror: false, reflectionsInNoticed: false }
+export type ReflectSettings = { threadsInMirror: boolean; reflectionsInNoticed: boolean; reflectionsInGrowth: boolean }
+const DEFAULTS: ReflectSettings = { threadsInMirror: false, reflectionsInNoticed: false, reflectionsInGrowth: false }
 
 export function reflectSettings(): ReflectSettings {
   const v = loadJSON(SETTINGS)

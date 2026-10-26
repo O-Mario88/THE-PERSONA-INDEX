@@ -40,9 +40,10 @@ import { Icon } from './ui/icons'
 
 const shortDate = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })
 
-type ScreenProps = { onOpenMirror?: () => void; today?: string; questions?: Question[] }
+// focus: a section to bring into view once the circle has loaded (Insights' way into Support & Celebrate).
+type ScreenProps = { onOpenMirror?: () => void; today?: string; questions?: Question[]; focus?: 'support' }
 
-export function CircleScreen({ onOpenMirror, today, questions = [] }: ScreenProps) {
+export function CircleScreen({ onOpenMirror, today, questions = [], focus }: ScreenProps) {
   const me = useAccount()
   const [circle, setCircle] = useState<CircleView | null>(null)
   const [error, setError] = useState('')
@@ -60,6 +61,9 @@ export function CircleScreen({ onOpenMirror, today, questions = [] }: ScreenProp
   useEffect(() => {
     if (me) refresh()
   }, [me, refresh])
+  useEffect(() => {
+    if (focus === 'support' && circle) document.getElementById('support-title')?.scrollIntoView?.({ block: 'start' })
+  }, [focus, circle])
 
   if (!me) {
     return (
