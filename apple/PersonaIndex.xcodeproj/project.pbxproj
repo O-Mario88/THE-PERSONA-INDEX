@@ -18,20 +18,29 @@
 		412E2197CCED5A1AE3644FD8 /* WhatHelpedCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19B0D1E76A0FF3541F0D50FA /* WhatHelpedCard.swift */; };
 		428EA353940BB8242CB6575C /* MainTabs.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC5CA5B943743B90359E4D1F /* MainTabs.swift */; };
 		434B6B5AB6315A79D290BDF1 /* SupportCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE7F188D5BEE89113D62B3FE /* SupportCard.swift */; };
+		48E29CE2A3295FB821037344 /* Tokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDEDBD2C2DC174469D6DBCA2 /* Tokens.swift */; };
 		4AE36D19290FBF3D85ECF321 /* MirrorsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03F7BBE160F154559A94EDE2 /* MirrorsView.swift */; };
 		509052FE78CF24092BF82C7C /* InviteCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8D975F5233DDA80D1D18013 /* InviteCard.swift */; };
 		5402D87483F205D138DDF64B /* ConnectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7376D0AB928867A5C1C8CF3 /* ConnectView.swift */; };
+		5BD8C1D927AA2FA1E0327CA8 /* Figtree-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 8EC58F8519E3DD93027B8932 /* Figtree-ExtraBold.ttf */; };
 		5C47FF1713D0F473794C5874 /* AppLock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FCDAF440F01D5E16C7152C2 /* AppLock.swift */; };
 		5FE11F516141B9846872E945 /* YouView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDF00EC06F79706885373CFA /* YouView.swift */; };
+		67AD221BB330639B0378C229 /* PersonaWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = CFF9E4DB798B659422A513A1 /* PersonaWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		6CB7F0BD38627D2A325E2F05 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A12281AF68FC42D9DDCCAEA0 /* WidgetKit.framework */; };
+		6CEEDC020BF967AFE3AC6340 /* Figtree-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = DDE6E0628DDA64A022D9C66F /* Figtree-SemiBold.ttf */; };
 		7087F80F9323837D05BAE3AE /* Figtree-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = BAE1F592572E4AE98093ADC0 /* Figtree-Regular.ttf */; };
 		7984C02E190E06C92BCB5A90 /* Figtree-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = DDE6E0628DDA64A022D9C66F /* Figtree-SemiBold.ttf */; };
 		79D7E26BD8BDEFEC5A1F0774 /* PersonaIndexApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DB7B86359BCF5B3EEA8FD8B /* PersonaIndexApp.swift */; };
+		82874F0CCCD938B93A08D7E6 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E86A53B19DC9F45D4CE94BDB /* SwiftUI.framework */; };
 		842736E14D9FF42C4D51EC01 /* BackupModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CE05FDB9A2CDC0A4669EECA /* BackupModel.swift */; };
+		88B9AF5FF1F6FD146C9D8778 /* DayWidgetFace.swift in Sources */ = {isa = PBXBuildFile; fileRef = D63C759B21ADF093FA458D6C /* DayWidgetFace.swift */; };
 		8CC09D3173D82445F8311021 /* OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = 5C8C112AE3F39E2B249F141A /* OFL.txt */; };
+		9388409EAA751D88DEF5F006 /* Figtree-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 9588A5698FE8694374502898 /* Figtree-Medium.ttf */; };
 		98F97464C9A38DE6BCF6302E /* SittingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E032E74F1B1AAE667A76BAE1 /* SittingView.swift */; };
 		9C561E041DCA6404F7C92396 /* WritingCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7A32AA1854AE61DA4D163B8 /* WritingCard.swift */; };
 		A07C2FDC7062F5CBD55B1FA8 /* InsightsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA239524B566D637BB3D057E /* InsightsView.swift */; };
 		A6EBF7B4D95CECE9378EFA79 /* CommonGroundCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEB81C37CC2C0AFCDACAD5CA /* CommonGroundCard.swift */; };
+		A77E9F772E0538EF270D4B74 /* Figtree-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = BAE1F592572E4AE98093ADC0 /* Figtree-Regular.ttf */; };
 		AD44C77F23F0CC1D4B2C1553 /* Figtree-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 9588A5698FE8694374502898 /* Figtree-Medium.ttf */; };
 		AF83E155C729C7691BFCAF02 /* Dictation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7372EDEC6D9D4B71C0462EFF /* Dictation.swift */; };
 		B14BDA1CAA5AE068960D2C45 /* LockScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A56950EBF463510FAF8D3C7 /* LockScreen.swift */; };
@@ -41,16 +50,46 @@
 		BE865D2D938EE4091CE67B3D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D6E70DFE9CC59514123930D5 /* Assets.xcassets */; };
 		BF8C63B67FDF4C88B46A5496 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D978FEB9E326C63E6D93F817 /* WelcomeView.swift */; };
 		CD868504FFD61E84FD3FDDC8 /* ReflectParts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D7E35BDE335C3BA19A62164 /* ReflectParts.swift */; };
+		CF6FAB564EEBD29A2EF7EC27 /* DayWidgetFace.swift in Sources */ = {isa = PBXBuildFile; fileRef = D63C759B21ADF093FA458D6C /* DayWidgetFace.swift */; };
 		D08544895E541B0AED8E6A90 /* ConnectModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C19D9DC70BD8CF7701B23148 /* ConnectModel.swift */; };
 		D24040AFD24C5228401180BB /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB80FF3432A0E2875A63DB05 /* Components.swift */; };
 		D4E9841C7AFCCBA8104898DC /* Tokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDEDBD2C2DC174469D6DBCA2 /* Tokens.swift */; };
+		D500E8C9E1D938812F7223C7 /* Figtree-Black.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A96E3BCFE2645770CCFAA219 /* Figtree-Black.ttf */; };
 		DC9715A8218E881D21F1208B /* Figtree-Black.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A96E3BCFE2645770CCFAA219 /* Figtree-Black.ttf */; };
 		DD94C641717F7FD2587A2C1A /* Figtree-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1EB308A4B0ABF8E2D333F7C9 /* Figtree-Bold.ttf */; };
+		E4CB531FE3F47F0F2AD6A367 /* Figtree-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1EB308A4B0ABF8E2D333F7C9 /* Figtree-Bold.ttf */; };
 		EDE8AB711D3C19A6493D54A1 /* ReminderScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54779884F3CF5113D8603F2E /* ReminderScheduler.swift */; };
 		EDFE9B55FCDC8ABFB874441B /* SavedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BA9FE939FD90AB54F312D40 /* SavedView.swift */; };
+		EEF771E421134FE1771A592B /* PersonaWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C2571C33B528F584FAD1E39 /* PersonaWidgets.swift */; };
+		F13407EA065865BC7093FC49 /* PersonaKit in Frameworks */ = {isa = PBXBuildFile; productRef = 50F4CD080772C9C17136BCCA /* PersonaKit */; };
 		F615132247B6CBB11A85ADFC /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CCF8B6533CC7E0D2F85606A /* SettingsView.swift */; };
 		F8CA8287A6239627147721D5 /* TodayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1FFBAB58ADFFB5DE259DCD2 /* TodayView.swift */; };
+		FDCD0C7A9DF1E47FE2144D48 /* OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = 5C8C112AE3F39E2B249F141A /* OFL.txt */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		95FCD4E046E2D92855F3294C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 0321799FD677B47F1BF75DD3 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 637CD9CB2E297EFB07CBC067;
+			remoteInfo = PersonaWidgets;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		3121996C6772237288146363 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				67AD221BB330639B0378C229 /* PersonaWidgets.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		03F7BBE160F154559A94EDE2 /* MirrorsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MirrorsView.swift; sourceTree = "<group>"; };
@@ -59,6 +98,7 @@
 		1A56950EBF463510FAF8D3C7 /* LockScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockScreen.swift; sourceTree = "<group>"; };
 		1AE8BAB23E7E7EC540CDF751 /* CircleParts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CircleParts.swift; sourceTree = "<group>"; };
 		1EB308A4B0ABF8E2D333F7C9 /* Figtree-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Figtree-Bold.ttf"; sourceTree = "<group>"; };
+		318F3318287CC5B26953280C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		3BA9FE939FD90AB54F312D40 /* SavedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedView.swift; sourceTree = "<group>"; };
 		4D7E35BDE335C3BA19A62164 /* ReflectParts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReflectParts.swift; sourceTree = "<group>"; };
 		54779884F3CF5113D8603F2E /* ReminderScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderScheduler.swift; sourceTree = "<group>"; };
@@ -66,6 +106,7 @@
 		5BB9F50E31CB03D40F8B39A9 /* PhraseSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhraseSheet.swift; sourceTree = "<group>"; };
 		5C8C112AE3F39E2B249F141A /* OFL.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = OFL.txt; sourceTree = "<group>"; };
 		637CF8C1CA555604D0445CD5 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		6C2571C33B528F584FAD1E39 /* PersonaWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonaWidgets.swift; sourceTree = "<group>"; };
 		7372EDEC6D9D4B71C0462EFF /* Dictation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dictation.swift; sourceTree = "<group>"; };
 		7BC60757B82543565543A8D1 /* PersonaIndex.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = PersonaIndex.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7CCF8B6533CC7E0D2F85606A /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -74,6 +115,7 @@
 		9588A5698FE8694374502898 /* Figtree-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Figtree-Medium.ttf"; sourceTree = "<group>"; };
 		9A741E3C4747907CC6FC91EC /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		9CE05FDB9A2CDC0A4669EECA /* BackupModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackupModel.swift; sourceTree = "<group>"; };
+		A12281AF68FC42D9DDCCAEA0 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		A8D975F5233DDA80D1D18013 /* InviteCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InviteCard.swift; sourceTree = "<group>"; };
 		A96E3BCFE2645770CCFAA219 /* Figtree-Black.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Figtree-Black.ttf"; sourceTree = "<group>"; };
 		B18360B08FF3C4F629FFF6D5 /* HeavyNote.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeavyNote.swift; sourceTree = "<group>"; };
@@ -84,14 +126,18 @@
 		C1FFBAB58ADFFB5DE259DCD2 /* TodayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayView.swift; sourceTree = "<group>"; };
 		CDEDBD2C2DC174469D6DBCA2 /* Tokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tokens.swift; sourceTree = "<group>"; };
 		CEB81C37CC2C0AFCDACAD5CA /* CommonGroundCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommonGroundCard.swift; sourceTree = "<group>"; };
+		CFF9E4DB798B659422A513A1 /* PersonaWidgets.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = PersonaWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		D63C759B21ADF093FA458D6C /* DayWidgetFace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayWidgetFace.swift; sourceTree = "<group>"; };
 		D6E70DFE9CC59514123930D5 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		D8ED1B412C2B8F4B7CB97E31 /* PeriodMirrorViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeriodMirrorViews.swift; sourceTree = "<group>"; };
 		D978FEB9E326C63E6D93F817 /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
+		DC49A1F4F5245933CB441122 /* PersonaWidgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PersonaWidgets.entitlements; sourceTree = "<group>"; };
 		DC5CA5B943743B90359E4D1F /* MainTabs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabs.swift; sourceTree = "<group>"; };
 		DDE6E0628DDA64A022D9C66F /* Figtree-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Figtree-SemiBold.ttf"; sourceTree = "<group>"; };
 		DE7F188D5BEE89113D62B3FE /* SupportCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupportCard.swift; sourceTree = "<group>"; };
 		E032E74F1B1AAE667A76BAE1 /* SittingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SittingView.swift; sourceTree = "<group>"; };
 		E7376D0AB928867A5C1C8CF3 /* ConnectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectView.swift; sourceTree = "<group>"; };
+		E86A53B19DC9F45D4CE94BDB /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		EA239524B566D637BB3D057E /* InsightsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsView.swift; sourceTree = "<group>"; };
 		F09A5454739BE97B969D5F31 /* ReflectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReflectView.swift; sourceTree = "<group>"; };
 		F6BEF22EFC2BEF656C33868C /* KeepButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeepButton.swift; sourceTree = "<group>"; };
@@ -102,6 +148,16 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		24956F9907DEDB4ABEF9233C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F13407EA065865BC7093FC49 /* PersonaKit in Frameworks */,
+				6CB7F0BD38627D2A325E2F05 /* WidgetKit.framework in Frameworks */,
+				82874F0CCCD938B93A08D7E6 /* SwiftUI.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		EA2025E72DB1A75088C93AB8 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -113,10 +169,31 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		0074E6696CDDE67B77A6F237 /* PersonaWidgets */ = {
+			isa = PBXGroup;
+			children = (
+				D63C759B21ADF093FA458D6C /* DayWidgetFace.swift */,
+				318F3318287CC5B26953280C /* Info.plist */,
+				DC49A1F4F5245933CB441122 /* PersonaWidgets.entitlements */,
+				6C2571C33B528F584FAD1E39 /* PersonaWidgets.swift */,
+			);
+			path = PersonaWidgets;
+			sourceTree = "<group>";
+		};
+		03725B9456839551BF5BB733 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				E86A53B19DC9F45D4CE94BDB /* SwiftUI.framework */,
+				A12281AF68FC42D9DDCCAEA0 /* WidgetKit.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		06FF4BB135D9213D74FA2309 /* Products */ = {
 			isa = PBXGroup;
 			children = (
 				7BC60757B82543565543A8D1 /* PersonaIndex.app */,
+				CFF9E4DB798B659422A513A1 /* PersonaWidgets.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -150,6 +227,8 @@
 			children = (
 				4B8363B2CE19799FAC40D4A0 /* Packages */,
 				C69DCFB34C671F2340349F98 /* PersonaIndex */,
+				0074E6696CDDE67B77A6F237 /* PersonaWidgets */,
+				03725B9456839551BF5BB733 /* Frameworks */,
 				06FF4BB135D9213D74FA2309 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -264,6 +343,26 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		637CD9CB2E297EFB07CBC067 /* PersonaWidgets */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = DB15B98279EDAE7DD25D0AD8 /* Build configuration list for PBXNativeTarget "PersonaWidgets" */;
+			buildPhases = (
+				0922CD0F9F7D5779514D6D18 /* Sources */,
+				296ED56E03F9DE96C3B284AA /* Resources */,
+				24956F9907DEDB4ABEF9233C /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = PersonaWidgets;
+			packageProductDependencies = (
+				50F4CD080772C9C17136BCCA /* PersonaKit */,
+			);
+			productName = PersonaWidgets;
+			productReference = CFF9E4DB798B659422A513A1 /* PersonaWidgets.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		6C285DB0EF1822D4000D47F3 /* PersonaIndex */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = A2D3D344708B81ED37E16ECA /* Build configuration list for PBXNativeTarget "PersonaIndex" */;
@@ -271,10 +370,12 @@
 				58E337EBB9C702F20F922585 /* Sources */,
 				E9123C3BCC29F7EBFE6A66EF /* Resources */,
 				EA2025E72DB1A75088C93AB8 /* Frameworks */,
+				3121996C6772237288146363 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				3D2BE48541A28550215A2705 /* PBXTargetDependency */,
 			);
 			name = PersonaIndex;
 			packageProductDependencies = (
@@ -293,6 +394,9 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
+					637CD9CB2E297EFB07CBC067 = {
+						ProvisioningStyle = Automatic;
+					};
 					6C285DB0EF1822D4000D47F3 = {
 						ProvisioningStyle = Automatic;
 					};
@@ -316,11 +420,26 @@
 			projectRoot = "";
 			targets = (
 				6C285DB0EF1822D4000D47F3 /* PersonaIndex */,
+				637CD9CB2E297EFB07CBC067 /* PersonaWidgets */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		296ED56E03F9DE96C3B284AA /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D500E8C9E1D938812F7223C7 /* Figtree-Black.ttf in Resources */,
+				E4CB531FE3F47F0F2AD6A367 /* Figtree-Bold.ttf in Resources */,
+				5BD8C1D927AA2FA1E0327CA8 /* Figtree-ExtraBold.ttf in Resources */,
+				9388409EAA751D88DEF5F006 /* Figtree-Medium.ttf in Resources */,
+				A77E9F772E0538EF270D4B74 /* Figtree-Regular.ttf in Resources */,
+				6CEEDC020BF967AFE3AC6340 /* Figtree-SemiBold.ttf in Resources */,
+				FDCD0C7A9DF1E47FE2144D48 /* OFL.txt in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		E9123C3BCC29F7EBFE6A66EF /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -339,6 +458,16 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		0922CD0F9F7D5779514D6D18 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				88B9AF5FF1F6FD146C9D8778 /* DayWidgetFace.swift in Sources */,
+				EEF771E421134FE1771A592B /* PersonaWidgets.swift in Sources */,
+				48E29CE2A3295FB821037344 /* Tokens.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		58E337EBB9C702F20F922585 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -351,6 +480,7 @@
 				D24040AFD24C5228401180BB /* Components.swift in Sources */,
 				D08544895E541B0AED8E6A90 /* ConnectModel.swift in Sources */,
 				5402D87483F205D138DDF64B /* ConnectView.swift in Sources */,
+				CF6FAB564EEBD29A2EF7EC27 /* DayWidgetFace.swift in Sources */,
 				AF83E155C729C7691BFCAF02 /* Dictation.swift in Sources */,
 				BBBCC28F3599C2D1EBE9EF2F /* HeavyNote.swift in Sources */,
 				A07C2FDC7062F5CBD55B1FA8 /* InsightsView.swift in Sources */,
@@ -382,6 +512,14 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		3D2BE48541A28550215A2705 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 637CD9CB2E297EFB07CBC067 /* PersonaWidgets */;
+			targetProxy = 95FCD4E046E2D92855F3294C /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
 		06222D913AF2AEC1BB2326A6 /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -398,6 +536,29 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.personaindex.app;
 				PRODUCT_NAME = PersonaIndex;
 				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		0B76680EAE713353A8D8F7BA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = PersonaWidgets/PersonaWidgets.entitlements;
+				CODE_SIGN_IDENTITY = "-";
+				INFOPLIST_FILE = PersonaWidgets/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.personaindex.app.widgets;
+				PRODUCT_NAME = PersonaWidgets;
+				SDKROOT = auto;
+				SKIP_INSTALL = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
@@ -556,6 +717,29 @@
 			};
 			name = Release;
 		};
+		B9E7C08A2B297BBDD2963495 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = PersonaWidgets/PersonaWidgets.entitlements;
+				CODE_SIGN_IDENTITY = "-";
+				INFOPLIST_FILE = PersonaWidgets/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.personaindex.app.widgets;
+				PRODUCT_NAME = PersonaWidgets;
+				SDKROOT = auto;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -577,6 +761,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
+		DB15B98279EDAE7DD25D0AD8 /* Build configuration list for PBXNativeTarget "PersonaWidgets" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0B76680EAE713353A8D8F7BA /* Debug */,
+				B9E7C08A2B297BBDD2963495 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
@@ -587,6 +780,10 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		50F4CD080772C9C17136BCCA /* PersonaKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = PersonaKit;
+		};
 		EF3AD5D0AC460371D67BCA0C /* PersonaKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = PersonaKit;

@@ -19,6 +19,21 @@ final class AppModel {
     private(set) var load: Load = .loading
     /// Where the person is: a tab on iPhone, the sidebar on a Mac.
     var section: AppSection = .today
+    /// On iPhone, a page to open on top of Insights (Mirrors and Saved are not tabs there).
+    var insightsPage: AppSection?
+
+    /// Goes to a section from a link, a reminder or a widget. On iPhone the
+    /// Mirrors and Saved open on top of Insights, since they are not tabs.
+    func go(to target: AppSection) {
+        #if os(iOS)
+        if target == .mirrors || target == .saved {
+            section = .insights
+            insightsPage = target
+            return
+        }
+        #endif
+        section = target
+    }
     private(set) var choices: [String: String] = [:]
     private(set) var now = AppModel.clock()
     var welcomed: Bool {

@@ -66,9 +66,13 @@ struct RootView: View {
             }
         }
         .onAppear(perform: Launch.firstScreen)
+        // A widget opens the app where it points: personaindex://today or ://mirrors.
+        .onOpenURL { url in
+            if url.scheme == "personaindex", let section = AppSection(rawValue: url.host() ?? "") { model.go(to: section) }
+        }
         // A tapped reminder opens where it points: today's sitting, the Mirrors or Reflect.
         .onChange(of: model.reminders.opened) { _, section in
-            if let section { model.section = section; model.reminders.opened = nil }
+            if let section { model.go(to: section); model.reminders.opened = nil }
         }
     }
 }
