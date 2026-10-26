@@ -209,12 +209,12 @@
 
 /* Avatars: initials on a soft pastel disc (no photos), always dark ink. */
 .avatar {
-  color: #0e2322;
+  color: #12283a;
   font-weight: 800;
 }
 
 .ring-person text {
-  fill: #0e2322;
+  fill: #12283a;
 }
 
 /* ---------- Reflect ---------- */
@@ -420,11 +420,11 @@
 
 .rings-figure .ring-middle {
   fill: var(--blue-wash);
-  stroke: #cbdcf4;
+  stroke: #c9d9e4;
 }
 
 .rings-figure .ring-inner {
-  fill: #dbefec;
+  fill: #e3ece9;
   stroke: var(--accent-line);
 }
 
@@ -441,18 +441,18 @@
 }
 
 .app.is-dark .rings-figure .ring-outer {
-  fill: #0f2321;
-  stroke: #224240;
+  fill: #10283a;
+  stroke: #21405a;
 }
 
 .app.is-dark .rings-figure .ring-middle {
-  fill: #132b29;
-  stroke: #284c48;
+  fill: #142f42;
+  stroke: #29506a;
 }
 
 .app.is-dark .rings-figure .ring-inner {
-  fill: #183431;
-  stroke: #2d5853;
+  fill: #183a50;
+  stroke: #2f5b78;
 }
 
 .app.is-dark .rings-figure .ring-you {
@@ -506,7 +506,7 @@
 }
 
 .rings-dot.ring-outer {
-  background: #b6c7c5;
+  background: #c9c0b0;
   box-shadow: none;
 }
 
@@ -1234,4 +1234,10 @@ fieldset.notice,
   flex-direction: column;
   gap: var(--s-5);
   padding-bottom: var(--s-5);
+}
+
+/* Celebrating is marigold. */
+.support-tile.is-celebrate .btn.soft {
+  background: var(--amber-wash);
+  color: var(--amber-ink);
 }

@@ -5,36 +5,36 @@
    white. Every text colour here is at least 4.5:1 on the surface it sits on. */
 
 :root {
-  /* Surfaces and lines: a soft teal-white page with white cards. */
-  --bg: #f5f8f8;
-  --surface: #ffffff;
-  --surface-2: #eef5f4; /* fields, quiet pills, tab tracks */
-  --surface-3: #e2ecea;
-  --line: #e0eae8;
-  --line-strong: #cddbd9;
+  /* Surfaces and lines: a warm cream page with white cards. */
+  --bg: #fbf7f0;
+  --surface: #fffdf9;
+  --surface-2: #f4ede1; /* fields, quiet pills, tab tracks */
+  --surface-3: #ebe2d3;
+  --line: #ece3d4;
+  --line-strong: #ddd1bd;
 
   /* Text: a deep green-black, never pure black. */
-  --text: #0e2322;
-  --text-2: #394e4c; /* secondary copy */
-  --muted: #627573; /* captions, 4.7:1 on white */
+  --text: #12283a;
+  --text-2: #3d4f5c; /* secondary copy */
+  --muted: #69737c; /* captions, 4.7:1 on white */
 
-  /* The teals. Forest (deep teal #0f3d3a) is the primary (buttons, chosen tabs, the sidebar);
+  /* Midnight and cream (Edwin, 2026-10-26). Forest is midnight #013d5a, the primary (buttons, chosen tabs, the sidebar);
      leaf is for icons, checks and progress; lime is the bright accent. */
-  --forest: #0f3d3a;
-  --forest-2: #175a55; /* hover, and the sidebar's chosen row */
+  --forest: #013d5a;
+  --forest-2: #0d5275; /* hover, and the sidebar's chosen row */
   --on-forest: #ffffff;
-  --leaf: #1f8a80;
-  --leaf-soft: #8fd3cb; /* progress fills */
+  --leaf: #5f7d58;
+  --leaf-soft: #b5c7ae; /* progress fills */
   /* The brand lime shows on the forest sidebar. On a light page the
      filled actions that are lime in dark mode turn forest, as on the
      reference designs, so --lime there means "the filled accent". */
-  --brand-lime: #c6f24e;
-  --lime: #0f3d3a;
-  --lime-strong: #175a55;
+  --brand-lime: #f4a258;
+  --lime: #013d5a;
+  --lime-strong: #0d5275;
   --on-lime: #ffffff;
-  --accent-ink: #136f66; /* links and green text, 5.4:1 on white */
-  --accent-wash: #e7f4f2; /* mint: a chosen option, a soft card */
-  --accent-line: #c4e2de;
+  --accent-ink: #0b4f70; /* links and green text, 5.4:1 on white */
+  --accent-wash: #e7f0ed; /* mint: a chosen option, a soft card */
+  --accent-line: #bdd3ce;
 
   /* The primary button: forest in light, lime in dark. */
   --btn: var(--forest);
@@ -42,15 +42,15 @@
   --on-btn: var(--on-forest);
 
   /* Pastel pairs for icon discs and tags: a wash and its ink. */
-  --blue: #3b6fd8;
-  --blue-wash: #eaf1fc;
-  --purple: #7b5cd6;
-  --purple-wash: #f1ecfc;
-  --rose: #e0453a;
-  --rose-wash: #fdeeed;
-  --amber: #f5a623;
-  --amber-ink: #8a5300;
-  --amber-wash: #fff5e0;
+  --blue: #3f6f8f;
+  --blue-wash: #e4edf2;
+  --purple: #6d597a;
+  --purple-wash: #efe9f1;
+  --rose: #c8553a;
+  --rose-wash: #fbe9e2;
+  --amber: #e48a3c;
+  --amber-ink: #8a4b12;
+  --amber-wash: #fdf0e1;
 
   /* Celebrate (Connect): amber. */
   --warm: var(--amber);
@@ -59,19 +59,19 @@
   --warm-wash: var(--amber-wash);
 
   /* States */
-  --danger: #c4321f;
+  --danger: #b42318;
   --danger-wash: var(--rose-wash);
-  --online: #3fbf5f;
+  --online: #5f9a57;
 
   /* Hero surfaces (the close, the practice timer, the share card): forest. */
   --navy: var(--forest);
   --navy-2: var(--forest-2);
   --on-navy: #ffffff;
-  --on-navy-2: #cbe2df;
+  --on-navy-2: #c7d8e2;
 
   /* The desktop sidebar */
   --side-bg: var(--forest);
-  --side-ink: #e0eeec;
+  --side-ink: #d7e4ec;
   --side-on: var(--forest-2);
   --side-on-ink: #ffffff;
   --side-w: 248px;
@@ -111,9 +111,9 @@
   --r-pill: 999px;
 
   /* Elevation: a hairline and a soft lift, nothing heavier. */
-  --shadow-card: 0 1px 2px rgb(14 35 34 / 0.04), 0 6px 20px rgb(14 35 34 / 0.05);
-  --shadow-sheet: 0 -8px 40px rgb(14 35 34 / 0.18);
-  --focus: 0 0 0 3px rgb(31 138 128 / 0.35);
+  --shadow-card: 0 1px 2px rgb(18 40 58 / 0.04), 0 6px 20px rgb(18 40 58 / 0.05);
+  --shadow-sheet: 0 -8px 40px rgb(18 40 58 / 0.18);
+  --focus: 0 0 0 3px rgb(1 61 90 / 0.3);
 
   /* Motion */
   --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
@@ -129,61 +129,61 @@
   color-scheme: light;
 }
 
-/* Dark mode: near-black teal, with lime as the bright accent. It turns on
+/* Dark mode: deep midnight, with marigold as the bright accent. It turns on
    in the evening and night windows (Account, "Dark mode"), or everywhere
    when the phone asks for dark. */
 .app.is-dark {
-  --lime: #c6f24e;
-  --lime-strong: #b5e636;
-  --on-lime: #0e2322;
-  --bg: #0a1514;
-  --surface: #0f1e1d;
-  --surface-2: #152826;
-  --surface-3: #1d3331;
-  --line: #1f3432;
-  --line-strong: #2b4542;
+  --lime: #f4a258;
+  --lime-strong: #f0913c;
+  --on-lime: #1d1206;
+  --bg: #0b1a24;
+  --surface: #102330;
+  --surface-2: #16303f;
+  --surface-3: #1d3a4b;
+  --line: #1d3545;
+  --line-strong: #2a4759;
 
-  --text: #eff6f5;
-  --text-2: #c2d3d1;
-  --muted: #92a7a4; /* 6.6:1 on the page */
+  --text: #f6efe3;
+  --text-2: #d6d2c9;
+  --muted: #9eaab3; /* 6.6:1 on the page */
 
-  --forest-2: #174a46;
-  --leaf: #6fd6c9;
-  --leaf-soft: #3fae9f;
+  --forest-2: #13506f;
+  --leaf: #a9c3a1;
+  --leaf-soft: #7c9a74;
   --accent-ink: var(--lime);
-  --accent-wash: #122d2a;
-  --accent-line: #244e49;
+  --accent-wash: #183242;
+  --accent-line: #2a4a5c;
 
   --btn: var(--lime);
   --btn-hover: var(--lime-strong);
-  --on-btn: #0e2322;
+  --on-btn: #1d1206;
 
   --blue: #8db1f5;
   --blue-wash: #17233a;
   --purple: #b9a4f5;
   --purple-wash: #221c38;
-  --rose: #ff8f84;
+  --rose: #f09a82;
   --rose-wash: #33191a;
-  --amber: #ffc04d;
-  --amber-ink: #ffc04d;
+  --amber: #f4a258;
+  --amber-ink: #f4a258;
   --amber-wash: #2d2410;
 
   --warm-ink: var(--amber);
 
   --danger: #ff8a7a;
 
-  --navy: #122c2a;
-  --navy-2: #193a37;
-  --on-navy-2: #b5cfcb;
+  --navy: #133246;
+  --navy-2: #1a3d54;
+  --on-navy-2: #c2d2dc;
 
-  --side-bg: #0b1918;
-  --side-ink: #c2d3d1;
-  --side-on: #173431;
+  --side-bg: #08151d;
+  --side-ink: #cdd7de;
+  --side-on: #15303f;
   --side-on-ink: var(--lime);
 
   --shadow-card: none;
   --shadow-sheet: 0 -8px 40px rgb(0 0 0 / 0.5);
-  --focus: 0 0 0 3px rgb(198 242 78 / 0.45);
+  --focus: 0 0 0 3px rgb(244 162 88 / 0.45);
 
   color-scheme: dark;
 }

@@ -9,28 +9,33 @@ never in a screen file.
 ## Direction
 
 Since 2026-10-26 the app copies Edwin's second set of references (Connect,
-Your Circle, Insights and Reflect, light and dark). A soft teal-white page,
+Your Circle, Insights and Reflect, light and dark). A warm cream page,
 white cards on a hairline with a soft lift, a deep forest sidebar on a wide
-screen, forest-green primary buttons and chosen tabs, mint cards, and pastel
+screen, midnight primary buttons and chosen tabs, soft celeste boxes, and pastel
 discs (green, blue, purple, rose, amber) behind line icons. Dark mode is a
-near-black teal, where the filled accent turns lime. Three rules stay
+deep midnight, where the filled accent turns marigold. Three rules stay
 where the references differ: initials instead of photos, no feed of shared
 moments, and only real counts (no invented numbers or percentages).
 
 ## Colour
 
+Midnight & Cream (Edwin chose it 2026-10-26 14:40, replacing green, lime and
+teal): midnight for trust and depth, a warm cream page like a notebook, herb
+for growth, marigold for warmth and celebrating, terracotta for "the other
+side". Red is for real warnings only.
+
 | Token | Light | Dark | Use |
 |---|---|---|---|
-| `--bg`, `--surface` | `#f5f8f8`, `#ffffff` | `#0a1514`, `#0f1e1d` | page, cards |
-| `--surface-2`, `--surface-3` | `#eef5f4`, `#e2ecea` | `#152826`, `#1d3331` | fields, tracks |
-| `--text`, `--text-2`, `--muted` | `#0e2322`, `#394e4c`, `#627573` | `#eff6f5`, `#c2d3d1`, `#92a7a4` | words |
-| `--forest`, `--forest-2` | `#0f3d3a`, `#175a55` (deep teal) | same | sidebar, primary buttons, chosen tabs |
-| `--lime` | forest (the filled accent) | `#c6f24e` | filled accents, always under `--on-lime` |
-| `--brand-lime` | `#c6f24e` | same | the leaf and active icon on the forest sidebar, words on forest cards |
-| `--leaf` | `#1f8a80` | `#6fd6c9` | icons, checks, progress |
-| `--accent-ink`, `--accent-wash`, `--accent-line` | `#136f66`, `#e7f4f2`, `#c4e2de` | lime, `#122d2a`, `#244e49` | teal words, soft teal boxes, tags |
-| `--blue`, `--purple`, `--rose`, `--amber` (+ `-wash`) | pastel ink on a pale wash | darker washes | discs and tinted cards |
-| `--danger` | `#c4321f` | same | warnings only |
+| `--bg`, `--surface` | `#fbf7f0`, `#fffdf9` | `#0b1a24`, `#102330` | page (cream / deep midnight) |
+| `--surface-2`, `--surface-3` | `#f4ede1`, `#ebe2d3` | `#16303f`, `#1d3a4b` | fields, tracks |
+| `--text`, `--text-2`, `--muted` | `#12283a`, `#3d4f5c`, `#69737c` | `#f6efe3`, `#d6d2c9`, `#9eaab3` | words |
+| `--forest`, `--forest-2` | `#013d5a` (Midnight), `#0d5275` | same, `#13506f` | sidebar, primary buttons, chosen tabs |
+| `--lime` | midnight (the filled accent) | `#f4a258` (Marigold) | filled accents, always under `--on-lime` |
+| `--brand-lime` | `#f4a258` | same | the leaf and active icon on the midnight sidebar |
+| `--leaf` | `#5f7d58` (Herb) | `#a9c3a1` | icons, checks, progress |
+| `--accent-ink`, `--accent-wash`, `--accent-line` | `#0b4f70`, `#e7f0ed`, `#bdd3ce` (Celeste) | marigold, `#183242`, `#2a4a5c` | links, soft boxes, tags |
+| `--amber` (Marigold), `--rose` (Terracotta), `--blue`, `--purple` (Lavender) + `-wash` | ink on a pale wash | darker washes | discs and tinted boxes |
+| `--danger` | `#b42318` | `#ff8a7a` | warnings only |
 
 Every text pair is at least 4.5:1. Discs carry a line icon in the tone's ink
 on its wash (`ui/Disc.tsx`). Shared reference styles live last, in
@@ -71,4 +76,4 @@ show the day's "N of 5" ring, the person's own words and patterns, initials
 on a tint, and suggestions from shared circles only.
 
 
-Since 2026-10-26 14:03 the greens are deep teal (Edwin). Most of the page sits on the background with hairlines; only a few highlights keep a tinted box. Settings shows three everyday choices and folds the rest under "More settings".
+Most of the page sits on the background with hairlines; only a few highlights keep a tinted box. Settings shows three everyday choices and folds the rest under "More settings".
