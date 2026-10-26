@@ -1041,7 +1041,8 @@ describe('growing together', () => {
     const growing = await screen.findByRole('region', { name: 'Growing together' })
     expect(await within(growing).findByText('70')).toBeInTheDocument()
     expect(growing).toHaveTextContent('answers to today’s questions')
-    expect(growing).toHaveTextContent('75% of 40 people chose “Right after eating” too. You’re not the only one.')
+    expect(growing).toHaveTextContent('30 of 40 people chose “Right after eating” too. You’re not the only one.')
+    expect(growing).not.toHaveTextContent('%')
     expect(growing).not.toHaveTextContent('12 people')
     expect(within(growing).getByRole('button', { name: /Share this/ })).toBeInTheDocument()
     expect(growing).not.toHaveTextContent(/\b(likes?|comments?|followers?|rank)\b/i)
@@ -1432,7 +1433,8 @@ async function openMirror(routes: Parameters<typeof stubApi>[0] = {}) {
   vi.setSystemTime(at(9, 18))
   const fetchMock = stubApi({ edition: { status: 200, body: sunday }, mirror: { status: 200, body: mirror }, ...routes })
   render(<App />)
-  fireEvent.click(await screen.findByRole('button', { name: 'Insights' }))
+  // Sunday opens on the mirror by itself (Insights is now its own page).
+  await screen.findByRole('region', { name: 'Your weekly mirror' })
   return fetchMock
 }
 
@@ -1440,6 +1442,28 @@ async function openMirror(routes: Parameters<typeof stubApi>[0] = {}) {
 const weekTitle = 'This week, you were a steady noticer, and you may let rest wait too long.'
 
 const mirrorCalls = (f: ReturnType<typeof stubApi>) => f.mock.calls.filter(([u]) => String(u).startsWith('/api/mirror?'))
+
+describe('Insights', () => {
+  it('opens its own page, with the Mirrors one tap away and Back to Insights', async () => {
+    vi.setSystemTime(at(9, 18))
+    stubApi({ edition: { status: 200, body: sunday }, mirror: { status: 200, body: mirror } })
+    render(<App />)
+    await screen.findByRole('region', { name: 'Your weekly mirror' })
+    fireEvent.click(screen.getByRole('button', { name: '← Back' }))
+    expect(await screen.findByRole('heading', { level: 2, name: 'Your Insights' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Insights' })).toHaveAttribute('aria-pressed', 'true')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Today' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Insights' }))
+    expect(await screen.findByRole('heading', { level: 2, name: 'Your Insights' })).toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Your weekly mirror' })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Your Mirrors →' }))
+    expect(await screen.findByRole('region', { name: 'Your weekly mirror' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Insights' })).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.click(screen.getByRole('button', { name: '← Back' }))
+    expect(await screen.findByRole('heading', { level: 2, name: 'Your Insights' })).toBeInTheDocument()
+  })
+})
 
 describe('the weekly mirror', () => {
   it("is built from the server's data for this phone, sent with its device token", async () => {
@@ -1492,7 +1516,9 @@ describe('the weekly mirror', () => {
     expect(within(page).getByRole('listitem', { name: /^Sunday:/ })).toHaveAccessibleName('Sunday: review day')
 
     const traits = within(page).getByRole('list', { name: 'Trait read' })
-    expect(traits).toHaveTextContent('Getting things done74 +4 vs last week')
+    // No personality scores (Edwin, 2026-10-25): the leaning shows on its scale, never as a number.
+    expect(traits).toHaveTextContent('Getting things doneSteady · 14 answers')
+    expect(traits).not.toHaveTextContent(/\b74\b|vs last week/)
     expect(traits).toHaveTextContent('Steady · 14 answers')
     expect(traits).toHaveTextContent('A pattern · 9 answers')
     expect(traits).toHaveTextContent('A hint · 4 answers')
@@ -1866,7 +1892,7 @@ describe('the monthly, quarterly and yearly mirrors', () => {
     expect(page).toHaveTextContent('You came back in 2 of 3 weeks.')
     expect(page).toHaveTextContent('2 weeks still to come.')
     expect(within(page).getByRole('list', { name: 'Trait read' })).toHaveTextContent(
-      'Getting things done72 +9 since your first weeksSteady · 16 answersReplaying70A pattern · 5 answers',
+      'Getting things doneSteady · 16 answersReplayingA pattern · 5 answers',
     )
 
     const moments = within(page).getByRole('list', { name: 'The answers that said the most' })

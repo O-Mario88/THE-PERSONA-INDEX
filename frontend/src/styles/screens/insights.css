@@ -1,0 +1,158 @@
+/* Insights: For You first, then You're not alone, What Helped, Your Growth
+   and Saved, one column on a phone. On a wide screen the reading takes the
+   centre and the counts and saved cards sit quietly beside it. */
+.insights {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+}
+
+.insights-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+}
+
+.insights-layout {
+  display: grid;
+  grid-template-areas: 'for-you' 'not-alone' 'helped' 'growth' 'saved';
+  gap: var(--s-6);
+  align-items: start;
+}
+
+.insights-for-you { grid-area: for-you; }
+.insights-not-alone { grid-area: not-alone; }
+.insights-helped { grid-area: helped; }
+.insights-growth { grid-area: growth; }
+.insights-saved { grid-area: saved; }
+
+.insights-layout > section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  min-width: 0;
+}
+
+.insights .section-title {
+  font-size: var(--fs-h2);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.insights .empty-note {
+  padding: var(--s-4);
+  border-radius: var(--r-lg);
+  background: var(--surface-2);
+}
+
+/* The card: the reading, what may matter, the other side, a small step. */
+.insight-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  padding: var(--s-5);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+}
+
+.insight-card > .label {
+  color: var(--accent-ink);
+}
+
+/* A heavy answer: its own calm card carries the frame. */
+.insight-card.is-heavy {
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+.insight-asked {
+  font-size: var(--fs-small);
+  line-height: var(--lh-snug);
+}
+
+.insight-reading {
+  font-size: var(--fs-h3);
+  font-weight: 700;
+  line-height: var(--lh-snug);
+}
+
+.insight-body-text {
+  color: var(--text-2);
+}
+
+.insight-needs,
+.insight-try {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.insight-try {
+  align-items: flex-start;
+  padding: var(--s-4);
+  border: 1px solid var(--accent-line);
+  border-radius: var(--r-md);
+  background: var(--accent-wash);
+}
+
+.insight-other .label {
+  margin-right: var(--s-1);
+}
+
+.insight-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2) var(--s-4);
+}
+
+/* The quiet side: counts and saved cards. */
+.insights-not-alone,
+.insights-saved {
+  padding: var(--s-5);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+}
+
+.not-alone-list,
+.saved-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.not-alone-list li,
+.saved-list li {
+  padding: var(--s-3) 0;
+  border-top: 1px solid var(--line);
+}
+
+.not-alone-list li:first-child,
+.saved-list li:first-child {
+  border-top: 0;
+}
+
+.not-alone-line {
+  font-weight: 700;
+}
+
+@media (min-width: 1100px) {
+  .insights-layout {
+    grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+    grid-template-areas:
+      'for-you not-alone'
+      'for-you saved'
+      'helped saved'
+      'growth saved';
+  }
+
+  .page.page-insights {
+    max-width: 1240px;
+  }
+}

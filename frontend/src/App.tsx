@@ -51,6 +51,7 @@ import { pullSync } from './sync'
 import { useAccount } from './useAccount'
 import { keys, load as loadKey, remove as removeKey, save as saveKey } from './storage'
 import { NAME_KEY, Welcome, WELCOMED } from './Welcome'
+import { pruneCardTexts } from './insights'
 
 type State =
   | { kind: 'loading' }
@@ -60,22 +61,22 @@ type State =
   | { kind: 'empty' }
   | { kind: 'error' }
 
-type View = 'today' | 'mirror' | 'circle' | 'notebook' | 'account' | 'kept' | 'settings' | 'practice' | 'read'
+type View = 'today' | 'insights' | 'mirror' | 'circle' | 'notebook' | 'account' | 'kept' | 'settings' | 'practice' | 'read'
 // The views reached from the tabs, which Back returns to.
-type Tab = 'today' | 'mirror' | 'circle' | 'notebook' | 'account'
+type Tab = 'today' | 'insights' | 'circle' | 'notebook' | 'account'
 const isTab = (v: View): v is Tab =>
-  v === 'today' || v === 'mirror' || v === 'circle' || v === 'notebook' || v === 'account'
+  v === 'today' || v === 'insights' || v === 'circle' || v === 'notebook' || v === 'account'
 
 // The five tabs of the 2026-10-25 redesign, in its order and words.
 const TABS: { tab: Tab; name: string; icon: IconName }[] = [
   { tab: 'today', name: 'Today', icon: 'home' },
   { tab: 'notebook', name: 'Reflect', icon: 'reflect' },
   { tab: 'circle', name: 'Connect', icon: 'connect' },
-  { tab: 'mirror', name: 'Insights', icon: 'insights' },
+  { tab: 'insights', name: 'Insights', icon: 'insights' },
   { tab: 'account', name: 'You', icon: 'you' },
 ]
 // Tabs that open before today's questions have loaded.
-const ALWAYS_OPEN: Tab[] = ['today', 'circle', 'notebook', 'account']
+const ALWAYS_OPEN: Tab[] = ['today', 'insights', 'circle', 'notebook', 'account']
 
 const themesOf = (qs: Question[]) => qs.map((q) => q.theme).filter((t): t is string => !!t)
 
@@ -106,7 +107,9 @@ function App() {
   const [attempt, setAttempt] = useState(0)
   const [tab, setTab] = useState<View>('today')
   // Where Back goes from What I keep, Settings, a practice and a read.
-  const [back, setBack] = useState<Tab>('today')
+  const [back, setBack] = useState<Tab | 'mirror'>('today')
+  // Where the Mirror's own Back goes: the tab it was opened from.
+  const [mirrorBack, setMirrorBack] = useState<Tab>('insights')
   const [practice, setPractice] = useState<Practice | null>(null)
   const [reading, setReading] = useState<Read | null>(null)
   const [prefs, setPrefs] = useState<Prefs>(loadPrefs)
@@ -148,7 +151,10 @@ function App() {
         cacheEdition(set, date)
         setState((s) => {
           // Sunday has no new questions: it opens on the week in the mirror.
-          if (set.review && !(s.kind === 'ready' && s.day === date)) setTab('mirror')
+          if (set.review && !(s.kind === 'ready' && s.day === date)) {
+            setMirrorBack('insights')
+            setTab('mirror')
+          }
           return { kind: 'ready', set, day: date }
         })
       },
@@ -179,6 +185,7 @@ function App() {
   useEffect(() => {
     pruneLocal(date, loadPrefs().wordsDays)
     pruneNotebook(date)
+    pruneCardTexts(date)
     sendUnsent(date)
     sendUnrated()
     sendPlanChecks()
@@ -350,8 +357,9 @@ function App() {
     setAttempt((n) => n + 1)
   }
 
-  function open(view: 'kept' | 'settings' | 'practice' | 'read') {
-    if (isTab(tab)) setBack(tab)
+  function open(view: 'mirror' | 'kept' | 'settings' | 'practice' | 'read') {
+    if (view === 'mirror') setMirrorBack(isTab(tab) ? tab : 'insights')
+    else if (isTab(tab) || tab === 'mirror') setBack(tab)
     setTab(view)
     window.scrollTo?.({ top: 0 })
   }
@@ -370,7 +378,7 @@ function App() {
   const openRead = useCallback((r: Read) => {
     setReading(r)
     setTab((t) => {
-      if (isTab(t)) setBack(t)
+      if (isTab(t) || t === 'mirror') setBack(t)
       return 'read'
     })
     window.scrollTo?.({ top: 0 })
@@ -444,7 +452,7 @@ function App() {
           window={win}
           hero={hero!}
           onOpen={() => {
-            if (hero?.opens === 'mirror') setTab('mirror')
+            if (hero?.opens === 'mirror') open('mirror')
             else if (hero?.opens) setFlow(hero.opens)
           }}
           onAccount={() => setTab('account')}
@@ -724,7 +732,7 @@ function App() {
               key={t.tab}
               type="button"
               className="tab"
-              aria-pressed={tab === t.tab}
+              aria-pressed={tab === t.tab || (t.tab === 'insights' && tab === 'mirror')}
               onClick={() => goTab(t.tab)}
               disabled={!set && !ALWAYS_OPEN.includes(t.tab)}
             >
@@ -752,7 +760,7 @@ function App() {
             </>
           )}
 
-          {tab === 'circle' && <CircleScreen onOpenMirror={() => setTab('mirror')} today={date} questions={[...morningQs, ...eveningQs]} />}
+          {tab === 'circle' && <CircleScreen onOpenMirror={() => open('mirror')} today={date} questions={[...morningQs, ...eveningQs]} />}
 
           {tab === 'account' && (
             <AccountScreen
@@ -800,7 +808,26 @@ function App() {
             </div>
           )}
 
-          {set && tab === 'mirror' && <Mirror today={set.date} onOpenKept={() => open('kept')} onCircle={() => setTab('circle')} />}
+          {tab === 'insights' && (
+            <InsightsScreen
+              today={date}
+              questions={[...morningQs, ...eveningQs]}
+              pulse={pulseOn(prefs)}
+              onOpenMirror={() => open('mirror')}
+              onOpenKept={() => open('kept')}
+              onOpenReflect={() => goTab('notebook')}
+              onOpenSettings={() => open('settings')}
+            />
+          )}
+
+          {set && tab === 'mirror' && (
+            <>
+              <button type="button" className="text-button back" onClick={() => setTab(mirrorBack)}>
+                ← Back
+              </button>
+              <Mirror today={set.date} onOpenKept={() => open('kept')} onCircle={() => setTab('circle')} />
+            </>
+          )}
 
           {body}
           </Suspense>
@@ -816,6 +843,7 @@ function App() {
 // in for the moment it takes otherwise, with no spinner and no jump.
 const screens = {
   mirror: () => import('./Mirror'),
+  insights: () => import('./InsightsPage'),
   kept: () => import('./Kept'),
   practice: () => import('./Practice'),
   settings: () => import('./Settings'),
@@ -823,6 +851,7 @@ const screens = {
   circle: () => import('./Circle'),
 }
 const Mirror = lazy(() => screens.mirror().then((m) => ({ default: m.Mirror })))
+const InsightsScreen = lazy(() => screens.insights().then((m) => ({ default: m.Insights })))
 const KeptScreen = lazy(() => screens.kept().then((m) => ({ default: m.KeptScreen })))
 const PracticeScreen = lazy(() => screens.practice().then((m) => ({ default: m.PracticeScreen })))
 const SettingsScreen = lazy(() => screens.settings().then((m) => ({ default: m.SettingsScreen })))

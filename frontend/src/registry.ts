@@ -55,6 +55,7 @@ export const REGISTRY: Entry[] = [
   { key: 'pi.unrated.', what: 'A card tap waiting to be sent', backup: 'never', merge: 'local', download: false },
   { key: 'pi.pending.', what: 'An answer waiting to be sent', backup: 'never', merge: 'local', download: false },
   { key: 'pi.draft.', what: 'A half-written answer, for a day', backup: 'never', merge: 'local', download: false },
+  { key: 'pi.insight.', what: 'The card each answer showed, for Insights, for 30 days', backup: 'never', merge: 'local', download: false },
   { key: 'pi.edition.', what: "Today's questions, for opening without a connection", backup: 'never', merge: 'local', download: false },
   { key: 'pi.regional.v1', what: 'The questions about everyday life in each part of the world, the same for everyone, for opening without a connection', backup: 'never', merge: 'local', download: false },
   { key: 'pi.midday.', what: 'That you said "not yet" to the midday step check, for the day', backup: 'never', merge: 'local', download: false },

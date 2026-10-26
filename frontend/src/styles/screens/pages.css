@@ -10,12 +10,6 @@
   font-weight: 700;
 }
 
-.back::before {
-  content: '←';
-  margin-right: var(--s-2);
-  font-size: 1.25rem;
-}
-
 .done-title {
   font-size: clamp(2rem, 1.6rem + 2vw, 2.5rem);
   line-height: 1.06;
