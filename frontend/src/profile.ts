@@ -224,9 +224,31 @@ export function todaysPick(
     const qs = ids.map((id) => known.find((q) => q.id === id))
     if (qs.every(Boolean)) return qs as Question[]
   }
-  const qs = pickThree(pool.length ? pool : defaults, defaults, loadHistory(), today, adult, taken, offer)
+  const h = loadHistory()
+  const picked = pickThree(pool.length ? pool : defaults, defaults, h, today, adult, taken, offer)
+  const qs = isFirstDay(h, today) ? gentleFirst(picked) : picked
   saveJSON(key, qs.map((q) => q.id))
   return qs
+}
+
+// A person's first day: nothing answered or skipped before today (Edwin,
+// 2026-10-26: "do you think the users love it on day one?"). The first day
+// opens gently, keeps insider labels out and closes on a first glimpse.
+export function isFirstDay(h: History, today: string): boolean {
+  return !h.answers.some((a) => a.date < today) && !h.skips.some((s) => s.date < today)
+}
+
+// Themes that ask a lot of someone who has only just arrived. On the first
+// day they come after the everyday ones, never first.
+const TENDER_THEMES = new Set(['body', 'sadness-stress', 'anger', 'partnership', 'dating', 'faith', 'intimacy'])
+const tenderness = (q: Question) => (q.care === 'intimate' ? 2 : TENDER_THEMES.has(q.theme ?? '') ? 1 : 0)
+
+// gentleFirst orders a sitting lightest first, keeping the order within each.
+export function gentleFirst(qs: Question[]): Question[] {
+  return qs
+    .map((q, i) => ({ q, i }))
+    .sort((a, b) => tenderness(a.q) - tenderness(b.q) || a.i - b.i)
+    .map(({ q }) => q)
 }
 
 // forgetPick drops the given halves' picks for today, so they are picked again.

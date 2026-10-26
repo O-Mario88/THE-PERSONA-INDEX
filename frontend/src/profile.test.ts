@@ -4,8 +4,11 @@ import {
   changeLine,
   changesBetween,
   earned,
+  gentleFirst,
   heavyPause,
   interestScores,
+  isFirstDay,
+  todaysPick,
   isLowMood,
   leaningVerdict,
   notMeSides,
@@ -102,6 +105,36 @@ describe('picking three from the pool', () => {
     const h: History = { answers: [answer('2026-10-11', 'intimacy', 4), answer('2026-10-11', 'intimacy', 4)], skips: [] }
     expect(pickThree(pool, defaults, h, '2026-10-12', false).some((p) => p.care === 'intimate')).toBe(false)
     expect(pickThree(pool, defaults, h, '2026-10-12', true).some((p) => p.care === 'intimate')).toBe(true)
+  })
+})
+
+// Edwin, 2026-10-26: day one should feel light. The first day opens on
+// everyday questions; tender themes wait until later in the sitting.
+describe("a person's first day", () => {
+  it('is a day with nothing answered or skipped before it', () => {
+    expect(isFirstDay({ answers: [], skips: [] }, '2026-10-12')).toBe(true)
+    expect(isFirstDay({ answers: [answer('2026-10-12', 'money', 2)], skips: [] }, '2026-10-12')).toBe(true)
+    expect(isFirstDay({ answers: [answer('2026-10-11', 'money', 2)], skips: [] }, '2026-10-12')).toBe(false)
+    expect(isFirstDay({ answers: [], skips: [{ date: '2026-10-11', theme: 'money' }] }, '2026-10-12')).toBe(false)
+  })
+
+  it('puts everyday questions first and tender ones last, keeping the order within each', () => {
+    const body = q('b1', 'body')
+    const sad = q('d1', 'sadness-stress', 'personal')
+    const habits = q('h2', 'habits')
+    const money = q('m3', 'money')
+    expect(gentleFirst([body, habits, sad, money]).map((x) => x.id)).toEqual(['h2', 'm3', 'b1', 'd1'])
+    expect(gentleFirst([habits, money])).toEqual([habits, money])
+  })
+
+  it('orders the first sitting gently, and leaves later days as picked', () => {
+    const body = q('b1', 'body')
+    const first = todaysPick([], [body, pool[0], pool[3]], '2026-10-12', false)
+    expect(first.map((x) => x.theme)).toEqual(['money', 'sleep-health', 'body'])
+    localStorage.clear()
+    localStorage.setItem('pi.history.v1', JSON.stringify({ answers: [answer('2026-10-11', 'money', 2)], skips: [] }))
+    const later = todaysPick([], [body, pool[0], pool[3]], '2026-10-12', false)
+    expect(later[0].theme).not.toBe('money')
   })
 })
 

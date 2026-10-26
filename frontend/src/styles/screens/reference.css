@@ -1116,6 +1116,15 @@ fieldset.notice,
   box-shadow: none;
 }
 
+/* The thread keeps a narrow gutter for its small bars, so they never sit on the words. */
+.thread {
+  padding-left: 36px;
+}
+
+.thread::before {
+  left: 0;
+}
+
 /* Things inside a section lose their own boxes too. */
 .stat-tile,
 .growing .stat-tile,
