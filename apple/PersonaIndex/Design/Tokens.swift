@@ -60,6 +60,10 @@ enum Palette {
     static let warm = Color(hex: 0xF6B73C)
     static let warmInk = Color(light: 0x8A5300, dark: 0xF6B73C)
     static let warmWash = Color(light: 0xFFF6E3, dark: 0x2A2516)
+    /// The mirror's answer squares, as on the web: in dark, "deeper" goes
+    /// white and "light" a soft lime (40% over the card), so all three differ.
+    static let depthDeeper = Color(light: 0x0E1A24, dark: 0xFFFFFF)
+    static let depthLight = Color(light: 0xC6F24E, dark: 0x5B753B)
 }
 
 enum Space {

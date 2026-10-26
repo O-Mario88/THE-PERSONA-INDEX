@@ -71,23 +71,57 @@ public struct Notebook: Sendable {
 
     public init(store: KeyValueStore) { self.store = store }
 
-    private func entries<T: Decodable>(_ kind: String, as: T.Type) -> [(at: Double, value: T)] {
-        store.keys(withPrefix: Self.prefix + kind + ".").compactMap { key in
-            guard let json = store.string(forKey: key), let data = json.data(using: .utf8),
-                  let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                  obj["kind"] as? String == kind, let at = obj["at"] as? Double,
-                  let value = try? JSONDecoder().decode(T.self, from: data) else { return nil }
-            return (at, value)
+    private func entries<T: Decodable>(_ kind: String, as: T.Type, among keys: [String]? = nil) -> [(at: Double, value: T)] {
+        let prefix = Self.prefix + kind + "."
+        let keys = keys?.filter { $0.hasPrefix(prefix) } ?? store.keys(withPrefix: prefix)
+        return keys.compactMap { decode($0, kind: kind, as: T.self).map { ($0.at, $0.value) } }
+    }
+
+    private func decode<T: Decodable>(_ key: String, kind: String, as: T.Type) -> (at: Double, value: T)? {
+        guard let json = store.string(forKey: key), let data = json.data(using: .utf8),
+              let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              obj["kind"] as? String == kind, let at = obj["at"] as? Double,
+              let value = try? JSONDecoder().decode(T.self, from: data) else { return nil }
+        return (at, value)
+    }
+
+    /// Everything Saved shows, read with one listing of the keys: listing
+    /// UserDefaults copies all of it, so screens hold this rather than reading
+    /// each kind on every redraw.
+    public struct Shelf: Sendable, Equatable {
+        public var cards: [KeptCard] = []
+        public var plans: [KeptPlan] = []
+        public var names: [WeekName] = []
+        public var sentences: [WeekSentence] = []
+        public var goodThings: [GoodThings] = []
+
+        public init(cards: [KeptCard] = [], plans: [KeptPlan] = [], names: [WeekName] = [], sentences: [WeekSentence] = [], goodThings: [GoodThings] = []) {
+            self.cards = cards
+            self.plans = plans
+            self.names = names
+            self.sentences = sentences
+            self.goodThings = goodThings
         }
+    }
+
+    public func shelf() -> Shelf {
+        let keys = store.keys(withPrefix: Self.prefix)
+        return Shelf(cards: cards(among: keys), plans: plans(among: keys), names: names(among: keys),
+                     sentences: sentences(among: keys), goodThings: goodThings(among: keys))
     }
 
     // MARK: Kept cards
 
-    public func cards() -> [KeptCard] {
-        entries("card", as: KeptCard.self).map(\.value).sorted { ($0.date, $0.at) > ($1.date, $1.at) }
+    public func cards() -> [KeptCard] { cards(among: nil) }
+
+    private func cards(among keys: [String]?) -> [KeptCard] {
+        entries("card", as: KeptCard.self, among: keys).map(\.value).sorted { ($0.date, $0.at) > ($1.date, $1.at) }
     }
 
-    public func isKept(_ questionId: String) -> Bool { cards().contains { $0.questionId == questionId } }
+    /// One key read: a card is kept under its own question's key.
+    public func isKept(_ questionId: String) -> Bool {
+        decode(Self.prefix + "card." + questionId, kind: "card", as: KeptCard.self) != nil
+    }
 
     public func keep(_ card: KeptCard) {
         var c = card
@@ -105,10 +139,23 @@ public struct Notebook: Sendable {
 
     // MARK: What the web keeps that the app shows
 
-    public func plans() -> [KeptPlan] { entries("plan", as: KeptPlan.self).map(\.value).sorted { $0.made > $1.made } }
-    public func names() -> [WeekName] { entries("name", as: WeekName.self).map(\.value).sorted { $0.week > $1.week } }
-    public func sentences() -> [WeekSentence] { entries("sentence", as: WeekSentence.self).map(\.value).sorted { $0.week > $1.week } }
-    public func goodThings() -> [GoodThings] { entries("good", as: GoodThings.self).map(\.value).sorted { $0.date > $1.date } }
+    public func plans() -> [KeptPlan] { plans(among: nil) }
+    public func names() -> [WeekName] { names(among: nil) }
+    public func sentences() -> [WeekSentence] { sentences(among: nil) }
+    public func goodThings() -> [GoodThings] { goodThings(among: nil) }
+
+    private func plans(among keys: [String]?) -> [KeptPlan] {
+        entries("plan", as: KeptPlan.self, among: keys).map(\.value).sorted { $0.made > $1.made }
+    }
+    private func names(among keys: [String]?) -> [WeekName] {
+        entries("name", as: WeekName.self, among: keys).map(\.value).sorted { $0.week > $1.week }
+    }
+    private func sentences(among keys: [String]?) -> [WeekSentence] {
+        entries("sentence", as: WeekSentence.self, among: keys).map(\.value).sorted { $0.week > $1.week }
+    }
+    private func goodThings(among keys: [String]?) -> [GoodThings] {
+        entries("good", as: GoodThings.self, among: keys).map(\.value).sorted { $0.date > $1.date }
+    }
 
     /// Everything Saved holds, as a file the person keeps.
     public func export() -> Data {

@@ -154,21 +154,12 @@ private struct MirrorPage: View {
             ("That's me", s.rated > 0 ? "\(s.me) of \(s.rated)" : "–", s.rated > 0 ? "cards you judged" : "Tap “That's me” on a card that fits"),
             ("Small steps", s.stepsStarted > 0 ? "\(s.stepsHelped) of \(s.stepsStarted)" : "–", s.stepsStarted > 0 ? "helped" : "Pick one with “I'll try it”"),
         ]
-        return LazyVGrid(columns: [GridItem(.flexible(), spacing: Space.s3), GridItem(.flexible())], spacing: Space.s3) {
-            ForEach(items, id: \.0) { item in
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(item.0).font(.figtree(14, .semibold)).foregroundStyle(Palette.muted)
-                    Text(item.1).font(.figtree(28, .heavy))
-                    Text(item.2).font(.figtree(12)).foregroundStyle(Palette.muted).lineLimit(2)
-                }
-                .frame(maxWidth: .infinity, minHeight: 92, alignment: .topLeading)
-                .card(padding: Space.s4)
-            }
-        }
+        return StatTiles(items: items.map { StatTiles.Item(name: $0.0, value: $0.1, note: $0.2) })
     }
 
     private var glance: some View {
         MirrorSection(number: 1, title: "Your week at a glance") {
+            // A small chart: its labels stop growing where seven no longer fit.
             HStack(spacing: 6) {
                 ForEach(m.days, id: \.date) { day in
                     VStack(spacing: Space.s2) {
@@ -182,12 +173,14 @@ private struct MirrorPage: View {
                     .overlay(RoundedRectangle(cornerRadius: Radius.md).strokeBorder(Palette.line))
                 }
             }
+            .dynamicTypeSize(...DynamicTypeSize.xLarge)
             HStack(spacing: Space.s4) {
                 Legend(color: Palette.accentInk, label: "Deep")
-                Legend(color: Palette.onLime, label: "Deeper")
-                Legend(color: Palette.lime, label: "Light")
+                Legend(color: Palette.depthDeeper, label: "Deeper")
+                Legend(color: Palette.depthLight, label: "Light")
             }
             .font(.figtree(12)).foregroundStyle(Palette.muted)
+            .dynamicTypeSize(...DynamicTypeSize.xLarge)
         }
     }
 
@@ -285,6 +278,7 @@ struct MirrorSection<Content: View>: View {
             HStack(spacing: Space.s3) {
                 Text(String(format: "%02d", number))
                     .font(.figtree(12, .heavy))
+                    .dynamicTypeSize(...DynamicTypeSize.xLarge)
                     .foregroundStyle(Palette.onLime)
                     .frame(width: 32, height: 32)
                     .background(Palette.lime, in: Circle())
@@ -318,8 +312,8 @@ private struct FlowSquares: View {
     private func color(_ d: Depth) -> Color {
         switch d {
         case .deep: Palette.accentInk
-        case .deeper: Palette.onLime
-        case .light: Palette.lime
+        case .deeper: Palette.depthDeeper
+        case .light: Palette.depthLight
         case .private: .clear
         }
     }
@@ -366,7 +360,7 @@ private struct FlowChips: View {
     let themes: [String]
 
     var body: some View {
-        WrapLayout(spacing: Space.s2) {
+        FlowRow {
             ForEach(themes, id: \.self) { t in
                 let s = Themes.style(t)
                 Text("\(s.icon)  \(s.name)")
@@ -375,35 +369,6 @@ private struct FlowChips: View {
                     .padding(.vertical, 6)
                     .background(Palette.surface2, in: Capsule())
             }
-        }
-    }
-}
-
-/// A simple wrapping row.
-struct WrapLayout: Layout {
-    var spacing: CGFloat = 8
-
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let width = proposal.width ?? .infinity
-        var x: CGFloat = 0, y: CGFloat = 0, row: CGFloat = 0, widest: CGFloat = 0
-        for v in subviews {
-            let s = v.sizeThatFits(.unspecified)
-            if x > 0, x + s.width > width { x = 0; y += row + spacing; row = 0 }
-            x += s.width + spacing
-            row = max(row, s.height)
-            widest = max(widest, x - spacing)
-        }
-        return CGSize(width: min(widest, width), height: y + row)
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        var x = bounds.minX, y = bounds.minY, row: CGFloat = 0
-        for v in subviews {
-            let s = v.sizeThatFits(.unspecified)
-            if x > bounds.minX, x + s.width > bounds.maxX { x = bounds.minX; y += row + spacing; row = 0 }
-            v.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(s))
-            x += s.width + spacing
-            row = max(row, s.height)
         }
     }
 }

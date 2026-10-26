@@ -14,11 +14,11 @@ struct SavedView: View {
     }
 
     var body: some View {
-        let nb = model.notebook
-        let all = nb.cards()
+        let shelf = model.saved
+        let all = shelf.cards
         let hidden = model.prefs.mild ? all.filter { $0.private == true }.count : 0
         let cards = model.prefs.mild ? all.filter { $0.private != true } : all
-        let plans = nb.plans(), names = nb.names(), lines = nb.sentences(), good = nb.goodThings()
+        let plans = shelf.plans, names = shelf.names, lines = shelf.sentences, good = shelf.goodThings
         let counts: [(Kind, Int)] = [(.cards, all.count), (.steps, plans.count), (.mirrors, names.count), (.words, lines.count + good.count)]
             .filter { $0.1 > 0 }
         let kind = counts.contains { $0.0 == pick } ? pick : counts.first?.0
@@ -51,7 +51,7 @@ struct SavedView: View {
                 case nil: EmptyView()
                 }
                 if !counts.isEmpty {
-                    ShareLink(item: SavedFile(data: nb.export()), preview: SharePreview("My Saved")) {
+                    ShareLink(item: SavedFile(notebook: model.notebook), preview: SharePreview("My Saved")) {
                         Label("Download what's saved", systemImage: "square.and.arrow.down")
                     }
                     .font(.figtree(14, .bold))
@@ -202,9 +202,10 @@ private struct KeptCardView: View {
 
 /// The download: a JSON file of everything in Saved.
 struct SavedFile: Transferable {
-    let data: Data
+    /// Built when shared, not on every redraw of Saved.
+    let notebook: Notebook
     static var transferRepresentation: some TransferRepresentation {
-        DataRepresentation(exportedContentType: .json) { $0.data }
+        DataRepresentation(exportedContentType: .json) { $0.notebook.export() }
             .suggestedFileName("my-saved.json")
     }
 }

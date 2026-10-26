@@ -9,7 +9,7 @@ struct KeepButton: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        if model.notebook.isKept(questionId) {
+        if model.saved.cards.contains(where: { $0.questionId == questionId }) {
             HStack(spacing: Space.s3) {
                 Label("Kept in Saved, on this device only.", systemImage: "checkmark").font(.pSmall).foregroundStyle(Palette.accentInk)
                 Button("Undo") { model.unkeep(questionId) }

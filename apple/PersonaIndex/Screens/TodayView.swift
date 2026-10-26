@@ -45,15 +45,22 @@ struct TodayView: View {
         #endif
     }
 
+    @Environment(\.dynamicTypeSize) private var typeSize
+
+    /// Side by side; at the accessibility text sizes the ring goes under the
+    /// greeting, so the greeting keeps the full width and never breaks a word.
     private var header: some View {
-        HStack(alignment: .center, spacing: Space.s4) {
+        let layout = typeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: Space.s4))
+            : AnyLayout(HStackLayout(alignment: .center, spacing: Space.s4))
+        return layout {
             VStack(alignment: .leading, spacing: Space.s2) {
                 Text("\(weekday) · \(Day.clock(minutes))".uppercased())
                     .font(.pLabel).tracking(1.6).foregroundStyle(Palette.muted)
                 Text(model.window.greeting(name: model.name)).font(.figtree(36, .heavy, relativeTo: .largeTitle))
                     .fixedSize(horizontal: false, vertical: true)
             }
-            Spacer()
+            .frame(maxWidth: .infinity, alignment: .leading)
             DayRing(part: Double(model.doneCount) / 5, big: "\(model.doneCount)", small: "of 5 today")
         }
     }
@@ -78,29 +85,54 @@ struct TodayView: View {
 
     private var ritual: some View {
         VStack(alignment: .leading, spacing: Space.s4) {
-            HStack {
+            let title = typeSize.isAccessibilitySize
+                ? AnyLayout(VStackLayout(alignment: .leading, spacing: Space.s1))
+                : AnyLayout(HStackLayout())
+            title {
                 Text("Today’s ritual").font(.pH2)
-                Spacer()
+                if !typeSize.isAccessibilitySize { Spacer() }
                 Text("\(model.doneCount) of 5 complete").font(.pSmall).foregroundStyle(Palette.muted)
             }
-            HStack(alignment: .top, spacing: 0) {
-                ForEach(DayWindow.open, id: \.self) { w in
-                    VStack(spacing: Space.s2) {
-                        dot(for: w)
+            if typeSize.isAccessibilitySize { windowList } else { windowRow }
+        }
+        .card()
+    }
+
+    /// At the accessibility text sizes: one window to a line, so no name breaks.
+    private var windowList: some View {
+        VStack(alignment: .leading, spacing: Space.s3) {
+            ForEach(DayWindow.open, id: \.self) { w in
+                HStack(spacing: Space.s3) {
+                    dot(for: w)
+                    VStack(alignment: .leading, spacing: 0) {
                         Text(w.short).font(.figtree(13, state(w) == .later ? .medium : .heavy))
                             .foregroundStyle(state(w) == .later ? Palette.muted : Palette.text)
                         Text(sub(w)).font(.figtree(11)).foregroundStyle(Palette.muted)
                     }
-                    .frame(maxWidth: .infinity)
                 }
             }
-            .background(alignment: .top) {
-                Rectangle().fill(Palette.line).frame(height: 2).padding(.horizontal, 34).padding(.top, 13)
-            }
-            .accessibilityElement(children: .combine)
-            .accessibilityLabel("Your day")
         }
-        .card()
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Your day")
+    }
+
+    private var windowRow: some View {
+        HStack(alignment: .top, spacing: 0) {
+            ForEach(DayWindow.open, id: \.self) { w in
+                VStack(spacing: Space.s2) {
+                    dot(for: w)
+                    Text(w.short).font(.figtree(13, state(w) == .later ? .medium : .heavy))
+                        .foregroundStyle(state(w) == .later ? Palette.muted : Palette.text)
+                    Text(sub(w)).font(.figtree(11)).foregroundStyle(Palette.muted)
+                }
+                .frame(maxWidth: .infinity)
+            }
+        }
+        .background(alignment: .top) {
+            Rectangle().fill(Palette.line).frame(height: 2).padding(.horizontal, 34).padding(.top, 13)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Your day")
     }
 
     // MARK: Helpers
