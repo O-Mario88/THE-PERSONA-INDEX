@@ -188,17 +188,19 @@ export function Shell({ phoneDark }: { phoneDark: boolean }) {
   const offer = useMemo(() => (set ? regionalFor(pack, region, set.date, loadHistory()) : null), [set, pack, region])
   const local = useMemo(() => (set ? regionalToday(pack, set.date) : []), [set, pack])
   const morningQs = useMemo(
-    () => (set ? todaysPick(set.pool ?? [], set.questions ?? [], set.date, intimacyOn(prefs), 'morning', [], offer, local) : []),
+    // Not while the welcome shows: Begin marks the start, and only then does
+    // the newcomer's first sitting open light.
+    () => (set && !welcome ? todaysPick(set.pool ?? [], set.questions ?? [], set.date, intimacyOn(prefs), 'morning', [], offer, local) : []),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [set, prefs.adult, prefs.mild, pickVersion, offer, local],
+    [set, welcome, prefs.adult, prefs.mild, pickVersion, offer, local],
   )
   const morning = progressOf(morningQs)
   const hasEvening = !!set?.evening?.length
   const eveningReady = hasEvening && (morning === 'done' || clockSitting === 'evening')
   const eveningQs = useMemo(
-    () => (set && eveningReady ? todaysPick(set.pool ?? [], set.evening ?? [], set.date, intimacyOn(prefs), 'evening', morningQs, offer, local) : []),
+    () => (set && eveningReady && !welcome ? todaysPick(set.pool ?? [], set.evening ?? [], set.date, intimacyOn(prefs), 'evening', morningQs, offer, local) : []),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [set, eveningReady, prefs.adult, prefs.mild, pickVersion, morningQs, offer, local],
+    [set, eveningReady, welcome, prefs.adult, prefs.mild, pickVersion, morningQs, offer, local],
   )
   const evening: Progress | null = hasEvening ? (eveningReady ? progressOf(eveningQs) : 'none') : null
 
@@ -259,7 +261,8 @@ export function Shell({ phoneDark }: { phoneDark: boolean }) {
     pullSync(acc.sync).catch(() => {})
   }
 
-  const dark = blackOn(prefs) && (phoneDark || ((win === 'evening' || win === 'night' || win === 'rest') && tab === 'today'))
+  // Midnight on every tab through the evening and night, as the Dark mode note says.
+  const dark = blackOn(prefs) && (phoneDark || win === 'evening' || win === 'night' || win === 'rest')
   const palette = dark ? darkPalette : lightPalette
 
   const hero = set
@@ -578,7 +581,9 @@ function TabBar({ tab, onTab, shown }: { tab: View_; onTab: (t: Tab) => void; sh
       style={{ flexDirection: 'row', backgroundColor: p.surface, borderTopWidth: 1, borderTopColor: p.line, paddingBottom: Math.max(insets.bottom, 8), paddingTop: 8 }}
     >
       {shown.map((t) => {
-        const on = tab === t.tab
+        // Inner pages light the tab they belong under.
+        const home: View_ = tab === 'settings' || tab === 'kept' || tab === 'signin' ? 'account' : tab === 'mirror' ? 'insights' : tab
+        const on = home === t.tab
         return (
           <Pressable
             key={t.tab}

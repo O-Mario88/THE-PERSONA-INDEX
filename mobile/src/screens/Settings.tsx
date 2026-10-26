@@ -47,6 +47,8 @@ export function Settings({
         <T v="eyebrow">Your name</T>
         <Field
           note="For the greeting. It stays on this phone."
+          placeholder="Your first name"
+          accessibilityLabel="Your name"
           value={draft}
           maxLength={MAX_NAME}
           textContentType="givenName"

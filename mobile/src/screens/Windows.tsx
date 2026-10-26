@@ -5,7 +5,7 @@
 import { useEffect, useState } from 'react'
 import { TextInput, View } from 'react-native'
 import { recalledChoice, SKIPPED, type Question } from '@shared/api'
-import { isSaturday } from '@shared/day'
+import { isSaturday, opensAt } from '@shared/day'
 import { movesOn } from '@shared/moves'
 import { goodThings, keepGoodThings } from '@shared/notebook'
 import { inOrder } from '@shared/order'
@@ -156,7 +156,7 @@ export function Night({ date, tomorrowThemes, onClose }: { date: string; tomorro
         {picked.length > 0 && <T tone="muted">Kept in your notebook: {picked.join(' · ')}.</T>}
         {isSaturday(date) ? <T>{SUNDAY_LINE}</T> : <Upcoming label="Tomorrow" themes={tomorrowThemes} />}
         <T style={{ fontFamily: 'Georgia', fontSize: 20, lineHeight: 28 }}>
-          {isSaturday(date) ? 'Sleep well. Tomorrow is for looking back: your week will be waiting in your mirror.' : 'Sleep well. Your next three open at 05:00.'}
+          {isSaturday(date) ? 'Sleep well. Tomorrow is for looking back: your week will be waiting in your mirror.' : `Sleep well. Your next three open at ${opensAt('morning')}.`}
         </T>
       </View>
     )

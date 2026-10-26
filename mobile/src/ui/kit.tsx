@@ -260,9 +260,9 @@ export function Toggle({ label, note, value, onChange }: { label: string; note?:
 export function Chip({ label, on, onPress, icon }: { label: string; on?: boolean; onPress?: () => void; icon?: string }) {
   const p = useTheme()
   const body = (
-    <View style={[styles.chip, { backgroundColor: on ? p.forest : p.surface2, borderColor: on ? p.forest : p.line }]}>
+    <View style={[styles.chip, { backgroundColor: on ? p.lime : p.surface2, borderColor: on ? p.lime : p.line }]}>
       {icon ? <Text style={{ fontSize: 14 }}>{icon}</Text> : null}
-      <Text style={{ fontFamily: font.bold, fontSize: 14, color: on ? p.onForest : p.text }}>{label}</Text>
+      <Text style={{ fontFamily: font.bold, fontSize: 14, color: on ? p.onLime : p.text }}>{label}</Text>
     </View>
   )
   if (!onPress) return body
@@ -308,15 +308,19 @@ export function Page({ children, bottom = 32, refresh }: { children: ReactNode; 
   const p = useTheme()
   const insets = useSafeAreaInsets()
   return (
-    <ScrollView
-      key={refresh}
-      style={{ flex: 1, backgroundColor: p.bg }}
-      contentContainerStyle={{ paddingHorizontal: gutter, paddingTop: Math.max(insets.top, 20) + 8, paddingBottom: bottom, gap: 20, maxWidth: 640, width: '100%', alignSelf: 'center' }}
-      keyboardShouldPersistTaps="handled"
-      keyboardDismissMode="interactive"
-    >
-      {children}
-    </ScrollView>
+    <View style={{ flex: 1, backgroundColor: p.bg }}>
+      <ScrollView
+        key={refresh}
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingHorizontal: gutter, paddingTop: Math.max(insets.top, 20) + 8, paddingBottom: bottom, gap: 20, maxWidth: 640, width: '100%', alignSelf: 'center' }}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+      >
+        {children}
+      </ScrollView>
+      {/* The page colour behind the status bar, so words don't scroll under the clock. */}
+      <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: insets.top, backgroundColor: p.bg }} />
+    </View>
   )
 }
 

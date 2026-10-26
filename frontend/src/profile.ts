@@ -237,6 +237,12 @@ export type Half = 'morning' | 'evening'
 
 const pickKey = (today: string, half: Half) => (half === 'morning' ? `pi.pick.${today}` : `pi.pick.${today}.pm`)
 
+// pickedIds is the question ids a half showed today, once it was picked.
+export function pickedIds(today: string, half: Half): string[] {
+  const ids = loadJSON(pickKey(today, half))
+  return Array.isArray(ids) ? ids.filter((x): x is string => typeof x === 'string') : []
+}
+
 // Each half's pick is fixed at first sight, so the three don't change while
 // someone is answering them. The evening is picked once the morning is
 // answered or closed, and never repeats the morning's questions or themes.

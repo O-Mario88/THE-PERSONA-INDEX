@@ -1,5 +1,5 @@
 import { adviceFor } from './advice'
-import { heavyPause, isLowMood, loadHistory, type History } from './profile'
+import { heavyPause, isLowMood, loadHistory, pickedIds, type History } from './profile'
 import { daysBetween, load, save } from './storage'
 
 // The first week (Edwin, 2026-10-26: "simple, healthy and focused"). A new
@@ -60,9 +60,13 @@ export function glimpseHere(date: string, sitting: 'morning' | 'evening', h: His
   if (!isNewcomer()) return false
   // After a heavy answer the close keeps to kind words: no glimpse, no sign-up.
   if (h.answers.some((a) => a.date === date && (a.heavy || isLowMood(a.theme, a.depth)))) return false
-  // Every answer so far is from this sitting's day: this is the first one.
-  const answered = h.answers.filter((a) => (sitting === 'evening' ? a.evening : !a.evening) && a.date === date)
-  if (answered.length === 0 || h.answers.some((a) => a.date !== date || (sitting === 'morning') === !!a.evening)) return false
+  // Every answer so far is from this sitting's day and this sitting: this is
+  // the first one. An answer belongs to the evening when the evening's pick
+  // showed it (answers themselves carry no sitting).
+  const evening = new Set(pickedIds(date, 'evening'))
+  const inEvening = (a: History['answers'][number]) => !!a.evening || evening.has(a.questionId)
+  const answered = h.answers.filter((a) => a.date === date && (sitting === 'evening') === inEvening(a))
+  if (answered.length === 0 || h.answers.some((a) => a.date !== date || (sitting === 'morning') === inEvening(a))) return false
   save(GLIMPSE_KEY, here)
   return true
 }

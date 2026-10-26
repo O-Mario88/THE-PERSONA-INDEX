@@ -17,6 +17,17 @@ describe('where someone lives', () => {
     expect(guessCountry('Nowhere/Special')).toBeNull()
   })
 
+  it('names countries where Intl.DisplayNames is missing, as on the phone app', () => {
+    const real = Intl.DisplayNames
+    // @ts-expect-error Hermes has no DisplayNames
+    delete Intl.DisplayNames
+    try {
+      expect(countryName('UG')).toBe('Uganda')
+    } finally {
+      Intl.DisplayNames = real
+    }
+  })
+
   it('lists every country with a time zone, by its everyday name', () => {
     expect(COUNTRY_CODES.length).toBeGreaterThan(240)
     expect(countryName('KE')).toBe('Kenya')
@@ -24,6 +35,7 @@ describe('where someone lives', () => {
     expect(names).toContain('Ghana')
     expect([...names].sort((a, b) => a.localeCompare(b, 'en-GB'))).toEqual(names)
     expect(isCountry('ZZ')).toBe(false)
+    expect(COUNTRY_CODES.every((c) => countryName(c) !== c)).toBe(true)
   })
 
   it("points help to the person's own country, or to the directory's front page", () => {
