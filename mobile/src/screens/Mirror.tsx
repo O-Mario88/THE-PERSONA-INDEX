@@ -245,9 +245,10 @@ function Scale({ dots }: { dots: { at: number; color: string }[] }) {
   )
 }
 
-// One hue at three strengths, so deep, deeper and light read apart in both
-// themes (the accent ink is midnight-teal in light, marigold in dark).
-const depthColor = (p: Palette, d: Depth) => (d === 'deep' || d === 'private' ? p.accentInk : d === 'deeper' ? `${p.accentInk}A6` : `${p.accentInk}4D`)
+// One ink at three strengths, as the web's mirror.css: light is the faintest,
+// deep stronger, and deeper the darkest (text colour, or white in dark).
+const depthColor = (p: Palette, d: Depth) =>
+  d === 'deeper' ? (p.dark ? '#ffffff' : p.text) : d === 'deep' ? `${p.accentInk}${p.dark ? 'BF' : 'A6'}` : d === 'light' ? `${p.accentInk}${p.dark ? '66' : '4D'}` : p.accentInk
 
 function sqStyle(p: Palette, kind: Depth | 'missed' | 'later') {
   const base = { width: 12, height: 12, borderRadius: 3 }
