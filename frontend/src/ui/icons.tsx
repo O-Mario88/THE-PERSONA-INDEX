@@ -1,7 +1,7 @@
 // The few line icons the app draws: the tabs, share, close, lock and the
 // like. Inline SVG, so they follow the text colour and weigh nothing.
 
-const paths: Record<string, string> = {
+export const paths: Record<string, string> = {
   leaf: 'M12 21v-8 M12 13c0-4.5 3-7.5 8-8-.2 5-3.5 8-8 8Z M12 15c0-3.4-2.3-5.6-6-6 .2 3.7 2.6 6 6 6Z',
   bulb: 'M9 18h6 M10 21h4 M12 3a6 6 0 0 0-3.6 10.8c.7.5 1.1 1.3 1.1 2.2h5c0-.9.4-1.7 1.1-2.2A6 6 0 0 0 12 3Z',
   star: 'M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.7l5.9-.9Z',

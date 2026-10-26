@@ -1,0 +1,144 @@
+// Midnight & Cream, the same tokens as the web app (frontend/src/styles/
+// tokens.css and frontend/DESIGN.md). Change a colour here and in
+// tokens.css together, so the phone, the Mac and the browser match.
+import { createContext, useContext, type ReactNode } from 'react'
+
+export type Palette = {
+  dark: boolean
+  bg: string
+  surface: string
+  surface2: string
+  surface3: string
+  line: string
+  lineStrong: string
+  text: string
+  text2: string
+  muted: string
+  forest: string
+  forest2: string
+  onForest: string
+  leaf: string
+  leafSoft: string
+  lime: string // the filled accent: midnight in light, marigold in dark
+  onLime: string
+  brandLime: string
+  accentInk: string
+  accentWash: string
+  accentLine: string
+  btn: string
+  onBtn: string
+  blue: string
+  blueWash: string
+  purple: string
+  purpleWash: string
+  rose: string
+  roseWash: string
+  amber: string
+  amberInk: string
+  amberWash: string
+  danger: string
+  navy: string
+  navy2: string
+  onNavy: string
+  onNavy2: string
+}
+
+export const light: Palette = {
+  dark: false,
+  bg: '#fbf7f0',
+  surface: '#fffdf9',
+  surface2: '#f4ede1',
+  surface3: '#ebe2d3',
+  line: '#ece3d4',
+  lineStrong: '#ddd1bd',
+  text: '#12283a',
+  text2: '#3d4f5c',
+  muted: '#69737c',
+  forest: '#013d5a',
+  forest2: '#0d5275',
+  onForest: '#ffffff',
+  leaf: '#5f7d58',
+  leafSoft: '#b5c7ae',
+  lime: '#013d5a',
+  onLime: '#ffffff',
+  brandLime: '#f4a258',
+  accentInk: '#0b4f70',
+  accentWash: '#e7f0ed',
+  accentLine: '#bdd3ce',
+  btn: '#013d5a',
+  onBtn: '#ffffff',
+  blue: '#3f6f8f',
+  blueWash: '#e4edf2',
+  purple: '#6d597a',
+  purpleWash: '#efe9f1',
+  rose: '#c8553a',
+  roseWash: '#fbe9e2',
+  amber: '#e48a3c',
+  amberInk: '#8a4b12',
+  amberWash: '#fdf0e1',
+  danger: '#b42318',
+  navy: '#013d5a',
+  navy2: '#0d5275',
+  onNavy: '#ffffff',
+  onNavy2: '#c7d8e2',
+}
+
+export const dark: Palette = {
+  ...light,
+  dark: true,
+  lime: '#f4a258',
+  onLime: '#1d1206',
+  bg: '#0b1a24',
+  surface: '#102330',
+  surface2: '#16303f',
+  surface3: '#1d3a4b',
+  line: '#1d3545',
+  lineStrong: '#2a4759',
+  text: '#f6efe3',
+  text2: '#d6d2c9',
+  muted: '#9eaab3',
+  forest2: '#13506f',
+  leaf: '#a9c3a1',
+  leafSoft: '#7c9a74',
+  accentInk: '#f4a258',
+  accentWash: '#183242',
+  accentLine: '#2a4a5c',
+  btn: '#f4a258',
+  onBtn: '#1d1206',
+  blue: '#8db1f5',
+  blueWash: '#17233a',
+  purple: '#b9a4f5',
+  purpleWash: '#221c38',
+  rose: '#f09a82',
+  roseWash: '#33191a',
+  amber: '#f4a258',
+  amberInk: '#f4a258',
+  amberWash: '#2d2410',
+  danger: '#ff8a7a',
+  navy: '#133246',
+  navy2: '#1a3d54',
+  onNavy2: '#c2d2dc',
+}
+
+// Figtree, bundled. React Native picks a font file by name, not by weight.
+export const font = {
+  regular: 'Figtree_400Regular',
+  medium: 'Figtree_500Medium',
+  semibold: 'Figtree_600SemiBold',
+  bold: 'Figtree_700Bold',
+  heavy: 'Figtree_800ExtraBold',
+}
+export const serif = 'Georgia'
+
+// A 4px grid, a 24px gutter, and the radii of the web app.
+export const space = { 1: 4, 2: 8, 3: 12, 4: 16, 5: 20, 6: 24, 8: 32, 10: 40 } as const
+export const gutter = 24
+export const radius = { sm: 10, md: 14, lg: 18, xl: 24, pill: 999 } as const
+
+const ThemeContext = createContext<Palette>(light)
+
+export function ThemeProvider({ palette, children }: { palette: Palette; children: ReactNode }) {
+  return <ThemeContext.Provider value={palette}>{children}</ThemeContext.Provider>
+}
+
+export const useTheme = () => useContext(ThemeContext)
