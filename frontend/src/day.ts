@@ -28,14 +28,13 @@ export type Window = 'rest' | 'morning' | 'midday' | 'afternoon' | 'evening' | '
 export const WINDOWS = ['morning', 'midday', 'afternoon', 'evening', 'night'] as const
 export type OpenWindow = (typeof WINDOWS)[number]
 
-// Each window's name, when it opens and closes, and its tint: the colour of
-// the area chip and of the window's dot (the design note on the screens).
-export const WINDOW_INFO: Record<OpenWindow, { name: string; short: string; opens: number; closes: number; tint: string }> = {
-  morning: { name: 'Morning', short: 'Morning', opens: MORNING_OPENS, closes: MIDDAY_OPENS, tint: '#b4532e' },
-  midday: { name: 'Midday', short: 'Midday', opens: MIDDAY_OPENS, closes: AFTERNOON_OPENS, tint: '#4f7357' },
-  afternoon: { name: 'Afternoon', short: 'Pulse', opens: AFTERNOON_OPENS, closes: EVENING_OPENS, tint: '#8f6c12' },
-  evening: { name: 'Evening', short: 'Evening', opens: EVENING_OPENS, closes: NIGHT_OPENS, tint: '#d9a55b' },
-  night: { name: 'Night', short: 'Night', opens: NIGHT_OPENS, closes: 24 * 60, tint: '#a9a8ee' },
+// Each window's name and when it opens and closes.
+export const WINDOW_INFO: Record<OpenWindow, { name: string; short: string; opens: number; closes: number }> = {
+  morning: { name: 'Morning', short: 'Morning', opens: MORNING_OPENS, closes: MIDDAY_OPENS },
+  midday: { name: 'Midday', short: 'Midday', opens: MIDDAY_OPENS, closes: AFTERNOON_OPENS },
+  afternoon: { name: 'Afternoon', short: 'Pulse', opens: AFTERNOON_OPENS, closes: EVENING_OPENS },
+  evening: { name: 'Evening', short: 'Evening', opens: EVENING_OPENS, closes: NIGHT_OPENS },
+  night: { name: 'Night', short: 'Night', opens: NIGHT_OPENS, closes: 24 * 60 },
 }
 
 // The two sittings of three questions.

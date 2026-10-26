@@ -291,7 +291,7 @@ function MirrorPage({
         <p className="m-summary">{summary(m, notMe)}</p>
         <ol className="m-week-tiles" aria-hidden="true">
           {weekTiles(today, m.from).map((t) => (
-            <li key={t.date} style={t.tint ? { background: t.tint } : undefined} />
+            <li key={t.date} className={t.woven ? 'is-woven' : undefined} />
           ))}
         </ol>
       </header>

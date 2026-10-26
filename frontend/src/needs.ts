@@ -37,14 +37,3 @@ export const NEED_PHRASES: Record<Need, string> = {
 // The one soft line on a card, after the reading.
 export const reachingLine = (n: Need) => `Sounds like ${NEED_PHRASES[n]} mattered most here.`
 
-// Each need's colour in the Season Tapestry (tapestry.ts): one tile a day,
-// tinted by what the day's answers reached for most. A colour, never a score.
-export const NEED_TINTS: Record<Need, string> = {
-  freedom: '#e0956c',
-  belonging: '#c2603d',
-  respect: '#7471c4',
-  competence: '#c09a3a',
-  security: '#4f7357',
-  calm: '#8fb497',
-  understood: '#b97498',
-}

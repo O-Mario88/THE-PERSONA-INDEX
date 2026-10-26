@@ -23,7 +23,9 @@ const esc = (s: unknown) =>
   String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
 
 const pathOf = (r: Read) => `/read/${r.slug}/`
-const colourOf = (r: Read) => (r.kind === 'theme' ? (THEMES[r.key]?.from ?? '#8b8cf1') : '#8b8cf1')
+// Every read is marked in the line colour (teal, or white in dark): the
+// palette has no per-topic colours.
+const colourOf = (_r: Read) => 'var(--line)'
 
 function page({ title, description, path, body }: { title: string; description: string; path: string; body: string }) {
   return `<!doctype html>
@@ -38,7 +40,7 @@ function page({ title, description, path, body }: { title: string; description: 
 <meta property="og:title" content="${esc(title)}">
 <meta property="og:description" content="${esc(description)}">
 <meta property="og:url" content="${esc(ORIGIN + path)}">
-<meta name="theme-color" content="#10121f">
+<meta name="theme-color" content="#0f3d3a">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="manifest" href="/manifest.webmanifest">
 <style>${CSS}</style>
@@ -110,8 +112,8 @@ export function readSite(): { problems: string[]; files: Record<string, string> 
 }
 
 const CSS = `
-:root{--bg:#10121f;--panel:#181b2c;--line:#2b304e;--text:#f3f5f8;--muted:#a6acc0;--accent:#a5a6ff;color-scheme:dark}
-@media (prefers-color-scheme:light){:root{--bg:#f6f5f1;--panel:#fff;--line:#e3e1da;--text:#191b29;--muted:#555b70;--accent:#4138c2;color-scheme:light}}
+:root{--bg:#fff;--panel:#c6f24e;--on-panel:#000;--line:#0f3d3a;--text:#000;--muted:#000;--accent:#000;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#0f3d3a;--panel:#c6f24e;--on-panel:#000;--line:#fff;--text:#fff;--muted:#fff;--accent:#fff;color-scheme:dark}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font:18px/1.65 Georgia,'Iowan Old Style','Times New Roman',serif;-webkit-text-size-adjust:100%}
 a{color:var(--accent)}
@@ -125,8 +127,8 @@ p{margin:0 0 1.1rem}
 .topic,.list span,.more span{font:.85rem/1.4 system-ui,sans-serif;color:var(--muted)}
 .topic{border-left:3px solid var(--theme);padding-left:.6rem}
 .summary{font-size:1.15rem;color:var(--muted)}
-.try{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--theme,var(--accent));border-radius:12px;padding:1rem 1.2rem;margin:2rem 0}
-.try p{margin:0}.try .label{font:600 .8rem/1.4 system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:.4rem}
+.try{background:var(--panel);color:var(--on-panel);border:0;border-radius:12px;padding:1rem 1.2rem;margin:2rem 0}
+.try p{margin:0}.try .label{font:600 .8rem/1.4 system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--on-panel);margin-bottom:.4rem}
 .help{font:.95rem/1.5 system-ui,sans-serif;color:var(--muted)}
 ul{list-style:none;margin:0;padding:0}
 .list li,.more li{padding:.9rem 0;border-bottom:1px solid var(--line)}

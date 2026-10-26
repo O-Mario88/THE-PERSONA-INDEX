@@ -4,43 +4,71 @@
    selected choices and progress, always under dark ink, never as text on
    white. Every text colour here is at least 4.5:1 on the surface it sits on. */
 
+/* Design tokens: the one place colours, type, spacing, radii and shadows are
+   set (frontend/DESIGN.md explains each choice).
+
+   The palette is six solid colours and nothing else: white, black, lime
+   #C6F24E, deep teal green #0F3D3A, amber #F6B73C and a warning red
+   #D92D20. No gradients, no greys, no see-through washes. Text follows its
+   ground: black on white, lime and amber; white on teal and red. Light mode
+   is a white page with lime and teal cards; dark mode is a teal page with
+   white and lime cards. Amber is only for celebrating; red only warns before
+   something is deleted. Where a part needs a quiet ground, it is the page
+   colour with a solid line. */
+
 :root {
-  /* Surfaces and lines */
-  --bg: #ffffff;
-  --surface: #ffffff;
-  --surface-2: #f3f5f7; /* fields, quiet pills, empty tracks */
-  --surface-3: #e9edf0;
-  --line: #e7eaee;
-  --line-strong: #d3d9df;
-
-  /* Text */
-  --text: #0e1a24;
-  --text-2: #3e4b57; /* secondary copy */
-  --muted: #64707c; /* captions, 4.9:1 on white */
-
-  /* The accent */
+  /* The six colours */
+  --white: #ffffff;
+  --black: #000000;
   --lime: #c6f24e;
-  --lime-strong: #b5e636;
-  --on-lime: #0e1a24;
-  --accent-ink: #2f6d10; /* lime's partner for text and icons on light, 6.4:1 */
-  --accent-wash: #f4fbe2; /* a chosen option's ground */
-  --accent-line: #b9e44a;
-  /* Celebrate (the new Connect): a warm amber, only on "Share a win". */
-  --warm: #f6b73c;
-  --on-warm: #2a1a00;
-  --warm-ink: #8a5300; /* text and icons on light, 5.6:1 */
-  --warm-wash: #fff6e3;
+  --teal: #0f3d3a;
+  --amber: #f6b73c;
+  --red: #d92d20;
+  --navy-ink: var(--teal); /* older name for the teal, kept for the screens */
 
-  /* States */
-  --danger: #b42318;
-  --danger-wash: #fdecea;
-  --online: #7bc62d;
+  /* Surfaces and lines */
+  --bg: var(--white);
+  --surface: var(--white);
+  --surface-2: var(--white); /* quiet grounds: drawn with a solid line */
+  --surface-3: var(--white);
+  --line: var(--navy-ink);
+  --line-strong: var(--navy-ink);
 
-  /* Hero surfaces stay navy in both modes (the mirror and close heroes). */
-  --navy: #0e1b26;
-  --navy-2: #15263a;
-  --on-navy: #f4f7f9;
-  --on-navy-2: #c3cdd6;
+  /* Text: one ink per ground. Hierarchy comes from size and weight. */
+  --text: var(--black);
+  --text-2: var(--black);
+  --muted: var(--black);
+
+  /* The accent. Lime is a fill only, always under black. */
+  --lime-strong: var(--lime);
+  --on-lime: var(--black);
+  --accent-ink: var(--black);
+  --accent-wash: var(--lime); /* a chosen option's ground */
+  --accent-line: var(--navy-ink);
+  /* Amber: celebrating only ("Share a win", a friend's good news). A fill,
+     always under black. */
+  --warm: var(--amber);
+  --on-warm: var(--black);
+  --warm-ink: var(--black);
+  --warm-wash: var(--amber);
+
+  /* Warning red: only before something is deleted or cannot be undone. */
+  --danger: var(--red); /* text on white, 4.9:1 */
+  --danger-fill: var(--red);
+  --on-danger: var(--white);
+  --danger-wash: var(--surface);
+  --online: var(--lime);
+
+  /* The feature card: teal with white in light, white with black in dark. */
+  --navy: var(--navy-ink);
+  --navy-2: var(--navy-ink);
+  --on-navy: var(--white);
+  --on-navy-2: var(--white);
+  --navy-line: var(--white);
+
+  /* The insight mark (three rising bars): teal on white, lime on teal. */
+  --mark: var(--teal);
+  --navy-mark: var(--lime);
 
   /* Type */
   --font: 'Figtree Variable', 'Figtree', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -75,10 +103,10 @@
   --r-xl: 24px; /* sheets */
   --r-pill: 999px;
 
-  /* Elevation: a hairline and a soft lift, nothing heavier. */
-  --shadow-card: 0 1px 2px rgb(14 26 36 / 0.04), 0 4px 16px rgb(14 26 36 / 0.04);
-  --shadow-sheet: 0 -8px 40px rgb(14 26 36 / 0.18);
-  --focus: 0 0 0 3px rgb(47 109 16 / 0.35);
+  /* Elevation: flat. Cards are told apart by a solid line or a solid fill. */
+  --shadow-card: none;
+  --shadow-sheet: none;
+  --focus: 0 0 0 3px var(--navy-ink);
 
   /* Motion */
   --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
@@ -94,36 +122,93 @@
   color-scheme: light;
 }
 
-/* Navy dark mode: the evening and night windows (Account, "Dark mode"), or the
-   whole app when the phone asks for dark. */
+/* Teal dark mode: the evening and night windows (Account, "Dark mode"), or the
+   whole app when the phone asks for dark. Teal page, white text, white lines;
+   feature cards turn white with black text, lime stays lime. */
 .app.is-dark {
-  --bg: #0e1b26;
-  --surface: #13222f;
-  --surface-2: #1a2b3a;
-  --surface-3: #223546;
-  --line: #22344a;
-  --line-strong: #2f4459;
+  --bg: var(--navy-ink);
+  --surface: var(--navy-ink);
+  --surface-2: var(--navy-ink);
+  --surface-3: var(--navy-ink);
+  --line: var(--white);
+  --line-strong: var(--white);
 
-  --text: #f4f7f9;
-  --text-2: #c3cdd6;
-  --muted: #93a1ae; /* 6.3:1 on navy */
+  --text: var(--white);
+  --text-2: var(--white);
+  --muted: var(--white);
 
-  --accent-ink: var(--lime);
-  --accent-wash: rgb(198 242 78 / 0.08);
-  --accent-line: var(--lime);
+  --accent-ink: var(--white);
+  --accent-line: var(--white);
+  --warm-ink: var(--white);
 
-  --warm-ink: var(--warm);
-  --warm-wash: rgb(246 183 60 / 0.1);
+  --danger: var(--white); /* red text fails on teal; the red stays a fill */
+  --danger-wash: var(--navy-ink);
 
-  --danger: #ff8a7a;
-  --danger-wash: rgb(255 138 122 / 0.1);
+  --navy: var(--white);
+  --navy-2: var(--white);
+  --on-navy: var(--black);
+  --on-navy-2: var(--black);
+  --navy-line: var(--black);
+  --mark: var(--lime);
+  --navy-mark: var(--teal);
 
-  --navy: #13222f;
-  --navy-2: #1a2b3a;
-
-  --shadow-card: none;
-  --shadow-sheet: 0 -8px 40px rgb(0 0 0 / 0.5);
-  --focus: 0 0 0 3px rgb(198 242 78 / 0.45);
+  --focus: 0 0 0 3px var(--lime);
 
   color-scheme: dark;
+}
+
+/* Inside a lime card every ink is black. */
+.on-lime {
+  --text: var(--black);
+  --text-2: var(--black);
+  --muted: var(--black);
+  --accent-ink: var(--black);
+  --warm-ink: var(--black);
+  --danger: var(--black);
+  --line: var(--black);
+  --line-strong: var(--black);
+  --accent-line: var(--black);
+  --surface: var(--lime);
+  --surface-2: var(--lime);
+  --surface-3: var(--lime);
+  --mark: var(--black);
+  --focus: 0 0 0 3px var(--black);
+  color: var(--black);
+}
+
+/* Inside an amber card every ink is black. */
+.on-amber {
+  --text: var(--black);
+  --text-2: var(--black);
+  --muted: var(--black);
+  --accent-ink: var(--black);
+  --warm-ink: var(--black);
+  --danger: var(--black);
+  --line: var(--black);
+  --line-strong: var(--black);
+  --accent-line: var(--black);
+  --surface: var(--amber);
+  --surface-2: var(--amber);
+  --surface-3: var(--amber);
+  --mark: var(--black);
+  --focus: 0 0 0 3px var(--black);
+  color: var(--black);
+}
+
+/* Inside a feature card (teal in light, white in dark) the ink follows it. */
+.on-navy {
+  --text: var(--on-navy);
+  --text-2: var(--on-navy);
+  --muted: var(--on-navy);
+  --accent-ink: var(--on-navy);
+  --warm-ink: var(--on-navy);
+  --danger: var(--on-navy);
+  --line: var(--navy-line);
+  --line-strong: var(--navy-line);
+  --accent-line: var(--navy-line);
+  --surface: var(--navy);
+  --surface-2: var(--navy);
+  --surface-3: var(--navy);
+  --mark: var(--navy-mark);
+  color: var(--on-navy);
 }

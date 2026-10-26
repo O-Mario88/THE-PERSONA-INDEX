@@ -65,8 +65,7 @@
   justify-content: space-around;
   padding: var(--s-2) var(--s-2) max(var(--s-3), env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--line);
-  background: color-mix(in srgb, var(--bg) 94%, transparent);
-  backdrop-filter: saturate(1.4) blur(12px);
+  background: var(--bg);
 }
 
 .tab {
@@ -101,8 +100,17 @@
   stroke-width: 2.2;
 }
 
+/* The chosen tab's icon sits in a lime pill. */
+.tabs .tab[aria-pressed='true'] .icon {
+  box-sizing: content-box;
+  padding: 3px 16px;
+  border-radius: var(--r-pill);
+  background: var(--lime);
+  color: var(--black);
+}
+
 .tab:disabled {
-  opacity: 0.4;
+  cursor: default;
 }
 
 .rail-logo {
@@ -213,7 +221,7 @@
   height: 8px;
   border-radius: 50%;
   background: var(--online);
-  box-shadow: 0 0 0 4px rgb(123 198 45 / 0.2);
+  box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--line);
 }
 
 .flow-main,

@@ -60,7 +60,7 @@
 }
 
 .unlock-track li.is-done {
-  border-color: var(--lime);
+  border-color: var(--text);
   background: var(--lime);
 }
 
@@ -128,12 +128,12 @@
   align-self: center;
   padding: var(--s-3);
   border-radius: var(--r-md);
-  background: #ffffff;
+  background: var(--white);
 }
 
 .qr rect,
 .qr path {
-  fill: #0e1a24;
+  fill: var(--black);
 }
 
 .room-card {
@@ -151,7 +151,7 @@
   font-size: 1.5rem;
   font-weight: 800;
   letter-spacing: 0.08em;
-  color: var(--lime);
+  color: var(--text);
 }
 
 .room-code.inline {
@@ -230,8 +230,10 @@
   position: relative;
 }
 
-.person-row.is-muted {
-  opacity: 0.6;
+.person-row.is-muted .avatar {
+  background: transparent;
+  color: var(--text);
+  box-shadow: inset 0 0 0 1.5px var(--line);
 }
 
 .person-text {
@@ -507,9 +509,9 @@
   width: 20px;
   height: 16px;
   background:
-    linear-gradient(var(--lime-strong), var(--lime-strong)) 0 100% / 4px 40% no-repeat,
-    linear-gradient(var(--lime-strong), var(--lime-strong)) 8px 100% / 4px 70% no-repeat,
-    linear-gradient(var(--lime-strong), var(--lime-strong)) 16px 100% / 4px 100% no-repeat;
+    linear-gradient(var(--mark), var(--mark)) 0 100% / 4px 40% no-repeat,
+    linear-gradient(var(--mark), var(--mark)) 8px 100% / 4px 70% no-repeat,
+    linear-gradient(var(--mark), var(--mark)) 16px 100% / 4px 100% no-repeat;
 }
 
 .together-wait-head {
@@ -566,7 +568,7 @@
   font-weight: 800;
   letter-spacing: var(--track-eyebrow);
   text-transform: uppercase;
-  color: var(--lime);
+  color: var(--text);
 }
 
 .share-name {
@@ -666,29 +668,35 @@
 }
 
 .rings-figure .ring-outer {
-  fill: var(--surface-2);
-  stroke: var(--line-strong);
+  fill: var(--surface);
+  stroke: var(--line);
+  stroke-width: 1.5;
 }
 
 .rings-figure .ring-middle {
-  fill: var(--accent-wash);
-  stroke: var(--accent-line);
+  fill: var(--navy);
+  stroke: none;
 }
 
 .rings-figure .ring-inner {
   fill: var(--lime);
-  stroke: var(--lime-strong);
+  stroke: none;
 }
 
 .ring-person text {
-  fill: #ffffff;
+  fill: var(--black);
   font-size: 14px;
   font-weight: 800;
 }
 
 .ring-person circle {
-  stroke: var(--surface);
-  stroke-width: 3;
+  fill: var(--lime);
+  stroke: var(--black);
+  stroke-width: 2;
+}
+
+.ring-person.is-muted circle {
+  fill: var(--white);
 }
 
 .rings-key {
@@ -901,7 +909,7 @@
 }
 
 .closer-card.is-celebrate {
-  border-color: color-mix(in srgb, var(--warm) 50%, var(--line));
+  border-color: var(--black);
   background: var(--warm-wash);
 }
 

@@ -177,7 +177,7 @@ export function QR({ text, size = 180 }: { text: string; size?: number }) {
   return (
     <svg className="qr" role="img" aria-label="QR code for your invite link" viewBox={`0 0 ${n + 4} ${n + 4}`} width={size} height={size}>
       <rect width={n + 4} height={n + 4} fill="#fff" />
-      <path d={d} fill="#1f3a33" />
+      <path d={d} fill="#000000" />
     </svg>
   )
 }

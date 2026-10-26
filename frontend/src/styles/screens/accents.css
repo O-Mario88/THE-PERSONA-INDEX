@@ -1,0 +1,149 @@
+/* Where the colour goes. Most of the app is the page colour with solid
+   lines; a few parts per screen are filled so the eye has somewhere to land.
+   Feature (teal in light, white in dark) marks what is happening now; lime
+   marks what is ready for you. The ink inside each follows tokens.css. */
+
+/* Today: the open window is the feature; today's read is lime. */
+.hero-card {
+  border-color: var(--navy);
+  background: var(--navy);
+}
+
+button.hero-card:hover {
+  border-color: var(--navy);
+  box-shadow: 0 0 0 3px var(--lime);
+}
+
+.read-offer {
+  border-color: var(--lime);
+  background: var(--lime);
+}
+
+/* Connect: today's count is lime. */
+.stat-tile {
+  border-color: var(--lime);
+  background: var(--lime);
+}
+
+/* Insights: You're Not Alone is the feature; Saved is lime. */
+.insights-not-alone {
+  border-color: var(--navy);
+  background: var(--navy);
+}
+
+.insights-saved {
+  border-color: var(--lime);
+  background: var(--lime);
+}
+
+/* Reflect: the writing card is lime, so the reminder is the feature. */
+.reflect-card.is-reminder {
+  border-color: var(--navy);
+  background: var(--navy);
+}
+
+/* A sitting: the insight after each answer is the feature, its three bars
+   lime. A heavy answer's card stays plain and quiet. */
+.insight:not(.heavy) {
+  border-color: var(--navy);
+  background: var(--navy);
+}
+
+/* Segmented controls (Week / Month, Email / Phone): the chosen one is lime. */
+.m-span[aria-pressed='true'],
+.signin-tab[aria-pressed='true'] {
+  background: var(--lime);
+  color: var(--on-lime);
+  box-shadow: none;
+}
+
+/* Checkboxes and radios, drawn in the palette instead of the browser's grey:
+   an outlined square or circle that fills lime with a black mark. */
+input[type='checkbox'],
+input[type='radio'] {
+  appearance: none;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  border: 2px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  cursor: pointer;
+}
+
+input[type='radio'] {
+  border-radius: 50%;
+}
+
+input[type='checkbox']:checked,
+input[type='radio']:checked {
+  border-color: var(--black);
+  background: var(--lime);
+}
+
+input[type='checkbox']:checked::after {
+  content: '';
+  width: 6px;
+  height: 11px;
+  margin-top: -2px;
+  border: solid var(--black);
+  border-width: 0 2.5px 2.5px 0;
+  transform: rotate(45deg);
+}
+
+input[type='radio']:checked::after {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--black);
+}
+
+input.switch-input,
+input.switch-input:checked {
+  display: block;
+  width: 48px;
+  height: 28px;
+  border: 0;
+  border-radius: var(--r-pill);
+}
+
+input.switch-input:checked {
+  background: var(--lime);
+}
+
+input.switch-input:checked::after {
+  content: '';
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  border: 0;
+  border-radius: 50%;
+  transform: translateX(20px);
+}
+
+/* Placeholders in the text colour, solid, so no grey creeps in. */
+::placeholder {
+  color: var(--text);
+  opacity: 1;
+}
+
+/* Connect: while the circle is still forming, the invite is the feature. */
+.invite-grow:not(.is-compact) {
+  border-color: var(--navy);
+  background: var(--navy);
+}
+
+/* Long words (an email address in a title) wrap instead of running off. */
+.display,
+.title,
+.prompt,
+.card-title,
+h1,
+h2,
+h3 {
+  overflow-wrap: anywhere;
+}

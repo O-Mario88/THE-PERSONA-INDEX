@@ -100,7 +100,7 @@ export function Home({
           label={`${doneCount} of ${items.length} windows done today`}
           big={String(doneCount)}
           small={`of ${items.length} today`}
-          size={92}
+          size={108}
         />
       </header>
 

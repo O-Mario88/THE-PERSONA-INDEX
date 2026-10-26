@@ -215,12 +215,13 @@ fieldset.notice > legend + * {
 
 .option.danger {
   color: var(--danger);
-  border-color: color-mix(in srgb, var(--danger) 35%, var(--line));
+  border-color: var(--danger-fill);
 }
 
 .option.danger:hover:not(:disabled) {
-  background: var(--danger-wash);
-  border-color: var(--danger);
+  background: var(--danger-fill);
+  border-color: var(--danger-fill);
+  color: var(--on-danger);
 }
 
 /* The lock */

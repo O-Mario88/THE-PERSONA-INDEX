@@ -36,7 +36,7 @@ export function SignInSheet({
   card,
   page,
 }: {
-  page?: { label: string; title: string; lead: string; tiles?: { date: string; tint?: string }[] } // the full login page (M20)
+  page?: { label: string; title: string; lead: string; tiles?: { date: string; woven?: boolean }[] } // the full login page (M20)
   overlay?: boolean // full screen over the close, as in the design (M04)
   card?: { area: string; line: string } // the sitting's first card, shown above the sheet
   title?: string
@@ -269,7 +269,7 @@ export function SignInSheet({
           {page.tiles && (
             <ol className="m-week-tiles signin-tiles" aria-hidden="true">
               {page.tiles.map((t) => (
-                <li key={t.date} style={t.tint ? { background: t.tint } : undefined} />
+                <li key={t.date} className={t.woven ? 'is-woven' : undefined} />
               ))}
             </ol>
           )}

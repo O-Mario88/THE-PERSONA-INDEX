@@ -94,9 +94,9 @@
   width: 24px;
   height: 20px;
   background:
-    linear-gradient(var(--lime-strong), var(--lime-strong)) 0 100% / 5px 40% no-repeat,
-    linear-gradient(var(--lime-strong), var(--lime-strong)) 9px 100% / 5px 70% no-repeat,
-    linear-gradient(var(--lime-strong), var(--lime-strong)) 18px 100% / 5px 100% no-repeat;
+    linear-gradient(var(--mark), var(--mark)) 0 100% / 5px 40% no-repeat,
+    linear-gradient(var(--mark), var(--mark)) 9px 100% / 5px 70% no-repeat,
+    linear-gradient(var(--mark), var(--mark)) 18px 100% / 5px 100% no-repeat;
 }
 
 .thread-headline {

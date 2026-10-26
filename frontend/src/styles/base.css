@@ -256,7 +256,8 @@ svg {
 .btn:hover:not(:disabled),
 .next:hover:not(:disabled),
 .pill-button:hover:not(:disabled) {
-  background: var(--lime-strong);
+  background: var(--lime);
+  box-shadow: inset 0 0 0 2px var(--black);
 }
 
 .btn:active:not(:disabled),
@@ -268,8 +269,9 @@ svg {
 .btn:disabled,
 .next:disabled,
 .pill-button:disabled {
-  background: var(--surface-3);
-  color: var(--muted);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1.5px var(--line);
 }
 
 .btn.wide,
@@ -317,15 +319,20 @@ svg {
   background: var(--surface);
 }
 
-.btn.danger,
-.danger-outline {
-  background: transparent;
-  color: var(--danger);
-  box-shadow: inset 0 0 0 1px currentColor;
+.btn.danger {
+  background: var(--danger-fill);
+  color: var(--on-danger);
 }
 
 .btn.danger:hover:not(:disabled) {
-  background: var(--danger-wash);
+  background: var(--danger-fill);
+  box-shadow: inset 0 0 0 2px var(--black);
+}
+
+.danger-outline {
+  background: transparent;
+  color: var(--danger);
+  box-shadow: inset 0 0 0 1.5px var(--danger-fill);
 }
 
 .text-button,
@@ -461,7 +468,7 @@ svg {
 }
 
 .option:disabled {
-  opacity: 0.6;
+  border-style: dashed;
 }
 
 .option small {
@@ -603,8 +610,7 @@ textarea.field,
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: #ffffff;
-  box-shadow: 0 1px 3px rgb(14 26 36 / 0.25);
+  background: var(--navy-ink);
   transition: transform var(--t-fast) var(--ease);
 }
 
@@ -614,6 +620,15 @@ textarea.field,
 
 .switch-input:checked::after {
   transform: translateX(20px);
+  background: var(--black);
+}
+
+.app.is-dark .switch-input::after {
+  background: var(--white);
+}
+
+.app.is-dark .switch-input:checked::after {
+  background: var(--black);
 }
 
 /* Choice rows: a label holding a radio or checkbox and its words. */
@@ -641,11 +656,7 @@ label.switch input {
   width: 20px;
   height: 20px;
   margin: 0;
-  accent-color: var(--accent-ink);
-}
-
-.app.is-dark label.switch input {
-  accent-color: var(--lime);
+  accent-color: var(--black);
 }
 
 /* A labelled field box (country, recovery words): its words over the control. */
@@ -704,15 +715,23 @@ label.field input:focus {
   color: var(--muted);
 }
 
-/* Avatars: initials on a tint, round. */
+/* Avatars: initials, round. Lime with black, or the feature colour (teal
+   in light, white in dark) with its own ink; a muted friend is an outline. */
 
 .avatar {
   display: inline-grid;
   flex: none;
   place-items: center;
   border-radius: 50%;
-  color: #ffffff;
+  background: var(--lime);
+  color: var(--black);
   font-weight: 800;
+}
+
+.avatar.is-muted {
+  background: transparent;
+  color: var(--text);
+  box-shadow: inset 0 0 0 1.5px var(--line);
   line-height: 1;
 }
 
@@ -732,8 +751,12 @@ label.field input:focus {
 
 .ring-track {
   fill: none;
-  stroke: var(--surface-3);
+  stroke: var(--line);
   stroke-width: 5;
+}
+
+.app.is-dark .ring-track {
+  stroke-width: 1.5;
 }
 
 .ring-fill {

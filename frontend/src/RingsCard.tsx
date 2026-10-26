@@ -1,6 +1,5 @@
 import { RING_NAMES, RING_NOTES, RINGS, ringOf, type Ring, type Rings } from './rings'
 import type { FriendView } from './social'
-import { tintFor } from './ui/Avatar'
 
 // Three circles, biggest to smallest (Edwin, 2026-10-25), with each friend's
 // initial in the circle the person placed them in. Private to this phone.
@@ -36,7 +35,7 @@ export function RingsCard({ friends, rings }: { friends: FriendView[]; rings: Ri
               const p = spot(RADII[ring], i, list.length, ring)
               return (
                 <g key={f.id} className={f.muted ? 'ring-person is-muted' : 'ring-person'}>
-                  <circle cx={p.x} cy={p.y} r={17} fill={f.muted ? '#a3a6a2' : tintFor(f.name)} />
+                  <circle cx={p.x} cy={p.y} r={17} />
                   <text x={p.x} y={p.y} dy="0.36em" textAnchor="middle">
                     {(f.name.trim()[0] ?? '?').toUpperCase()}
                   </text>

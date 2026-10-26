@@ -211,7 +211,7 @@
 }
 
 .reflect-card.is-memory {
-  border-color: color-mix(in srgb, var(--accent-ink) 25%, var(--line));
+  border-width: 2px;
 }
 
 .reflect-card.is-reminder {

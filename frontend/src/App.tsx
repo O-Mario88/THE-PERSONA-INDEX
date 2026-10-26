@@ -396,7 +396,7 @@ function App() {
   const read = set && (
     <TodaysRead date={set.date} themes={themesOf([...morningQs, ...eveningQs])} intimacy={intimacyOn(prefs)} />
   )
-  // Navy when the phone asks for dark, and on Today through the evening and night;
+  // Deep teal when the phone asks for dark, and on Today through the evening and night;
   // the Dark mode switch turns both off.
   const dark = blackOn(prefs) && (phoneDark || ((win === 'evening' || win === 'night' || win === 'rest') && tab === 'today'))
 

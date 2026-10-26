@@ -11,7 +11,7 @@ export type ShareContent = { eyebrow: string; name: string; line?: string }
 
 type Shape = 'story' | 'square'
 const SIZE: Record<Shape, [number, number]> = { story: [1080, 1920], square: [1080, 1080] }
-const NAVY = '#0e1b26' // the card is navy with lime, as the app's heroes
+const NAVY = '#0f3d3a' // the card is deep teal with lime, as the app's heroes
 const LIME = '#c6f24e'
 const SITE = 'personaindex.com'
 
@@ -57,7 +57,7 @@ function draw(c: ShareContent, shape: Shape): HTMLCanvasElement | null {
   }
   if (c.line) {
     ctx.font = '400 42px Figtree, system-ui, sans-serif'
-    ctx.fillStyle = '#c3cdd6'
+    ctx.fillStyle = '#ffffff'
     y += 20
     for (const l of wrap(ctx, c.line, w - 2 * pad - 40)) {
       ctx.fillText(l, pad + 20, y)
@@ -66,7 +66,7 @@ function draw(c: ShareContent, shape: Shape): HTMLCanvasElement | null {
   }
   const foot = shape === 'story' ? h - 380 : h - 150
   ctx.font = '600 34px Figtree, system-ui, sans-serif'
-  ctx.fillStyle = '#c3cdd6'
+  ctx.fillStyle = '#ffffff'
   ctx.fillText('The Persona Index · 3 questions a morning, 3 an evening', pad + 20, foot)
   ctx.fillStyle = LIME
   ctx.fillText(SITE, pad + 20, foot + 52)

@@ -60,8 +60,8 @@
 }
 
 .app.is-dark .signin-provider.is-solid {
-  background: #ffffff;
-  color: #0e1a24;
+  background: var(--white);
+  color: var(--black);
 }
 
 .signin-provider.is-solid:hover:not(:disabled) {
@@ -163,8 +163,7 @@
   flex-direction: column;
   justify-content: flex-end;
   padding: var(--s-5) var(--s-4) max(var(--s-4), env(safe-area-inset-bottom, 0px));
-  background: rgb(8 16 24 / 0.6);
-  backdrop-filter: blur(6px);
+  background: var(--navy-ink);
   overflow-y: auto;
   animation: fade var(--t-med) var(--ease);
 }
@@ -205,7 +204,7 @@
   font-weight: 700;
   letter-spacing: var(--track-eyebrow);
   text-transform: uppercase;
-  color: var(--lime);
+  color: var(--text);
 }
 
 .signin-stack-line {
@@ -276,7 +275,7 @@
   font-weight: 700;
   letter-spacing: var(--track-eyebrow);
   text-transform: uppercase;
-  color: var(--lime);
+  color: var(--text);
 }
 
 .signin-hero h2 {
@@ -300,7 +299,7 @@
 .signin-tiles li {
   aspect-ratio: 1;
   border-radius: 6px;
-  background: rgb(255 255 255 / 0.12);
+  box-shadow: inset 0 0 0 1px var(--line);
 }
 
 .signin-hero-foot {

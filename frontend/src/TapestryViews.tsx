@@ -1,8 +1,9 @@
-import { NEED_NAMES, NEED_TINTS } from './needs'
+import { NEED_NAMES } from './needs'
 import { season, type Season } from './tapestry'
 
 // The Season Tapestry: ninety tiles, one a day (tapestry.ts). On the dark
-// morning close it sits on green; on Today it sits in a pale card. A missed
+// morning close it sits on the teal card; on Today it sits in a white card.
+// Every woven day is lime: the palette has no per-need colours. A missed
 // day is linen, and the row of tiles never turns into a number to keep up.
 
 const longDay = (iso: string) =>
@@ -26,7 +27,6 @@ export function TapestryGrid({ s, dark, cols = 15, weaving }: { s: Season; dark?
         <li
           key={t.date}
           className={`tile-${t.state}${t.today ? ' is-today' : ''}${t.today && weaving ? ' weaving' : ''}`}
-          style={t.state === 'woven' ? { background: t.need ? NEED_TINTS[t.need] : undefined } : undefined}
           title={tileName(t)}
         />
       ))}
@@ -56,15 +56,15 @@ export function TapestryCard({ today, onOpen, cols = 18, note }: { today: string
 }
 
 // The week's seven tiles, Monday to Sunday, for the Sunday Mirror and its share card.
-export function weekTiles(today: string, monday: string): { date: string; tint?: string }[] {
+export function weekTiles(today: string, monday: string): { date: string; woven?: boolean }[] {
   const s = season(today)
-  const out: { date: string; tint?: string }[] = []
+  const out: { date: string; woven?: boolean }[] = []
   for (let i = 0; i < 7; i++) {
     const d = new Date(`${monday}T00:00:00Z`)
     d.setUTCDate(d.getUTCDate() + i)
     const date = d.toISOString().slice(0, 10)
     const t = s.tiles.find((x) => x.date === date)
-    out.push({ date, ...(t?.state === 'woven' && t.need ? { tint: NEED_TINTS[t.need] } : {}) })
+    out.push({ date, ...(t?.state === 'woven' ? { woven: true } : {}) })
   }
   return out
 }

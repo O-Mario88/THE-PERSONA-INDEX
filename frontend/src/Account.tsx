@@ -51,7 +51,7 @@ export function Choices({ prefs, onChange }: { prefs: Prefs; onChange: (p: Prefs
       </h3>
       <Toggle
         label="Dark mode"
-        note="Navy through the evening and night, and whenever your phone is set to dark."
+        note="Deep teal through the evening and night, and whenever your phone is set to dark."
         on={blackOn(prefs)}
         onChange={(on) => onChange(on ? without('black') : { ...prefs, black: false })}
       />

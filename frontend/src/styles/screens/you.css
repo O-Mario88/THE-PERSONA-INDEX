@@ -154,7 +154,7 @@
 }
 
 .danger-card {
-  border-color: color-mix(in srgb, var(--danger) 30%, var(--line));
+  border: 2px solid var(--danger-fill);
 }
 
 .danger-card .title {

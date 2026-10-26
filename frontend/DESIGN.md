@@ -8,33 +8,44 @@ never in a screen file.
 
 ## Direction
 
-Calm and confident: a white page (light) or navy (dark), bold geometric
+Calm and confident: a white page (light) or deep teal (dark), bold geometric
 type, generous cards on a hairline, and one accent, lime, used only where
 the person acts or progresses (primary buttons, a chosen answer, a done
-window, progress). Everything else is ink and grey. Navy heroes (the close,
+window, progress). Everything else is ink and grey. Teal heroes (the close,
 the practice timer, the room code, the share card) give each day a moment of
 weight.
 
 ## Colour
 
-| Token | Light | Dark | Use |
+Edwin's rule (2026-10-26): six solid colours and nothing else. No gradients,
+no greys, no see-through washes, no per-person or per-need tints.
+
+| Colour | Hex | Text on it | Use |
 |---|---|---|---|
-| `--bg`, `--surface` | `#ffffff` | `#0e1b26`, `#13222f` | page, cards |
-| `--surface-2` | `#f3f5f7` | `#1a2b3a` | fields, quiet pills, tracks |
-| `--text` | `#0e1a24` | `#f4f7f9` | body and titles |
-| `--muted` | `#64707c` | `#93a1ae` | captions |
-| `--lime` | `#c6f24e` | same | fills only, always under `--on-lime` ink |
-| `--accent-ink` | `#2f6d10` | lime | lime's partner for text and icons |
-| `--accent-wash` | `#f4fbe2` | lime at 8% | a chosen option's ground |
+| White | `#ffffff` | black | the light page and its cards; feature cards in dark |
+| Black | `#000000` | — | all text on white, lime and amber |
+| Lime | `#c6f24e` | black | primary buttons, chosen answers, progress, "ready for you" cards |
+| Deep teal green | `#0f3d3a` | white | feature cards in light ("happening now"); the whole page in dark |
+| Amber | `#f6b73c` | black | celebrating only: "Share a win", a friend's good news |
+| Red | `#d92d20` | white (fill), or red text on white | warnings before a delete, nothing else |
 
-| `--warm`, `--warm-ink`, `--warm-wash` | `#f6b73c`, `#8a5300`, `#fff6e3` | amber, amber, amber at 10% | Connect only: "Celebrate a win together" and a friend's good news. Never a second accent elsewhere |
+Light mode is a white page with lime and teal cards; dark mode is a teal
+page with white and lime cards. Quiet grounds (fields, chips, tracks,
+plain cards) are the page colour with a solid line: teal in light, white in
+dark. Text hierarchy comes from size and weight, never from a lighter grey.
 
-Lime is never text on white (1.2:1). Every text pair is at least 4.5:1;
-the lowest is muted on `--surface-2` at 4.63:1.
+How it is wired: `tokens.css` sets the colours and three ink scopes
+(`.on-lime`, `.on-amber`, `.on-navy`, the last being the teal/white feature
+card). `scopes.css` is generated from the screen files and puts every part
+that sits on lime, amber or the feature colour in the matching scope, so
+the text, lines and icons inside it follow automatically. Which parts get
+colour per screen is chosen in `screens/accents.css`. Regenerate
+`scopes.css` with `python3 scripts/palette-scopes.py` after adding a lime or feature background.
 
-Dark mode is navy, not black. It turns on when the phone asks for dark, and
-on Today through the evening and night; Account's "Dark mode" switch turns
-both off.
+The three-bar insight mark is teal on white and lime on teal (`--mark`).
+
+Dark mode turns on when the phone asks for dark, and on Today through the
+evening and night; Account's "Dark mode" switch turns both off.
 
 ## Type
 
@@ -68,4 +79,4 @@ archetype badge, named friends' moods, profile photos and a QR "suggested
 by school/company" list. The writing guide forbids streaks, scores and
 comparison, and the circle shows who answered, never what. Those places
 show the day's "N of 5" ring, the person's own words and patterns, initials
-on a tint, and suggestions from shared circles only.
+in a lime circle, and suggestions from shared circles only.

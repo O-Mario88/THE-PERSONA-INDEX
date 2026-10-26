@@ -1,6 +1,6 @@
 // The Season Tapestry (Stage 5 proposal, 2026-10-24): ninety days, one tile
-// a day. A day with answers weaves a tile tinted by the need its answers
-// reached for most (needs.ts). A missed day stays linen: nothing resets,
+// a day. A day with answers weaves a lime tile; the day also keeps the need
+// its answers reached for most (needs.ts), named in the tile's title. A missed day stays linen: nothing resets,
 // nothing is counted against anyone, and there is no streak.
 //
 // It lives on this phone only. Each day keeps how many answers reached for
