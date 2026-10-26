@@ -11,13 +11,14 @@ struct SettingsView: View {
             VStack(alignment: .leading, spacing: Space.s5) {
                 VStack(alignment: .leading, spacing: Space.s2) {
                     Text("Settings").font(.pHero).accessibilityAddTraits(.isHeader)
-                    Text("Your name, intimacy questions, backup, Human Pulse and lock.").font(.figtree(17)).foregroundStyle(Palette.muted)
+                    Text("Your name, intimacy questions, backup, Human Pulse, reminders and lock.").font(.figtree(17)).foregroundStyle(Palette.muted)
                 }
                 .padding(.top, Space.s2)
                 NameCard()
                 IntimacyCard()
                 BackupCard()
                 PulseCard()
+                RemindersCard()
                 LockCard()
             }
             .padding(Space.gutter)
@@ -216,6 +217,54 @@ struct PulseCard: View {
             .toggleStyle(SwitchRowStyle())
         }
         .card()
+    }
+}
+
+/// Reminders: off until turned on, set on this device only, and never a
+/// word of your answers or writing in them.
+struct RemindersCard: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        let s = model.reminders.settings
+        VStack(alignment: .leading, spacing: Space.s3) {
+            Text("Reminders").font(.pH2).accessibilityAddTraits(.isHeader)
+            Text("A quiet nudge at a time you choose. They only ever say what is waiting, never a word of your answers or your writing.")
+                .font(.pSmall).foregroundStyle(Palette.muted)
+            row("Morning three", on: s.morning, at: s.morningMinutes, set: { var n = s; n.morning = $0; return n }, time: { var n = s; n.morningAt = $0; return n })
+            row("Evening three", on: s.evening, at: s.eveningMinutes, set: { var n = s; n.evening = $0; return n }, time: { var n = s; n.eveningAt = $0; return n })
+            toggle("Sunday Mirror", note: "Sunday at 10:00, when your week is ready.", on: s.sunday) { var n = s; n.sunday = $0; return n }
+            toggle("Check-ins on what you wanted to try", note: "On the day Reflect checks in, at 09:00.", on: s.intentions) { var n = s; n.intentions = $0; return n }
+            if model.reminders.denied {
+                Text("Notifications are off for this app in your device’s settings, so reminders can’t show.")
+                    .font(.pSmall).foregroundStyle(Palette.danger)
+            }
+        }
+        .card()
+    }
+
+    private func toggle(_ title: String, note: String, on: Bool, change: @escaping (Bool) -> ReminderSettings) -> some View {
+        Toggle(isOn: Binding(get: { on }, set: { v in Task { await model.setReminders(change(v)) } })) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.pH3)
+                Text(note).font(.pSmall).foregroundStyle(Palette.muted)
+            }
+        }
+        .toggleStyle(SwitchRowStyle())
+    }
+
+    @ViewBuilder
+    private func row(_ title: String, on: Bool, at minutes: Int, set: @escaping (Bool) -> ReminderSettings, time: @escaping (Int) -> ReminderSettings) -> some View {
+        toggle(title, note: on ? "Every question day." : "Off.", on: on, change: set)
+        if on {
+            DatePicker("Time for the \(title.lowercased())", selection: Binding(
+                get: { Calendar.current.date(bySettingHour: minutes / 60, minute: minutes % 60, second: 0, of: Date()) ?? Date() },
+                set: { d in
+                    let c = Calendar.current.dateComponents([.hour, .minute], from: d)
+                    Task { await model.setReminders(time((c.hour ?? 0) * 60 + (c.minute ?? 0))) }
+                }), displayedComponents: .hourAndMinute)
+                .font(.pSmall)
+        }
     }
 }
 

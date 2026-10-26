@@ -55,7 +55,7 @@ struct YouView: View {
                 SignInCard()
             }
             ChoicesCard()
-            GoRow(title: "Settings: your name, intimacy questions, backup, Human Pulse and lock", section: .settings) { SettingsView() }
+            GoRow(title: "Settings: your name, intimacy questions, backup, Human Pulse, reminders and lock", section: .settings) { SettingsView() }
         }
     }
 

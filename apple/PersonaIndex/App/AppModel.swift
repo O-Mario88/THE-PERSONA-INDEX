@@ -39,6 +39,8 @@ final class AppModel {
     let backup: BackupModel
     /// Face ID, Touch ID or Optic ID before the app opens.
     let lock: AppLock
+    /// Local reminders for the sittings, the Sunday Mirror and check-ins.
+    let reminders: ReminderScheduler
 
     enum Keys {
         static let welcomed = "pi.welcomed"
@@ -56,6 +58,7 @@ final class AppModel {
         self.reflect = ReflectModel(defaults: defaults)
         self.backup = BackupModel(vault: Vault(api: api, defaults: defaults, secrets: secrets))
         self.lock = AppLock(defaults: defaults)
+        self.reminders = ReminderScheduler(defaults: defaults)
         self.welcomed = defaults.string(forKey: Keys.welcomed) == "1"
         self.name = defaults.string(forKey: Keys.name) ?? ""
         var prefs = PrefStore(store: defaults).prefs
@@ -280,6 +283,24 @@ final class AppModel {
         await refresh()
     }
 
+    // MARK: Reminders
+
+    /// The week ahead's reminders, from what is done today and the intentions due.
+    func reminderPlan() -> [PlannedReminder] {
+        let done = Set([Sitting.morning, .evening].filter(isDone))
+        let minutes = Calendar.current.component(.hour, from: now) * 60 + Calendar.current.component(.minute, from: now)
+        return Reminders.plan(reminders.settings, today: date, minutesNow: minutes, doneToday: done,
+                              intentionDays: reflect.intentions.filter { $0.check == nil }.map(\.checkOn))
+    }
+
+    func setReminders(_ s: ReminderSettings) async {
+        await reminders.update(s) { reminderPlan() }
+    }
+
+    func rescheduleReminders() async {
+        await reminders.schedule(reminderPlan())
+    }
+
     // MARK: Saved
 
     /// Changes when a card is kept or removed, so Saved and the buttons redraw.
@@ -353,6 +374,8 @@ final class AppModel {
         insightsVersion += 1
         defaults.set(sitting.rawValue, forKey: Keys.unsent + question.id)
         await send(question, optionId: option.id, sitting: sitting)
+        // A finished sitting needs no reminder today.
+        if isDone(sitting) { await rescheduleReminders() }
     }
 
     private func send(_ question: Question, optionId: String, sitting: Sitting) async {
