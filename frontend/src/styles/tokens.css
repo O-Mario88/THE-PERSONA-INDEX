@@ -5,45 +5,76 @@
    white. Every text colour here is at least 4.5:1 on the surface it sits on. */
 
 :root {
-  /* Surfaces and lines */
-  --bg: #ffffff;
+  /* Surfaces and lines: a soft green-white page with white cards. */
+  --bg: #f6f8f6;
   --surface: #ffffff;
-  --surface-2: #f3f5f7; /* fields, quiet pills, empty tracks */
-  --surface-3: #e9edf0;
-  --line: #e7eaee;
-  --line-strong: #d3d9df;
+  --surface-2: #f1f5f1; /* fields, quiet pills, tab tracks */
+  --surface-3: #e6ede7;
+  --line: #e4ebe5;
+  --line-strong: #d2ddd4;
 
-  /* Text */
-  --text: #0e1a24;
-  --text-2: #3e4b57; /* secondary copy */
-  --muted: #64707c; /* captions, 4.9:1 on white */
+  /* Text: a deep green-black, never pure black. */
+  --text: #10231b;
+  --text-2: #3c4e45; /* secondary copy */
+  --muted: #66766d; /* captions, 4.7:1 on white */
 
-  /* The accent */
+  /* The greens. Forest is the primary (buttons, chosen tabs, the sidebar);
+     leaf is for icons, checks and progress; lime is the bright accent. */
+  --forest: #0f3d2e;
+  --forest-2: #1a5a41; /* hover, and the sidebar's chosen row */
+  --on-forest: #ffffff;
+  --leaf: #2f9a4e;
+  --leaf-soft: #8fd18f; /* progress fills */
   --lime: #c6f24e;
   --lime-strong: #b5e636;
-  --on-lime: #0e1a24;
-  --accent-ink: #2f6d10; /* lime's partner for text and icons on light, 6.4:1 */
-  --accent-wash: #f4fbe2; /* a chosen option's ground */
-  --accent-line: #b9e44a;
-  /* Celebrate (the new Connect): a warm amber, only on "Share a win". */
-  --warm: #f6b73c;
+  --on-lime: #10231b;
+  --accent-ink: #1f7a3e; /* links and green text, 5.4:1 on white */
+  --accent-wash: #edf7ea; /* mint: a chosen option, a soft card */
+  --accent-line: #cfe6c9;
+
+  /* The primary button: forest in light, lime in dark. */
+  --btn: var(--forest);
+  --btn-hover: var(--forest-2);
+  --on-btn: var(--on-forest);
+
+  /* Pastel pairs for icon discs and tags: a wash and its ink. */
+  --blue: #3b6fd8;
+  --blue-wash: #eaf1fc;
+  --purple: #7b5cd6;
+  --purple-wash: #f1ecfc;
+  --rose: #e0453a;
+  --rose-wash: #fdeeed;
+  --amber: #f5a623;
+  --amber-ink: #8a5300;
+  --amber-wash: #fff5e0;
+
+  /* Celebrate (Connect): amber. */
+  --warm: var(--amber);
   --on-warm: #2a1a00;
-  --warm-ink: #8a5300; /* text and icons on light, 5.6:1 */
-  --warm-wash: #fff6e3;
+  --warm-ink: var(--amber-ink);
+  --warm-wash: var(--amber-wash);
 
   /* States */
-  --danger: #b42318;
-  --danger-wash: #fdecea;
-  --online: #7bc62d;
+  --danger: #c4321f;
+  --danger-wash: var(--rose-wash);
+  --online: #3fbf5f;
 
-  /* Hero surfaces stay navy in both modes (the mirror and close heroes). */
-  --navy: #0e1b26;
-  --navy-2: #15263a;
-  --on-navy: #f4f7f9;
-  --on-navy-2: #c3cdd6;
+  /* Hero surfaces (the close, the practice timer, the share card): forest. */
+  --navy: var(--forest);
+  --navy-2: var(--forest-2);
+  --on-navy: #ffffff;
+  --on-navy-2: #cfe2d6;
+
+  /* The desktop sidebar */
+  --side-bg: var(--forest);
+  --side-ink: #e3eee7;
+  --side-on: var(--forest-2);
+  --side-on-ink: #ffffff;
+  --side-w: 248px;
 
   /* Type */
   --font: 'Figtree Variable', 'Figtree', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --serif: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, 'Times New Roman', serif; /* a thought to reflect on */
   --fs-hero: clamp(2rem, 1.6rem + 2vw, 2.5rem); /* 32-40: screen titles */
   --fs-title: 1.75rem; /* 28: sheet and section titles */
   --fs-h2: 1.25rem; /* 20: card titles */
@@ -76,9 +107,9 @@
   --r-pill: 999px;
 
   /* Elevation: a hairline and a soft lift, nothing heavier. */
-  --shadow-card: 0 1px 2px rgb(14 26 36 / 0.04), 0 4px 16px rgb(14 26 36 / 0.04);
-  --shadow-sheet: 0 -8px 40px rgb(14 26 36 / 0.18);
-  --focus: 0 0 0 3px rgb(47 109 16 / 0.35);
+  --shadow-card: 0 1px 2px rgb(16 35 27 / 0.04), 0 6px 20px rgb(16 35 27 / 0.05);
+  --shadow-sheet: 0 -8px 40px rgb(16 35 27 / 0.18);
+  --focus: 0 0 0 3px rgb(47 154 78 / 0.35);
 
   /* Motion */
   --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
@@ -94,32 +125,54 @@
   color-scheme: light;
 }
 
-/* Navy dark mode: the evening and night windows (Account, "Dark mode"), or the
-   whole app when the phone asks for dark. */
+/* Dark mode: near-black green, with lime as the bright accent. It turns on
+   in the evening and night windows (Account, "Dark mode"), or everywhere
+   when the phone asks for dark. */
 .app.is-dark {
-  --bg: #0e1b26;
-  --surface: #13222f;
-  --surface-2: #1a2b3a;
-  --surface-3: #223546;
-  --line: #22344a;
-  --line-strong: #2f4459;
+  --bg: #0b1411;
+  --surface: #111d18;
+  --surface-2: #17261f;
+  --surface-3: #1f3128;
+  --line: #20322a;
+  --line-strong: #2c4337;
 
-  --text: #f4f7f9;
-  --text-2: #c3cdd6;
-  --muted: #93a1ae; /* 6.3:1 on navy */
+  --text: #f0f5f1;
+  --text-2: #c4d1c9;
+  --muted: #94a69b; /* 6.6:1 on the page */
 
+  --forest-2: #1d4a35;
+  --leaf: #7bd88f;
+  --leaf-soft: #4caf6a;
   --accent-ink: var(--lime);
-  --accent-wash: rgb(198 242 78 / 0.08);
-  --accent-line: var(--lime);
+  --accent-wash: #16281c;
+  --accent-line: #2d4a2f;
 
-  --warm-ink: var(--warm);
-  --warm-wash: rgb(246 183 60 / 0.1);
+  --btn: var(--lime);
+  --btn-hover: var(--lime-strong);
+  --on-btn: #10231b;
+
+  --blue: #8db1f5;
+  --blue-wash: #17233a;
+  --purple: #b9a4f5;
+  --purple-wash: #221c38;
+  --rose: #ff8f84;
+  --rose-wash: #33191a;
+  --amber: #ffc04d;
+  --amber-ink: #ffc04d;
+  --amber-wash: #2d2410;
+
+  --warm-ink: var(--amber);
 
   --danger: #ff8a7a;
-  --danger-wash: rgb(255 138 122 / 0.1);
 
-  --navy: #13222f;
-  --navy-2: #1a2b3a;
+  --navy: #16281f;
+  --navy-2: #1d3328;
+  --on-navy-2: #b9cdbf;
+
+  --side-bg: #0e1814;
+  --side-ink: #c4d1c9;
+  --side-on: #1b2c23;
+  --side-on-ink: var(--lime);
 
   --shadow-card: none;
   --shadow-sheet: 0 -8px 40px rgb(0 0 0 / 0.5);

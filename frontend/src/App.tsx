@@ -727,22 +727,47 @@ function App() {
     <OpenRead.Provider value={openRead}>
       <div className={`app${dark ? ' is-dark' : ''}${flow && tab === 'today' ? ' in-flow' : ''}${stillOn(prefs) ? ' is-still' : ''}`} data-window={win}>
         <nav className="tabs" aria-label="Sections">
-          <span className="rail-logo" aria-hidden="true">
-            P
+          <span className="side-brand" aria-hidden="true">
+            <Icon name="leaf" size={26} />
+            <span>The Persona Index</span>
           </span>
           {TABS.map((t) => (
             <button
               key={t.tab}
               type="button"
-              className="tab"
+              className={`tab tab-${t.tab}`}
+              aria-label={t.name}
               aria-pressed={tab === t.tab || (t.tab === 'insights' && tab === 'mirror')}
               onClick={() => goTab(t.tab)}
               disabled={!set && !ALWAYS_OPEN.includes(t.tab)}
             >
               <Icon name={t.icon} size={24} />
-              <span className="tab-name">{t.name}</span>
+              <span className="tab-name">
+                {t.tab === 'account' ? (
+                  <>
+                    <span className="phone-only">You</span>
+                    <span className="wide-only">Profile</span>
+                  </>
+                ) : (
+                  t.name
+                )}
+              </span>
             </button>
           ))}
+          {/* On a wide screen the sidebar also lists the Mirrors, Saved and
+              Settings, as the reference designs do. */}
+          <button type="button" className="tab side-only" aria-label="Open your mirrors" aria-pressed={tab === 'mirror'} onClick={() => open('mirror')} disabled={!set}>
+            <Icon name="mirror" size={22} />
+            <span className="tab-name">Mirrors</span>
+          </button>
+          <button type="button" className="tab side-only" aria-label="Open saved" aria-pressed={tab === 'kept'} onClick={() => open('kept')}>
+            <Icon name="bookmark" size={22} />
+            <span className="tab-name">Saved</span>
+          </button>
+          <button type="button" className="tab side-only side-settings" aria-label="Open settings" aria-pressed={tab === 'settings'} onClick={() => open('settings')}>
+            <Icon name="gear" size={22} />
+            <span className="tab-name">Settings</span>
+          </button>
         </nav>
         <main className={`page page-${tab}`}>
           <Suspense fallback={<div className="screen-reserve" aria-busy="true" />}>

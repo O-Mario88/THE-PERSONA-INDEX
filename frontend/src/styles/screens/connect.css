@@ -131,9 +131,12 @@
   background: #ffffff;
 }
 
-.qr rect,
+.qr rect {
+  fill: #ffffff;
+}
+
 .qr path {
-  fill: #0e1a24;
+  fill: #10231b;
 }
 
 .room-card {

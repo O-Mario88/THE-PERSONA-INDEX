@@ -1,8 +1,8 @@
-// A person's initial on a colour picked from their name, so the same friend
-// always has the same colour (the design note: Kofi ochre, Nakato sage, Joel
-// terracotta, Sarah indigo, Daniel grey). Muted friends turn grey.
+// A person's initials on a soft pastel picked from their name, so the same
+// friend always has the same colour (the reference designs: lavender, mint,
+// sky, peach). No photos. Muted friends turn grey.
 
-const TINTS = ['#b8922e', '#4f7357', '#bf5f3c', '#6f6cc0', '#8a8f8c', '#2f5a4f', '#a8607e']
+const TINTS = ['#e6e3f6', '#dcefdc', '#dde9f8', '#fbe6d8', '#f6e0ea', '#e8eedc', '#e0eeef']
 
 export function tintFor(name: string): string {
   let h = 0
@@ -16,7 +16,7 @@ export function Avatar({ name, muted, size = 36, tint }: { name: string; muted?:
     <span
       className="avatar"
       aria-hidden="true"
-      style={{ width: size, height: size, fontSize: size * 0.4, background: muted ? '#a3a6a2' : (tint ?? tintFor(name)) }}
+      style={{ width: size, height: size, fontSize: size * 0.4, background: muted ? '#e3e6e4' : (tint ?? tintFor(name)) }}
     >
       {letter}
     </span>

@@ -3,6 +3,7 @@ import { recalledChoice, type Question } from './api'
 import { ShareSheet } from './ShareCard'
 import type { CircleView } from './social'
 import { count } from './pulse'
+import { Disc } from './ui/Disc'
 
 // Growing Together (Edwin, 2026-10-25): real, anonymous totals that show a
 // person they are not the only one going through something. A question's
@@ -56,28 +57,30 @@ export function Growing({ date, questions, circle }: { date: string; questions: 
     })
 
   return (
-    <section className="growing" aria-labelledby="growing-title">
-      <div className="page-head">
-        <p className="label">Today</p>
-        <h3 id="growing-title" className="title">
+    <section className="connect-card growing" aria-labelledby="growing-title">
+      <div>
+        <h3 id="growing-title" className="card-title">
           Growing together
         </h3>
-        <p>How people are showing up today, so you know you are not alone in it.</p>
+        <p className="muted small">How people are showing up today, so you know you are not alone in it.</p>
       </div>
 
       <div className="growing-tiles" role="group" aria-label="Today in numbers">
         <p className="stat-tile">
+          <Disc icon="doc" tone="green" size={44} />
           <span className="stat-num">{g ? g.answers : '–'}</span>
           <span className="stat-name">answers to today’s questions</span>
         </p>
         {circle && (
           <p className="stat-tile">
+            <Disc icon="people" tone="blue" size={44} />
             <span className="stat-num">{circle.active}</span>
             <span className="stat-name">friends active this week</span>
           </p>
         )}
         {newThisWeek !== null && (
           <p className="stat-tile">
+            <Disc icon="user-plus" tone="purple" size={44} />
             <span className="stat-num">{newThisWeek}</span>
             <span className="stat-name">new connections this week</span>
           </p>

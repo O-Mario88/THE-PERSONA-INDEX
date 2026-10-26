@@ -29,6 +29,7 @@ import type { Question } from './api'
 import { loadRings, placeIn, RING_NAMES, ringOf, type Ring, type Rings } from './rings'
 import { RingPicker, RingsCard } from './RingsCard'
 import { Avatar } from './ui/Avatar'
+import { Disc } from './ui/Disc'
 import { Icon } from './ui/icons'
 
 // Connect (Edwin, 2026-10-25): a private space for
@@ -98,17 +99,6 @@ export function CircleScreen({ onOpenMirror, today, questions = [], focus }: Scr
         <p>A private space for understanding, encouragement and meaningful connection.</p>
       </header>
 
-      <div className="circle-stats card" role="group" aria-label="Your circle in numbers">
-        <p className="circle-stat">
-          <span className="stat-num">{friends.length}</span>
-          <span className="stat-name">People in your circle</span>
-        </p>
-        <p className="circle-stat">
-          <span className="stat-num">{circle?.active ?? 0}</span>
-          <span className="stat-name">Active this week</span>
-        </p>
-      </div>
-
       <InviteWaiting onJoined={refresh} />
       {error && (
         <p className="notice" role="alert">
@@ -119,13 +109,12 @@ export function CircleScreen({ onOpenMirror, today, questions = [], focus }: Scr
 
       <div className="connect-grid">
         <YourCircle circle={circle} rings={rings} onChange={refresh} onPlace={(id, r) => setRings(placeIn(id, r))} />
+        <InviteGrow circle={circle} named={!!me.name} onChange={refresh} onOpenMirror={onOpenMirror} />
+        {today && <Growing date={today} questions={questions} circle={circle} />}
         {friends.length > 0 && <CommonGround friends={friends} />}
         {friends.length > 0 && <WhatHelped />}
-        <InviteGrow circle={circle} named={!!me.name} onChange={refresh} onOpenMirror={onOpenMirror} />
         {friends.length > 0 && <SupportCelebrate today={today} />}
       </div>
-
-      {today && <Growing date={today} questions={questions} circle={circle} />}
 
       <p className="connect-tagline">A little closer. A little stronger. Together.</p>
       <p className="muted small">
@@ -141,6 +130,7 @@ type CircleProps = { circle: CircleView | null; rings: Rings; onChange: () => vo
 function YourCircle({ circle, rings, onChange, onPlace }: CircleProps) {
   const [query, setQuery] = useState('')
   const [error, setError] = useState('')
+  const [managing, setManaging] = useState(false)
   const friends = circle?.friends ?? []
   const q = query.trim().toLowerCase()
   const shown = q ? friends.filter((f) => f.name.toLowerCase().includes(q) || (f.handle ?? '').toLowerCase().includes(q)) : friends
@@ -150,8 +140,25 @@ function YourCircle({ circle, rings, onChange, onPlace }: CircleProps) {
       <h3 id="circle-title" className="card-title">
         Your circle
       </h3>
+      <div className="circle-stats" role="group" aria-label="Your circle in numbers">
+        <Disc icon="people" size={40} />
+        <p className="circle-stat">
+          <span className="stat-num">{friends.length}</span>
+          <span className="stat-name">People in your circle</span>
+        </p>
+        <Disc icon="bars" size={40} />
+        <p className="circle-stat">
+          <span className="stat-num">{circle?.active ?? 0}</span>
+          <span className="stat-name">Active this week</span>
+        </p>
+      </div>
       {friends.length > 0 && <RingsCard friends={friends} rings={rings} />}
       {friends.length > 0 && (
+        <button type="button" className="btn wide manage-circle" aria-expanded={managing} onClick={() => setManaging(!managing)}>
+          {managing ? 'Done' : 'Manage your circle'} <Icon name={managing ? 'check' : 'arrow'} size={16} />
+        </button>
+      )}
+      {managing && friends.length > 0 && (
         <label className="circle-search">
           <Icon name="search" size={18} />
           <input
@@ -164,7 +171,7 @@ function YourCircle({ circle, rings, onChange, onPlace }: CircleProps) {
           />
         </label>
       )}
-      {TAGS.filter((t) => shown.some((f) => f.tag === t)).map((t) => {
+      {managing && TAGS.filter((t) => shown.some((f) => f.tag === t)).map((t) => {
         const inTag = shown.filter((f) => f.tag === t)
         const active = inTag.filter((f) => f.active && !f.muted).length
         return (
