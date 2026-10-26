@@ -6,6 +6,7 @@ import { NEED_NAMES } from './needs'
 import { intentions, keepIntention, keptCards } from './notebook'
 import { loadHistory } from './profile'
 import { count } from './pulse'
+import { ConnectNudge } from './ConnectNudge'
 import { GrowthSection } from './GrowthSection'
 import { HeavyCard } from './QuestionCard'
 import { rateAnswer } from './rating'
@@ -28,13 +29,14 @@ type Props = {
   onOpenKept: () => void
   onOpenReflect: () => void
   onOpenSettings: () => void
+  onOpenSupport: () => void
 }
 
 const WEEK = 7
 const MONTH = 30
 const FOR_YOU_MAX = 6
 
-export function Insights({ today, questions, pulse, onOpenMirror, onOpenKept, onOpenReflect, onOpenSettings }: Props) {
+export function Insights({ today, questions, pulse, onOpenMirror, onOpenKept, onOpenReflect, onOpenSettings, onOpenSupport }: Props) {
   const [days, setDays] = useState(WEEK)
   const [version, setVersion] = useState(0)
   const cards = useMemo(() => {
@@ -89,6 +91,7 @@ export function Insights({ today, questions, pulse, onOpenMirror, onOpenKept, on
 
         <NotAlone today={today} cards={cards} pulse={pulse} onOpenSettings={onOpenSettings} />
 
+        <ConnectNudge today={today} onOpenSupport={onOpenSupport} />
         <section className="insights-helped" aria-labelledby="helped-title">
           <h3 id="helped-title" className="section-title">
             What Helped

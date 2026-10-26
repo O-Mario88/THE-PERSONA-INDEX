@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Option, Question } from './api'
 import { keepCardText } from './insights'
@@ -55,6 +55,7 @@ const props = {
   onOpenKept: vi.fn(),
   onOpenReflect: vi.fn(),
   onOpenSettings: vi.fn(),
+  onOpenSupport: vi.fn(),
 }
 
 beforeEach(() => localStorage.clear())
@@ -234,5 +235,67 @@ describe('Your Growth', () => {
     const pair = screen.getByRole('article', { name: 'Health, in your reflections' })
     expect(pair).toHaveTextContent('What did today teach you? “I keep staying up.”')
     expect(pair).toHaveTextContent('What did today teach you? “I slept better after the walk.”')
+  })
+})
+
+describe('A way into Connect', () => {
+  function signedIn(friends: number) {
+    localStorage.setItem('pi.account.v1', 's1.k.sess.sig')
+    localStorage.setItem('pi.account.me', JSON.stringify({ id: 'acc-ama', name: 'Ama', handle: 'ama', suggest: true, connect: true, sync: false }))
+    const seen: string[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        seen.push(String(input))
+        if (String(input) === '/api/circle') {
+          const list = Array.from({ length: friends }, (_, i) => ({ id: `f${i}`, name: `Friend ${i}`, handle: `f${i}`, since: '2026-10-01', reachable: true }))
+          return new Response(JSON.stringify({ me: {}, friends: list, active: 0, need: 3, joined: [], suggestions: [] }), { status: 200 })
+        }
+        return new Response('{"error":"unavailable"}', { status: 503 })
+      }),
+    )
+    return seen
+  }
+
+  it('suggests encouraging someone in the Circle, and opens Support & Celebrate', async () => {
+    const seen = signedIn(2)
+    const onOpenSupport = vi.fn()
+    render(<Insights {...props} onOpenSupport={onOpenSupport} />)
+    const card = await screen.findByRole('region', { name: 'Someone in your Circle might appreciate a little encouragement today.' })
+    expect(within(card).getByText(/Nothing about your answers is shared/)).toBeInTheDocument()
+    fireEvent.click(within(card).getByRole('button', { name: 'Open Support & Celebrate' }))
+    expect(onOpenSupport).toHaveBeenCalled()
+    expect(seen.filter((u) => u !== '/api/circle' && !u.startsWith('/api/not-alone') && u !== '/api/what-helped')).toEqual([])
+  })
+
+  it('stays away without a Circle, or when not signed in', async () => {
+    signedIn(0)
+    const { unmount } = render(<Insights {...props} onOpenSupport={vi.fn()} />)
+    await act(async () => {})
+    expect(screen.queryByText(/might appreciate a little encouragement/)).not.toBeInTheDocument()
+    unmount()
+    localStorage.clear()
+    stubCounts(null)
+    render(<Insights {...props} onOpenSupport={vi.fn()} />)
+    await act(async () => {})
+    expect(screen.queryByText(/might appreciate a little encouragement/)).not.toBeInTheDocument()
+  })
+
+  it('can be put away for today, or for good', async () => {
+    signedIn(2)
+    const { unmount } = render(<Insights {...props} onOpenSupport={vi.fn()} />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Not today' }))
+    expect(screen.queryByText(/might appreciate a little encouragement/)).not.toBeInTheDocument()
+    unmount()
+    render(<Insights {...props} onOpenSupport={vi.fn()} />)
+    await act(async () => {})
+    expect(screen.queryByText(/might appreciate a little encouragement/)).not.toBeInTheDocument()
+    cleanup()
+    render(<Insights {...props} today="2026-10-26" onOpenSupport={vi.fn()} />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Don’t suggest this' }))
+    cleanup()
+    render(<Insights {...props} today="2026-10-27" onOpenSupport={vi.fn()} />)
+    await act(async () => {})
+    expect(screen.queryByText(/might appreciate a little encouragement/)).not.toBeInTheDocument()
   })
 })
