@@ -4,6 +4,7 @@ import { reflectSettings } from './journal'
 import { reflections } from './notebook'
 import { loadHistory } from './profile'
 import { AREA_NAMES, dayMonth } from './reflect'
+import { Disc } from './ui/Disc'
 
 // Insights' Your Growth (Release 3): the person's own earlier and more recent
 // entries in one part of life, side by side (growth.ts). Nothing is said
@@ -16,9 +17,12 @@ export function GrowthSection({ today }: { today: string }) {
   )
   return (
     <section className="insights-growth" aria-labelledby="growth-title">
-      <h3 id="growth-title" className="section-title">
-        Your Growth
-      </h3>
+      <div className="insight-side-head">
+        <Disc icon="mountain" tone="blue" size={40} />
+        <h3 id="growth-title" className="section-title">
+          Your Growth
+        </h3>
+      </div>
       {pairs.length === 0 ? (
         <p className="muted empty-note">This fills in over the weeks, from your own earlier and recent answers.</p>
       ) : (

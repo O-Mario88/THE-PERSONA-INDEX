@@ -781,3 +781,291 @@
 .ring-person text {
   font-size: 14px;
 }
+
+/* ---------- Insights ---------- */
+
+/* The pill row (For You first, filled forest) and Last 30 days. */
+.insights-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+
+.insights-tab {
+  min-height: 40px;
+  padding: 0 var(--s-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: var(--fs-small);
+  font-weight: 600;
+}
+
+.insights-tab.is-first {
+  border-color: var(--forest);
+  background: var(--forest);
+  color: var(--on-forest);
+}
+
+.app.is-dark .insights-tab.is-first {
+  border-color: var(--lime);
+  background: var(--lime);
+  color: var(--on-lime);
+}
+
+.chip.range {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  border-radius: var(--r-md);
+}
+
+.insights-layout > section.insights-not-alone,
+.insights-layout > section.insights-saved,
+.insights-layout > section.insights-helped,
+.insights-layout > section.insights-growth {
+  padding: var(--s-5);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
+.insights-layout > section.insights-not-alone {
+  border-color: transparent;
+  background: var(--blue-wash);
+  box-shadow: none;
+}
+
+.insights .section-title {
+  font-size: var(--fs-h3);
+}
+
+.insights-for-you > .section-title {
+  font-size: var(--fs-h2);
+}
+
+.insight-side-head {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+}
+
+.insights .empty-note {
+  background: var(--surface-2);
+  font-size: var(--fs-small);
+}
+
+.insights-not-alone .empty-note,
+.insights-not-alone .text-button {
+  background: none;
+}
+
+.not-alone-line {
+  font-size: 1.25rem;
+  letter-spacing: -0.01em;
+}
+
+/* The insight card: a leaf disc and where it came from, the reading large,
+   what may matter and the other side side by side, then the step. */
+.insight-card {
+  gap: var(--s-4);
+  padding: var(--s-6);
+}
+
+.insight-head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-3);
+}
+
+.insight-kind {
+  font-weight: 800;
+}
+
+.insight-head .insight-asked {
+  color: var(--muted);
+}
+
+.insight-reading {
+  font-size: clamp(1.375rem, 1.1rem + 0.9vw, 1.875rem);
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.insight-sides {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--s-3);
+}
+
+.insight-needs,
+.insight-other {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  padding: var(--s-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+
+.insight-other {
+  border-color: transparent;
+  background: var(--rose-wash);
+  color: var(--text-2);
+}
+
+.insight-side-title {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  color: var(--text);
+  font-weight: 800;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+
+.insight-other .tag {
+  background: var(--surface);
+  color: var(--rose);
+}
+
+.insight-try {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-3) var(--s-4);
+  padding: var(--s-4) var(--s-5);
+  border: 0;
+  border-radius: var(--r-md);
+  background: var(--blue-wash);
+}
+
+.insight-try-text {
+  display: flex;
+  flex: 1 1 220px;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.insight-try-title {
+  font-weight: 800;
+}
+
+.insight-try .btn {
+  background: var(--blue);
+  color: #ffffff;
+}
+
+.app.is-dark .insight-try .btn {
+  background: var(--lime);
+  color: var(--on-lime);
+}
+
+.insight-try .disc.tone-amber {
+  background: var(--surface);
+}
+
+/* How this insight feels: three outlined buttons. */
+.rate-ask {
+  font-weight: 800;
+}
+
+.rate-buttons {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s-2);
+}
+
+.rate-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+  min-height: 46px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 700;
+}
+
+.rate-button:hover {
+  border-color: var(--leaf);
+  background: var(--accent-wash);
+}
+
+.rate-button .icon {
+  color: var(--leaf);
+}
+
+.insight-links .text-button {
+  padding: 6px var(--s-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  color: var(--text-2);
+  font-weight: 600;
+}
+
+.insight-note {
+  color: var(--muted);
+  font-size: var(--fs-tiny);
+}
+
+.growth-side {
+  background: var(--accent-wash);
+}
+
+.connect-nudge {
+  border-color: transparent;
+  background: var(--amber-wash);
+}
+
+@media (min-width: 1100px) {
+  .insights-layout {
+    grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr);
+    grid-template-rows: auto auto auto 1fr auto;
+    grid-template-areas:
+      'for-you not-alone'
+      'for-you helped'
+      'for-you nudge'
+      'for-you saved'
+      'growth growth';
+    gap: var(--s-5);
+  }
+
+  .insights-controls {
+    flex-wrap: nowrap;
+  }
+}
+
+@media (max-width: 899px) {
+  .insights-tabs {
+    flex-wrap: nowrap;
+    width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .insights-tab {
+    flex: none;
+  }
+
+  .insight-card {
+    padding: var(--s-4);
+  }
+
+  .rate-button {
+    gap: var(--s-1);
+    padding: 0 var(--s-2);
+    font-size: var(--fs-small);
+  }
+}

@@ -25,9 +25,13 @@
   --on-forest: #ffffff;
   --leaf: #2f9a4e;
   --leaf-soft: #8fd18f; /* progress fills */
-  --lime: #c6f24e;
-  --lime-strong: #b5e636;
-  --on-lime: #10231b;
+  /* The brand lime shows on the forest sidebar. On a light page the
+     filled actions that are lime in dark mode turn forest, as on the
+     reference designs, so --lime there means "the filled accent". */
+  --brand-lime: #c6f24e;
+  --lime: #0f3d2e;
+  --lime-strong: #1a5a41;
+  --on-lime: #ffffff;
   --accent-ink: #1f7a3e; /* links and green text, 5.4:1 on white */
   --accent-wash: #edf7ea; /* mint: a chosen option, a soft card */
   --accent-line: #cfe6c9;
@@ -129,6 +133,9 @@
    in the evening and night windows (Account, "Dark mode"), or everywhere
    when the phone asks for dark. */
 .app.is-dark {
+  --lime: #c6f24e;
+  --lime-strong: #b5e636;
+  --on-lime: #10231b;
   --bg: #0b1411;
   --surface: #111d18;
   --surface-2: #17261f;

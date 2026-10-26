@@ -12,6 +12,8 @@ import { HeavyCard } from './QuestionCard'
 import { rateAnswer } from './rating'
 import { splitReveal } from './reveal'
 import { NOT_ME_REPLY, VERDICT_REPLIES } from './words'
+import { Disc } from './ui/Disc'
+import { Icon } from './ui/icons'
 
 // Insights (Edwin, 2026-10-25): its own page, with the Mirrors one tap away.
 // For You is the person's own answers; You're not alone is the server's real
@@ -32,6 +34,15 @@ type Props = {
   onOpenSupport: () => void
 }
 
+// The pill row jumps to each section on the page.
+const JUMPS: [string, string][] = [
+  ['for-you-title', 'For You'],
+  ['not-alone-title', 'You’re Not Alone'],
+  ['helped-title', 'What Helped'],
+  ['growth-title', 'Your Growth'],
+  ['saved-title', 'Saved Insights'],
+]
+
 const WEEK = 7
 const MONTH = 30
 const FOR_YOU_MAX = 6
@@ -49,14 +60,21 @@ export function Insights({ today, questions, pulse, onOpenMirror, onOpenKept, on
     <section className="insights" aria-labelledby="insights-title">
       <header className="page-head">
         <h2 id="insights-title" className="display">
-          Your Insights
+          Insights
         </h2>
-        <p>Understand yourself. Discover you’re not alone. Find what helps.</p>
+        <p>Understand yourself. Find what helps.</p>
       </header>
 
       <div className="insights-controls">
-        <button type="button" className="chip" aria-pressed={days === MONTH} onClick={() => setDays(days === MONTH ? WEEK : MONTH)}>
-          Last 30 days
+        <nav className="insights-tabs" aria-label="Insights sections">
+          {JUMPS.map(([id, name], i) => (
+            <button key={id} type="button" className={i === 0 ? 'insights-tab is-first' : 'insights-tab'} onClick={() => document.getElementById(id)?.scrollIntoView?.({ behavior: 'smooth', block: 'start' })}>
+              {name}
+            </button>
+          ))}
+        </nav>
+        <button type="button" className="chip range" aria-pressed={days === MONTH} onClick={() => setDays(days === MONTH ? WEEK : MONTH)}>
+          <Icon name="calendar" size={16} /> Last 30 days
         </button>
         <button type="button" className="text-button" onClick={onOpenMirror}>
           Your Mirrors →
@@ -93,9 +111,12 @@ export function Insights({ today, questions, pulse, onOpenMirror, onOpenKept, on
 
         <ConnectNudge today={today} onOpenSupport={onOpenSupport} />
         <section className="insights-helped" aria-labelledby="helped-title">
-          <h3 id="helped-title" className="section-title">
-            What Helped
-          </h3>
+          <div className="insight-side-head">
+            <Disc icon="heart" tone="green" size={40} />
+            <h3 id="helped-title" className="section-title">
+              What Helped
+            </h3>
+          </div>
           <p className="muted empty-note">This fills in as you and others report back on the small steps you try.</p>
         </section>
 
@@ -125,27 +146,41 @@ function InsightCard({
   const titleId = `insight-${card.questionId}`
   return (
     <article className={`insight-card${card.heavy ? ' is-heavy' : ''}`} aria-labelledby={titleId}>
-      <p className="label">{evidenceLabel(card.evidence, card.date, today)}</p>
-      <p id={titleId} className="insight-asked">
-        {card.prompt} <span className="muted">You chose “{card.label}”.</span>
-      </p>
+      <div className="insight-head">
+        <Disc icon="leaf" tone="green" size={44} />
+        <div>
+          <p className="insight-kind">{evidenceLabel(card.evidence, card.date, today)}</p>
+          <p id={titleId} className="insight-asked">
+            {card.prompt} <span className="muted">You chose “{card.label}”.</span>
+          </p>
+        </div>
+      </div>
       {card.heavy ? (
         <HeavyCard />
       ) : (
         <>
           {card.reveal && <Reading reveal={card.reveal} />}
-          {card.need && (
-            <div className="insight-needs">
-              <p className="label">What may matter here</p>
-              <ul className="chips" aria-label="What may matter here">
-                <li className="chip is-static">{NEED_NAMES[card.need]}</li>
-              </ul>
+          {(card.need || card.otherSide) && (
+            <div className="insight-sides">
+              {card.need && (
+                <div className="insight-needs">
+                  <p className="insight-side-title">
+                    <Disc icon="leaf" tone="green" size={36} /> What may matter here
+                  </p>
+                  <ul className="tags" aria-label="What may matter here">
+                    <li className="tag">{NEED_NAMES[card.need]}</li>
+                  </ul>
+                </div>
+              )}
+              {card.otherSide && (
+                <div className="insight-other">
+                  <p className="insight-side-title">
+                    <Disc icon="pin" tone="rose" size={36} /> The Other Side
+                  </p>{' '}
+                  <p className="small">{card.otherSide}</p>
+                </div>
+              )}
             </div>
-          )}
-          {card.otherSide && (
-            <p className="insight-other">
-              <span className="label">The Other Side</span> {card.otherSide}
-            </p>
           )}
           {card.step && <TryThis card={card} today={today} />}
           <RateCard card={card} onRated={onRated} />
@@ -189,14 +224,17 @@ function TryThis({ card, today }: { card: ForYouCard; today: string }) {
   }
   return (
     <div className="insight-try">
-      <p className="label">Something you could try</p>
-      <p>{card.step}</p>
+      <Disc icon="bulb" tone="amber" size={40} />
+      <div className="insight-try-text">
+        <p className="insight-try-title">Something you could try</p>
+        <p className="small">{card.step}</p>
+      </div>
       {saved ? (
         <p className="muted small" role="status">
           Saved as an intention in Reflect.
         </p>
       ) : (
-        <button type="button" className="chip" onClick={save}>
+        <button type="button" className="btn small" onClick={save}>
           Save as an intention
         </button>
       )}
@@ -217,13 +255,13 @@ function RateCard({ card, onRated }: { card: ForYouCard; onRated: () => void }) 
     <div className="rate" role="group" aria-label="Does this sound like you?">
       <p className="rate-ask">Does this sound like you?</p>
       <div className="rate-buttons">
-        <button type="button" className="chip" onClick={() => tap('me')}>
-          That's me
+        <button type="button" className="rate-button" onClick={() => tap('me')}>
+          <Icon name="check" size={16} /> That's me
         </button>
-        <button type="button" className="chip" onClick={() => tap('partly')}>
+        <button type="button" className="rate-button" onClick={() => tap('partly')}>
           Partly
         </button>
-        <button type="button" className="chip" onClick={() => tap('not_me')}>
+        <button type="button" className="rate-button" onClick={() => tap('not_me')}>
           Not me
         </button>
       </div>
@@ -253,9 +291,12 @@ function NotAlone({ today, cards, pulse, onOpenSettings }: { today: string; card
   const counted = cards.filter((c) => !c.heavy && !c.regional)
   return (
     <section className="insights-not-alone" aria-labelledby="not-alone-title">
-      <h3 id="not-alone-title" className="section-title">
-        You’re Not Alone
-      </h3>
+      <div className="insight-side-head">
+        <Disc icon="people" tone="blue" size={40} />
+        <h3 id="not-alone-title" className="section-title">
+          You’re Not Alone
+        </h3>
+      </div>
       {!pulse ? (
         <>
           <p className="muted small">With the Human Pulse on, this shows the count of people who chose the same response as you. Off unless you turn it on.</p>
@@ -295,9 +336,12 @@ function Saved({ onOpenKept }: { onOpenKept: () => void }) {
   const kept = keptCards().filter((c) => !c.private)
   return (
     <section className="insights-saved" aria-labelledby="saved-title">
-      <h3 id="saved-title" className="section-title">
-        Saved insights
-      </h3>
+      <div className="insight-side-head">
+        <Disc icon="bookmark" tone="purple" size={40} />
+        <h3 id="saved-title" className="section-title">
+          Saved insights
+        </h3>
+      </div>
       {kept.length === 0 ? (
         <p className="muted small">Cards you keep show here.</p>
       ) : (

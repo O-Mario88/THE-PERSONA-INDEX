@@ -8,33 +8,33 @@ never in a screen file.
 
 ## Direction
 
-Calm and confident: a white page (light) or navy (dark), bold geometric
-type, generous cards on a hairline, and one accent, lime, used only where
-the person acts or progresses (primary buttons, a chosen answer, a done
-window, progress). Everything else is ink and grey. Navy heroes (the close,
-the practice timer, the room code, the share card) give each day a moment of
-weight.
+Since 2026-10-26 the app copies Edwin's second set of references (Connect,
+Your Circle, Insights and Reflect, light and dark). A soft green-white page,
+white cards on a hairline with a soft lift, a deep forest sidebar on a wide
+screen, forest-green primary buttons and chosen tabs, mint cards, and pastel
+discs (green, blue, purple, rose, amber) behind line icons. Dark mode is a
+near-black green, where the filled accent turns lime. Three rules stay
+where the references differ: initials instead of photos, no feed of shared
+moments, and only real counts (no invented numbers or percentages).
 
 ## Colour
 
 | Token | Light | Dark | Use |
 |---|---|---|---|
-| `--bg`, `--surface` | `#ffffff` | `#0e1b26`, `#13222f` | page, cards |
-| `--surface-2` | `#f3f5f7` | `#1a2b3a` | fields, quiet pills, tracks |
-| `--text` | `#0e1a24` | `#f4f7f9` | body and titles |
-| `--muted` | `#64707c` | `#93a1ae` | captions |
-| `--lime` | `#c6f24e` | same | fills only, always under `--on-lime` ink |
-| `--accent-ink` | `#2f6d10` | lime | lime's partner for text and icons |
-| `--accent-wash` | `#f4fbe2` | lime at 8% | a chosen option's ground |
+| `--bg`, `--surface` | `#f6f8f6`, `#ffffff` | `#0b1411`, `#111d18` | page, cards |
+| `--surface-2`, `--surface-3` | `#f1f5f1`, `#e6ede7` | `#17261f`, `#1f3128` | fields, tracks |
+| `--text`, `--text-2`, `--muted` | `#10231b`, `#3c4e45`, `#66766d` | `#f0f5f1`, `#c4d1c9`, `#94a69b` | words |
+| `--forest`, `--forest-2` | `#0f3d2e`, `#1a5a41` | same | sidebar, primary buttons, chosen tabs |
+| `--lime` | forest (the filled accent) | `#c6f24e` | filled accents, always under `--on-lime` |
+| `--brand-lime` | `#c6f24e` | same | the leaf and active icon on the forest sidebar, words on forest cards |
+| `--leaf` | `#2f9a4e` | same | icons, checks, progress |
+| `--accent-ink`, `--accent-wash`, `--accent-line` | `#1f7a3e`, `#edf7ea`, `#cfe6c9` | lime, `#16281c`, `#2d4a2f` | green words, mint cards, tags |
+| `--blue`, `--purple`, `--rose`, `--amber` (+ `-wash`) | pastel ink on a pale wash | darker washes | discs and tinted cards |
+| `--danger` | `#c4321f` | same | warnings only |
 
-| `--warm`, `--warm-ink`, `--warm-wash` | `#f6b73c`, `#8a5300`, `#fff6e3` | amber, amber, amber at 10% | Connect only: "Celebrate a win together" and a friend's good news. Never a second accent elsewhere |
-
-Lime is never text on white (1.2:1). Every text pair is at least 4.5:1;
-the lowest is muted on `--surface-2` at 4.63:1.
-
-Dark mode is navy, not black. It turns on when the phone asks for dark, and
-on Today through the evening and night; Account's "Dark mode" switch turns
-both off.
+Every text pair is at least 4.5:1. Discs carry a line icon in the tone's ink
+on its wash (`ui/Disc.tsx`). Shared reference styles live last, in
+`styles/screens/reference.css`.
 
 ## Type
 
@@ -51,11 +51,11 @@ plus a soft 4% lift in light, and none in dark.
 
 ## Parts
 
-- **Buttons**: `.btn` is the lime primary; `.btn.wide` and `.next` fill the
+- **Buttons**: `.btn` is the forest primary (lime in dark); `.btn.soft` is mint; `.btn.wide` and `.next` fill the
   width at 56px; `.ghost`, `.outline` and `.danger` are quieter.
 - **Options**: a card per answer with an empty ring that fills on choice
   (`.options .option`). Plain `.option` rows elsewhere end in a chevron.
-- **Chips**: grey pills; pressed ones turn lime.
+- **Chips**: white pills on a hairline; pressed ones turn forest (lime in dark).
 - **Progress**: segments under a sitting, the five-dot "Today's ritual", the
   three-step unlock track, rings for the day and countdowns.
 - **Insight mark**: three rising bars in lime before an insight, a thread or

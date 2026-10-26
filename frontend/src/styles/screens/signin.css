@@ -205,7 +205,7 @@
   font-weight: 700;
   letter-spacing: var(--track-eyebrow);
   text-transform: uppercase;
-  color: var(--lime);
+  color: var(--brand-lime);
 }
 
 .signin-stack-line {
@@ -276,7 +276,7 @@
   font-weight: 700;
   letter-spacing: var(--track-eyebrow);
   text-transform: uppercase;
-  color: var(--lime);
+  color: var(--brand-lime);
 }
 
 .signin-hero h2 {

@@ -154,7 +154,7 @@
   font-size: 1.5rem;
   font-weight: 800;
   letter-spacing: 0.08em;
-  color: var(--lime);
+  color: var(--brand-lime);
 }
 
 .room-code.inline {
@@ -569,7 +569,7 @@
   font-weight: 800;
   letter-spacing: var(--track-eyebrow);
   text-transform: uppercase;
-  color: var(--lime);
+  color: var(--brand-lime);
 }
 
 .share-name {
