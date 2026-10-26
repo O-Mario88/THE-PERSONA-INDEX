@@ -167,3 +167,28 @@ describe('What I keep, with backup on', () => {
     expect(server.held.size).toBe(1)
   })
 })
+
+describe('What I keep, with What Helped reports', () => {
+  it('names the reports on the server and counts them when deleting everything', async () => {
+    const withReports = (url: string, init: RequestInit) => {
+      if (url === '/api/device/data' && init.method === 'DELETE')
+        return json(200, { deleted: { answers: 12, steps: 2, weeklyNotes: 1, votes: 12, reports: 2 } })
+      if (url === '/api/device/data') return json(200, { ...kept, kept: { ...kept.kept, planChecks: 0, reports: 2 } })
+      return json(404, { error: 'not_found' })
+    }
+    server = fakeServer(withReports)
+    vi.stubGlobal('fetch', server.fetch)
+    save('pi.device.v1', 'v1.pass')
+    render(<KeptScreen today="2026-10-23" mild={false} onBack={() => {}} />)
+    const onServer = screen.getByRole('group', { name: 'On the server' })
+    await waitFor(() =>
+      expect(onServer).toHaveTextContent('2 reports on how a saved step went: the step, how it went and the week, under a key of their own.'),
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete everywhere' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Yes, delete it all' }))
+    expect(await screen.findByText(/Everything is deleted, here and on the server/)).toHaveTextContent(
+      '12 answers, 2 small steps, 1 weekly note, 2 reports on steps and 12 votes.',
+    )
+  })
+})

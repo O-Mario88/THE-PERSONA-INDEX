@@ -95,6 +95,7 @@ type DeviceExport struct {
 	PlanChecks []ExportPlanCheck `json:"planChecks"`
 	Weeks      []ExportWeek      `json:"weeklyNotes"`
 	Votes      []ExportVote      `json:"votes"`
+	Reports    []ExportReport    `json:"reports"` // What Helped (whathelped.go)
 }
 
 type ExportAnswer struct {
@@ -123,6 +124,15 @@ type ExportPlanCheck struct {
 type ExportWeek struct {
 	Week    string      `json:"week"` // its Monday
 	Summary WeekSummary `json:"summary"`
+}
+
+// ExportReport is one What Helped report: the step, how it went, and the
+// Monday of the week it was sent.
+type ExportReport struct {
+	Week     string `json:"week"`
+	Question string `json:"question"`
+	Step     string `json:"step"`
+	Outcome  string `json:"outcome"`
 }
 
 // ExportVote is one raw vote or rating, kept until it is counted and
@@ -170,7 +180,8 @@ func (s *Server) buildExport(r *http.Request, deviceID string) (DeviceExport, er
 	ctx := r.Context()
 	key := s.devices.mirrorKey(deviceID)
 	e := DeviceExport{Made: s.clock().UTC().Format(dateLayout), About: exportAbout, KeptFor: s.retention(),
-		Answers: []ExportAnswer{}, Steps: []ExportStep{}, PlanChecks: []ExportPlanCheck{}, Weeks: []ExportWeek{}, Votes: []ExportVote{}}
+		Answers: []ExportAnswer{}, Steps: []ExportStep{}, PlanChecks: []ExportPlanCheck{}, Weeks: []ExportWeek{}, Votes: []ExportVote{},
+		Reports: []ExportReport{}}
 
 	answers, steps, err := s.mirror.DeviceHistory(ctx, key, "0001-01-01", "9999-12-31")
 	if err != nil {
@@ -232,6 +243,18 @@ func (s *Server) buildExport(r *http.Request, deviceID string) (DeviceExport, er
 		e.Votes = append(e.Votes, s.exportVote(v))
 	}
 	slices.SortStableFunc(e.Votes, func(x, y ExportVote) int { return strings.Compare(x.Hour, y.Hour) })
+
+	reports, err := s.helped.HelpedReports(ctx, s.devices.helpedKey(deviceID))
+	if err != nil {
+		return e, err
+	}
+	for _, rp := range reports {
+		x := ExportReport{Week: rp.Week, Outcome: rp.Outcome, Question: cmp.Or(prompts[rp.QuestionID], unknownQuestionText)}
+		if a, ok := byQuestion[rp.QuestionID]; ok && a.OptionID == rp.OptionID {
+			x.Step = s.stepFor(a, false)
+		}
+		e.Reports = append(e.Reports, x)
+	}
 	return e, nil
 }
 

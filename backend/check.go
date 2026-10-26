@@ -34,7 +34,7 @@ type checkReport struct {
 
 // checkTables are the tables the server keeps, in the order they are shown.
 var checkTables = []string{"votes", "vote_tallies", "mirror_answers", "mirror_steps", "mirror_plan_checks",
-	"mirror_weeks", "mirror_folds", "forgotten_devices", "vaults"}
+	"mirror_weeks", "mirror_folds", "forgotten_devices", "vaults", "what_helped"}
 
 // Slack on each retention check: the hourly jobs may be up to an hour (and a
 // day boundary) behind.

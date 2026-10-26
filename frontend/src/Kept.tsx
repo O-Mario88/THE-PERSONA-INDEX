@@ -240,14 +240,15 @@ export function KeptScreen({ today, mild, onBack }: { today: string; mild: boole
   )
 }
 
-// "12 answers, 2 small steps, 1 weekly note and 12 votes": plan checks only
-// when there were some.
+// "12 answers, 2 small steps, 1 weekly note and 12 votes": plan checks and
+// What Helped reports only when there were some.
 function deletedList(d: Deleted): string {
   const parts = [
     plural(d.answers, 'answer'),
     plural(d.steps, 'small step'),
     ...(d.planChecks ? [plural(d.planChecks, 'plan check')] : []),
     plural(d.weeklyNotes, 'weekly note'),
+    ...(d.reports ? [`${plural(d.reports, 'report')} on steps`] : []),
     plural(d.votes, 'vote'),
   ]
   return `${parts.slice(0, -1).join(', ')} and ${parts.at(-1)}`
@@ -255,7 +256,7 @@ function deletedList(d: Deleted): string {
 
 function ServerList({ k }: { k: ServerKept }) {
   const { kept, keptFor } = k
-  if (kept.answers + kept.steps + (kept.planChecks ?? 0) + kept.weeklyNotes + kept.votes === 0) {
+  if (kept.answers + kept.steps + (kept.planChecks ?? 0) + kept.weeklyNotes + kept.votes + (kept.reports ?? 0) === 0) {
     return <p>Nothing. This phone has no answers on the server.</p>
   }
   return (
@@ -278,6 +279,12 @@ function ServerList({ k }: { k: ServerKept }) {
         <strong>{plural(kept.weeklyNotes, 'weekly note')}</strong> for your month, quarter and year: counts and your
         clearest answers, never your words. Kept {plural(Math.round(keptFor.weeklyNotesDays / 30), 'month')}.
       </li>
+      {(kept.reports ?? 0) > 0 && (
+        <li>
+          <strong>{plural(kept.reports ?? 0, 'report')}</strong> on how a saved step went: the step, how it went and the
+          week, under a key of their own. Counted only in totals of 50 or more. Kept until you delete everything.
+        </li>
+      )}
       <li>
         <strong>{plural(kept.votes, 'vote')}</strong> with no key that links them to each other, only there so you
         can't be counted twice. Kept {weeks(keptFor.votesDays)}, to the hour they came in.

@@ -596,7 +596,7 @@ func (s *Server) DeleteAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	devID := s.devices.accountDeviceID(acc)
-	if _, err := s.mirror.ForgetDevice(r.Context(), s.devices.mirrorKey(devID), s.deviceVoteHashes(devID), s.today()); err != nil {
+	if _, err := s.forgetDevice(r.Context(), devID, s.today()); err != nil {
 		log.Printf("delete account mirror: %v", err)
 		writeError(w, http.StatusServiceUnavailable, "unavailable")
 		return
