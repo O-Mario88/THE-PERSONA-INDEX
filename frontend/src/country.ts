@@ -8,6 +8,8 @@
 // generated from the IANA time zone database (zone.tab, with its links), so
 // every country with a time zone is listed.
 
+import { COUNTRY_NAMES } from './countryNames'
+
 // Each country's time zones, space-separated.
 const ZONES: Record<string, string> = {
   AD: 'Europe/Andorra',
@@ -269,6 +271,7 @@ export const isCountry = (v: unknown): v is string => typeof v === 'string' && v
 
 // The country's name in everyday English, from the browser's own list.
 export function countryName(cc: string): string {
+  if (COUNTRY_NAMES[cc]) return COUNTRY_NAMES[cc]
   try {
     return new Intl.DisplayNames(['en-GB'], { type: 'region' }).of(cc) ?? cc
   } catch {

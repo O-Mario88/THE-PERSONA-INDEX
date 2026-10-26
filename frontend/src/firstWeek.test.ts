@@ -27,6 +27,14 @@ describe('the first week', () => {
     expect(glimpseHere('2026-10-12', 'evening', later)).toBe(false)
   })
 
+  it('shows the first glimpse when the first sitting is the evening', () => {
+    markStarted('2026-10-12')
+    localStorage.setItem('pi.pick.2026-10-12.pm', JSON.stringify(['pm-1', 'pm-2']))
+    const evening: History = { answers: [a('2026-10-12', { questionId: 'pm-1' }), a('2026-10-12', { questionId: 'pm-2' })], skips: [] }
+    expect(glimpseHere('2026-10-12', 'morning', evening)).toBe(false)
+    expect(glimpseHere('2026-10-12', 'evening', evening)).toBe(true)
+  })
+
   it('never shows a glimpse to someone with earlier answers', () => {
     markStarted('2026-10-12')
     expect(glimpseHere('2026-10-12', 'morning', { answers: [a('2026-10-10'), a('2026-10-12')], skips: [] })).toBe(false)

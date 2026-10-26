@@ -286,11 +286,13 @@ function App() {
   // Judged from answers before today, so the day's offer holds all day.
   const offer = useMemo(() => (set ? regionalFor(pack, region, set.date, loadHistory()) : null), [set, pack, region])
   const local = useMemo(() => (set ? regionalToday(pack, set.date) : []), [set, pack])
+  // Nothing is picked behind the welcome: the pick waits until the person
+  // has begun (firstWeek.ts), so a newcomer's first three open light.
   const morningQs = useMemo(
-    () => (set ? todaysPick(set.pool ?? [], set.questions ?? [], set.date, intimacyOn(prefs), 'morning', [], offer, local) : []),
+    () => (set && !welcome ? todaysPick(set.pool ?? [], set.questions ?? [], set.date, intimacyOn(prefs), 'morning', [], offer, local) : []),
     // pickVersion forces a fresh pick after a preference change
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [set, prefs.adult, prefs.mild, pickVersion, offer, local],
+    [set, welcome, prefs.adult, prefs.mild, pickVersion, offer, local],
   )
   const morning = progressOf(morningQs)
   // The evening three are picked once the morning is answered or closed, so
@@ -299,11 +301,11 @@ function App() {
   const eveningReady = hasEvening && (morning === 'done' || clockSitting === 'evening')
   const eveningQs = useMemo(
     () =>
-      set && eveningReady
+      set && eveningReady && !welcome
         ? todaysPick(set.pool ?? [], set.evening ?? [], set.date, intimacyOn(prefs), 'evening', morningQs, offer, local)
         : [],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [set, eveningReady, prefs.adult, prefs.mild, pickVersion, morningQs, offer, local],
+    [set, eveningReady, welcome, prefs.adult, prefs.mild, pickVersion, morningQs, offer, local],
   )
   const evening: Progress | null = hasEvening ? (eveningReady ? progressOf(eveningQs) : 'none') : null
 
