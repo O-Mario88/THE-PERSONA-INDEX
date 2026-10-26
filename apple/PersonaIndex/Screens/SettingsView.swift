@@ -11,9 +11,11 @@ struct SettingsView: View {
             VStack(alignment: .leading, spacing: Space.s5) {
                 VStack(alignment: .leading, spacing: Space.s2) {
                     Text("Settings").font(.pHero).accessibilityAddTraits(.isHeader)
-                    Text("Your backup, your lock, and what this device keeps.").font(.figtree(17)).foregroundStyle(Palette.muted)
+                    Text("Your name, intimacy questions, backup, Human Pulse and lock.").font(.figtree(17)).foregroundStyle(Palette.muted)
                 }
                 .padding(.top, Space.s2)
+                NameCard()
+                IntimacyCard()
                 BackupCard()
                 PulseCard()
                 LockCard()
@@ -130,8 +132,68 @@ private struct SyncRow: View {
             }
         }
         .tint(Palette.accentInk)
-        .toggleStyle(.switch)
+        .toggleStyle(SwitchRowStyle())
         .disabled(backup.busy)
+    }
+}
+
+/// What the greeting calls the person. It stays on this device.
+struct NameCard: View {
+    @Environment(AppModel.self) private var model
+    @State private var name = ""
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Space.s3) {
+            Text("What I call you").font(.pH2).accessibilityAddTraits(.isHeader)
+            Text("Your first name, for the greeting. It stays on this device.").font(.pSmall).foregroundStyle(Palette.muted)
+            TextField("Your first name", text: $name)
+                .autocorrectionDisabled()
+                #if os(iOS)
+                .textContentType(.givenName)
+                #endif
+                .padding(.horizontal, Space.s4).frame(minHeight: 44)
+                .background(Palette.surface2, in: RoundedRectangle(cornerRadius: Radius.md))
+                .onSubmit { model.name = String(name.trimmingCharacters(in: .whitespaces).prefix(30)) }
+                .onChange(of: name) { _, new in model.name = String(new.trimmingCharacters(in: .whitespaces).prefix(30)) }
+        }
+        .card()
+        .onAppear { name = model.name }
+    }
+}
+
+/// The 18+ answer, which can be changed here, and Keep it mild.
+struct IntimacyCard: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        @Bindable var model = model
+        VStack(alignment: .leading, spacing: Space.s3) {
+            Text("Intimacy questions").font(.pH2).accessibilityAddTraits(.isHeader)
+            Text("Some questions are about intimacy and sex: frank, never graphic, and kept only as “a private answer”.")
+                .font(.pSmall).foregroundStyle(Palette.muted)
+            choice("I’m 18 or older", on: model.prefs.adult == true) { model.prefs.adult = true }
+            choice("I’m under 18, or I’d rather not have them", on: model.prefs.adult == false) { model.prefs.adult = false }
+            if model.prefs.adult == true {
+                Toggle("Keep it mild (no intimacy questions)", isOn: $model.prefs.mild)
+                    .font(.pH3).toggleStyle(SwitchRowStyle())
+            }
+        }
+        .card()
+    }
+
+    private func choice(_ title: String, on: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: Space.s3) {
+                Image(systemName: on ? "largecircle.fill.circle" : "circle")
+                    .foregroundStyle(on ? Palette.accentInk : Palette.muted)
+                Text(title).foregroundStyle(Palette.text)
+                Spacer()
+            }
+            .frame(minHeight: 40)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(on ? [.isSelected] : [])
     }
 }
 
@@ -151,7 +213,7 @@ struct PulseCard: View {
                 }
             }
             .tint(Palette.accentInk)
-            .toggleStyle(.switch)
+            .toggleStyle(SwitchRowStyle())
         }
         .card()
     }
@@ -173,7 +235,7 @@ struct LockCard: View {
                 }
             }
             .tint(Palette.accentInk)
-            .toggleStyle(.switch)
+            .toggleStyle(SwitchRowStyle())
             .disabled(!lock.available)
             if !lock.available {
                 Text("Set a passcode on this device to use the lock.").font(.pSmall).foregroundStyle(Palette.text2)
