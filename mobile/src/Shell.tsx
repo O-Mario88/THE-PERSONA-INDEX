@@ -24,7 +24,7 @@ import { useAccount } from '@shared/useAccount'
 import { markWindow } from '@shared/windows'
 import type { Read } from '@shared/reads/types'
 import { dark as darkPalette, font, light as lightPalette, radius, ThemeProvider, useTheme } from './theme'
-import { Button, Page, PrivacyLine, T, Tinted } from './ui/kit'
+import { Back, Button, Page, PrivacyLine, T, Tinted } from './ui/kit'
 import { Icon, type IconName } from './ui/Icon'
 import { QuestionCard } from './screens/QuestionCard'
 import { Close } from './screens/Close'
@@ -37,12 +37,13 @@ import { Insights } from './screens/Insights'
 import { Connect } from './screens/Connect'
 import { KeptScreen, You } from './screens/You'
 import { Settings } from './screens/Settings'
+import { Mirror } from './screens/Mirror'
 import { ReadScreen } from './screens/ReadScreen'
 import { CountryAsk } from './screens/Country'
 
 type State = { kind: 'loading' } | { kind: 'ready'; set: DailySet; day: string; offline?: true } | { kind: 'empty' } | { kind: 'error' }
 type Tab = 'today' | 'notebook' | 'circle' | 'insights' | 'account'
-type View_ = Tab | 'settings' | 'kept' | 'read' | 'signin'
+type View_ = Tab | 'settings' | 'kept' | 'read' | 'signin' | 'mirror'
 
 const TABS: { tab: Tab; name: string; icon: IconName }[] = [
   { tab: 'today', name: 'Today', icon: 'home' },
@@ -239,13 +240,13 @@ export function Shell({ phoneDark }: { phoneDark: boolean }) {
     setTab(t)
     if (t === 'today' && tab === 'today') setFlow(null)
   }
-  function open(v: 'settings' | 'kept' | 'signin') {
+  function open(v: 'settings' | 'kept' | 'signin' | 'mirror') {
     if (tab === 'today' || tab === 'notebook' || tab === 'circle' || tab === 'insights' || tab === 'account') setBack(tab)
     setTab(v)
   }
   function openRead(r: Read) {
     setReading(r)
-    if (tab !== 'read' && tab !== 'settings' && tab !== 'kept' && tab !== 'signin') setBack(tab)
+    if (tab !== 'read' && tab !== 'settings' && tab !== 'kept' && tab !== 'signin' && tab !== 'mirror') setBack(tab)
     setTab('read')
   }
   function closeFlow() {
@@ -347,10 +348,17 @@ export function Shell({ phoneDark }: { phoneDark: boolean }) {
     body = <KeptScreen today={date} signedIn={!!me} onBack={() => setTab(back)} onDeleted={() => setFinished((n) => n + 1)} />
   } else if (tab === 'read' && reading) {
     body = <ReadScreen read={reading} date={date} intimacy={intimacyOn(prefs)} onBack={() => setTab(back)} onOpen={openRead} />
+  } else if (tab === 'mirror') {
+    body = (
+      <Page>
+        <Back onPress={() => setTab(back)} />
+        <Mirror today={set?.date ?? date} onOpenKept={() => setTab('kept')} onCircle={() => goTab('circle')} onRead={openRead} />
+      </Page>
+    )
   } else if (tab === 'notebook') {
     body = <Reflect today={date} questions={[...morningQs, ...eveningQs]} />
   } else if (tab === 'insights') {
-    body = <Insights today={date} questions={[...morningQs, ...eveningQs]} pulse={pulseOn(prefs)} onOpenReflect={() => goTab('notebook')} onOpenSettings={() => goTab('account')} />
+    body = <Insights today={date} questions={[...morningQs, ...eveningQs]} pulse={pulseOn(prefs)} onOpenReflect={() => goTab('notebook')} onOpenSettings={() => goTab('account')} onOpenMirror={() => open('mirror')} />
   } else if (tab === 'circle') {
     body = <Connect me={me} onSignIn={() => open('signin')} today={date} questions={[...morningQs, ...eveningQs]} />
   } else if (tab === 'account') {
@@ -497,8 +505,7 @@ export function Shell({ phoneDark }: { phoneDark: boolean }) {
             note={homeNote(set.date, weekOne ? dayN : null)}
             hero={hero}
             onOpen={() => {
-              // The Mirrors come to this app next; until then Sunday opens Insights.
-              if (hero.opens === 'mirror') goTab('insights')
+              if (hero.opens === 'mirror') open('mirror')
               else if (hero.opens) setFlow(hero.opens)
             }}
             onAccount={() => goTab('account')}

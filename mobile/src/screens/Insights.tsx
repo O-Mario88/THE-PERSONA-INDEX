@@ -23,7 +23,21 @@ const WEEK = 7
 const MONTH = 30
 const FOR_YOU_MAX = 6
 
-export function Insights({ today, questions, pulse, onOpenReflect, onOpenSettings }: { today: string; questions: Question[]; pulse: boolean; onOpenReflect: () => void; onOpenSettings: () => void }) {
+export function Insights({
+  today,
+  questions,
+  pulse,
+  onOpenReflect,
+  onOpenSettings,
+  onOpenMirror,
+}: {
+  today: string
+  questions: Question[]
+  pulse: boolean
+  onOpenReflect: () => void
+  onOpenSettings: () => void
+  onOpenMirror?: () => void
+}) {
   const [days, setDays] = useState(WEEK)
   const [version, setVersion] = useState(0)
   const cards = useMemo(() => {
@@ -40,9 +54,10 @@ export function Insights({ today, questions, pulse, onOpenReflect, onOpenSetting
         <T v="display">Insights</T>
         <T tone="text2">Understand yourself. Find what helps.</T>
       </View>
-      {answeredAny && (
-        <View style={{ flexDirection: 'row' }}>
-          <Chip label="Last 30 days" on={days === MONTH} onPress={() => setDays(days === MONTH ? WEEK : MONTH)} />
+      {(answeredAny || onOpenMirror) && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+          {answeredAny && <Chip label="Last 30 days" on={days === MONTH} onPress={() => setDays(days === MONTH ? WEEK : MONTH)} />}
+          {onOpenMirror && <Button kind="text" small label="Your Mirrors" iconAfter="arrow" onPress={onOpenMirror} />}
         </View>
       )}
       <T v="h2">For You</T>
@@ -54,7 +69,7 @@ export function Insights({ today, questions, pulse, onOpenReflect, onOpenSetting
         shown.map((c, i) => (
           <View key={c.questionId} style={{ gap: 20 }}>
             {i > 0 && <Hairline />}
-            <InsightCard card={c} today={today} onRated={() => setVersion((v) => v + 1)} onOpenReflect={onOpenReflect} />
+            <InsightCard card={c} today={today} onRated={() => setVersion((v) => v + 1)} onOpenReflect={onOpenReflect} onOpenMirror={onOpenMirror} />
           </View>
         ))
       )}
@@ -82,7 +97,7 @@ export function Insights({ today, questions, pulse, onOpenReflect, onOpenSetting
   )
 }
 
-function InsightCard({ card, today, onRated, onOpenReflect }: { card: ForYouCard; today: string; onRated: () => void; onOpenReflect: () => void }) {
+function InsightCard({ card, today, onRated, onOpenReflect, onOpenMirror }: { card: ForYouCard; today: string; onRated: () => void; onOpenReflect: () => void; onOpenMirror?: () => void }) {
   const p = useTheme()
   const reading = card.reveal ? splitReveal(card.reveal) : null
   return (
@@ -138,6 +153,7 @@ function InsightCard({ card, today, onRated, onOpenReflect }: { card: ForYouCard
           <RateCard card={card} onRated={onRated} />
           <View style={{ flexDirection: 'row' }}>
             <Chip label="Reflect on this" onPress={onOpenReflect} />
+            {onOpenMirror && <Chip label="Weekly Mirror" onPress={onOpenMirror} />}
           </View>
           <T v="tiny">For self-reflection, not a diagnosis.</T>
         </>
