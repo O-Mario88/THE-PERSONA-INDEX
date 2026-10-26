@@ -1236,12 +1236,12 @@ function OutsideMirrorSection({ m, onCircle }: { m: MirrorData; onCircle?: () =>
                   borderRadius: 11,
                   alignItems: 'center',
                   justifyContent: 'center',
-                  backgroundColor: done ? p.forest : 'transparent',
+                  backgroundColor: done ? p.lime : 'transparent',
                   borderWidth: done ? 0 : 1.5,
                   borderColor: p.lineStrong,
                 }}
               >
-                {done && <Icon name="check" size={14} color={p.onForest} />}
+                {done && <Icon name="check" size={14} color={p.onLime} />}
               </View>
               <T style={{ flex: 1 }}>{done ? 'A friend' : o.need - o.friends === 1 ? 'One more friend' : 'A friend to invite'}</T>
               {done ? (

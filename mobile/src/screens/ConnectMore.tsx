@@ -90,13 +90,13 @@ function PickFriend({ name, on, onPress, radio, label }: { name: string; on: boo
           height: 22,
           borderRadius: radio ? 11 : 6,
           borderWidth: 2,
-          borderColor: on ? p.forest : p.line,
-          backgroundColor: on ? p.forest : 'transparent',
+          borderColor: on ? p.lime : p.line,
+          backgroundColor: on ? p.lime : 'transparent',
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
-        {on && <Icon name="check" size={14} color={p.onForest} />}
+        {on && <Icon name="check" size={14} color={p.onLime} />}
       </View>
       <Avatar name={name} size={32} />
       <T style={{ flex: 1 }}>{name}</T>
@@ -783,7 +783,7 @@ export function ReachOutPicker({ kind, onDone, onCancel }: { kind: ReachKind; on
           onPress={() => setPhrase(ph.id)}
           style={{
             borderWidth: 1,
-            borderColor: phrase === ph.id ? p.forest : p.line,
+            borderColor: phrase === ph.id ? p.lime : p.line,
             backgroundColor: phrase === ph.id ? p.accentWash : 'transparent',
             borderRadius: radius.md,
             paddingHorizontal: 16,
@@ -873,7 +873,7 @@ export function NodPicker({ date, title }: { date: string; title?: string }) {
               onPress={() => setCard(i)}
               style={{
                 borderWidth: 1,
-                borderColor: card === i ? p.forest : p.line,
+                borderColor: card === i ? p.lime : p.line,
                 backgroundColor: card === i ? p.accentWash : 'transparent',
                 borderRadius: radius.md,
                 paddingHorizontal: 16,

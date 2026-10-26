@@ -10,6 +10,7 @@ import { COUNTRY_SETTING, REGIONAL_SWITCH } from '@shared/words'
 import { useTheme } from '../theme'
 import { Back, Button, Field, Hairline, Page, Radio, RowLink, T, Toggle } from '../ui/kit'
 import { Icon } from '../ui/Icon'
+import { BackupSettings } from './Backup'
 import { CountrySelect } from './Country'
 
 const WORDS_NAMES: Record<WordsDays, string> = { 7: 'One week', 35: 'Five weeks', 90: 'Three months' }
@@ -22,6 +23,7 @@ export function Settings({
   onName,
   onShowAll,
   onOpenKept,
+  onRestored,
 }: {
   prefs: Prefs
   onChange: (p: Prefs) => void
@@ -30,6 +32,7 @@ export function Settings({
   onName: (n: string) => void
   onShowAll?: () => void
   onOpenKept: () => void
+  onRestored: () => void
 }) {
   const p = useTheme()
   const [draft, setDraft] = useState(name)
@@ -120,6 +123,7 @@ export function Settings({
               <Button small kind="soft" label="Show every section now" onPress={onShowAll} />
             </View>
           )}
+          <BackupSettings onRestored={onRestored} />
         </View>
       )}
 

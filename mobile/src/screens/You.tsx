@@ -3,6 +3,7 @@
 // Signed out, it is "This phone", and everything stays here.
 import { useEffect, useState } from 'react'
 import { Alert, Platform, View } from 'react-native'
+import { deleteBackup, vaultState } from '@shared/vault'
 import { ApiError, deleteEverywhere, forgetLocal, getKept, insteadCount, wordsBetween, type Kept } from '@shared/api'
 import { loadMoves } from '@shared/moves'
 import { notebookCount } from '@shared/notebook'
@@ -261,7 +262,11 @@ export function KeptScreen({ today, signedIn, onBack, onDeleted }: { today: stri
         label="Delete everywhere"
         onPress={() =>
           confirm('Delete everywhere?', 'Everything on this phone and everything the server holds from it goes, for good.', 'Delete everywhere', () => {
-            deleteEverywhere(today).then(
+            // The backup goes first: once this phone's pass is gone, only the
+            // 12 words could find it again. If it can't go, nothing goes.
+            (vaultState() ? deleteBackup() : Promise.resolve())
+              .then(() => deleteEverywhere(today))
+              .then(
               () => {
                 setPhone(onPhone())
                 setServer(null)

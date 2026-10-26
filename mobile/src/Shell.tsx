@@ -22,6 +22,7 @@ import { CONNECT_OPEN_KEY, dayWithYou, glimpseHere, inWeekOne, isNewcomer, lastL
 import { signInMethods, type AccountView } from '@shared/social'
 import { pullSync } from '@shared/sync'
 import { useAccount } from '@shared/useAccount'
+import { startBackups } from '@shared/vault'
 import { markWindow } from '@shared/windows'
 import type { Read } from '@shared/reads/types'
 import { dark as darkPalette, font, light as lightPalette, radius, ThemeProvider, useTheme } from './theme'
@@ -116,7 +117,7 @@ function useStep(steps: Question[]) {
   return { at, go }
 }
 
-export function Shell({ phoneDark }: { phoneDark: boolean }) {
+export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart: () => void }) {
   const [state, setState] = useState<State>({ kind: 'loading' })
   const [attempt, setAttempt] = useState(0)
   const [tab, setTab] = useState<View_>('today')
@@ -137,6 +138,9 @@ export function Shell({ phoneDark }: { phoneDark: boolean }) {
   const dayN = dayWithYou(date)
   const [signup, setSignup] = useState(false)
   const [canSignIn, setCanSignIn] = useState(false)
+  // The 12-word backup, when it is on: changes are sealed and sent a little
+  // after they happen (vault.ts).
+  useEffect(() => startBackups(), [])
   useEffect(() => {
     let live = true
     signInMethods().then(
@@ -348,6 +352,7 @@ export function Shell({ phoneDark }: { phoneDark: boolean }) {
             : undefined
         }
         onOpenKept={() => setTab('kept')}
+        onRestored={onRestart}
       />
     )
   } else if (tab === 'kept') {

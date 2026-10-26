@@ -5,12 +5,14 @@
 //   app keeps every "pi." value in memory and writes each change through to
 //   AsyncStorage. hydrate() loads them all before the first screen.
 // - fetch: the shared code calls "/api/...". Here those go to API_URL.
-// - crypto.randomUUID and getRandomValues, from expo-crypto.
+// - crypto.randomUUID and getRandomValues, from expo-crypto, and the bit of
+//   crypto.subtle the backup uses (subtle.ts).
 // - window.addEventListener: a quiet no-op, so "storage" and "online"
 //   listeners in the shared code do nothing instead of failing.
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as ExpoCrypto from 'expo-crypto'
 import { Platform } from 'react-native'
+import { installSubtle } from './subtle'
 
 const PREFIX = 'pi.'
 const values = new Map<string, string>()
@@ -83,7 +85,28 @@ if (Platform.OS !== 'web') {
   const c = (g.crypto ?? {}) as Record<string, unknown>
   if (typeof c.randomUUID !== 'function') c.randomUUID = () => ExpoCrypto.randomUUID()
   if (typeof c.getRandomValues !== 'function') c.getRandomValues = <T extends ArrayBufferView | null>(a: T) => ExpoCrypto.getRandomValues(a as never) as T
+  installSubtle(c)
   if (!g.crypto) g.crypto = c
+}
+
+// A UTF-8 TextDecoder where the engine has none (opening a backup reads one).
+if (typeof g.TextDecoder !== 'function') {
+  g.TextDecoder = class {
+    decode(input?: ArrayBuffer | ArrayBufferView): string {
+      if (!input) return ''
+      const b = input instanceof Uint8Array ? input : ArrayBuffer.isView(input) ? new Uint8Array(input.buffer, input.byteOffset, input.byteLength) : new Uint8Array(input)
+      let out = ''
+      for (let i = 0; i < b.length; ) {
+        const c = b[i++]
+        let cp = c
+        if (c >= 0xf0) cp = ((c & 7) << 18) | ((b[i++] & 63) << 12) | ((b[i++] & 63) << 6) | (b[i++] & 63)
+        else if (c >= 0xe0) cp = ((c & 15) << 12) | ((b[i++] & 63) << 6) | (b[i++] & 63)
+        else if (c >= 0xc0) cp = ((c & 31) << 6) | (b[i++] & 63)
+        out += String.fromCodePoint(cp)
+      }
+      return out
+    }
+  }
 }
 
 const w = g.window as Record<string, unknown> | undefined

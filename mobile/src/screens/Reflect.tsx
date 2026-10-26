@@ -3,6 +3,7 @@
 // device from the person's own answers, cards and earlier words, or none at
 // all; then what they have noticed across the parts of their life, earlier
 // words, and their choices. Everything stays on this device.
+import { writingWaits } from '@shared/vault'
 import { useEffect, useMemo, useState } from 'react'
 import { Pressable, Text, TextInput, View } from 'react-native'
 import { cachedEdition, getMirror, recalledChoice, type Mirror, type Question } from '@shared/api'
@@ -14,6 +15,7 @@ import { AREA_NAMES, dayMonth, PERIOD_NAMES, reflectionItems } from '@shared/ref
 import { PRIVACY_LINE } from '@shared/ReflectWriting'
 import { addDays } from '@shared/storage'
 import { thoughtsFor, type Answered, type Thought } from '@shared/thoughts'
+import { BringBack } from './Backup'
 import { Notebook } from './Notebook'
 import { font, radius, useTheme } from '../theme'
 import { Button, Hairline, Page, T, Tinted, Toggle } from '../ui/kit'
@@ -121,14 +123,16 @@ export function Reflect({ today, questions, mild = false }: { today: string; que
                 setAt(0)
                 setChosen(null)
               }}
-              style={{ flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: radius.sm, backgroundColor: on ? p.forest : 'transparent' }}
+              style={{ flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: radius.sm, backgroundColor: on ? p.lime : 'transparent' }}
             >
-              <Text style={{ fontFamily: font.bold, fontSize: 14, color: on ? p.onForest : p.text }}>{PERIOD_NAMES[pd]}</Text>
+              <Text style={{ fontFamily: font.bold, fontSize: 14, color: on ? p.onLime : p.text }}>{PERIOD_NAMES[pd]}</Text>
             </Pressable>
           )
         })}
       </View>
       <Button kind={free ? 'primary' : 'outline'} small icon="reflect" label="Write freely" onPress={() => setFree(!free)} />
+
+      {writingWaits() && <BringBack onBack={() => setVersion((v) => v + 1)} />}
 
       <Writing
         key={`${free ? 'free' : period}-${thought?.id}-${version}`}
@@ -190,7 +194,7 @@ export function Reflect({ today, questions, mild = false }: { today: string; que
         </View>
         <View style={{ flexDirection: 'row', gap: 20, borderBottomWidth: 1, borderBottomColor: p.line }}>
           {(['strength', 'grow'] as const).map((g) => (
-            <Pressable key={g} accessibilityRole="tab" accessibilityState={{ selected: group === g }} onPress={() => setGroup(g)} style={{ paddingVertical: 10, borderBottomWidth: 2, borderBottomColor: group === g ? p.forest : 'transparent' }}>
+            <Pressable key={g} accessibilityRole="tab" accessibilityState={{ selected: group === g }} onPress={() => setGroup(g)} style={{ paddingVertical: 10, borderBottomWidth: 2, borderBottomColor: group === g ? p.lime : 'transparent' }}>
               <Text style={{ fontFamily: font.bold, fontSize: 15, color: group === g ? p.accentInk : p.muted }}>{g === 'strength' ? 'Strengths' : 'Areas to grow'}</Text>
             </Pressable>
           ))}
