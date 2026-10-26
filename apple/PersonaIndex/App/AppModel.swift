@@ -45,7 +45,8 @@ final class AppModel {
         static let name = "pi.name"
         static let choice = "pi.choice."
         static let unsent = "pi.unsent."
-        static let pulse = "pi.pulse"
+        /// Before settings moved into pi.prefs.v1 (26 October 2026).
+        static let oldPulse = "pi.pulse"
     }
 
     init(api: APIClient, defaults: KeyValueStore, secrets: KeyValueStore) {
@@ -57,7 +58,13 @@ final class AppModel {
         self.lock = AppLock(defaults: defaults)
         self.welcomed = defaults.string(forKey: Keys.welcomed) == "1"
         self.name = defaults.string(forKey: Keys.name) ?? ""
-        self.pulse = defaults.string(forKey: Keys.pulse) == "1"
+        var prefs = PrefStore(store: defaults).prefs
+        if defaults.string(forKey: Keys.oldPulse) == "1" {
+            prefs.pulse = true
+            PrefStore(store: defaults).save(prefs)
+        }
+        defaults.set(nil, forKey: Keys.oldPulse)
+        self.prefs = prefs
     }
 
     static func live() -> AppModel {
@@ -171,10 +178,16 @@ final class AppModel {
 
     // MARK: Insights
 
+    /// The person's settings, in the web's shape, carried in the backup.
+    var prefs: Prefs {
+        didSet { PrefStore(store: defaults).save(prefs) }
+    }
+
     /// The Human Pulse: counts of who chose the same, only for someone who
     /// said yes. Off until turned on, as on the web.
     var pulse: Bool {
-        didSet { defaults.set(pulse ? "1" : nil, forKey: Keys.pulse) }
+        get { prefs.pulse }
+        set { prefs.pulse = newValue }
     }
 
     /// Changes when an answer or a tap changes what Insights shows.
@@ -209,7 +222,7 @@ final class AppModel {
         name = defaults.string(forKey: Keys.name) ?? name
         rings = ringStore.all()
         reflect.load()
-        pulse = defaults.string(forKey: Keys.pulse) == "1"
+        prefs = PrefStore(store: defaults).prefs
         insightsVersion += 1
         await refresh()
     }
