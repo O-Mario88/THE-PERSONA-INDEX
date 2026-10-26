@@ -447,8 +447,7 @@ svg {
 }
 
 .options .option:active:not(:disabled)::before,
-.options .option[aria-pressed='true']::before,
-.options .option.is-on::before {
+.options .option[aria-pressed='true']::before {
   border-color: var(--on-lime);
   background: var(--on-lime);
   box-shadow:
@@ -456,8 +455,7 @@ svg {
     0 0 0 0 var(--lime);
 }
 
-.option[aria-pressed='true'],
-.option.is-on {
+.option[aria-pressed='true'] {
   border-color: var(--accent-line);
   background: var(--accent-wash);
 }
@@ -466,8 +464,7 @@ svg {
   opacity: 0.6;
 }
 
-.option small,
-.option .option-note {
+.option small {
   display: block;
   margin-top: 2px;
   font-size: var(--fs-small);
@@ -786,25 +783,6 @@ label.field input:focus {
 .icon-disc.is-solid {
   background: var(--lime);
   color: var(--on-lime);
-}
-
-/* Segmented progress: the sitting's three (or five) bars. */
-
-.segments {
-  display: flex;
-  gap: 6px;
-}
-
-.segments > * {
-  flex: 1;
-  height: 6px;
-  border-radius: var(--r-pill);
-  background: var(--surface-3);
-}
-
-.segments > .is-done,
-.segments > .is-now {
-  background: var(--lime);
 }
 
 @media (prefers-reduced-motion: reduce) {

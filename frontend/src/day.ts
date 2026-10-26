@@ -72,10 +72,6 @@ export function isEvening(now = new Date()): boolean {
   return minutesOf(now) >= MORNING_CLOSES
 }
 
-// isDark says whether the window is one the app shows on pure black, when
-// the person has that on: the evening and the night.
-export const isDarkWindow = (w: Window) => w === 'evening' || w === 'night' || w === 'rest'
-
 // clock is a time of day as a phone shows it: "07:51".
 export function clock(minutes: number): string {
   return `${pad(Math.floor(minutes / 60) % 24)}:${pad(minutes % 60)}`
