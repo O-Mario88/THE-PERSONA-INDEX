@@ -20,6 +20,7 @@
 		509052FE78CF24092BF82C7C /* InviteCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8D975F5233DDA80D1D18013 /* InviteCard.swift */; };
 		5402D87483F205D138DDF64B /* ConnectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7376D0AB928867A5C1C8CF3 /* ConnectView.swift */; };
 		5C47FF1713D0F473794C5874 /* AppLock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FCDAF440F01D5E16C7152C2 /* AppLock.swift */; };
+		5FE11F516141B9846872E945 /* YouView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDF00EC06F79706885373CFA /* YouView.swift */; };
 		7087F80F9323837D05BAE3AE /* Figtree-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = BAE1F592572E4AE98093ADC0 /* Figtree-Regular.ttf */; };
 		7984C02E190E06C92BCB5A90 /* Figtree-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = DDE6E0628DDA64A022D9C66F /* Figtree-SemiBold.ttf */; };
 		79D7E26BD8BDEFEC5A1F0774 /* PersonaIndexApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DB7B86359BCF5B3EEA8FD8B /* PersonaIndexApp.swift */; };
@@ -89,6 +90,7 @@
 		F87198315A3F42D2E528B99A /* SelfSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelfSnapshot.swift; sourceTree = "<group>"; };
 		FA036B80EF8AA5CA608780C2 /* PersonaKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = PersonaKit; path = PersonaKit; sourceTree = SOURCE_ROOT; };
 		FB80FF3432A0E2875A63DB05 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
+		FDF00EC06F79706885373CFA /* YouView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YouView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -201,6 +203,7 @@
 				E032E74F1B1AAE667A76BAE1 /* SittingView.swift */,
 				C1FFBAB58ADFFB5DE259DCD2 /* TodayView.swift */,
 				D978FEB9E326C63E6D93F817 /* WelcomeView.swift */,
+				FDF00EC06F79706885373CFA /* YouView.swift */,
 				381D68EF02406DD88A95CFE3 /* Connect */,
 				DF34E7023AB9662BD99F7DD8 /* Reflect */,
 				C3DC2FE116C1A713EBDF8992 /* Settings */,
@@ -349,6 +352,7 @@
 				BF8C63B67FDF4C88B46A5496 /* WelcomeView.swift in Sources */,
 				412E2197CCED5A1AE3644FD8 /* WhatHelpedCard.swift in Sources */,
 				9C561E041DCA6404F7C92396 /* WritingCard.swift in Sources */,
+				5FE11F516141B9846872E945 /* YouView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

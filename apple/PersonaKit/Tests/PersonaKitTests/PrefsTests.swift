@@ -51,4 +51,12 @@ struct PrefsTests {
     func backedUp() {
         #expect(BackupRegistry.copy(of: "pi.prefs.v1") == .main)
     }
+
+    @Test("asks intimate questions only after 18 or older, and never with Keep it mild")
+    func intimacy() {
+        #expect(Prefs().asksIntimate == false)
+        #expect(Prefs(adult: false).asksIntimate == false)
+        #expect(Prefs(adult: true).asksIntimate == true)
+        #expect(Prefs(adult: true, mild: true).asksIntimate == false)
+    }
 }

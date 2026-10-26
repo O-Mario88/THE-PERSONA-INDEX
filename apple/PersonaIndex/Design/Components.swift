@@ -201,3 +201,28 @@ struct OutlineButtonStyle: ButtonStyle {
             .opacity(configuration.isPressed ? 0.6 : 1)
     }
 }
+
+/// The app's switch: the title and note on the left, the switch at the
+/// trailing edge, lime when on. The same on iPhone and Mac (the Mac's own
+/// switch ignores the tint), and still a real toggle for VoiceOver.
+struct SwitchRowStyle: ToggleStyle {
+    @Environment(\.isEnabled) private var isEnabled
+
+    func makeBody(configuration: Configuration) -> some View {
+        HStack(alignment: .center, spacing: Space.s4) {
+            configuration.label.frame(maxWidth: .infinity, alignment: .leading)
+            ZStack(alignment: configuration.isOn ? .trailing : .leading) {
+                Capsule().fill(configuration.isOn ? Palette.accentInk : Palette.surface3)
+                Circle().fill(.white).padding(3).shadow(color: .black.opacity(0.15), radius: 1, y: 1)
+            }
+            .frame(width: 50, height: 30)
+            .animation(.easeOut(duration: 0.15), value: configuration.isOn)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture { configuration.isOn.toggle() }
+        .opacity(isEnabled ? 1 : 0.5)
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityValue(configuration.isOn ? "On" : "Off")
+    }
+}

@@ -14,6 +14,17 @@ public struct Prefs: Sendable, Equatable {
     public var connect = true
     /// Reduce motion: cards appear at once.
     public var still = false
+
+    public init(adult: Bool? = nil, mild: Bool = false, pulse: Bool = false, connect: Bool = true, still: Bool = false) {
+        self.adult = adult
+        self.mild = mild
+        self.pulse = pulse
+        self.connect = connect
+        self.still = still
+    }
+
+    /// Intimate questions are asked only after "I'm 18 or older", and never with "Keep it mild".
+    public var asksIntimate: Bool { adult == true && !mild }
 }
 
 public struct PrefStore: Sendable {

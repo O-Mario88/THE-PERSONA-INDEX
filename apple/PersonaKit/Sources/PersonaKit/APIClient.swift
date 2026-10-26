@@ -158,6 +158,29 @@ public actor APIClient {
 
     public func signOut() { secrets.set(nil, forKey: Self.accountKey) }
 
+    // MARK: The account
+
+    public func account() async throws -> AccountDetails {
+        try await request("/api/account", headers: accountHeader)
+    }
+
+    @discardableResult
+    public func updateAccount(_ change: AccountChange) async throws -> AccountView {
+        try await request("/api/account", method: "PATCH", headers: accountHeader, body: try JSONEncoder().encode(change))
+    }
+
+    /// Signs a device out; "current" is this one, which then forgets its sign-in.
+    public func signOut(session id: String) async throws {
+        try await send("/api/account/sessions/\(id)", method: "DELETE", headers: accountHeader)
+        if id == "current" { signOut() }
+    }
+
+    /// Deletes the account on the server; friends see only that it has gone.
+    public func deleteAccount() async throws {
+        try await send("/api/account", method: "DELETE", headers: accountHeader)
+        signOut()
+    }
+
     public func circle() async throws -> CircleView {
         try await request("/api/circle", headers: accountHeader)
     }

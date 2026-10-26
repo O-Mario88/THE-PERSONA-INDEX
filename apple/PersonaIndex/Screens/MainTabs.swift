@@ -13,7 +13,7 @@ enum AppSection: String, CaseIterable, Hashable {
         case .insights: "Insights"
         case .mirrors: "Mirrors"
         case .saved: "Saved"
-        case .profile: "Profile"
+        case .profile: "You"
         case .settings: "Settings"
         }
     }
@@ -74,19 +74,10 @@ struct SectionView: View {
         case .saved: LaterView(title: "Saved", lead: "Cards you kept, your plans and your notebook.", arrives: "Saved arrives in a later build.")
         case .profile:
             #if os(iOS)
-            // On iPhone, Settings lives under You.
-            NavigationStack {
-                LaterView(title: "You", lead: "Your profile, choices and what this device keeps.", arrives: "Your profile arrives in a later build.") {
-                    NavigationLink { SettingsView() } label: {
-                        Label("Settings: backup, Human Pulse and app lock", systemImage: "gearshape").font(.pH3)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    .card(padding: Space.s4)
-                }
-                .toolbar(.hidden, for: .navigationBar)
-            }
+            // On iPhone, Settings opens on top of You, with Back.
+            NavigationStack { YouView().toolbar(.hidden, for: .navigationBar) }
             #else
-            LaterView(title: "You", lead: "Your profile, choices and what this device keeps.", arrives: "Your profile arrives in a later build.")
+            YouView()
             #endif
         case .settings: SettingsView()
         }

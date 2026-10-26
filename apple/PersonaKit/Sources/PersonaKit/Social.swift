@@ -9,6 +9,55 @@ public struct AccountView: Codable, Sendable, Hashable {
     public let handle: String
     /// Easy sync is on for this account.
     public var sync: Bool?
+    /// Suggested to friends of friends.
+    public var suggest: Bool?
+    /// Quiet nods and Answer Together from friends.
+    public var connect: Bool?
+}
+
+/// How the account signs in: a kind and a masked hint, never the address.
+public struct LoginView: Codable, Sendable, Hashable {
+    public enum Kind: String, Codable, Sendable { case email, phone, google, apple }
+    public let kind: Kind
+    public let hint: String
+
+    public var name: String {
+        switch kind {
+        case .email: "Email code"
+        case .phone: "Phone / WhatsApp code"
+        case .google: "Google"
+        case .apple: "Apple"
+        }
+    }
+}
+
+/// A device signed in to the account.
+public struct SessionView: Codable, Sendable, Hashable, Identifiable {
+    public let id: String
+    public let label: String
+    public let seenOn: String
+    public let current: Bool
+}
+
+public struct AccountDetails: Codable, Sendable, Hashable {
+    public let account: AccountView
+    public let logins: [LoginView]
+    public let sessions: [SessionView]
+}
+
+/// A change to what friends see, or to the account's choices: only the set fields are sent.
+public struct AccountChange: Encodable, Sendable {
+    public var name: String?
+    public var handle: String?
+    public var suggest: Bool?
+    public var connect: Bool?
+
+    public init(name: String? = nil, handle: String? = nil, suggest: Bool? = nil, connect: Bool? = nil) {
+        self.name = name
+        self.handle = handle
+        self.suggest = suggest
+        self.connect = connect
+    }
 }
 
 public enum Tag: String, Codable, Sendable, CaseIterable {

@@ -86,11 +86,12 @@ final class AppModel {
         return nil
     }
 
-    /// The three questions of a sitting. Intimate questions wait for the
-    /// 18+ answer in Settings, which arrives in a later build.
+    /// The questions of a sitting. Intimate questions only after "I'm 18 or
+    /// older" in Settings, and never with "Keep it mild"; their answers are
+    /// sent without the option either way.
     func questions(for sitting: Sitting) -> [Question] {
         let all = sitting == .morning ? (set?.questions ?? []) : (set?.evening ?? [])
-        return all.filter { $0.care != .intimate }
+        return prefs.asksIntimate ? all : all.filter { $0.care != .intimate }
     }
 
     func choice(for question: Question) -> String? { choices[question.id] }
@@ -153,6 +154,57 @@ final class AppModel {
         }
     }
 
+    // MARK: The account (You)
+
+    private(set) var account: AccountDetails?
+    /// What just happened to the account, said once on the You screen.
+    var accountNote: String?
+
+    func loadAccount() async {
+        signedIn = await api.isSignedIn
+        guard signedIn else { account = nil; return }
+        account = try? await api.account()
+    }
+
+    /// Saves a new name or handle; the error says why it was refused.
+    func updateProfile(name: String, handle: String) async throws {
+        guard let me = account?.account else { return }
+        let n = name.trimmingCharacters(in: .whitespaces)
+        let h = handle.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: "@", with: "").lowercased()
+        let change = AccountChange(name: n == me.name ? nil : n, handle: h.isEmpty || h == me.handle ? nil : h)
+        guard change.name != nil || change.handle != nil else { return }
+        try await api.updateAccount(change)
+        await loadAccount()
+    }
+
+    func setSuggest(_ on: Bool) async {
+        _ = try? await api.updateAccount(AccountChange(suggest: on))
+        await loadAccount()
+    }
+
+    /// Quiet nods and Answer Together: one switch, on the device and the account.
+    func setConnect(_ on: Bool) async {
+        prefs.connect = on
+        if signedIn { _ = try? await api.updateAccount(AccountChange(connect: on)) }
+    }
+
+    func signOut(session id: String) async throws {
+        try await api.signOut(session: id)
+        if id == "current" { await signedOutHere() } else { await loadAccount() }
+    }
+
+    func deleteAccount() async throws {
+        try await api.deleteAccount()
+        accountNote = "Your account is deleted. Friends see that you’ve gone, nothing more. This device keeps its own copy until you delete it here too."
+        await signedOutHere()
+    }
+
+    private func signedOutHere() async {
+        account = nil
+        circle = nil
+        await loadConnect()
+    }
+
     func sendCode(to address: String) async throws -> String {
         try await api.sendCode(to: address)
     }
@@ -167,6 +219,7 @@ final class AppModel {
         if await backup.afterSignIn(sync: me.sync ?? false) == .restored { await reloadAfterRestore() }
         if name.isEmpty { name = me.name }
         await loadConnect()
+        await loadAccount()
     }
 
     func place(_ friend: FriendView, in ring: Ring) {
