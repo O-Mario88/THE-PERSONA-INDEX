@@ -1,6 +1,6 @@
 // The parts every screen is built from, matching the web app's base.css:
 // type, buttons, fields, choices, chips, hairlines and the page itself.
-import { useState, type ReactNode } from 'react'
+import { useState, type ComponentRef, type ReactNode, type Ref } from 'react'
 import {
   ActivityIndicator,
   Pressable,
@@ -304,13 +304,14 @@ export function Field(props: TextInputProps & { label?: string; note?: string })
 // ---- layout ----
 
 // The page: the cream background, the gutter, room for the tab bar.
-export function Page({ children, bottom = 32, refresh }: { children: ReactNode; bottom?: number; refresh?: number }) {
+export function Page({ children, bottom = 32, refresh, scrollRef }: { children: ReactNode; bottom?: number; refresh?: number; scrollRef?: Ref<ComponentRef<typeof ScrollView>> }) {
   const p = useTheme()
   const insets = useSafeAreaInsets()
   return (
     <View style={{ flex: 1, backgroundColor: p.bg }}>
       <ScrollView
         key={refresh}
+        ref={scrollRef}
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingHorizontal: gutter, paddingTop: Math.max(insets.top, 20) + 8, paddingBottom: bottom, gap: 20, maxWidth: 640, width: '100%', alignSelf: 'center' }}
         keyboardShouldPersistTaps="handled"

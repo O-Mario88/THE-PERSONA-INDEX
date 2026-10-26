@@ -4,10 +4,12 @@
 // this phone's kept answers, so every number is real; a section with nothing
 // real in it stays hidden. It sets the person only against their own past.
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
-import { Linking, Pressable, Share, View } from 'react-native'
+import { Pressable, Share, View } from 'react-native'
 import {
   getMirror,
   getPeriodMirror,
+  PERIODS_BACK,
+  WEEKS_BACK,
   wordsBetween,
   type Depth,
   type Level,
@@ -19,8 +21,6 @@ import {
   type ThemeRead,
   type Verdict,
 } from '@shared/api'
-import { connectionBetween, connectionLine } from '@shared/connection'
-import { threadsBetween } from '@shared/journal'
 import {
   AREA_NAMES,
   identityName,
@@ -39,7 +39,7 @@ import {
   type Lean,
 } from '@shared/mirrorText'
 import { setMoveStatus, startMove } from '@shared/moves'
-import { NEED_NAMES, NEED_PHRASES, type Need } from '@shared/needs'
+import { NEED_NAMES, NEED_PHRASES } from '@shared/needs'
 import {
   changePlan,
   closePlan,
@@ -61,16 +61,12 @@ import {
   type Revisit,
   type WordsBack,
 } from '@shared/notebook'
-import { checkPattern, hasPatterns, patternCheckOf, patternsFor, type Pattern, type PatternCheck } from '@shared/patterns'
-import { helplineHere } from '@shared/prefs'
 import { changesBetween, changeWords, leaningVerdict, loadHistory, notMeSides, rememberLeaning, type Change } from '@shared/profile'
 import { needsBetween, reachedFor, rememberSafety, safetyAnswer, safetyLed, UNCERTAIN, type NeedRead, type Uncertain } from '@shared/reaching'
 import { readFor } from '@shared/reads/reads'
 import type { Read } from '@shared/reads/types'
-import { dayMonth } from '@shared/reflect'
-import { accountToken, outsideMirror, type OutsideMirror as OutsideMirrorData } from '@shared/social'
+import { outsideMirror, type OutsideMirror as OutsideMirrorData } from '@shared/social'
 import { addDays } from '@shared/storage'
-import { weekTiles } from '@shared/TapestryViews'
 import { THEMES, themeName, themeStyle } from '@shared/themes'
 import { honestLine, sideOf, TRAITS } from '@shared/traits'
 import { useAccount } from '@shared/useAccount'
@@ -99,26 +95,30 @@ import {
 import { radius, useTheme, type Palette } from '../theme'
 import { Icon } from '../ui/Icon'
 import { Button, Chip, Field, Hairline, T, Tinted } from '../ui/kit'
+import { Box, Chips, Eyebrow, Note, Quote } from './MirrorBits'
+import { PeriodStory, SundayMirror, YearMirror, type Host } from './MirrorStory'
 
 type Span = 'week' | Period
 type State = { kind: 'loading' } | { kind: 'week'; m: MirrorData } | { kind: 'period'; p: PeriodMirror } | { kind: 'error' }
 
-const SPANS: { span: Span; name: string; adj: string }[] = [
-  { span: 'week', name: 'Week', adj: 'weekly' },
-  { span: 'month', name: 'Month', adj: 'monthly' },
-  { span: 'quarter', name: 'Quarter', adj: 'quarterly' },
-  { span: 'year', name: 'Year', adj: 'yearly' },
+const SPANS: { span: Span; name: string; short: string; adj: string }[] = [
+  { span: 'week', name: 'Weekly Mirror', short: 'Weekly', adj: 'weekly' },
+  { span: 'month', name: 'Monthly Mirror', short: 'Monthly', adj: 'monthly' },
+  { span: 'quarter', name: 'Quarterly Mirror', short: 'Quarterly', adj: 'quarterly' },
+  { span: 'year', name: 'Yearly Mirror', short: 'Yearly', adj: 'yearly' },
 ]
 const adjOf = (span: Span) => SPANS.find((s) => s.span === span)!.adj
+const mostBack = (span: Span) => (span === 'week' ? WEEKS_BACK : PERIODS_BACK[span])
 const MAX_LINE = 140
 const MAX_SENTENCE = 200
 const MAX_PLAN = 80
 
 type Nav = { onOpenKept: () => void; onCircle?: () => void; onRead?: (r: Read) => void }
 
-export function Mirror({ today, onOpenKept, onCircle, onRead }: { today: string } & Nav) {
+export function Mirror({ today, onOpenKept, onCircle, onRead, onOpenSettings, jumpTo }: { today: string; onOpenSettings?: () => void; jumpTo?: (v: Host) => void } & Nav) {
   const p = useTheme()
   const [span, setSpan] = useState<Span>('week')
+  const [back, setBack] = useState(0)
   const [state, setState] = useState<State>({ kind: 'loading' })
   const [attempt, setAttempt] = useState(0)
   const reload = useCallback(() => setAttempt((n) => n + 1), [])
@@ -126,7 +126,7 @@ export function Mirror({ today, onOpenKept, onCircle, onRead }: { today: string 
   useEffect(() => {
     let live = true
     const load: Promise<State> =
-      span === 'week' ? getMirror(today).then((m) => ({ kind: 'week', m })) : getPeriodMirror(span, today).then((pm) => ({ kind: 'period', p: pm }))
+      span === 'week' ? getMirror(today, back).then((m) => ({ kind: 'week', m })) : getPeriodMirror(span, today, back).then((pm) => ({ kind: 'period', p: pm }))
     load.then(
       (next) => live && setState(next),
       () => live && setState({ kind: 'error' }),
@@ -134,28 +134,52 @@ export function Mirror({ today, onOpenKept, onCircle, onRead }: { today: string 
     return () => {
       live = false
     }
-  }, [today, span, attempt])
+  }, [today, span, back, attempt])
+
+  function choose(next: Span) {
+    if (next === span) return
+    setState({ kind: 'loading' })
+    setBack(0)
+    setSpan(next)
+  }
+  function step(by: number) {
+    const next = Math.min(mostBack(span), Math.max(0, back + by))
+    if (next === back) return
+    setState({ kind: 'loading' })
+    setBack(next)
+  }
+  const range = state.kind === 'week' ? `Week of ${weekRange(state.m.from)}` : state.kind === 'period' ? periodName(state.p.period, state.p.label) : '…'
+  const footer = <Footer onOpenKept={onOpenKept} />
 
   return (
-    <View style={{ gap: 24 }} accessibilityLabel={`Your ${adjOf(span)} mirror`}>
+    <View style={{ gap: 20 }} accessibilityLabel={`Your ${adjOf(span)} mirror`}>
+      <View style={{ gap: 4 }}>
+        <T v="display">Mirrors</T>
+        <T tone="text2">A clearer view of your journey.</T>
+      </View>
       <View style={{ flexDirection: 'row', gap: 4, padding: 4, borderRadius: radius.md, backgroundColor: p.surface2 }} accessibilityRole="tablist">
         {SPANS.map((s) => (
           <Pressable
             key={s.span}
             accessibilityRole="tab"
+            accessibilityLabel={s.name}
             accessibilityState={{ selected: s.span === span }}
-            onPress={() => {
-              if (s.span === span) return
-              setState({ kind: 'loading' })
-              setSpan(s.span)
-            }}
+            onPress={() => choose(s.span)}
             style={{ flex: 1, minHeight: 40, alignItems: 'center', justifyContent: 'center', borderRadius: radius.sm, backgroundColor: s.span === span ? p.surface : 'transparent' }}
           >
             <T v="small" bold tone={s.span === span ? 'text' : 'muted'}>
-              {s.name}
+              {s.short}
             </T>
           </Pressable>
         ))}
+      </View>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }} accessibilityLabel="Which one">
+        <Icon name="calendar" size={18} color={p.muted} />
+        <T v="small" bold style={{ flex: 1 }}>
+          {range}
+        </T>
+        <StepButton icon="back" label={`An earlier ${span}`} disabled={back >= mostBack(span)} onPress={() => step(1)} />
+        <StepButton icon="arrow" label={`A later ${span}`} disabled={back === 0} onPress={() => step(-1)} />
       </View>
       {state.kind === 'loading' && (
         <T tone="muted" center style={{ paddingVertical: 32 }}>
@@ -176,48 +200,46 @@ export function Mirror({ today, onOpenKept, onCircle, onRead }: { today: string 
           />
         </View>
       )}
-      {state.kind === 'week' && <MirrorPage m={state.m} today={today} reload={reload} onOpenKept={onOpenKept} onCircle={onCircle} onRead={onRead} />}
-      {state.kind === 'period' && <PeriodPage p={state.p} onOpenKept={onOpenKept} onRead={onRead} />}
+      {state.kind === 'week' && (
+        <SundayMirror
+          key={state.m.from}
+          m={state.m}
+          today={today}
+          back={back}
+          onOpenSettings={onOpenSettings}
+          jumpTo={jumpTo}
+          footer={footer}
+          deeper={<MirrorPage m={state.m} today={today} reload={reload} onCircle={onCircle} onRead={onRead} />}
+        />
+      )}
+      {state.kind === 'period' && state.p.period !== 'year' && (
+        <PeriodStory key={state.p.label} p={state.p} today={today} back={back} jumpTo={jumpTo} footer={footer} deeper={<PeriodPage p={state.p} onRead={onRead} />} />
+      )}
+      {state.kind === 'period' && state.p.period === 'year' && (
+        <YearMirror key={state.p.label} y={state.p} today={today} back={back} jumpTo={jumpTo} footer={footer} deeper={<PeriodPage p={state.p} onRead={onRead} />} />
+      )}
     </View>
+  )
+}
+
+function StepButton({ icon, label, disabled, onPress }: { icon: 'back' | 'arrow'; label: string; disabled: boolean; onPress: () => void }) {
+  const p = useTheme()
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled }}
+      disabled={disabled}
+      hitSlop={6}
+      onPress={onPress}
+      style={{ width: 36, height: 36, borderRadius: 18, borderWidth: 1, borderColor: p.line, alignItems: 'center', justifyContent: 'center', opacity: disabled ? 0.4 : 1 }}
+    >
+      <Icon name={icon} size={16} color={p.text} />
+    </Pressable>
   )
 }
 
 // ---- small pieces ----
-
-function Eyebrow({ children, accent }: { children: ReactNode; accent?: boolean }) {
-  return (
-    <T v="eyebrow" tone={accent ? 'accent' : 'muted'}>
-      {children}
-    </T>
-  )
-}
-
-function Note({ children }: { children: ReactNode }) {
-  return (
-    <T v="small" tone="muted">
-      {children}
-    </T>
-  )
-}
-
-// A quiet box for side notes, the "m-card" of the web page.
-function Box({ children, eyebrow }: { children: ReactNode; eyebrow?: string }) {
-  const p = useTheme()
-  return (
-    <View style={{ backgroundColor: p.surface, borderColor: p.line, borderWidth: 1, borderRadius: radius.lg, padding: 16, gap: 8 }}>
-      {eyebrow ? <Eyebrow accent>{eyebrow}</Eyebrow> : null}
-      {children}
-    </View>
-  )
-}
-
-function Chips({ children }: { children: ReactNode }) {
-  return <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>{children}</View>
-}
-
-function Quote({ children, big }: { children: ReactNode; big?: boolean }) {
-  return <T style={{ fontFamily: 'Georgia', fontSize: big ? 22 : 19, lineHeight: big ? 29 : 26 }}>{children}</T>
-}
 
 function Scale({ dots }: { dots: { at: number; color: string }[] }) {
   const p = useTheme()
@@ -313,7 +335,7 @@ const DEPTH_ANSWER: Record<Depth, string> = { light: 'a light answer', deeper: '
 
 // ---- the week ----
 
-function MirrorPage({ m, today, reload, onOpenKept, onCircle, onRead }: { m: MirrorData; today: string; reload: () => void } & Nav) {
+function MirrorPage({ m, today, reload, onCircle, onRead }: { m: MirrorData; today: string; reload: () => void; onCircle?: () => void; onRead?: (r: Read) => void }) {
   const p = useTheme()
   const signedIn = !!useAccount()
   const [notMe, setNotMe] = useState(() => notMeSides(today))
@@ -350,9 +372,8 @@ function MirrorPage({ m, today, reload, onOpenKept, onCircle, onRead }: { m: Mir
     { key: 'moved', title: "How you've moved", body: <Moved rows={m.traits.map((t) => ({ trait: t.trait, weeks: t.history }))} why />, show: moved },
     { key: 'changed', title: 'What changed', body: <Changes changes={changes} />, show: changes.length > 0 },
     { key: 'reached', title: 'What you reached for', body: <Reached top={needs.top} all={needs.all} safety={needs.safety} week={m.from} />, show: needs.top.length > 0 },
-    { key: 'connection', title: 'Your week in connection', body: <InConnection from={m.from} to={m.to} span="week" />, show: showConnection(m.from, m.to) },
     { key: 'all', title: 'All of you', body: <AllOfYou themes={m.themes} />, show: m.themes.length > 0 },
-    { key: 'words', title: 'In your own words', body: <OwnWordsList words={words} />, show: words.length > 0 },
+    { key: 'words', title: 'Answers in your own words', body: <OwnWordsList words={words} />, show: words.length > 0 },
     { key: 'focus', title: "What you're working on", body: focus && <FocusCard plan={focus} today={today} />, show: !!focus },
     {
       key: 'steps',
@@ -398,25 +419,12 @@ function MirrorPage({ m, today, reload, onOpenKept, onCircle, onRead }: { m: Mir
           </T>
         ) : null}
         <T tone="onNavy2">{summary(m, notMe)}</T>
-        <View style={{ flexDirection: 'row', gap: 6 }}>
-          {weekTiles(today, m.from).map((t) => (
-            <View key={t.date} style={{ flex: 1, height: 14, borderRadius: 4, backgroundColor: t.tint ?? 'rgba(255,255,255,0.12)' }} />
-          ))}
-        </View>
       </View>
-
-      {m.lowMood && (
-        <Tinted tone="rose">
-          <T>A few of your answers this week sounded heavy. If things feel hard, talking to someone you trust, or to a helpline, can help.</T>
-          <Button kind="text" small label="Find a helpline in your country" onPress={() => Linking.openURL(helplineHere())} style={{ alignSelf: 'flex-start' }} />
-        </Tinted>
-      )}
 
       {suggested && <IdentityCard key={`${m.from}-${suggested}`} week={m.from} suggested={suggested} />}
       <OneLine m={m} notMe={notMe} />
       <Tiles tiles={statTiles(m)} />
       {numbered(parts)}
-      <Footer onOpenKept={onOpenKept} />
     </>
   )
 }
@@ -1006,7 +1014,7 @@ function Footer({ onOpenKept }: { onOpenKept: () => void }) {
 
 // ---- the month, quarter or year ----
 
-function PeriodPage({ p: pm, onOpenKept, onRead }: { p: PeriodMirror; onOpenKept: () => void; onRead?: (r: Read) => void }) {
+function PeriodPage({ p: pm, onRead }: { p: PeriodMirror; onRead?: (r: Read) => void }) {
   const p = useTheme()
   const noun = pm.period
   const [notMe, setNotMe] = useState(() => notMeSides(pm.date))
@@ -1021,10 +1029,7 @@ function PeriodPage({ p: pm, onOpenKept, onRead }: { p: PeriodMirror; onOpenKept
     { key: 'moved', title: "How you've moved", body: <Moved rows={pm.traits.map((t) => ({ trait: t.trait, weeks: t.weekly }))} />, show: moved },
     { key: 'moments', title: 'The answers that said the most', body: <Moments p={pm} />, show: pm.moments.length > 0 },
     { key: 'who', title: `Who you were this ${noun}`, body: <Who leans={lean} date={pm.date} span={noun} onVerdict={() => setNotMe(notMeSides(pm.date))} onRead={onRead} />, show: lean.length > 0 },
-    { key: 'patterns', title: 'Patterns in your answers', body: <MirrorPatterns today={pm.date} />, show: hasPatterns(pm.date) },
     { key: 'lines', title: 'In your own words, week by week', body: <WeekLines lines={lines} />, show: lines.length > 0 },
-    { key: 'threads', title: 'Threads you kept going', body: <MirrorThreads from={pm.from} to={pm.to} span={noun} />, show: threadsBetween(pm.from, pm.to).length > 0 },
-    { key: 'connection', title: `Your ${noun} in connection`, body: <InConnection from={pm.from} to={pm.to} span={noun} />, show: showConnection(pm.from, pm.to) },
     { key: 'all', title: 'All of you', body: <AllOfYou themes={pm.themes} />, show: pm.themes.length > 0 },
     { key: 'steps', title: 'Your small steps', body: <PeriodSteps p={pm} />, show: pm.stats.stepsStarted > 0 },
   ]
@@ -1053,7 +1058,6 @@ function PeriodPage({ p: pm, onOpenKept, onRead }: { p: PeriodMirror; onOpenKept
       <Tiles tiles={periodTiles(pm)} />
       {numbered(parts)}
       <T tone="text2">{PERIOD_CLOSE[noun]}</T>
-      <Footer onOpenKept={onOpenKept} />
     </>
   )
 }
@@ -1194,124 +1198,6 @@ function WeekLines({ lines }: { lines: { week: string; text: string }[] }) {
         </View>
       ))}
       <Note>Only on this phone. These lines were never sent anywhere.</Note>
-    </>
-  )
-}
-
-// ---- patterns, threads and connection (MirrorPatterns, MirrorThreads, MirrorConnection) ----
-
-const PATTERN_REPLIES: Record<PatternCheck, string> = {
-  yes: 'Kept. You said it still feels true.',
-  partly: 'Kept. You said it’s partly true.',
-  no: 'Retired. It won’t be called a pattern again unless new answers build it up.',
-}
-const PATTERN_LABELS: Record<Pattern['evidence'], string> = { pattern: 'A pattern worth exploring', noticing: 'Something you’ve been noticing' }
-
-function MirrorPatterns({ today }: { today: string }) {
-  const [patterns] = useState(() => patternsFor(loadHistory(), today))
-  return (
-    <>
-      {patterns.map((x) => (
-        <PatternCard key={x.need} pattern={x} today={today} />
-      ))}
-      <Note>Worked out on this phone from your own answers of the last 30 days. Nothing here is sent.</Note>
-    </>
-  )
-}
-
-function PatternCard({ pattern: x, today }: { pattern: Pattern; today: string }) {
-  const [said, setSaid] = useState<PatternCheck | null>(() => patternCheckOf(x.need)?.check ?? null)
-  const [asking, setAsking] = useState(said === null)
-  function tap(check: PatternCheck) {
-    checkPattern(x.need as Need, check, today)
-    setSaid(check)
-    setAsking(false)
-  }
-  return (
-    <Box eyebrow={PATTERN_LABELS[x.evidence]}>
-      <T v="h3">{NEED_NAMES[x.need]}</T>
-      <T>
-        In {x.answers} of your answers, on {x.days} days since {dayMonth(x.since)}, what you chose reached for {NEED_PHRASES[x.need]}.
-      </T>
-      {asking ? (
-        <>
-          <Note>Does this still feel true?</Note>
-          <Chips>
-            {(['yes', 'partly', 'no'] as const).map((c) => (
-              <Chip key={c} label={c === 'yes' ? 'Yes' : c === 'partly' ? 'Partly' : 'No'} onPress={() => tap(c)} />
-            ))}
-          </Chips>
-        </>
-      ) : (
-        said && (
-          <View style={{ gap: 4 }}>
-            <Note>{PATTERN_REPLIES[said]}</Note>
-            {said !== 'no' && <Button kind="text" small label="Change" onPress={() => setAsking(true)} style={{ alignSelf: 'flex-start' }} />}
-          </View>
-        )
-      )}
-    </Box>
-  )
-}
-
-function MirrorThreads({ from, to, span }: { from: string; to: string; span: string }) {
-  const threads = threadsBetween(from, to)
-  return (
-    <>
-      {threads.map(({ root, count }) => (
-        <View key={root.id} style={{ gap: 4 }}>
-          <Quote>“{root.answer.length > 90 ? `${root.answer.slice(0, 90)}…` : root.answer}”</Quote>
-          <Note>{count === 1 ? `Once this ${span}` : `${count} times this ${span}`}</Note>
-        </View>
-      ))}
-      <Note>From your threads in Reflect, because you chose to let them in. Only on this phone.</Note>
-    </>
-  )
-}
-
-function monthsBetween(from: string, to: string): { key: string; from: string; to: string }[] {
-  const out: { key: string; from: string; to: string }[] = []
-  const d = new Date(`${from.slice(0, 7)}-01T00:00:00Z`)
-  while (d.toISOString().slice(0, 10) <= to) {
-    const start = d.toISOString().slice(0, 10)
-    const next = new Date(d)
-    next.setUTCMonth(next.getUTCMonth() + 1)
-    const end = new Date(next.getTime() - 86_400_000).toISOString().slice(0, 10)
-    out.push({ key: start.slice(0, 7), from: start < from ? from : start, to: end > to ? to : end })
-    d.setUTCMonth(d.getUTCMonth() + 1)
-  }
-  return out
-}
-const monthName = (key: string) => new Date(`${key}-01T00:00:00Z`).toLocaleDateString('en-GB', { month: 'short', timeZone: 'UTC' })
-
-function showConnection(from: string, to: string): boolean {
-  return !!accountToken() || connectionBetween(from, to).days > 0
-}
-
-function InConnection({ from, to, span }: { from: string; to: string; span: Span }) {
-  const p = useTheme()
-  const counts = connectionBetween(from, to)
-  const months = span === 'quarter' || span === 'year' ? monthsBetween(from, to) : []
-  return (
-    <>
-      <T tone="text2">{connectionLine(counts, span)}</T>
-      {months.map((mo) => {
-        const c = connectionBetween(mo.from, mo.to)
-        const total = c.nod + c.share + c.support + c.celebrate
-        return (
-          <View key={mo.key} accessible accessibilityLabel={`${monthName(mo.key)}: ${total === 1 ? 'one move' : `${total} moves`}`} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <T v="small" tone="muted" style={{ width: 40 }}>
-              {monthName(mo.key)}
-            </T>
-            <View style={{ flexDirection: 'row', gap: 4 }}>
-              {Array.from({ length: Math.min(total, 8) }, (_, i) => (
-                <View key={i} style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: p.accentInk }} />
-              ))}
-            </View>
-          </View>
-        )
-      })}
-      <Note>Only what you did, kept on this phone. Never who, and never sent.</Note>
     </>
   )
 }

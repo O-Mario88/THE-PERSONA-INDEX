@@ -4,8 +4,8 @@
 // native. Keep the two in step: a change to the flow in App.tsx belongs here
 // too.
 import { StatusBar } from 'expo-status-bar'
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { AppState, Pressable, Text, View } from 'react-native'
+import { useCallback, useEffect, useMemo, useRef, useState, type ComponentRef, type ReactNode } from 'react'
+import { AppState, Pressable, ScrollView, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ApiError, cacheEdition, cachedEdition, getDay, pruneLocal, pruneWords, recalledChoice, sendPlanChecks, sendUnrated, type DailySet, type Question } from '@shared/api'
 import { dayAt, nextTurn, WINDOW_INFO, type Day, type OpenWindow, type Sitting } from '@shared/day'
@@ -120,6 +120,7 @@ export function Shell({ phoneDark }: { phoneDark: boolean }) {
   const [state, setState] = useState<State>({ kind: 'loading' })
   const [attempt, setAttempt] = useState(0)
   const [tab, setTab] = useState<View_>('today')
+  const mirrorScroll = useRef<ComponentRef<typeof ScrollView>>(null)
   const [back, setBack] = useState<Tab>('today')
   const [reading, setReading] = useState<Read | null>(null)
   const [prefs, setPrefs] = useState<Prefs>(loadPrefs)
@@ -355,9 +356,20 @@ export function Shell({ phoneDark }: { phoneDark: boolean }) {
     body = <ReadScreen read={reading} date={date} intimacy={intimacyOn(prefs)} onBack={() => setTab(back)} onOpen={openRead} />
   } else if (tab === 'mirror') {
     body = (
-      <Page>
+      <Page scrollRef={mirrorScroll}>
         <Back onPress={() => setTab(back)} />
-        <Mirror today={set?.date ?? date} onOpenKept={() => setTab('kept')} onCircle={() => goTab('circle')} onRead={openRead} />
+        <Mirror
+          today={set?.date ?? date}
+          onOpenKept={() => setTab('kept')}
+          onCircle={() => goTab('circle')}
+          onRead={openRead}
+          onOpenSettings={() => open('settings')}
+          jumpTo={(v) => {
+            const sv = mirrorScroll.current
+            const inner = sv?.getInnerViewRef()
+            if (sv && inner) v.measureLayout(inner, (_x, y) => sv.scrollTo({ y: Math.max(0, y - 12), animated: true }))
+          }}
+        />
       </Page>
     )
   } else if (tab === 'notebook') {
