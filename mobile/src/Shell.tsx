@@ -356,7 +356,7 @@ export function Shell({ phoneDark }: { phoneDark: boolean }) {
       </Page>
     )
   } else if (tab === 'notebook') {
-    body = <Reflect today={date} questions={[...morningQs, ...eveningQs]} />
+    body = <Reflect today={date} questions={[...morningQs, ...eveningQs]} mild={!intimacyOn(prefs)} />
   } else if (tab === 'insights') {
     body = <Insights today={date} questions={[...morningQs, ...eveningQs]} pulse={pulseOn(prefs)} onOpenReflect={() => goTab('notebook')} onOpenSettings={() => goTab('account')} onOpenMirror={() => open('mirror')} />
   } else if (tab === 'circle') {

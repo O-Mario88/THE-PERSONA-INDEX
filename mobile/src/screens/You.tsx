@@ -238,12 +238,7 @@ export function KeptScreen({ today, signedIn, onBack, onDeleted }: { today: stri
         ) : !server ? (
           <T tone="muted">Nothing from this phone yet.</T>
         ) : (
-          <>
-            <T>
-              <T bold>{plural(server.kept.answers, 'answer')}</T> and <T bold>{plural(server.kept.steps, 'small step')}</T>, under this phone's anonymous pass, never
-              with your words. Answers are kept {weeks(server.keptFor.answersDays)}.
-            </T>
-          </>
+          <ServerList k={server} />
         )}
       </View>
       {done ? <T tone="leaf" bold>{done}</T> : null}
@@ -279,5 +274,35 @@ export function KeptScreen({ today, signedIn, onBack, onDeleted }: { today: stri
         }
       />
     </Page>
+  )
+}
+
+function ServerList({ k }: { k: Kept }) {
+  const { kept, keptFor } = k
+  if (kept.answers + kept.steps + (kept.planChecks ?? 0) + kept.weeklyNotes + kept.votes === 0) return <T>Nothing. This phone has no answers on the server.</T>
+  return (
+    <>
+      <T>
+        <T bold>{plural(kept.answers, 'answer')}</T>
+        {kept.privateAnswers > 0 ? `, ${kept.privateAnswers} of them private` : ''}, under an anonymous key, for your mirror. For a private one I keep only that you
+        answered. Kept {weeks(keptFor.answersDays)}.
+      </T>
+      <T>
+        <T bold>{plural(kept.steps, 'small step')}</T> you started. Kept {weeks(keptFor.answersDays)}.
+      </T>
+      {(kept.planChecks ?? 0) > 0 && (
+        <T>
+          <T bold>{plural(kept.planChecks ?? 0, 'plan check')}</T>: the day, and whether you did it or not yet. Never the plan's words. Kept {weeks(keptFor.answersDays)}.
+        </T>
+      )}
+      <T>
+        <T bold>{plural(kept.weeklyNotes, 'weekly note')}</T> for your month, quarter and year: counts and your clearest answers, never your words. Kept{' '}
+        {plural(Math.round(keptFor.weeklyNotesDays / 30), 'month')}.
+      </T>
+      <T>
+        <T bold>{plural(kept.votes, 'vote')}</T> with no key that links them to each other, only there so you can't be counted twice. Kept {weeks(keptFor.votesDays)}, to
+        the hour they came in.
+      </T>
+    </>
   )
 }

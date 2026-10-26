@@ -14,6 +14,7 @@ import { AREA_NAMES, dayMonth, PERIOD_NAMES, reflectionItems } from '@shared/ref
 import { PRIVACY_LINE } from '@shared/ReflectWriting'
 import { addDays } from '@shared/storage'
 import { thoughtsFor, type Answered, type Thought } from '@shared/thoughts'
+import { Notebook } from './Notebook'
 import { font, radius, useTheme } from '../theme'
 import { Button, Hairline, Page, T, Tinted, Toggle } from '../ui/kit'
 import { Disc, type Tone } from '../ui/parts'
@@ -58,7 +59,7 @@ function fromNoticed(n: Noticed, period: ReflectionPeriod): Thought {
 
 const countWords = (s: string) => s.trim().split(/\s+/).filter(Boolean).length
 
-export function Reflect({ today, questions }: { today: string; questions: Question[] }) {
+export function Reflect({ today, questions, mild = false }: { today: string; questions: Question[]; mild?: boolean }) {
   const p = useTheme()
   const [period, setPeriod] = useState<ReflectionPeriod>('day')
   const [free, setFree] = useState(false)
@@ -245,7 +246,8 @@ export function Reflect({ today, questions }: { today: string; questions: Questi
           🔒 {PRIVACY_LINE}
         </T>
       </View>
-      <T v="tiny">For self-reflection, not a diagnosis.</T>
+      <Hairline />
+      <Notebook mild={mild} today={today} />
     </Page>
   )
 }
