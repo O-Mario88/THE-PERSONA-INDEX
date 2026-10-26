@@ -12,7 +12,10 @@ public enum BackupRegistry {
     public enum Copy: Sendable { case main, journal }
 
     /// Keys this app keeps in UserDefaults that a backup carries.
-    static let main = ["pi.choice.", "pi.history.v1", "pi.connection.v1", "pi.rings", "pi.name", "pi.prefs.v1"]
+    static let main = ["pi.choice.", "pi.history.v1", "pi.connection.v1", "pi.rings", "pi.name", "pi.prefs.v1",
+                       // The notebook kinds the web backs up in the main copy, named one by one so
+                       // a new kind (which might be journal) is carried untouched, never moved.
+                       "pi.nb.card.", "pi.nb.good.", "pi.nb.sentence.", "pi.nb.plan.", "pi.nb.name.", "pi.nb.practice."]
     static let journal = ["pi.nb.reflection.", "pi.nb.intention.", "pi.reflect."]
 
     public static func copy(of key: String) -> Copy? {

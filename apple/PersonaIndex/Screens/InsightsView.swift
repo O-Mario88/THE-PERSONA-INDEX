@@ -173,6 +173,12 @@ private struct InsightCardView: View {
         }
         if let step = t.step { TryThis(card: card, step: step) }
         RateRow(card: card)
+        if let reveal = t.reveal {
+            KeepButton(questionId: t.questionId) {
+                model.keep(prompt: t.prompt, questionId: t.questionId, theme: t.theme, intimate: false, answer: t.label,
+                           reveal: reveal, otherSide: t.otherSide, step: t.step, date: t.date)
+            }
+        }
         ViewThatFits(in: .horizontal) {
             HStack(spacing: Space.s4) { links }
             VStack(alignment: .leading, spacing: Space.s2) { links }
@@ -310,10 +316,19 @@ private struct NotAloneSection: View {
 }
 
 private struct SavedSection: View {
+    @Environment(AppModel.self) private var model
+
     var body: some View {
+        let kept = model.notebook.cards().filter { $0.private != true }
         VStack(alignment: .leading, spacing: Space.s3) {
             Text("Saved insights").font(.pH2).accessibilityAddTraits(.isHeader)
-            Text("Cards you keep show here.").font(.pSmall).foregroundStyle(Palette.muted)
+            if kept.isEmpty {
+                Text("Cards you keep show here.").font(.pSmall).foregroundStyle(Palette.muted)
+            } else {
+                ForEach(kept.prefix(3)) { c in
+                    Text(c.headline).font(.figtree(15, .semibold)).padding(.vertical, 2)
+                }
+            }
             GoLink(title: "Open Saved", section: .saved) { SectionView(section: .saved) }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

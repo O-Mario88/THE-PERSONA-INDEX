@@ -117,6 +117,7 @@ private struct QuestionScreen: View {
 /// The card after an answer: the insight with its lime mark, the other
 /// side, and one small step. A heavy answer gets kind words, never an insight.
 private struct AnswerCard: View {
+    @Environment(AppModel.self) private var model
     let question: Question
     let option: Option
     let nextLabel: String
@@ -162,6 +163,10 @@ private struct AnswerCard: View {
                             }
                         }
                         Text("For self-reflection, not a diagnosis.").font(.figtree(12)).foregroundStyle(Palette.muted)
+                        KeepButton(questionId: question.id) {
+                            model.keep(prompt: question.prompt, questionId: question.id, theme: question.theme, intimate: question.care == .intimate,
+                                       answer: option.label, reveal: insight.reveal, otherSide: insight.otherSide, step: insight.step, date: model.date)
+                        }
                     }
                 }
                 .card()

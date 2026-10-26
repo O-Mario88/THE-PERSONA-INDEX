@@ -71,7 +71,7 @@ struct SectionView: View {
             InsightsView()
             #endif
         case .mirrors: MirrorsView()
-        case .saved: LaterView(title: "Saved", lead: "Cards you kept, your plans and your notebook.", arrives: "Saved arrives in a later build.")
+        case .saved: SavedView()
         case .profile:
             #if os(iOS)
             // On iPhone, Settings opens on top of You, with Back.
@@ -132,32 +132,4 @@ private struct DesktopShell: View {
 }
 #endif
 
-/// A section whose screen comes in a later build: says so plainly.
-struct LaterView<Extra: View>: View {
-    let title: String
-    let lead: String
-    let arrives: String
-    @ViewBuilder var extra: Extra
 
-    var body: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: Space.s5) {
-                Eyebrow(text: "The Persona Index")
-                Text(title).font(.pHero)
-                Text(lead).font(.figtree(17)).foregroundStyle(Palette.muted)
-                Text(arrives).font(.pSmall).foregroundStyle(Palette.text2).card(fill: Palette.surface2, stroke: .clear)
-                extra
-            }
-            .padding(Space.gutter)
-            .frame(maxWidth: 640, alignment: .leading)
-            .frame(maxWidth: .infinity)
-        }
-        .background(Palette.bg)
-    }
-}
-
-extension LaterView where Extra == EmptyView {
-    init(title: String, lead: String, arrives: String) {
-        self.init(title: title, lead: lead, arrives: arrives) { EmptyView() }
-    }
-}
