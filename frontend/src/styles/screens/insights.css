@@ -80,6 +80,10 @@
   line-height: var(--lh-snug);
 }
 
+.insight-body-text {
+  color: var(--text-2);
+}
+
 .insight-needs,
 .insight-try {
   display: flex;

@@ -8,6 +8,7 @@ import { loadHistory } from './profile'
 import { count } from './pulse'
 import { HeavyCard } from './QuestionCard'
 import { rateAnswer } from './rating'
+import { splitReveal } from './reveal'
 import { NOT_ME_REPLY, VERDICT_REPLIES } from './words'
 
 // Insights (Edwin, 2026-10-25): its own page, with the Mirrors one tap away.
@@ -132,7 +133,7 @@ function InsightCard({
         <HeavyCard />
       ) : (
         <>
-          {card.reveal && <p className="insight-reading">{card.reveal}</p>}
+          {card.reveal && <Reading reveal={card.reveal} />}
           {card.need && (
             <div className="insight-needs">
               <p className="label">What may matter here</p>
@@ -163,6 +164,17 @@ function InsightCard({
         </>
       )}
     </article>
+  )
+}
+
+// The reading: its headline in bold, the rest quieter, as on the day's card.
+function Reading({ reveal }: { reveal: string }) {
+  const { headline, body } = splitReveal(reveal)
+  return (
+    <>
+      <p className="insight-reading">{headline}</p>
+      {body && <p className="insight-body-text">{body}</p>}
+    </>
   )
 }
 
