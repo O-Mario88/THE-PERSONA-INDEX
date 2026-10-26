@@ -72,4 +72,45 @@ struct NotebookTests {
         let obj = try JSONSerialization.jsonObject(with: data) as? [String: Any]
         #expect((obj?["cards"] as? [[String: Any]])?.first?["questionId"] as? String == "q1")
     }
+
+    @Test("reads everything Saved holds in one pass, the same as reading each kind")
+    func shelf() {
+        let store = CountingStore()
+        let nb = Notebook(store: store)
+        nb.keep(card("q1"))
+        nb.keep(card("q2", date: "2026-10-27"))
+        store.set(#"{"kind":"plan","at":1,"id":"p1","made":"2026-10-20","trait":"conscientiousness","high":true,"when":"after lunch","will":"take a walk","checks":[]}"#, forKey: "pi.nb.plan.p1")
+        store.set(#"{"kind":"name","at":1,"week":"2026-10-19","suggested":"a steady finisher","name":"The Quiet Finisher"}"#, forKey: "pi.nb.name.2026-10-19")
+        store.set(#"{"kind":"sentence","at":1,"week":"2026-10-19","text":"I rest better after a walk."}"#, forKey: "pi.nb.sentence.2026-10-19")
+        store.set(#"{"kind":"good","at":1,"date":"2026-10-21","lines":["Tea with Kofi"]}"#, forKey: "pi.nb.good.2026-10-21")
+        store.scans = 0
+        let shelf = nb.shelf()
+        #expect(store.scans == 1)
+        #expect(shelf == Notebook.Shelf(cards: nb.cards(), plans: nb.plans(), names: nb.names(), sentences: nb.sentences(), goodThings: nb.goodThings()))
+        #expect(shelf.cards.map(\.questionId) == ["q2", "q1"])
+    }
+
+    @Test("checks one card by its own key, without reading the rest")
+    func isKeptReadsOneKey() {
+        let store = CountingStore()
+        let nb = Notebook(store: store)
+        nb.keep(card("q1"))
+        store.scans = 0
+        #expect(nb.isKept("q1"))
+        #expect(!nb.isKept("q2"))
+        nb.remove("q1")
+        #expect(!nb.isKept("q1"))
+        store.set(#"{"kind":"plan","at":1}"#, forKey: "pi.nb.card.odd")
+        #expect(!nb.isKept("odd"))
+        #expect(store.scans == 0)
+    }
+}
+
+/// Memory, counting how often every key is listed (slow on a real device).
+final class CountingStore: KeyValueStore, @unchecked Sendable {
+    private let inner = MemoryStore()
+    var scans = 0
+    func string(forKey key: String) -> String? { inner.string(forKey: key) }
+    func set(_ value: String?, forKey key: String) { inner.set(value, forKey: key) }
+    func keys(withPrefix prefix: String) -> [String] { scans += 1; return inner.keys(withPrefix: prefix) }
 }

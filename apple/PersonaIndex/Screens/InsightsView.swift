@@ -319,7 +319,7 @@ private struct SavedSection: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        let kept = model.notebook.cards().filter { $0.private != true }
+        let kept = model.saved.cards.filter { $0.private != true }
         VStack(alignment: .leading, spacing: Space.s3) {
             Text("Saved insights").font(.pH2).accessibilityAddTraits(.isHeader)
             if kept.isEmpty {

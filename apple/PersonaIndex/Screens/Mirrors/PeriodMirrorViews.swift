@@ -83,18 +83,7 @@ private struct PeriodPage: View {
             s.stepsStarted > 0 ? ("Small steps kept", "\(s.stepsTried) of \(s.stepsStarted)", "\(s.stepsHelped) helped")
                                : ("Small steps kept", "–", "Pick one with “I'll try it”"),
         ]
-        return LazyVGrid(columns: [GridItem(.flexible(), spacing: Space.s3), GridItem(.flexible())], spacing: Space.s3) {
-            ForEach(items, id: \.0) { item in
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(item.0).font(.figtree(14, .semibold)).foregroundStyle(Palette.muted)
-                    Text(item.1).font(.figtree(28, .heavy))
-                    Text(item.2).font(.figtree(12)).foregroundStyle(Palette.muted).lineLimit(2)
-                }
-                .frame(maxWidth: .infinity, minHeight: 92, alignment: .topLeading)
-                .card(padding: Space.s4)
-                .accessibilityElement(children: .combine)
-            }
-        }
+        return StatTiles(items: items.map { StatTiles.Item(name: $0.0, value: $0.1, note: $0.2) })
     }
 
     private var weekByWeek: some View {
@@ -113,7 +102,7 @@ private struct PeriodPage: View {
                             }
                         }
                         .frame(height: 64)
-                        if p.period != .year { Text("\(w.week)").font(.figtree(10)).foregroundStyle(Palette.muted) }
+                        if p.period != .year { Text("\(w.week)").font(.figtree(10)).foregroundStyle(Palette.muted).dynamicTypeSize(...DynamicTypeSize.xLarge) }
                     }
                     .frame(maxWidth: .infinity)
                     .accessibilityElement()

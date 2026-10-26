@@ -15,6 +15,10 @@ final class BackupModel {
     private(set) var sync = false
 
     private let vault: Vault
+    /// Called after a step that may have taken in another device's entries
+    /// (a backup that met a newer copy, turning on, syncing), so screens
+    /// holding what is on the device read it again.
+    @ObservationIgnored var tookIn: () -> Void = {}
 
     init(vault: Vault) {
         self.vault = vault
@@ -42,6 +46,7 @@ final class BackupModel {
         guard state != nil, !busy else { return }
         _ = await vault.backUp()
         state = await vault.state
+        tookIn()
     }
 
     func turnOn(_ phrase: String) async -> Vault.Saved {
@@ -93,6 +98,7 @@ final class BackupModel {
         let out = await step()
         state = await vault.state
         writingWaits = await vault.writingWaits
+        tookIn()
         return out
     }
 }
