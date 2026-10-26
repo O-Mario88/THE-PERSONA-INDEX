@@ -153,8 +153,8 @@ const GZIP = 2
 export async function seal(key: CryptoKey, s: Snapshot): Promise<Uint8Array> {
   let body: Uint8Array = utf8(JSON.stringify(s))
   let format = PLAIN
-  if (typeof CompressionStream !== 'undefined') {
-    body = await squeeze(body, new CompressionStream('gzip'))
+  if (gzip.available()) {
+    body = await gzip.zip(body)
     format = GZIP
   }
   const iv = crypto.getRandomValues(new Uint8Array(12))
@@ -178,13 +178,21 @@ export async function unseal(key: CryptoKey, sealed: Uint8Array): Promise<Snapsh
       bytes(sealed.slice(13)),
     ),
   )
-  if (format === GZIP) body = await squeeze(body, new DecompressionStream('gzip'))
+  if (format === GZIP) body = await gzip.unzip(body)
   const s = JSON.parse(new TextDecoder().decode(body)) as Snapshot
   if (!s || typeof s !== 'object' || typeof s.entries !== 'object' || s.v > SNAPSHOT_VERSION) throw new Error('unreadable backup')
   return s
 }
 
 const aad = (format: number) => utf8(`persona-index vault ${format}`)
+
+// gzip is the browser's own; the phone app, whose engine has no
+// CompressionStream, swaps in its own (mobile/src/platform/subtle.ts).
+export const gzip = {
+  available: () => typeof CompressionStream !== 'undefined',
+  zip: (b: Uint8Array) => squeeze(b, new CompressionStream('gzip')),
+  unzip: (b: Uint8Array) => squeeze(b, new DecompressionStream('gzip')),
+}
 
 async function squeeze(b: Uint8Array, t: CompressionStream | DecompressionStream): Promise<Uint8Array> {
   const stream = new Response(bytes(b)).body!.pipeThrough(t)
