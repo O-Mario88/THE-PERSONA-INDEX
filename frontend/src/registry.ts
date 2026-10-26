@@ -47,6 +47,7 @@ export const REGISTRY: Entry[] = [
   { key: 'pi.nb.', what: 'Your notebook: cards you kept, good things, Sunday sentences, plans and names', backup: 'always', merge: 'newest', download: true },
   { key: 'pi.pattern.', what: 'Whether a pattern in your longer Mirrors still feels true: yes, partly or no, and when you said so', backup: 'always', merge: 'local', download: true },
   { key: 'pi.nudge.', what: 'Whether you put away the suggestion to encourage someone in your Circle, for a day or for good', backup: 'always', merge: 'local', download: false },
+  { key: 'pi.mirror.', what: 'Your choices in the Mirrors: the direction you took up or put away, and whether a line of yours still feels important', backup: 'always', merge: 'local', download: true },
   { key: 'pi.read.', what: 'Which reads you opened, so they are not offered twice', backup: 'always', merge: 'local', download: false },
   { key: 'pi.words.', what: 'Answers in your own words', backup: 'words', merge: 'local', download: true },
   { key: 'pi.instead.', what: 'What you wrote after "Not me"', backup: 'words', merge: 'local', download: true },

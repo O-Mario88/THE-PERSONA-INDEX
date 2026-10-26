@@ -169,6 +169,22 @@ type WeekSummary struct {
 	Traits       map[string]TraitTally `json:"traits,omitempty"`
 	Moments      []Moment              `json:"moments,omitempty"` // the week's top moments (topMoments)
 	Helped       []HelpedStep          `json:"helped,omitempty"`
+	// What the week's answers reached for (needs.go), from answers that may
+	// say something about the person and are not heavy. NeedsKept marks a
+	// week folded since needs were counted (2026-10-26), so an older week
+	// reads as "not on record", never as "reached for nothing".
+	Needs     map[string]NeedTally `json:"needs,omitempty"`
+	NeedsKept bool                 `json:"needsKept,omitempty"`
+	// Steps tried with no change, so the longer mirrors can say what made
+	// little difference as well as what helped.
+	NoChange []HelpedStep `json:"noChange,omitempty"`
+}
+
+// NeedTally counts the answers that reached for one need in a week, and the
+// days they were given on.
+type NeedTally struct {
+	N    int `json:"n"`
+	Days int `json:"days,omitempty"`
 }
 
 type ThemeTally struct {

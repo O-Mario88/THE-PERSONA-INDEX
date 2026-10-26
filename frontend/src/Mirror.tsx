@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import {
   getMirror,
   getPeriodMirror,
+  PERIODS_BACK,
+  WEEKS_BACK,
   type Depth,
   type Level,
   type Mirror as MirrorData,
@@ -41,7 +43,6 @@ import { outsideMirror, type OutsideMirror as OutsideMirrorData } from './social
 import { useAccount } from './useAccount'
 import { Icon } from './ui/icons'
 import { ShareSheet } from './ShareCard'
-import { weekTiles } from './TapestryViews'
 import {
   CHANGES_NOTE,
   LEANING_REPLIES,
@@ -66,13 +67,10 @@ import {
   type NeedRead,
   type Uncertain,
 } from './reaching'
-import { helplineHere } from './prefs'
 import { ReadLink } from './Read'
-import { MirrorPatterns } from './MirrorPatterns'
-import { hasPatterns } from './patterns'
-import { MirrorThreads } from './MirrorThreads'
-import { threadsBetween } from './journal'
-import { InConnection, showConnection } from './MirrorConnection'
+import { SundayMirror } from './MirrorWeek'
+import { PeriodStory } from './MirrorPeriodStory'
+import { YearMirror } from './MirrorYear'
 
 type Span = 'week' | Period
 type State =
@@ -81,21 +79,34 @@ type State =
   | { kind: 'period'; p: PeriodMirror }
   | { kind: 'error' }
 
-const SPANS: { span: Span; name: string; adj: string }[] = [
-  { span: 'week', name: 'Week', adj: 'weekly' },
-  { span: 'month', name: 'Month', adj: 'monthly' },
-  { span: 'quarter', name: 'Quarter', adj: 'quarterly' },
-  { span: 'year', name: 'Year', adj: 'yearly' },
+const SPANS: { span: Span; name: string; short: string; adj: string }[] = [
+  { span: 'week', name: 'Weekly Mirror', short: 'Weekly', adj: 'weekly' },
+  { span: 'month', name: 'Monthly Mirror', short: 'Monthly', adj: 'monthly' },
+  { span: 'quarter', name: 'Quarterly Mirror', short: 'Quarterly', adj: 'quarterly' },
+  { span: 'year', name: 'Yearly Mirror', short: 'Yearly', adj: 'yearly' },
 ]
 const adjOf = (span: Span) => SPANS.find((s) => s.span === span)!.adj
+const mostBack = (span: Span) => (span === 'week' ? WEEKS_BACK : PERIODS_BACK[span])
 
-// The mirror: built by the server from this phone's kept answers, so every
-// number here is real. Sections with nothing real to show stay hidden. It
-// speaks of this person alone and only sets them against their own past;
-// the research behind its words stays in mirrorText.ts, out of sight. The
-// week opens first; the month, quarter and year look further back.
-export function Mirror({ today, onOpenKept, onCircle }: { today: string; onOpenKept: () => void; onCircle?: () => void }) {
+// The Mirrors (Edwin, 2026-10-26): a story first, then what the answers
+// revealed, what helped, and one direction. Built from the server's count of
+// this phone's kept answers and from what the phone keeps itself, so every
+// number is real; a section with nothing real in it stays hidden. The week
+// opens first; the month, quarter and year look further back, and each can
+// step back to an earlier one while its record is kept.
+export function Mirror({
+  today,
+  onOpenKept,
+  onCircle,
+  onOpenSettings,
+}: {
+  today: string
+  onOpenKept: () => void
+  onCircle?: () => void
+  onOpenSettings?: () => void
+}) {
   const [span, setSpan] = useState<Span>('week')
+  const [back, setBack] = useState(0)
   const [state, setState] = useState<State>({ kind: 'loading' })
   const [attempt, setAttempt] = useState(0)
   const reload = useCallback(() => setAttempt((n) => n + 1), [])
@@ -104,8 +115,8 @@ export function Mirror({ today, onOpenKept, onCircle }: { today: string; onOpenK
     let live = true
     const load: Promise<State> =
       span === 'week'
-        ? getMirror(today).then((m) => ({ kind: 'week', m }))
-        : getPeriodMirror(span, today).then((p) => ({ kind: 'period', p }))
+        ? getMirror(today, back).then((m) => ({ kind: 'week', m }))
+        : getPeriodMirror(span, today, back).then((p) => ({ kind: 'period', p }))
     load.then(
       (next) => live && setState(next),
       () => live && setState({ kind: 'error' }),
@@ -113,29 +124,57 @@ export function Mirror({ today, onOpenKept, onCircle }: { today: string; onOpenK
     return () => {
       live = false
     }
-  }, [today, span, attempt])
+  }, [today, span, back, attempt])
 
   function choose(next: Span) {
     if (next === span) return
     setState({ kind: 'loading' })
+    setBack(0)
     setSpan(next)
   }
+  function step(by: number) {
+    const next = Math.min(mostBack(span), Math.max(0, back + by))
+    if (next === back) return
+    setState({ kind: 'loading' })
+    setBack(next)
+  }
+
+  const range =
+    state.kind === 'week'
+      ? `Week of ${weekRange(state.m.from)}`
+      : state.kind === 'period'
+        ? periodName(state.p.period, state.p.label)
+        : '…'
+  const footer = <Footer onOpenKept={onOpenKept} />
 
   // One region for every state, so the page keeps its place while it loads.
   return (
-    <section className="mirror" aria-label={`Your ${adjOf(span)} mirror`} aria-busy={state.kind === 'loading'}>
-      <div className="m-spans" role="group" aria-label="Look back over">
-        {SPANS.map((s) => (
-          <button
-            key={s.span}
-            type="button"
-            className="m-span"
-            aria-pressed={s.span === span}
-            onClick={() => choose(s.span)}
-          >
-            {s.name}
+    <section className="mirror ms" aria-label={`Your ${adjOf(span)} mirror`} aria-busy={state.kind === 'loading'}>
+      <header className="page-head ms-head">
+        <h1 className="display">Mirrors</h1>
+        <p>A clearer view of your journey.</p>
+      </header>
+      <div className="ms-controls">
+        <div className="ms-spans" role="group" aria-label="Look back over">
+          {SPANS.map((s) => (
+            <button key={s.span} type="button" className="ms-span" aria-label={s.name} aria-pressed={s.span === span} onClick={() => choose(s.span)}>
+              <span className="wide-only">{s.name}</span>
+              <span className="phone-only">{s.short}</span>
+            </button>
+          ))}
+        </div>
+        <div className="ms-range" role="group" aria-label="Which one">
+          <Icon name="calendar" size={18} />
+          <span className="ms-range-label" aria-live="polite">
+            {range}
+          </span>
+          <button type="button" className="ms-range-step" aria-label={`An earlier ${span}`} disabled={back >= mostBack(span)} onClick={() => step(1)}>
+            <Icon name="back" size={16} />
           </button>
-        ))}
+          <button type="button" className="ms-range-step" aria-label={`A later ${span}`} disabled={back === 0} onClick={() => step(-1)}>
+            <Icon name="arrow" size={16} />
+          </button>
+        </div>
       </div>
       {state.kind === 'loading' && <p className="m-loading">Putting your {span} together…</p>}
       {state.kind === 'error' && (
@@ -153,25 +192,30 @@ export function Mirror({ today, onOpenKept, onCircle }: { today: string; onOpenK
           </button>
         </div>
       )}
-      {state.kind === 'week' && <MirrorPage m={state.m} today={today} reload={reload} onOpenKept={onOpenKept} onCircle={onCircle} />}
-      {state.kind === 'period' && <PeriodPage p={state.p} onOpenKept={onOpenKept} />}
+      {state.kind === 'week' && (
+        <SundayMirror
+          key={state.m.from}
+          m={state.m}
+          today={today}
+          back={back}
+          onOpenSettings={onOpenSettings}
+          footer={footer}
+          deeper={<MirrorPage m={state.m} today={today} reload={reload} onCircle={onCircle} />}
+        />
+      )}
+      {state.kind === 'period' && state.p.period !== 'year' && (
+        <PeriodStory key={state.p.label} p={state.p} today={today} back={back} footer={footer} deeper={<PeriodPage p={state.p} />} />
+      )}
+      {state.kind === 'period' && state.p.period === 'year' && (
+        <YearMirror key={state.p.label} y={state.p} today={today} back={back} footer={footer} deeper={<PeriodPage p={state.p} />} />
+      )}
     </section>
   )
 }
 
-function MirrorPage({
-  m,
-  today,
-  reload,
-  onOpenKept,
-  onCircle,
-}: {
-  m: MirrorData
-  today: string
-  reload: () => void
-  onOpenKept: () => void
-  onCircle?: () => void
-}) {
+// Explore deeper, under the Sunday Mirror: everything else the week holds,
+// in numbered sections, each shown only when it has something real in it.
+function MirrorPage({ m, today, reload, onCircle }: { m: MirrorData; today: string; reload: () => void; onCircle?: () => void }) {
   const signedIn = !!useAccount()
   const [sharing, setSharing] = useState(false)
   // Leanings the person said are not them stay out of the title (profile.ts).
@@ -238,9 +282,8 @@ function MirrorPage({
       body: <Reached top={needs.top} all={needs.all} safety={needs.safety} week={m.from} />,
       show: needs.top.length > 0,
     },
-    { key: 'connection', title: 'Your week in connection', body: <InConnection from={m.from} to={m.to} span="week" />, show: showConnection(m.from, m.to) },
     { key: 'all', title: 'All of you', body: <AllOfYou themes={m.themes} />, show: m.themes.length > 0 },
-    { key: 'words', title: 'In your own words', body: <OwnWordsList words={words} />, show: words.length > 0 },
+    { key: 'words', title: 'Answers in your own words', body: <OwnWordsList words={words} />, show: words.length > 0 },
     {
       key: 'focus',
       title: "What you're working on",
@@ -266,7 +309,7 @@ function MirrorPage({
 
   return (
     <>
-      <header className="m-hero">
+      <header className="m-hero m-hero-deeper">
         <div className="m-hero-top">
           <p className="m-eyebrow">
             {sunday ? `Sunday · week ${m.week}` : `Week ${m.week}`} · {weekRange(m.from)}
@@ -289,33 +332,15 @@ function MirrorPage({
         </h2>
         {line && <p className="m-tagline">{line}</p>}
         <p className="m-summary">{summary(m, notMe)}</p>
-        <ol className="m-week-tiles" aria-hidden="true">
-          {weekTiles(today, m.from).map((t) => (
-            <li key={t.date} style={t.tint ? { background: t.tint } : undefined} />
-          ))}
-        </ol>
       </header>
       {sharing && shareName && (
         <ShareSheet content={{ eyebrow: `Week ${m.week} · My Sunday Mirror`, name: shareName, line: line || undefined }} onClose={() => setSharing(false)} />
-      )}
-
-      {m.lowMood && (
-        <div className="m-card m-support" role="note" aria-label="Support">
-          <p>
-            A few of your answers this week sounded heavy. If things feel hard, talking to someone you trust, or to a
-            helpline, can help.
-          </p>
-          <a href={helplineHere()} target="_blank" rel="noreferrer">
-            Find a helpline in your country
-          </a>
-        </div>
       )}
 
       {suggested && <IdentityCard key={`${m.from}-${suggested}`} week={m.from} suggested={suggested} />}
       <OneLine m={m} notMe={notMe} />
       <StatTiles m={m} />
       {sections}
-      <Footer onOpenKept={onOpenKept} />
     </>
   )
 }
@@ -1070,7 +1095,7 @@ function Footer({ onOpenKept }: { onOpenKept: () => void }) {
 
 // The month, quarter or year: this phone's weeks added up, set only against
 // its own earlier weeks and the period before.
-function PeriodPage({ p, onOpenKept }: { p: PeriodMirror; onOpenKept: () => void }) {
+function PeriodPage({ p }: { p: PeriodMirror }) {
   const noun = p.period
   const [notMe, setNotMe] = useState(() => notMeSides(p.date))
   const name = title(p.traits, notMe)
@@ -1091,16 +1116,13 @@ function PeriodPage({ p, onOpenKept }: { p: PeriodMirror; onOpenKept: () => void
       body: <Who leans={lean} date={p.date} span={noun} onVerdict={() => setNotMe(notMeSides(p.date))} />,
       show: lean.length > 0,
     },
-    { key: 'patterns', title: 'Patterns in your answers', body: <MirrorPatterns today={p.date} />, show: hasPatterns(p.date) },
     { key: 'lines', title: 'In your own words, week by week', body: <WeekLines lines={lines} />, show: lines.length > 0 },
-    { key: 'threads', title: 'Threads you kept going', body: <MirrorThreads from={p.from} to={p.to} span={noun} />, show: threadsBetween(p.from, p.to).length > 0 },
-    { key: 'connection', title: `Your ${noun} in connection`, body: <InConnection from={p.from} to={p.to} span={noun} />, show: showConnection(p.from, p.to) },
     { key: 'all', title: 'All of you', body: <AllOfYou themes={p.themes} />, show: p.themes.length > 0 },
     { key: 'steps', title: 'Your small steps', body: <PeriodSteps p={p} />, show: p.stats.stepsStarted > 0 },
   ]
   return (
     <>
-      <header className="m-hero">
+      <header className="m-hero m-hero-deeper">
         <p className="m-eyebrow">
           Your {adjOf(noun)} mirror · {periodName(noun, p.label)} ·{' '}
           <span className="m-nowrap">
@@ -1122,7 +1144,6 @@ function PeriodPage({ p, onOpenKept }: { p: PeriodMirror; onOpenKept: () => void
       <PeriodTiles p={p} />
       {numbered(parts)}
       <p className="m-text m-close">{PERIOD_CLOSE[noun]}</p>
-      <Footer onOpenKept={onOpenKept} />
     </>
   )
 }

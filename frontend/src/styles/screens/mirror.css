@@ -339,24 +339,29 @@
   background: var(--surface-3);
 }
 
+/* Depth reads as one ink at three strengths, lightest to darkest. */
+.sq.light {
+  background: color-mix(in srgb, var(--accent-ink) 30%, transparent);
+}
+
 .sq.deep {
-  background: var(--accent-ink);
+  background: color-mix(in srgb, var(--accent-ink) 65%, transparent);
 }
 
 .sq.deeper {
-  background: var(--on-lime);
+  background: var(--text);
+}
+
+.app.is-dark .sq.light {
+  background: color-mix(in srgb, var(--lime) 40%, transparent);
+}
+
+.app.is-dark .sq.deep {
+  background: color-mix(in srgb, var(--lime) 75%, transparent);
 }
 
 .app.is-dark .sq.deeper {
   background: #ffffff;
-}
-
-.app.is-dark .sq.light {
-  background: rgb(198 242 78 / 0.4);
-}
-
-.sq.light {
-  background: var(--lime);
 }
 
 .sq.private {
@@ -449,7 +454,7 @@
 }
 
 .m-scale-dot.circle {
-  background: var(--lime);
+  background: var(--amber);
 }
 
 .dot-key {
@@ -465,7 +470,7 @@
 }
 
 .dot-key.circle {
-  background: var(--lime);
+  background: var(--amber);
 }
 
 .m-trait-meta {

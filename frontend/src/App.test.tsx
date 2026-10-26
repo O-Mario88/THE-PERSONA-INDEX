@@ -182,6 +182,9 @@ const at = (hour: number, day = 12) => new Date(2026, 9, day, hour, 0)
 
 beforeEach(() => {
   localStorage.clear()
+  // Most of these tests read the Mirrors' every section, so they open on
+  // Explore deeper; 'the story Mirrors' tests read the Essential view.
+  localStorage.setItem('pi.mirror.depth', 'deep')
   // Every test but the welcome's own starts past the one-time welcome.
   localStorage.setItem('pi.welcomed', '1')
   vi.useFakeTimers({ toFake: ['Date'] })
@@ -1569,7 +1572,7 @@ describe('the weekly mirror', () => {
     await openMirror()
     const page = screen.getByRole('region', { name: 'Your weekly mirror' })
     await within(page).findByRole('heading', { level: 2, name: weekTitle })
-    expect(within(page).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual([
+    expect(within(within(page).getByRole('region', { name: 'Explore deeper' })).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual([
       '01 Where you leaned',
       '02 One line for your week',
       '03 Your week at a glance',
@@ -1658,7 +1661,7 @@ describe('the weekly mirror', () => {
     localStorage.setItem('pi.leaning.conscientiousness.high', JSON.stringify({ verdict: 'not_me', date: '2026-10-18' }))
     await openMirror()
     const page = screen.getByRole('region', { name: 'Your weekly mirror' })
-    const heading = await within(page).findByRole('heading', { level: 2 })
+    const heading = await within(await within(page).findByRole('region', { name: 'Explore deeper' })).findByRole('heading', { level: 2 })
     expect(heading).not.toHaveTextContent(weekTitle)
     expect(heading).not.toHaveTextContent('rest wait too long')
     const line = within(page).getByRole('figure', { name: 'One line from this week' })
@@ -1671,7 +1674,7 @@ describe('the weekly mirror', () => {
     const page = screen.getByRole('region', { name: 'Your weekly mirror' })
     expect(await within(page).findByText('This week is just getting started.')).toBeInTheDocument()
     expect(page).toHaveTextContent('Your mirror fills in as you answer.')
-    expect(within(page).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual([
+    expect(within(within(page).getByRole('region', { name: 'Explore deeper' })).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual([
       '01 Your week at a glance',
       '02 Your trait read',
       '03 Next week',
@@ -1704,7 +1707,7 @@ describe('the weekly mirror', () => {
     keep('q-b', { date: '2026-10-14', prompt: 'How do you show a partner affection?', theme: 'intimacy', private: true, words: 'Only for me' })
     keep('q-c', { date: '2026-10-05', prompt: 'Last week', words: 'Old words' })
     const fetchMock = await openMirror()
-    const section = await screen.findByRole('region', { name: /In your own words/ })
+    const section = await screen.findByRole('region', { name: /Answers in your own words/ })
     expect(section).toHaveTextContent('“Rent, then my mum.”')
     expect(section).toHaveTextContent('Closest to: Bills')
     expect(section).toHaveTextContent('A private answer, in your own words.')
@@ -1791,6 +1794,111 @@ describe('the weekly mirror', () => {
     await openMirror({ mirror: { status: 200, body: { ...mirror, lowMood: true } } })
     const note = await screen.findByRole('note', { name: 'Support' })
     expect(within(note).getByRole('link', { name: /Find a helpline/ })).toHaveAttribute('href', 'https://findahelpline.com')
+  })
+})
+
+// The story Mirrors (Edwin, 2026-10-26): the Essential view first, a story
+// built from the week's own answers, what helped, and one direction, with
+// everything else under Explore deeper.
+describe('the story Mirrors', () => {
+  const calmWeek = () =>
+    localStorage.setItem(
+      'pi.history.v1',
+      JSON.stringify({
+        answers: [
+          { date: '2026-10-13', questionId: 'q-a', theme: 'habits', depth: 2, traits: {}, optionId: 'a', need: 'calm' },
+          { date: '2026-10-15', questionId: 'q-b', theme: 'habits', depth: 2, traits: {}, optionId: 'a', need: 'calm' },
+        ],
+        skips: [],
+      }),
+    )
+
+  beforeEach(() => localStorage.removeItem('pi.mirror.depth'))
+
+  it('opens on the Sunday story, grounded in the week, with everything else one tap away', async () => {
+    calmWeek()
+    await openMirror()
+    const page = screen.getByRole('region', { name: 'Your weekly mirror' })
+    const headline = await within(page).findByRole('heading', { level: 2, name: /^A week of looking for calm/ })
+    const hero = headline.closest('header')!
+    expect(hero).toHaveTextContent('Your Sunday Mirror')
+    expect(hero).toHaveTextContent('This week, two of your answers, on two days, reached for feeling settled.')
+    expect(hero).toHaveTextContent('18 answers on five days')
+
+    // The week's need and its two clearest leanings, taking turns.
+    const revealed = within(page).getByRole('region', { name: 'Three things your answers revealed' })
+    expect(within(revealed).getAllByRole('heading', { level: 4 }).map((h) => h.textContent)).toEqual([
+      '1. Feeling settled has mattered to you',
+      '2. You finish what you start',
+      expect.stringMatching(/^3\. /),
+    ])
+    expect(revealed).toHaveTextContent('Strength worth appreciating')
+    expect(revealed).toHaveTextContent('Something to explore')
+    const why = within(revealed).getByRole('button', { name: /Seen in 2 answers/ })
+    fireEvent.click(why)
+    expect(revealed).toHaveTextContent('Why am I seeing this?')
+    fireEvent.click(within(revealed).getAllByRole('button', { name: 'Partly' })[0])
+    expect(JSON.parse(localStorage.getItem('pi.pattern.calm')!)).toMatchObject({ check: 'partly' })
+
+    // The Human Pulse is off until the person turns it on.
+    expect(within(page).getByRole('region', { name: 'You’re not alone' })).toHaveTextContent('Off unless you turn it on.')
+    // No old sections until Explore deeper, and no labels or scores up front.
+    expect(within(page).queryByRole('region', { name: 'Explore deeper' })).not.toBeInTheDocument()
+    expect(page).not.toHaveTextContent(crowdOrScore)
+    expect(page).not.toHaveTextContent('This week, you were')
+
+    fireEvent.click(within(page).getByRole('button', { name: 'Explore deeper' }))
+    expect(within(page).getByRole('region', { name: 'Explore deeper' })).toHaveTextContent('This week, you were')
+    expect(localStorage.getItem('pi.mirror.depth')).toBe('deep')
+  })
+
+  it('keeps one gentle direction as an intention, or puts it away', async () => {
+    calmWeek()
+    await openMirror()
+    const box = await screen.findByRole('region', { name: 'One gentle direction for next week' })
+    fireEvent.click(within(box).getByRole('button', { name: 'I’ll try this' }))
+    expect(box).toHaveTextContent('Kept as an intention.')
+    const kept = JSON.parse(localStorage.getItem('pi.nb.intention.mirror-week-2026-10-12')!)
+    expect(kept).toMatchObject({ kind: 'intention', date: '2026-10-18', checkOn: '2026-10-25' })
+    fireEvent.click(within(box).getByRole('button', { name: 'Change' }))
+    fireEvent.click(within(box).getByRole('button', { name: 'Not now' }))
+    expect(box).toHaveTextContent('Put away for now.')
+  })
+
+  it('brings back a line from Reflect only once the person lets it, and asks if it still matters', async () => {
+    localStorage.setItem(
+      'pi.nb.reflection.r1',
+      JSON.stringify({ kind: 'reflection', at: 1, id: 'r1', date: '2026-10-14', period: 'day', area: 'self', group: 'grow', source: 'answers', about: '', question: 'What would you like?', answer: 'I want to stop feeling guilty for taking time for myself. Rest is allowed.' }),
+    )
+    const fetchMock = await openMirror()
+    const words = await screen.findByRole('region', { name: 'In your own words' })
+    expect(words).not.toHaveTextContent('guilty')
+    fireEvent.click(within(words).getByRole('button', { name: 'Bring my words back' }))
+    expect(await within(words).findByText(/I want to stop feeling guilty for taking time for myself\./)).toBeInTheDocument()
+    expect(words).toHaveTextContent('Written on Wednesday')
+    fireEvent.click(within(words).getByRole('button', { name: 'Yes' }))
+    expect(words).toHaveTextContent('You said it still matters.')
+    for (const [u, init] of fetchMock.mock.calls) expect(String(u) + String(init?.body ?? '')).not.toContain('guilty')
+  })
+
+  it('tells the month as a story, and steps back to an earlier one', async () => {
+    const fetchMock = await openMirror({ period: { status: 200, body: month } })
+    fireEvent.click(screen.getByRole('button', { name: 'Monthly Mirror' }))
+    const page = await screen.findByRole('region', { name: 'Your monthly mirror' })
+    expect(await within(page).findByText(/Your month in perspective · October 2026/)).toBeInTheDocument()
+    expect(within(page).getByRole('region', { name: 'What changed since last month?' })).toHaveTextContent('Not enough on record yet')
+    expect(within(page).getByRole('region', { name: 'What worked for you' })).toHaveTextContent('This week, call one friend instead of texting.')
+    expect(screen.getByRole('button', { name: 'A later month' })).toBeDisabled()
+    fireEvent.click(screen.getByRole('button', { name: 'An earlier month' }))
+    await waitFor(() => expect(periodCalls(fetchMock).map(([u]) => u)).toContain('/api/mirror/month?date=2026-10-18&back=1'))
+  })
+
+  it('tells the year in four chapters, and leaves what is not on record blank', async () => {
+    await openMirror({ period: { status: 200, body: year } })
+    fireEvent.click(screen.getByRole('button', { name: 'Yearly Mirror' }))
+    const chapters = await screen.findByRole('region', { name: 'The chapters of your year' })
+    expect(within(chapters).getAllByRole('listitem')).toHaveLength(4)
+    expect(screen.getByRole('region', { name: 'Your yearly mirror' })).toHaveTextContent('What you’re proud of')
   })
 })
 
@@ -1930,11 +2038,11 @@ describe('the monthly, quarterly and yearly mirrors', () => {
   it("adds up this phone's weeks of the month, set only against its own past", async () => {
     const fetchMock = await openMirror({ period: { status: 200, body: month } })
     await within(screen.getByRole('region', { name: 'Your weekly mirror' })).findByRole('heading', { level: 2, name: weekTitle })
-    fireEvent.click(screen.getByRole('button', { name: 'Month' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Monthly Mirror' }))
     const page = screen.getByRole('region', { name: 'Your monthly mirror' })
     expect(await within(page).findByRole('heading', { level: 2, name: monthTitle })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Month' })).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.getByRole('button', { name: 'Week' })).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByRole('button', { name: 'Monthly Mirror' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'Weekly Mirror' })).toHaveAttribute('aria-pressed', 'false')
 
     const [url, init] = periodCalls(fetchMock)[0]
     expect(url).toBe('/api/mirror/month?date=2026-10-18')
@@ -1951,7 +2059,7 @@ describe('the monthly, quarterly and yearly mirrors', () => {
     expect(tiles).toHaveTextContent('Answers271 kept private')
     expect(tiles).toHaveTextContent('Small steps kept3 of 42 helped')
 
-    expect(within(page).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual([
+    expect(within(within(page).getByRole('region', { name: 'Explore deeper' })).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual([
       '01 Week by week',
       '02 Your trait read',
       "03 How you've moved",
@@ -1990,7 +2098,7 @@ describe('the monthly, quarterly and yearly mirrors', () => {
 
   it('marks weeks with nothing on record, and keeps a quiet year quiet', async () => {
     await openMirror({ period: { status: 200, body: year } })
-    fireEvent.click(await screen.findByRole('button', { name: 'Year' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Yearly Mirror' }))
     const page = screen.getByRole('region', { name: 'Your yearly mirror' })
     expect(await within(page).findByText('This year is just getting started.')).toBeInTheDocument()
     expect(page).toHaveTextContent('Your yearly mirror · 2026 · Week 42 of 53')
@@ -1999,7 +2107,7 @@ describe('the monthly, quarterly and yearly mirrors', () => {
     expect(within(page).getByRole('listitem', { name: /^Week 40:/ })).toHaveAccessibleName('Week 40: 0 of 6 days, 0 answers')
     expect(page).toHaveTextContent('Each bar is a week, from week 1 to week 42. A full bar is all six question days. 11 weeks still to come.')
     expect(page).toHaveTextContent('No answers yet this year.')
-    expect(within(page).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual([
+    expect(within(within(page).getByRole('region', { name: 'Explore deeper' })).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual([
       '01 Week by week',
       '02 Your trait read',
     ])
@@ -2013,13 +2121,13 @@ describe('the monthly, quarterly and yearly mirrors', () => {
         { status: 200, body: month },
       ],
     })
-    fireEvent.click(await screen.findByRole('button', { name: 'Quarter' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Quarterly Mirror' }))
     expect(await screen.findByText("I couldn't load your mirror just now.")).toBeInTheDocument()
     expect(periodCalls(fetchMock)[0][0]).toBe('/api/mirror/quarter?date=2026-10-18')
     fireEvent.click(screen.getByRole('button', { name: 'Try again' }))
     expect(await screen.findByRole('heading', { level: 2, name: monthTitle })).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Week' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Weekly Mirror' }))
     const week = screen.getByRole('region', { name: 'Your weekly mirror' })
     expect(await within(week).findByRole('heading', { level: 2, name: weekTitle })).toBeInTheDocument()
     expect(mirrorCalls(fetchMock)).toHaveLength(2)
@@ -2576,7 +2684,7 @@ describe('the app remembers you', () => {
     await openMirror()
     const page = screen.getByRole('region', { name: 'Your weekly mirror' })
     await within(page).findByRole('heading', { level: 2, name: weekTitle })
-    const headings = within(page).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)
+    const headings = within(within(page).getByRole('region', { name: 'Explore deeper' })).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)
     expect(headings.some((h) => /^\d\d What changed$/.test(h ?? ''))).toBe(true)
     expect(headings.some((h) => /^\d\d What you're working on$/.test(h ?? ''))).toBe(true)
 
