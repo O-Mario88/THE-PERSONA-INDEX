@@ -1069,3 +1069,128 @@
     font-size: var(--fs-small);
   }
 }
+
+/* ---------- Flat pages (Edwin, 2026-10-26 13:35) ----------
+   Everything sits on the page background: no white boxes, no lift. A
+   section starts with a hairline above it. Only a few highlights keep a
+   tinted box: the open window on Today, "A thought for you", "Something
+   you could try" and "Why invite". */
+.card:not(.soft):not(.hero-card),
+.connect-card,
+.reflect-card,
+.reflect-card.is-reminder,
+.reflect-card.is-consider,
+.noticed-card,
+.noticed-card.is-empty,
+.insight-card,
+.closer-card,
+.tapestry-card,
+.since,
+.read-offer,
+.reflect-choices,
+.growth-pair,
+.m-card,
+.m-section,
+.nb-entry,
+.thread,
+.moves,
+.good,
+.account .group,
+.account .col > .group,
+.settings .notice,
+.kept .notice,
+.account .notice,
+fieldset.notice,
+.insights-layout > section.insights-not-alone,
+.insights-layout > section.insights-saved,
+.insights-layout > section.insights-helped,
+.insights-layout > section.insights-growth,
+.connect-nudge {
+  padding-right: 0;
+  padding-left: 0;
+  padding-bottom: 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* Things inside a section lose their own boxes too. */
+.stat-tile,
+.growing .stat-tile,
+.insight-needs,
+.insight-other,
+.your-circle .rings,
+.your-circle .rings.card:not(.soft) {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.insight-other {
+  color: var(--text-2);
+}
+
+/* The noticed grid: the hairline over each area is enough. */
+.noticed-card {
+  padding-top: var(--s-4);
+}
+
+.noticed-card .text-button {
+  right: 0;
+}
+
+/* Insight cards follow each other, so the reading gets room. */
+.insight-card {
+  padding-top: var(--s-6);
+}
+
+.insights-for-you > .section-title + .insight-card {
+  border-top: 0;
+  padding-top: var(--s-2);
+}
+
+/* The sides of a reflection keep their discs, now on the page. */
+.reflect-card.is-reminder > .disc,
+.reflect-card.is-consider > .disc {
+  border-radius: 50%;
+}
+
+.reflect-card.is-reminder > .disc {
+  background: var(--amber-wash);
+}
+
+.reflect-card.is-consider > .disc {
+  background: var(--rose-wash);
+}
+
+/* The few highlights that keep a box. */
+.hero-card {
+  box-shadow: var(--shadow-card);
+}
+
+.reflect-write,
+.insight-try,
+.invite-why {
+  border-radius: var(--r-lg);
+}
+
+@media (min-width: 900px) {
+  .connect-grid,
+  .insights-layout {
+    column-gap: var(--s-8);
+    row-gap: var(--s-6);
+  }
+}
+
+/* Empty notes are words on the page, not grey boxes. */
+.insights .empty-note,
+.growing .notice {
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted);
+}
