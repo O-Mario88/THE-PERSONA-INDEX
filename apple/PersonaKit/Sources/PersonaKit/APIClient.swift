@@ -53,6 +53,18 @@ public actor APIClient {
 
     struct Empty: Decodable {}
 
+    /// A request whose body is bytes, not JSON (the encrypted backup).
+    func raw(_ path: String, method: String, headers: [String: String] = [:], body: Data? = nil) async throws -> (status: Int, data: Data, etag: String?) {
+        var req = URLRequest(url: base.appending(path: path))
+        req.httpMethod = method
+        req.httpBody = body
+        for (k, v) in headers { req.setValue(v, forHTTPHeaderField: k) }
+        if body != nil { req.setValue("application/octet-stream", forHTTPHeaderField: "Content-Type") }
+        let (data, response) = try await session.data(for: req)
+        let http = response as? HTTPURLResponse
+        return (http?.statusCode ?? 0, data, http?.value(forHTTPHeaderField: "ETag"))
+    }
+
     func request<T: Decodable>(_ path: String, method: String = "GET", query: [String: String] = [:], headers: [String: String] = [:], body: Data? = nil, allowEmpty: Bool = false) async throws -> T {
         var url = base.appending(path: path)
         if !query.isEmpty { url.append(queryItems: query.map { URLQueryItem(name: $0.key, value: $0.value) }) }

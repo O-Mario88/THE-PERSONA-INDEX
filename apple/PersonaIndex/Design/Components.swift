@@ -41,6 +41,7 @@ extension View {
 /// The lime primary action, dark ink, full weight.
 struct PrimaryButtonStyle: ButtonStyle {
     var wide = true
+    @Environment(\.isEnabled) private var isEnabled
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
@@ -49,6 +50,7 @@ struct PrimaryButtonStyle: ButtonStyle {
             .frame(maxWidth: wide ? .infinity : nil, minHeight: wide ? 56 : 44)
             .padding(.horizontal, wide ? 0 : Space.s5)
             .background(configuration.isPressed ? Palette.limeStrong : Palette.lime, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+            .opacity(isEnabled ? 1 : 0.45)
             .scaleEffect(configuration.isPressed ? 0.98 : 1)
             .animation(.easeOut(duration: 0.14), value: configuration.isPressed)
     }

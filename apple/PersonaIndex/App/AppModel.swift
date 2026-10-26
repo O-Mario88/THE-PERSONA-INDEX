@@ -35,6 +35,10 @@ final class AppModel {
     let connect: ConnectModel
     /// Reflect: the writing, kept on the device.
     let reflect: ReflectModel
+    /// The encrypted backup and easy sync.
+    let backup: BackupModel
+    /// Face ID, Touch ID or Optic ID before the app opens.
+    let lock: AppLock
 
     enum Keys {
         static let welcomed = "pi.welcomed"
@@ -44,11 +48,13 @@ final class AppModel {
         static let pulse = "pi.pulse"
     }
 
-    init(api: APIClient, defaults: KeyValueStore) {
+    init(api: APIClient, defaults: KeyValueStore, secrets: KeyValueStore) {
         self.api = api
         self.defaults = defaults
         self.connect = ConnectModel(api: api, defaults: defaults)
         self.reflect = ReflectModel(defaults: defaults)
+        self.backup = BackupModel(vault: Vault(api: api, defaults: defaults, secrets: secrets))
+        self.lock = AppLock(defaults: defaults)
         self.welcomed = defaults.string(forKey: Keys.welcomed) == "1"
         self.name = defaults.string(forKey: Keys.name) ?? ""
         self.pulse = defaults.string(forKey: Keys.pulse) == "1"
@@ -58,7 +64,8 @@ final class AppModel {
         let base = (Bundle.main.object(forInfoDictionaryKey: "PIApiBase") as? String).flatMap(URL.init(string:))
             ?? URL(string: "http://localhost:8080")!
         let defaults = DefaultsStore()
-        return AppModel(api: APIClient(base: base, store: KeychainStore(), voteStore: defaults), defaults: defaults)
+        let secrets = KeychainStore()
+        return AppModel(api: APIClient(base: base, store: secrets, voteStore: defaults), defaults: defaults, secrets: secrets)
     }
 
     // MARK: The day
@@ -127,6 +134,7 @@ final class AppModel {
 
     func loadConnect() async {
         signedIn = await api.isSignedIn
+        await backup.refresh(signedIn: signedIn)
         rings = ringStore.all()
         growing = try? await api.growing(date)
         guard signedIn else { circle = nil; return }
@@ -149,6 +157,7 @@ final class AppModel {
         let device = "Mac"
         #endif
         let me = try await api.verifyCode(address: address, code: code, device: device)
+        if await backup.afterSignIn(sync: me.sync ?? false) == .restored { await reloadAfterRestore() }
         if name.isEmpty { name = me.name }
         await loadConnect()
     }
@@ -192,6 +201,18 @@ final class AppModel {
 
     /// After a "Not me" reply has been read, the card leaves For You.
     func refreshInsights() { insightsVersion += 1 }
+
+
+    /// After a restore: everything on screen reads again from the device.
+    func reloadAfterRestore() async {
+        welcomed = true
+        name = defaults.string(forKey: Keys.name) ?? name
+        rings = ringStore.all()
+        reflect.load()
+        pulse = defaults.string(forKey: Keys.pulse) == "1"
+        insightsVersion += 1
+        await refresh()
+    }
 
     // MARK: The mirror
 

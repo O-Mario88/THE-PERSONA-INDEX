@@ -63,11 +63,32 @@ struct SectionView: View {
         case .today: TodayView()
         case .reflect: ReflectView()
         case .connect: ConnectView()
-        case .insights: InsightsView()
-        case .mirrors: LaterView(title: "Mirrors", lead: "Your month, quarter and year, looked back on.", arrives: "The longer Mirrors arrive in a later build. Your week is in Insights.")
+        case .insights:
+            #if os(iOS)
+            // On iPhone, the Mirrors, Saved and Reflect open on top of Insights, with Back.
+            NavigationStack { InsightsView().toolbar(.hidden, for: .navigationBar) }
+            #else
+            InsightsView()
+            #endif
+        case .mirrors: MirrorsView()
         case .saved: LaterView(title: "Saved", lead: "Cards you kept, your plans and your notebook.", arrives: "Saved arrives in a later build.")
-        case .profile: LaterView(title: "You", lead: "Your profile, choices and what this device keeps.", arrives: "Your profile and settings arrive in a later build.")
-        case .settings: LaterView(title: "Settings", lead: "Backup, lock, reminders and what you share.", arrives: "Settings arrive in a later build.")
+        case .profile:
+            #if os(iOS)
+            // On iPhone, Settings lives under You.
+            NavigationStack {
+                LaterView(title: "You", lead: "Your profile, choices and what this device keeps.", arrives: "Your profile arrives in a later build.") {
+                    NavigationLink { SettingsView() } label: {
+                        Label("Settings: backup, Human Pulse and app lock", systemImage: "gearshape").font(.pH3)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .card(padding: Space.s4)
+                }
+                .toolbar(.hidden, for: .navigationBar)
+            }
+            #else
+            LaterView(title: "You", lead: "Your profile, choices and what this device keeps.", arrives: "Your profile arrives in a later build.")
+            #endif
+        case .settings: SettingsView()
         }
     }
 }
@@ -121,10 +142,11 @@ private struct DesktopShell: View {
 #endif
 
 /// A section whose screen comes in a later build: says so plainly.
-struct LaterView: View {
+struct LaterView<Extra: View>: View {
     let title: String
     let lead: String
     let arrives: String
+    @ViewBuilder var extra: Extra
 
     var body: some View {
         ScrollView {
@@ -133,11 +155,18 @@ struct LaterView: View {
                 Text(title).font(.pHero)
                 Text(lead).font(.figtree(17)).foregroundStyle(Palette.muted)
                 Text(arrives).font(.pSmall).foregroundStyle(Palette.text2).card(fill: Palette.surface2, stroke: .clear)
+                extra
             }
             .padding(Space.gutter)
             .frame(maxWidth: 640, alignment: .leading)
             .frame(maxWidth: .infinity)
         }
         .background(Palette.bg)
+    }
+}
+
+extension LaterView where Extra == EmptyView {
+    init(title: String, lead: String, arrives: String) {
+        self.init(title: title, lead: lead, arrives: arrives) { EmptyView() }
     }
 }
