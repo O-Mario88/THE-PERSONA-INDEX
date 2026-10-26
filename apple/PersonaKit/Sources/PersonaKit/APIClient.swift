@@ -204,6 +204,23 @@ public actor APIClient {
 
     /// Starts the small step on an answered card, or says how it went.
     /// `needStep`: the person chose the step serving what the answer reached for.
+    /// What Helped: how a saved step went, sent only when the person taps an
+    /// answer, with nothing but the step's answer and the outcome.
+    public func reportStep(questionId: String, optionId: String, outcome: HelpedOutcome, date: String) async throws {
+        struct Saved: Decodable { let status: String }
+        let _: Saved = try await withDevice { voter in
+            let body = ["questionId": questionId, "optionId": optionId, "outcome": outcome.rawValue, "date": date, "voterId": voter]
+            return try await request("/api/what-helped", method: "POST", body: try JSONEncoder().encode(body))
+        }
+    }
+
+    /// The What Helped totals, the same for everyone: no pass is sent.
+    public func whatHelped() async throws -> [WhatHelpedStep] {
+        struct Totals: Decodable { let steps: [WhatHelpedStep] }
+        let t: Totals = try await request("/api/what-helped")
+        return t.steps
+    }
+
     public func saveStep(questionId: String, optionId: String, status: StepStatus, date: String, needStep: Bool = false) async throws {
         struct Saved: Decodable { let status: String }
         struct Body: Encodable {

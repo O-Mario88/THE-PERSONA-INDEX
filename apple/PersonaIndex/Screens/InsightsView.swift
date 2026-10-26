@@ -4,7 +4,9 @@ import SwiftUI
 /// Insights (Edwin, 2026-10-25), as on the web: its own page, with the
 /// Mirrors one tap away. For You is the person's own answers; You're not
 /// alone is the server's real counts, only once the Human Pulse is on;
-/// What Helped and Your Growth fill in later and say so. On a Mac the
+/// What Helped asks how a saved step went and shows what others who reported
+/// back found (Insights/HelpedSection.swift); Your Growth fills in later and
+/// says so. On a Mac the
 /// reading has the centre and the counts and saved cards sit beside it.
 struct InsightsView: View {
     @Environment(AppModel.self) private var model
@@ -65,9 +67,7 @@ struct InsightsView: View {
         .background(Palette.bg)
     }
 
-    private var helped: some View {
-        EmptySection(title: "What Helped", line: "This fills in as you and others report back on the small steps you try.")
-    }
+    private var helped: some View { HelpedSection() }
 
     private var growth: some View {
         EmptySection(title: "Your Growth", line: "This fills in over the weeks, from your own earlier and recent answers.")

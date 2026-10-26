@@ -278,6 +278,28 @@ final class AppModel {
         try? await api.notAlone(date).questions
     }
 
+    // MARK: What Helped
+
+    /// The steps saved from Insights and what this phone said about them.
+    var stepReports: StepReports { StepReports(store: defaults) }
+
+    /// Sends how a saved step went; remembered only once the server has it.
+    /// False when it did not go through, and then nothing was counted.
+    func report(_ step: SavedStep, _ outcome: HelpedOutcome) async -> Bool {
+        do {
+            try await api.reportStep(questionId: step.questionId, optionId: step.optionId, outcome: outcome, date: date)
+        } catch {
+            return false
+        }
+        stepReports.remember(questionId: step.questionId, optionId: step.optionId, outcome)
+        return true
+    }
+
+    /// The totals, the same for everyone; nil when they cannot be reached.
+    func whatHelpedTotals() async -> [WhatHelpedStep]? {
+        try? await api.whatHelped()
+    }
+
     /// The tap under a card: kept with the answer, and sent as a count.
     func rate(_ card: ForYouCard, _ verdict: Verdict) {
         AnswerHistory(store: defaults).setVerdict(verdict, for: card.questionId)
