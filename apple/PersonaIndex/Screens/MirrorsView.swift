@@ -1,11 +1,12 @@
 import PersonaKit
 import SwiftUI
 
-/// Insights: the weekly mirror. The week's line from the clearest read (a
-/// leaning, never a type), the week in numbers, the week at a glance, the
-/// traits on a 0-100 line set only against this phone's own past, and the
-/// small steps. Each part shows only when there is something real in it.
-struct InsightsView: View {
+/// Mirrors: the weekly mirror, one tap from Insights. The week's line from
+/// the clearest read (a leaning, never a type), the week in numbers, the
+/// week at a glance, each trait's leaning on its line (never a score), set
+/// only against this phone's own past, and the small steps. Each part shows
+/// only when there is something real in it.
+struct MirrorsView: View {
     @Environment(AppModel.self) private var model
     @State private var state: LoadState = .loading
 
@@ -153,12 +154,8 @@ private struct MirrorPage: View {
             ForEach(m.traits, id: \.trait) { read in
                 if let trait = Traits.all[read.trait] {
                     VStack(alignment: .leading, spacing: Space.s2) {
-                        HStack {
-                            Text(trait.name).font(.figtree(16, .heavy))
-                            Spacer()
-                            Text("\(Int(read.score.rounded()))").font(.figtree(16, .bold)).monospacedDigit()
-                        }
-                        ScaleLine(score: read.score)
+                        Text(trait.name).font(.figtree(16, .heavy))
+                        ScaleLine(score: read.score, leaning: read.score >= 50 ? trait.high.lean : trait.low.lean)
                         HStack {
                             Text(trait.low.lean)
                             Spacer()
@@ -298,9 +295,11 @@ private struct Legend: View {
     }
 }
 
-/// A 0-100 line with the middle marked and a dot where the answers sit.
+/// A line with the middle marked and a dot where the answers sit. No
+/// number: it is a leaning, not a score (Edwin, 2026-10-25).
 private struct ScaleLine: View {
     let score: Double
+    let leaning: String
 
     var body: some View {
         GeometryReader { geo in
@@ -316,7 +315,7 @@ private struct ScaleLine: View {
             .frame(maxHeight: .infinity)
         }
         .frame(height: 18)
-        .accessibilityLabel("\(Int(score.rounded())) out of 100")
+        .accessibilityLabel("Leans towards \(leaning.lowercased())")
     }
 }
 
