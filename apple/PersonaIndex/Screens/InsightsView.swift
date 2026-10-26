@@ -1,368 +1,322 @@
 import PersonaKit
 import SwiftUI
 
-/// Insights: the weekly mirror. The week's line from the clearest read (a
-/// leaning, never a type), the week in numbers, the week at a glance, the
-/// traits on a 0-100 line set only against this phone's own past, and the
-/// small steps. Each part shows only when there is something real in it.
+/// Insights (Edwin, 2026-10-25), as on the web: its own page, with the
+/// Mirrors one tap away. For You is the person's own answers; You're not
+/// alone is the server's real counts, only once the Human Pulse is on;
+/// What Helped and Your Growth fill in later and say so. On a Mac the
+/// reading has the centre and the counts and saved cards sit beside it.
 struct InsightsView: View {
     @Environment(AppModel.self) private var model
-    @State private var state: LoadState = .loading
+    @State private var month = false
 
-    enum LoadState {
-        case loading, failed, ready(WeekMirror)
-    }
+    private static let week = 7
+    private static let monthDays = 30
+    private static let forYouMax = 6
 
     var body: some View {
+        let all = model.insightCards(days: month ? Self.monthDays : Self.week)
+        let cards = month ? all : Array(all.prefix(Self.forYouMax))
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: Space.s5) {
-                switch state {
-                case .loading:
-                    Text("Putting your week together…").foregroundStyle(Palette.muted).padding(.vertical, Space.s8)
-                case .failed:
-                    VStack(alignment: .leading, spacing: Space.s3) {
-                        Text("I couldn't load your mirror just now.")
-                        Button("Try again") { Task { await load() } }.buttonStyle(PrimaryButtonStyle(wide: false))
-                    }
-                    .card(fill: Palette.surface2, stroke: .clear)
-                case .ready(let m):
-                    MirrorPage(m: m, connection: connection(m))
+            VStack(alignment: .leading, spacing: Space.s5) {
+                VStack(alignment: .leading, spacing: Space.s2) {
+                    Text("Your Insights").font(.pHero).accessibilityAddTraits(.isHeader)
+                    Text("Understand yourself. Discover you’re not alone. Find what helps.")
+                        .font(.figtree(17)).foregroundStyle(Palette.muted)
                 }
+                .padding(.top, Space.s2)
+
+                HStack {
+                    Button("Last 30 days") { month.toggle() }
+                        .buttonStyle(ChipStyle(on: month))
+                        .accessibilityAddTraits(month ? .isSelected : [])
+                    Spacer()
+                    GoLink(title: "Your Mirrors →", section: .mirrors) { MirrorsView() }
+                }
+
+                #if os(macOS)
+                HStack(alignment: .top, spacing: Space.s5) {
+                    VStack(alignment: .leading, spacing: Space.s6) {
+                        ForYouSection(cards: cards, month: month)
+                        helped
+                        growth
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    VStack(alignment: .leading, spacing: Space.s5) {
+                        NotAloneSection(cards: all)
+                        SavedSection()
+                    }
+                    .frame(width: 320)
+                }
+                #else
+                VStack(alignment: .leading, spacing: Space.s6) {
+                    ForYouSection(cards: cards, month: month)
+                    NotAloneSection(cards: all)
+                    helped
+                    growth
+                    SavedSection()
+                }
+                #endif
             }
             .padding(Space.gutter)
-            .frame(maxWidth: 720, alignment: .leading)
+            .frame(maxWidth: 1240, alignment: .leading)
             .frame(maxWidth: .infinity)
         }
         .background(Palette.bg)
-        .task { await load() }
-        .refreshable { await load() }
     }
 
-    /// "Your week in connection": the person's own moves, from this device.
-    /// Shown once signed in, or once there is a move to show.
-    private func connection(_ m: WeekMirror) -> ConnectionCounts? {
-        let c = model.connect.log.between(m.from, m.to)
-        return model.signedIn || c.total > 0 ? c : nil
+    private var helped: some View {
+        EmptySection(title: "What Helped", line: "This fills in as you and others report back on the small steps you try.")
     }
 
-    private func load() async {
-        do {
-            state = .ready(try await model.weekMirror())
-        } catch {
-            state = .failed
-        }
+    private var growth: some View {
+        EmptySection(title: "Your Growth", line: "This fills in over the weeks, from your own earlier and recent answers.")
     }
 }
 
-private struct MirrorPage: View {
-    let m: WeekMirror
-    let connection: ConnectionCounts?
-
-    /// The clearest read, and which end it leans to.
-    private var top: (read: WeekMirror.TraitRead, side: Traits.Side)? {
-        let earned = m.traits.filter { $0.level != .hint && Traits.all[$0.trait] != nil }
-        guard let read = earned.max(by: { abs($0.score - 50) < abs($1.score - 50) }), let trait = Traits.all[read.trait] else { return nil }
-        return (read, read.score >= 50 ? trait.high : trait.low)
-    }
+/// A way to another place: on a Mac the sidebar moves there; on iPhone the
+/// place opens on top of Insights, with Back.
+private struct GoLink<Destination: View>: View {
+    let title: String
+    let section: AppSection
+    @ViewBuilder let destination: () -> Destination
+    @Environment(AppModel.self) private var model
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Space.s5) {
-            header
-            if m.lowMood { support }
-            tiles
-            glance
-            if !m.traits.isEmpty { traits }
-            if !m.steps.isEmpty { steps }
-            if let connection { inConnection(connection) }
-            if !m.comingUp.isEmpty { comingUp }
-            Text("Nothing on this page is fixed. It's a mirror of one week, and next week you get to answer again. For self-reflection, not a diagnosis.")
-                .font(.pSmall).foregroundStyle(Palette.muted)
-        }
+        #if os(macOS)
+        Button(title) { model.section = section }
+            .buttonStyle(.plain)
+            .font(.figtree(15, .bold)).foregroundStyle(Palette.accentInk)
+        #else
+        NavigationLink(title, destination: destination)
+            .font(.figtree(15, .bold)).foregroundStyle(Palette.accentInk)
+        #endif
     }
+}
 
-    private var header: some View {
+private struct EmptySection: View {
+    let title: String
+    let line: String
+
+    var body: some View {
         VStack(alignment: .leading, spacing: Space.s3) {
-            Text("Week \(m.week) · \(range)".uppercased()).font(.pLabel).tracking(2).foregroundStyle(Palette.muted)
-            if let top {
-                Text("This week, you leaned towards \(top.side.lean).").font(.figtree(36, .heavy, relativeTo: .largeTitle))
-                Text(top.side.headline).font(.figtree(18, .bold)).foregroundStyle(Palette.text2)
-            } else {
-                Text("This week is just getting started.").font(.figtree(36, .heavy, relativeTo: .largeTitle))
-                Text("Your mirror fills in as you answer. A few days of questions is enough for the first patterns to show.")
-                    .foregroundStyle(Palette.muted)
-            }
-        }
-        .fixedSize(horizontal: false, vertical: true)
-    }
-
-    private var support: some View {
-        VStack(alignment: .leading, spacing: Space.s2) {
-            Text("A few of your answers this week sounded heavy. If things feel hard, talking to someone you trust, or to a helpline, can help.")
-            Link("Find a helpline", destination: URL(string: "https://findahelpline.com")!).font(.figtree(16, .bold))
-        }
-        .card(stroke: Palette.lineStrong)
-    }
-
-    private var tiles: some View {
-        let s = m.stats
-        let items: [(String, String, String)] = [
-            ("Days active", "\(s.daysActive) of \(s.daysSoFar)", s.daysActiveLastWeek > 0 ? "\(s.daysActiveLastWeek) last week" : "Your first week here"),
-            ("Answers", "\(s.answers)", s.private > 0 ? "\(s.private) kept private" : "this week"),
-            ("That's me", s.rated > 0 ? "\(s.me) of \(s.rated)" : "–", s.rated > 0 ? "cards you judged" : "Tap “That's me” on a card that fits"),
-            ("Small steps", s.stepsStarted > 0 ? "\(s.stepsHelped) of \(s.stepsStarted)" : "–", s.stepsStarted > 0 ? "helped" : "Pick one with “I'll try it”"),
-        ]
-        return LazyVGrid(columns: [GridItem(.flexible(), spacing: Space.s3), GridItem(.flexible())], spacing: Space.s3) {
-            ForEach(items, id: \.0) { item in
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(item.0).font(.figtree(14, .semibold)).foregroundStyle(Palette.muted)
-                    Text(item.1).font(.figtree(28, .heavy))
-                    Text(item.2).font(.figtree(12)).foregroundStyle(Palette.muted).lineLimit(2)
-                }
-                .frame(maxWidth: .infinity, minHeight: 92, alignment: .topLeading)
-                .card(padding: Space.s4)
-            }
-        }
-    }
-
-    private var glance: some View {
-        Section(number: 1, title: "Your week at a glance") {
-            HStack(spacing: 6) {
-                ForEach(m.days, id: \.date) { day in
-                    VStack(spacing: Space.s2) {
-                        Text(weekday(day.date)).font(.figtree(12, .heavy))
-                        FlowSquares(answers: day.answers)
-                            .frame(minHeight: 16)
-                        Text(day.edition > 0 ? "#\(day.edition)" : "Review").font(.figtree(10)).foregroundStyle(Palette.muted)
-                    }
-                    .padding(.vertical, Space.s3)
-                    .frame(maxWidth: .infinity)
-                    .overlay(RoundedRectangle(cornerRadius: Radius.md).strokeBorder(Palette.line))
-                }
-            }
-            HStack(spacing: Space.s4) {
-                Legend(color: Palette.accentInk, label: "Deep")
-                Legend(color: Palette.onLime, label: "Deeper")
-                Legend(color: Palette.lime, label: "Light")
-            }
-            .font(.figtree(12)).foregroundStyle(Palette.muted)
-        }
-    }
-
-    private var traits: some View {
-        Section(number: 2, title: "Your trait read") {
-            ForEach(m.traits, id: \.trait) { read in
-                if let trait = Traits.all[read.trait] {
-                    VStack(alignment: .leading, spacing: Space.s2) {
-                        HStack {
-                            Text(trait.name).font(.figtree(16, .heavy))
-                            Spacer()
-                            Text("\(Int(read.score.rounded()))").font(.figtree(16, .bold)).monospacedDigit()
-                        }
-                        ScaleLine(score: read.score)
-                        HStack {
-                            Text(trait.low.lean)
-                            Spacer()
-                            Text(trait.high.lean)
-                        }
-                        .font(.figtree(11)).foregroundStyle(Palette.muted)
-                        Text(read.levelLine).font(.figtree(12)).foregroundStyle(Palette.muted)
-                    }
-                    .padding(.vertical, Space.s1)
-                }
-            }
-            Text("0 to 100: where your answers sit between each question's two ends, with 50 in the middle. It compares you only with yourself, week to week.")
-                .font(.pSmall).foregroundStyle(Palette.muted)
-        }
-    }
-
-    private var steps: some View {
-        Section(number: 3, title: "Your small steps") {
-            ForEach(m.steps, id: \.step) { step in
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(Themes.style(step.theme).name.uppercased()).font(.figtree(11, .bold)).tracking(1.4).foregroundStyle(Palette.muted)
-                    Text(step.step).font(.figtree(16, .semibold))
-                    Text(statusWords(step.status)).font(.figtree(13, .bold)).foregroundStyle(Palette.accentInk)
-                }
+            Text(title).font(.pH2).accessibilityAddTraits(.isHeader)
+            Text(line).foregroundStyle(Palette.text2)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.vertical, Space.s2)
-            }
-        }
-    }
-
-    private func inConnection(_ c: ConnectionCounts) -> some View {
-        Section(number: m.steps.isEmpty ? 3 : 4, title: "Your week in connection") {
-            Text(ConnectionLog.line(c, span: "week")).font(.figtree(17, .semibold))
-            Text("Only what you did, kept on this device. Never who, and never sent.").font(.pSmall).foregroundStyle(Palette.muted)
-        }
-    }
-
-    private var comingUp: some View {
-        Section(number: (m.steps.isEmpty ? 3 : 4) + (connection == nil ? 0 : 1), title: "Next week") {
-            FlowChips(themes: m.comingUp)
-        }
-    }
-
-    // MARK: Helpers
-
-    private var range: String { "\(dayMonth(m.from)) to \(dayMonth(m.to))" }
-
-    private func date(_ iso: String) -> Date? {
-        let f = DateFormatter()
-        f.dateFormat = "yyyy-MM-dd"
-        f.timeZone = TimeZone(identifier: "UTC")
-        return f.date(from: iso)
-    }
-
-    private func dayMonth(_ iso: String) -> String {
-        guard let d = date(iso) else { return iso }
-        return d.formatted(.dateTime.day().month(.wide).locale(Locale(identifier: "en_GB")))
-    }
-
-    private func weekday(_ iso: String) -> String {
-        guard let d = date(iso) else { return "" }
-        var cal = Calendar(identifier: .gregorian)
-        cal.timeZone = TimeZone(identifier: "UTC")!
-        return cal.shortWeekdaySymbols[cal.component(.weekday, from: d) - 1]
-    }
-
-    private func statusWords(_ status: String) -> String {
-        switch status {
-        case "helped": "It helped"
-        case "no_change": "No change yet"
-        case "not_tried": "Not tried yet"
-        default: "Started"
+                .card(fill: Palette.surface2, stroke: .clear)
         }
     }
 }
 
-/// A numbered section card: the lime number, the title, then its body.
-private struct Section<Content: View>: View {
-    let number: Int
-    let title: String
-    @ViewBuilder let content: Content
+private struct ForYouSection: View {
+    let cards: [ForYouCard]
+    let month: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.s4) {
-            HStack(spacing: Space.s3) {
-                Text(String(format: "%02d", number))
-                    .font(.figtree(12, .heavy))
-                    .foregroundStyle(Palette.onLime)
-                    .frame(width: 32, height: 32)
-                    .background(Palette.lime, in: Circle())
-                Text(title).font(.pH2)
+            Text("For You").font(.pH2).accessibilityAddTraits(.isHeader)
+            if cards.isEmpty {
+                Text(month ? "Nothing from the last 30 days yet. Your cards show here as you answer."
+                           : "Answer a few questions and what they may say about you shows here, card by card.")
+                    .foregroundStyle(Palette.text2)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .card(fill: Palette.surface2, stroke: .clear)
+            } else {
+                ForEach(cards) { InsightCardView(card: $0) }
             }
-            content
         }
-        .card()
     }
 }
 
-/// A day's answers as small squares, by depth.
-private struct FlowSquares: View {
-    let answers: [WeekMirror.DayAnswers.Answer]
+/// One card: how sure it is, the reading, what may matter here, the other
+/// side, a small step to keep as an intention, and whether it is them.
+private struct InsightCardView: View {
+    let card: ForYouCard
+    @Environment(AppModel.self) private var model
 
     var body: some View {
-        if answers.isEmpty {
-            Circle().strokeBorder(Palette.lineStrong, lineWidth: 1.5).frame(width: 12, height: 12)
+        let t = card.text
+        VStack(alignment: .leading, spacing: Space.s3) {
+            Eyebrow(text: Insights.label(card.evidence, date: t.date, today: model.date), color: Palette.accentInk)
+            (Text(t.prompt + " ").font(.pSmall) + Text("You chose “\(t.label)”.").font(.pSmall).foregroundStyle(Palette.muted))
+            if t.heavy == true {
+                HeavyNote()
+            } else {
+                reading(t)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .modifier(CardFrame(heavy: t.heavy == true))
+        .accessibilityElement(children: .contain)
+    }
+
+    @ViewBuilder private func reading(_ t: CardText) -> some View {
+        if let reveal = t.reveal {
+            // The headline in bold, the rest quieter, as on the day's card.
+            let parts = Reveal.split(reveal)
+            Text(parts.headline).font(.figtree(19, .heavy, relativeTo: .title3))
+            if !parts.body.isEmpty { Text(parts.body).foregroundStyle(Palette.text2) }
+        }
+        if let need = t.need, let name = Insights.needName(need) {
+            VStack(alignment: .leading, spacing: Space.s2) {
+                Eyebrow(text: "What may matter here")
+                Text(name).font(.figtree(14, .bold)).foregroundStyle(Palette.accentInk)
+                    .padding(.horizontal, Space.s4).frame(minHeight: 34)
+                    .background(Palette.accentWash, in: Capsule())
+            }
+        }
+        if let other = t.otherSide {
+            VStack(alignment: .leading, spacing: 2) {
+                Eyebrow(text: "The Other Side")
+                Text(other).foregroundStyle(Palette.text2)
+            }
+        }
+        if let step = t.step { TryThis(card: card, step: step) }
+        RateRow(card: card)
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: Space.s4) { links }
+            VStack(alignment: .leading, spacing: Space.s2) { links }
+        }
+        Text("For self-reflection, not a diagnosis.").font(.figtree(12)).foregroundStyle(Palette.muted)
+    }
+
+    @ViewBuilder private var links: some View {
+        GoLink(title: "Reflect on this", section: .reflect) { ReflectView() }
+        GoLink(title: "Saved", section: .saved) { SectionView(section: .saved) }
+        GoLink(title: "Weekly Mirror", section: .mirrors) { MirrorsView() }
+    }
+}
+
+/// A heavy answer's own calm card carries the frame.
+private struct CardFrame: ViewModifier {
+    let heavy: Bool
+    func body(content: Content) -> some View {
+        if heavy { content } else { content.card() }
+    }
+}
+
+private struct TryThis: View {
+    let card: ForYouCard
+    let step: String
+    @Environment(AppModel.self) private var model
+
+    private var id: String { "insight-\(card.questionId)" }
+
+    var body: some View {
+        let saved = model.reflect.intentions.contains { $0.id == id }
+        VStack(alignment: .leading, spacing: Space.s2) {
+            Eyebrow(text: "Something you could try", color: Palette.accentInk)
+            Text(step)
+            if saved {
+                Text("Saved as an intention in Reflect.").font(.pSmall).foregroundStyle(Palette.muted)
+            } else {
+                Button("Save as an intention") {
+                    model.reflect.keepIntention(id: id, text: step, from: card.questionId, today: model.date)
+                }
+                .buttonStyle(ChipStyle())
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .card(padding: Space.s4, fill: Palette.accentWash, stroke: Palette.accentLine)
+    }
+}
+
+private struct RateRow: View {
+    let card: ForYouCard
+    @Environment(AppModel.self) private var model
+    @State private var tapped: Verdict?
+
+    var body: some View {
+        if let v = tapped ?? card.verdict.flatMap(Verdict.init(rawValue:)) {
+            Text(reply(v)).font(.pSmall).foregroundStyle(Palette.muted)
         } else {
-            LazyVGrid(columns: [GridItem(.fixed(12), spacing: 3), GridItem(.fixed(12))], spacing: 3) {
-                ForEach(Array(answers.enumerated()), id: \.offset) { _, a in
-                    RoundedRectangle(cornerRadius: 3)
-                        .fill(color(a.depth))
-                        .overlay(RoundedRectangle(cornerRadius: 3).strokeBorder(a.depth == .private ? Palette.accentInk : .clear, lineWidth: 1.5))
-                        .frame(width: 12, height: 12)
+            VStack(alignment: .leading, spacing: Space.s2) {
+                Text("Does this sound like you?").font(.pH3)
+                HStack(spacing: Space.s2) {
+                    tap("That's me", .me)
+                    tap("Partly", .partly)
+                    tap("Not me", .notMe)
                 }
             }
         }
     }
 
-    private func color(_ d: Depth) -> Color {
-        switch d {
-        case .deep: Palette.accentInk
-        case .deeper: Palette.onLime
-        case .light: Palette.lime
-        case .private: .clear
-        }
-    }
-}
-
-private struct Legend: View {
-    let color: Color
-    let label: String
-
-    var body: some View {
-        HStack(spacing: 6) {
-            RoundedRectangle(cornerRadius: 3).fill(color).frame(width: 12, height: 12)
-            Text(label)
-        }
-    }
-}
-
-/// A 0-100 line with the middle marked and a dot where the answers sit.
-private struct ScaleLine: View {
-    let score: Double
-
-    var body: some View {
-        GeometryReader { geo in
-            ZStack(alignment: .leading) {
-                Capsule().fill(Palette.surface3).frame(height: 8)
-                Rectangle().fill(Palette.lineStrong).frame(width: 2, height: 14).offset(x: geo.size.width / 2 - 1)
-                Circle()
-                    .fill(Palette.accentInk)
-                    .overlay(Circle().strokeBorder(Palette.surface, lineWidth: 3))
-                    .frame(width: 18, height: 18)
-                    .offset(x: geo.size.width * min(1, max(0, score / 100)) - 9)
-            }
-            .frame(maxHeight: .infinity)
-        }
-        .frame(height: 18)
-        .accessibilityLabel("\(Int(score.rounded())) out of 100")
-    }
-}
-
-/// Theme pills that wrap onto as many lines as they need.
-private struct FlowChips: View {
-    let themes: [String]
-
-    var body: some View {
-        WrapLayout(spacing: Space.s2) {
-            ForEach(themes, id: \.self) { t in
-                let s = Themes.style(t)
-                Text("\(s.icon)  \(s.name)")
-                    .font(.figtree(14, .bold))
-                    .padding(.horizontal, Space.s3)
-                    .padding(.vertical, 6)
-                    .background(Palette.surface2, in: Capsule())
+    private func tap(_ title: String, _ v: Verdict) -> some View {
+        Button(title) {
+            model.rate(card, v)
+            tapped = v
+            // A "Not me" card leaves For You once the reply has been read.
+            if v == .notMe {
+                Task {
+                    try? await Task.sleep(for: .seconds(1.5))
+                    model.refreshInsights()
+                }
             }
         }
+        .buttonStyle(ChipStyle())
+    }
+
+    private func reply(_ v: Verdict) -> String {
+        switch v {
+        case .me: "Noted. I'll keep building on it."
+        case .partly: "Noted. I'll hold it loosely and keep watching."
+        case .notMe: "You told me this isn't you, so I'll watch rather than assume."
+        }
     }
 }
 
-/// A simple wrapping row.
-struct WrapLayout: Layout {
-    var spacing: CGFloat = 8
+/// How many chose the same, from the server's real counts. Only once the
+/// person turns the Human Pulse on; never for a regional or heavy answer.
+private struct NotAloneSection: View {
+    let cards: [ForYouCard]
+    @Environment(AppModel.self) private var model
+    @State private var counts: [NotAloneQuestion]?
+    @State private var loaded = false
 
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let width = proposal.width ?? .infinity
-        var x: CGFloat = 0, y: CGFloat = 0, row: CGFloat = 0, widest: CGFloat = 0
-        for v in subviews {
-            let s = v.sizeThatFits(.unspecified)
-            if x > 0, x + s.width > width { x = 0; y += row + spacing; row = 0 }
-            x += s.width + spacing
-            row = max(row, s.height)
-            widest = max(widest, x - spacing)
+    var body: some View {
+        let counted = cards.filter { $0.text.heavy != true && !$0.regional }
+        VStack(alignment: .leading, spacing: Space.s3) {
+            Text("You’re Not Alone").font(.pH2).accessibilityAddTraits(.isHeader)
+            if !model.pulse {
+                Text("With the Human Pulse on, this shows the count of people who chose the same response as you. Off unless you turn it on.")
+                    .font(.pSmall).foregroundStyle(Palette.muted)
+                GoLink(title: "Human Pulse in Settings", section: .settings) { SettingsView() }
+            } else if counted.isEmpty {
+                Text("Answer a question and how many chose the same shows here.").font(.pSmall).foregroundStyle(Palette.muted)
+            } else if !loaded {
+                Text("Getting the counts…").font(.pSmall).foregroundStyle(Palette.muted)
+            } else if counts == nil {
+                Text("The counts can’t be reached just now.").font(.pSmall).foregroundStyle(Palette.muted)
+            } else {
+                ForEach(counted) { c in
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(c.text.prompt).font(.pSmall)
+                        Text(Insights.line(Insights.notAlone(counts, questionId: c.questionId, optionId: c.optionId) ?? .forming))
+                            .font(.figtree(15, .bold))
+                    }
+                    .padding(.vertical, Space.s1)
+                    .accessibilityElement(children: .combine)
+                }
+            }
         }
-        return CGSize(width: min(widest, width), height: y + row)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .card()
+        .task(id: model.pulse) {
+            guard model.pulse else { return }
+            counts = await model.notAloneCounts()
+            loaded = true
+        }
     }
+}
 
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        var x = bounds.minX, y = bounds.minY, row: CGFloat = 0
-        for v in subviews {
-            let s = v.sizeThatFits(.unspecified)
-            if x > bounds.minX, x + s.width > bounds.maxX { x = bounds.minX; y += row + spacing; row = 0 }
-            v.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(s))
-            x += s.width + spacing
-            row = max(row, s.height)
+private struct SavedSection: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: Space.s3) {
+            Text("Saved insights").font(.pH2).accessibilityAddTraits(.isHeader)
+            Text("Cards you keep show here.").font(.pSmall).foregroundStyle(Palette.muted)
+            GoLink(title: "Open Saved", section: .saved) { SectionView(section: .saved) }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .card()
     }
 }

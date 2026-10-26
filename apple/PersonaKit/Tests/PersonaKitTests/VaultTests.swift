@@ -127,6 +127,9 @@ struct VaultTests {
         #expect(BackupRegistry.copy(of: "pi.pending.q1") == nil)
         #expect(BackupRegistry.copy(of: "pi.vault.v1") == nil)
         #expect(BackupRegistry.copy(of: "pi.history.v10") == nil)
+        #expect(BackupRegistry.copy(of: "pi.pulse") == nil)
+        #expect(BackupRegistry.copy(of: "pi.insight.q1") == nil)
+        #expect(BackupRegistry.copy(of: "pi.insights.index") == nil)
     }
 
     @Test("Turning on writes two copies, and no writing goes in the main one")

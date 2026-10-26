@@ -63,8 +63,14 @@ struct SectionView: View {
         case .today: TodayView()
         case .reflect: ReflectView()
         case .connect: ConnectView()
-        case .insights: InsightsView()
-        case .mirrors: LaterView(title: "Mirrors", lead: "Your month, quarter and year, looked back on.", arrives: "The longer Mirrors arrive in a later build. Your week is in Insights.")
+        case .insights:
+            #if os(iOS)
+            // On iPhone, the Mirrors, Saved and Reflect open on top of Insights, with Back.
+            NavigationStack { InsightsView().toolbar(.hidden, for: .navigationBar) }
+            #else
+            InsightsView()
+            #endif
+        case .mirrors: MirrorsView()
         case .saved: LaterView(title: "Saved", lead: "Cards you kept, your plans and your notebook.", arrives: "Saved arrives in a later build.")
         case .profile:
             #if os(iOS)
@@ -72,7 +78,7 @@ struct SectionView: View {
             NavigationStack {
                 LaterView(title: "You", lead: "Your profile, choices and what this device keeps.", arrives: "Your profile arrives in a later build.") {
                     NavigationLink { SettingsView() } label: {
-                        Label("Settings: backup and app lock", systemImage: "gearshape").font(.pH3)
+                        Label("Settings: backup, Human Pulse and app lock", systemImage: "gearshape").font(.pH3)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     .card(padding: Space.s4)

@@ -53,6 +53,12 @@ final class ReflectModel {
         load()
     }
 
+    /// An intention under a given id, so the same card saved on the web and here is one intention.
+    func keepIntention(id: String, text: String, from: String, today: String) {
+        tries.save(Intention(id: id, date: today, text: text, from: from))
+        load()
+    }
+
     func keepTry(_ text: String, from id: String, today: String) {
         tries.save(Intention(id: "\(id)-try", date: today, text: text, from: id))
         load()

@@ -15,6 +15,7 @@ struct SettingsView: View {
                 }
                 .padding(.top, Space.s2)
                 BackupCard()
+                PulseCard()
                 LockCard()
             }
             .padding(Space.gutter)
@@ -131,6 +132,28 @@ private struct SyncRow: View {
         .tint(Palette.accentInk)
         .toggleStyle(.switch)
         .disabled(backup.busy)
+    }
+}
+
+/// The Human Pulse: off unless the person turns it on, as on the web.
+struct PulseCard: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        @Bindable var model = model
+        VStack(alignment: .leading, spacing: Space.s3) {
+            Text("Human Pulse").font(.pH2).accessibilityAddTraits(.isHeader)
+            Toggle(isOn: $model.pulse) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Show how many chose the same").font(.pH3)
+                    Text("In Insights, the count of people who chose the same response as you, once at least 20 have answered. Off unless you turn it on.")
+                        .font(.pSmall).foregroundStyle(Palette.muted)
+                }
+            }
+            .tint(Palette.accentInk)
+            .toggleStyle(.switch)
+        }
+        .card()
     }
 }
 

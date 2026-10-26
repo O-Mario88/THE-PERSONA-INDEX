@@ -45,6 +45,8 @@ final class AppModel {
         static let name = "pi.name"
         static let choice = "pi.choice."
         static let unsent = "pi.unsent."
+        /// Before settings moved into pi.prefs.v1 (26 October 2026).
+        static let oldPulse = "pi.pulse"
     }
 
     init(api: APIClient, defaults: KeyValueStore, secrets: KeyValueStore) {
@@ -56,6 +58,13 @@ final class AppModel {
         self.lock = AppLock(defaults: defaults)
         self.welcomed = defaults.string(forKey: Keys.welcomed) == "1"
         self.name = defaults.string(forKey: Keys.name) ?? ""
+        var prefs = PrefStore(store: defaults).prefs
+        if defaults.string(forKey: Keys.oldPulse) == "1" {
+            prefs.pulse = true
+            PrefStore(store: defaults).save(prefs)
+        }
+        defaults.set(nil, forKey: Keys.oldPulse)
+        self.prefs = prefs
     }
 
     static func live() -> AppModel {
@@ -167,12 +176,54 @@ final class AppModel {
 
     func ring(of friend: FriendView) -> Ring { rings[friend.id] ?? .outer }
 
+    // MARK: Insights
+
+    /// The person's settings, in the web's shape, carried in the backup.
+    var prefs: Prefs {
+        didSet { PrefStore(store: defaults).save(prefs) }
+    }
+
+    /// The Human Pulse: counts of who chose the same, only for someone who
+    /// said yes. Off until turned on, as on the web.
+    var pulse: Bool {
+        get { prefs.pulse }
+        set { prefs.pulse = newValue }
+    }
+
+    /// Changes when an answer or a tap changes what Insights shows.
+    private(set) var insightsVersion = 0
+
+    /// The person's own cards from the last `days`, newest first.
+    func insightCards(days: Int) -> [ForYouCard] {
+        _ = insightsVersion
+        let today = set.map { $0.questions + ($0.evening ?? []) } ?? []
+        return Insights.forYou(store: defaults, today: date, days: days, questions: today)
+    }
+
+    /// The counts for You're not alone, or nil when they can't be reached.
+    func notAloneCounts() async -> [NotAloneQuestion]? {
+        try? await api.notAlone(date).questions
+    }
+
+    /// The tap under a card: kept with the answer, and sent as a count.
+    func rate(_ card: ForYouCard, _ verdict: Verdict) {
+        AnswerHistory(store: defaults).setVerdict(verdict, for: card.questionId)
+        guard !card.regional else { return }
+        Task { try? await api.rate(questionId: card.questionId, optionId: card.optionId, verdict: verdict) }
+    }
+
+    /// After a "Not me" reply has been read, the card leaves For You.
+    func refreshInsights() { insightsVersion += 1 }
+
+
     /// After a restore: everything on screen reads again from the device.
     func reloadAfterRestore() async {
         welcomed = true
         name = defaults.string(forKey: Keys.name) ?? name
         rings = ringStore.all()
         reflect.load()
+        prefs = PrefStore(store: defaults).prefs
+        insightsVersion += 1
         await refresh()
     }
 
@@ -187,6 +238,7 @@ final class AppModel {
 
     func refresh() async {
         tick()
+        CardTexts(store: defaults).prune(today: date)
         if set == nil { load = .loading }
         do {
             let set = try await api.day(date)
@@ -211,6 +263,8 @@ final class AppModel {
         choices[question.id] = option.id
         defaults.set(option.id, forKey: Keys.choice + question.id)
         AnswerHistory(store: defaults).record(question, optionId: option.id, date: date)
+        CardTexts(store: defaults).keep(question, optionId: option.id, date: date)
+        insightsVersion += 1
         defaults.set(sitting.rawValue, forKey: Keys.unsent + question.id)
         await send(question, optionId: option.id, sitting: sitting)
     }

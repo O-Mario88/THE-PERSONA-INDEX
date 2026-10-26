@@ -145,14 +145,7 @@ private struct AnswerCard: View {
             .overlay(RoundedRectangle(cornerRadius: Radius.md, style: .continuous).strokeBorder(Palette.accentLine, lineWidth: 1.5))
 
             if option.heavy == true {
-                VStack(alignment: .leading, spacing: Space.s3) {
-                    Text("That sounds really hard.").font(.pH2)
-                    Text("Thank you for saying it. If today feels heavy, reaching out to someone you trust can help.")
-                        .foregroundStyle(Palette.text2)
-                    Link("Find a helpline", destination: URL(string: "https://findahelpline.com")!)
-                        .font(.figtree(16, .bold))
-                }
-                .card(stroke: Palette.lineStrong)
+                HeavyNote()
                 next
             } else if let insight = option.insight {
                 let parts = Reveal.split(insight.reveal)

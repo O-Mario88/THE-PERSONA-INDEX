@@ -30,6 +30,9 @@ public struct AnswerHistory: Sendable {
         public let theme: String
         public let optionId: String?
         public let verdict: String?
+        public var need: String? = nil
+        public var heavy = false
+        public var regional = false
     }
 
     private func raw() -> (answers: [[String: Any]], skips: [[String: Any]]) {
@@ -41,7 +44,22 @@ public struct AnswerHistory: Sendable {
     public func answers() -> [Answer] {
         raw().answers.compactMap { a in
             guard let date = a["date"] as? String, let q = a["questionId"] as? String, let theme = a["theme"] as? String else { return nil }
-            return Answer(date: date, questionId: q, theme: theme, optionId: a["optionId"] as? String, verdict: a["verdict"] as? String)
+            return Answer(date: date, questionId: q, theme: theme, optionId: a["optionId"] as? String, verdict: a["verdict"] as? String,
+                          need: a["need"] as? String, heavy: a["heavy"] as? Bool ?? false, regional: a["regional"] as? Bool ?? false)
+        }
+    }
+
+    /// Keeps the tap under a card ("That's me", "Partly", "Not me") with its answer.
+    public func setVerdict(_ verdict: Verdict, for questionId: String) {
+        var (answers, skips) = raw()
+        guard let i = answers.firstIndex(where: { ($0["questionId"] as? String) == questionId }) else { return }
+        answers[i]["verdict"] = verdict.rawValue
+        save(answers, skips)
+    }
+
+    private func save(_ answers: [[String: Any]], _ skips: [[String: Any]]) {
+        if let data = try? JSONSerialization.data(withJSONObject: ["answers": answers, "skips": skips]), let s = String(data: data, encoding: .utf8) {
+            store.set(s, forKey: Self.key)
         }
     }
 
