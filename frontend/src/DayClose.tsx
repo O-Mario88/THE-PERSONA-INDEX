@@ -7,6 +7,7 @@ import { GoodThings, PlanCheckCard, PlanOffer } from './Keep'
 import { movesOn, setMoveStatus, startedInEvening, type Move } from './moves'
 import { planToCheck } from './notebook'
 import type { Practice } from './practices'
+import { FirstGlimpse } from './FirstGlimpse'
 import { heavyPause, isLowMood, loadHistory, recordRoute, type AnswerRecord, type History, type Route } from './profile'
 import { NEED_PHRASES, type Need } from './needs'
 import { TapestryGrid } from './TapestryViews'
@@ -25,8 +26,6 @@ import {
   routeLead,
   STEP_REPLIES as REPLIES,
   SUNDAY_LINE,
-  GLIMPSE_BALANCED,
-  GLIMPSE_NEXT,
 } from './words'
 
 // The close of each sitting. The morning's: what the answers add up to,
@@ -76,6 +75,10 @@ export function DayClose(props: Props) {
   // After a heavy answer the close keeps to kind words: no honest part, no
   // plan or practice offered (profile.ts, heavyPause).
   const [paused] = useState(() => heavyPause(history, date))
+  // The close of a person's first sitting opens with a first glimpse of
+  // them (firstWeek.ts); never after a heavy answer, which keeps to kind words.
+  const dayAnswers = props.sitting === 'evening' ? [...answersIn(history, props.morning, date), ...mine] : mine
+  const glimpseFor = glimpse && !heavy ? glimpse : null
 
   let title = "That's your day."
   if (props.sitting === 'morning') {
@@ -122,8 +125,8 @@ export function DayClose(props: Props) {
 
       {props.sitting === 'morning' ? (
         <>
-          {glimpse ? (
-            <FirstGlimpse answers={mine} history={history} date={date} name={glimpse.name} />
+          {glimpseFor ? (
+            <FirstGlimpse answers={mine} history={history} date={date} name={glimpseFor.name} />
           ) : (
             <Thread answers={mine} history={history} date={date} paused={paused} />
           )}
@@ -138,7 +141,7 @@ export function DayClose(props: Props) {
         </>
       ) : (
         <>
-          {glimpse && <FirstGlimpse answers={mine} history={history} date={date} name={glimpse.name} />}
+          {glimpseFor && <FirstGlimpse answers={dayAnswers} history={history} date={date} name={glimpseFor.name} />}
           <MoveCheck date={date} />
           {!paused && <RouteCheck date={date} morning={props.morning} />}
           <ForTomorrow
@@ -260,35 +263,6 @@ function Thread({ answers, history, date, paused }: Read) {
         </details>
       )}
     </div>
-  )
-}
-
-// The first glimpse (the day-one review of 2026-10-26): after a person's
-// first three answers, two or three plain lines on what they hint at
-// together, said to them by name, and what happens next. Only what the
-// answers say; one sitting is a hint, and it says so.
-function FirstGlimpse({ answers, history, date, name }: Omit<Read, 'paused'> & { name: string | null }) {
-  if (answers.length === 0) return null
-  const advice = adviceFor(answers, history, date, 'morning')
-  return (
-    <section className="glimpse" aria-labelledby="glimpse-title">
-      <p className="eyebrow">Your first glimpse</p>
-      <h3 id="glimpse-title" className="glimpse-title">
-        {name ? `${name}, here’s what your first answers hint at.` : 'Here’s what your first answers hint at.'}
-      </h3>
-      {advice.points.length === 0 ? (
-        <p>{GLIMPSE_BALANCED}</p>
-      ) : (
-        <ul className="glimpse-points">
-          {advice.points.map((p) => (
-            <li key={p.trait}>
-              <strong>You lean towards {p.lean}.</strong> {p.strength}
-            </li>
-          ))}
-        </ul>
-      )}
-      <p className="muted">{GLIMPSE_NEXT}</p>
-    </section>
   )
 }
 

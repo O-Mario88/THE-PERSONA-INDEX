@@ -28,7 +28,7 @@ import type { Read } from './reads/types'
 import type { Practice } from './practices'
 import { themeVars } from './themes'
 import { openThisWeek, sendUnsent } from './moves'
-import { forgetPick, loadHistory, todaysPick, writeFirstOf, type Half } from './profile'
+import { forgetPick, isFirstDay, loadHistory, todaysPick, writeFirstOf, type Half } from './profile'
 import { CountryAsk } from './CountryViews'
 import { blackOn, intimacyOn, loadPrefs, pulseOn, regionHere, savePrefs, stillOn, type Prefs } from './prefs'
 import { cachedPack, fetchPack, regionalFor, regionalToday } from './regional'
@@ -339,6 +339,9 @@ function App() {
     [set, sitting, morningQs, eveningQs],
   )
   const hasIntimate = !!set?.pool?.some((q) => q.care === 'intimate')
+  // A person's first day (profile.ts): judged from answers before today, so
+  // it holds all day.
+  const firstDay = useMemo(() => (set ? isFirstDay(loadHistory(), set.date) : false), [set])
 
   // The Human Pulse count for Today's "since" list: the most answers any one
   // of this morning's questions has, so "at least" is always true.
@@ -589,11 +592,11 @@ function App() {
                 })}
               </nav>
               <p className="label edition-line">
-                {weekOne
-                  ? dayN === 1
-                    ? `Your first ${flow}`
-                    : `Day ${dayN} with you · ${weekday(set.date)}${flow === 'evening' ? ' evening' : ''}`
-                  : `${set.edition ? `Edition #${set.edition}` : "Today's questions"} · ${weekday(set.date)}${flow === 'evening' ? ' evening' : ''}`}
+                {weekOne && dayN > 1
+                  ? `Day ${dayN} with you · ${weekday(set.date)}${flow === 'evening' ? ' evening' : ''}`
+                  : weekOne || firstDay
+                    ? `Your first ${flow} · ${weekday(set.date)}`
+                    : `${set.edition ? `Edition #${set.edition}` : "Today's questions"} · ${weekday(set.date)}${flow === 'evening' ? ' evening' : ''}`}
               </p>
               </>
             )
@@ -601,12 +604,14 @@ function App() {
           footer={
             !closing && current ? (
               <p className="muted small">
-                {flow === 'evening' && at === 0 && !weekOne ? 'Then: the route you took this morning.' : 'What you usually do, not what you wish you did.'}
+                {flow === 'evening' && at === 0 && morning !== 'none' && !weekOne
+                  ? 'Then: the route you took this morning.'
+                  : 'What you usually do, not what you wish you did.'}
               </p>
             ) : undefined
           }
         >
-          {hasIntimate && prefs.adult === null && !isNewcomer() && !closing && (
+          {hasIntimate && prefs.adult === null && !isNewcomer() && !closing && !firstDay && (
             <section className="card gate" aria-labelledby="gate-title">
               <h2 id="gate-title" className="title">
                 Are you 18 or older?
@@ -680,7 +685,8 @@ function App() {
             ))}
           {closing && steps.length > 0 && !me && !askedSignIn && !glimpse && (
             <SignInSheet
-              overlay
+              // On the first day it sits under the close, so the close stays in view.
+              overlay={!firstDay}
               card={closeCard(flow === 'evening' ? eveningQs : morningQs)}
               title={`Your ${steps.length === 3 ? 'three cards are' : 'cards are'} on this phone. Keep them everywhere.`}
               onDone={(acc) => {

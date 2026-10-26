@@ -260,8 +260,77 @@ describe('the welcome', () => {
   })
 })
 
+// Edwin, 2026-10-26: "do you think the users love it on day one?" The first
+// day is light: no 18+ question, no insider labels, and a close that says
+// something about the person.
+describe('the first day', () => {
+  it('names the sitting as their first, and keeps the edition for later days', async () => {
+    stubApi({})
+    const { unmount } = render(<App />)
+    await screen.findByRole('region', { name: 'When do you wash the dishes?' })
+    expect(screen.getByText('Your first morning · Monday')).toBeInTheDocument()
+    expect(screen.queryByText(/Edition #/)).not.toBeInTheDocument()
+    unmount()
+    localStorage.clear()
+    localStorage.setItem('pi.history.v1', pastAnswers(['2026-10-10'], {}))
+    render(<App />)
+    expect(await screen.findByText('Edition #3 · Monday')).toBeInTheDocument()
+  })
+
+  it('does not ask the 18+ question on the first day', async () => {
+    vi.setSystemTime(at(18))
+    stubApi({ today: { status: 200, body: { ...sixADay, pool: [...sixADay.pool!, closeness] } } })
+    render(<App />)
+    await screen.findByRole('button', { name: 'Question 1 of 3' })
+    expect(screen.queryByRole('region', { name: 'Are you 18 or older?' })).not.toBeInTheDocument()
+  })
+
+  it("mentions the morning's route only after a morning was answered", async () => {
+    vi.setSystemTime(at(18))
+    stubApi({ today: { status: 200, body: sixADay } })
+    const { unmount } = render(<App />)
+    await screen.findByRole('button', { name: 'Question 1 of 3' })
+    expect(screen.queryByText('Then: the route you took this morning.')).not.toBeInTheDocument()
+    unmount()
+    answeredThisMorning()
+    render(<App />)
+    await screen.findByRole('button', { name: 'Question 1 of 3' })
+    expect(screen.getByText('Then: the route you took this morning.')).toBeInTheDocument()
+  })
+
+  it('keeps a heavy first day to kind words and help: no glimpse', async () => {
+    stubApi({ today: { status: 200, body: withQuiet } })
+    render(<App />)
+    // The tender question comes last on a first day.
+    await answer('Right after eating')
+    next()
+    await skip()
+    await answer('I wonder if people have forgotten me')
+    next()
+    const done = await screen.findByRole('region', { name: "That's your day." })
+    expect(within(done).queryByText('Your first glimpse')).not.toBeInTheDocument()
+    expect(within(done).getByRole('note', { name: 'Support' })).toBeInTheDocument()
+  })
+
+  it('greets a named person by name in the first glimpse', async () => {
+    localStorage.setItem('pi.name', 'Paul')
+    localStorage.setItem('pi.started', '2026-10-12')
+    stubApi({})
+    render(<App />)
+    await answer('Right after eating')
+    next()
+    await skip()
+    await skip()
+    const glimpse = await screen.findByRole('region', { name: 'Paul, here’s what your first answers hint at.' })
+    expect(glimpse).toHaveTextContent('Steady follow-through, with a soft spot for a finished list.')
+    // Nothing covers the glimpse: the sign-up page comes after it.
+    expect(document.querySelector('.signin-overlay')).toBeNull()
+  })
+})
+
 describe('the daily questions', () => {
   it('shows one question at a time, with the edition and the day', async () => {
+    localStorage.setItem('pi.history.v1', pastAnswers(['2026-10-10'], {}))
     stubApi({})
     render(<App />)
     const card = await screen.findByRole('region', { name: 'When do you wash the dishes?' })
@@ -712,6 +781,7 @@ describe('the daily questions', () => {
   })
 
   it('ends the morning with "Morning done.", the thread, the moves and what opens at 5 pm, without repeating the cards or keeping score', async () => {
+    localStorage.setItem('pi.started', '2026-10-12')
     stubApi({ today: { status: 200, body: sixADay } })
     render(<App />)
     await answer('Right after eating')
@@ -728,16 +798,16 @@ describe('the daily questions', () => {
       '✨Todayskipped',
       '✨Todayanswered',
     ])
-    const thread = within(done).getByRole('note', { name: "Today's thread" })
-    expect(thread).toHaveTextContent(
-      "Today your answers leaned towards getting things done, and towards worry. One day is only a hint, so here's what each could mean.",
-    )
-    expect(thread).toHaveTextContent('Getting things done')
-    expect(thread).toHaveTextContent('Worry and tension')
-    expect(thread).toHaveTextContent('Only a hint so far, from 1 answer.')
-    expect(thread).toHaveTextContent('For the rest of today:')
-    // One answer is a hint: the honest part waits for a pattern.
-    expect(thread).not.toHaveTextContent('The honest part')
+    // Day one closes on a first glimpse, warm and short (Edwin, 2026-10-26).
+    expect(done).toHaveTextContent('your first day')
+    expect(done).not.toHaveTextContent(/day \d+ of 90/)
+    const glimpse = within(done).getByRole('region', { name: 'Here’s what your first answers hint at.' })
+    expect(glimpse).toHaveTextContent('Steady follow-through, with a soft spot for a finished list.')
+    expect(glimpse).toHaveTextContent('You tend to finish what you start, and people rely on you for it.')
+    expect(glimpse).toHaveTextContent('Three answers are a hint, not a verdict. Each day sharpens it, and on Sunday it becomes your first mirror.')
+    expect(within(done).queryByRole('note', { name: "Today's thread" })).not.toBeInTheDocument()
+    // Nothing hard on day one: the honest part waits for a pattern.
+    expect(done).not.toHaveTextContent('The honest part')
     const moves = within(done).getByRole('group', { name: 'One small step for today' })
     expect(moves).toHaveTextContent('Tonight, set one alarm fewer')
     // Something to look forward to: the evening's three themes, and when.
@@ -1081,7 +1151,7 @@ describe('the evening, from 5 pm', () => {
     render(<App />)
 
     expect(await screen.findByRole('region', { name: 'Lunch time. What usually happens?' })).toBeInTheDocument()
-    expect(screen.getByText('Edition #3 · Monday evening')).toBeInTheDocument()
+    expect(screen.getByText('Your first evening · Monday')).toBeInTheDocument()
     // Edwin, 2026-10-15: "questions seems more than 3". Each sitting is three.
     const dashes = within(screen.getByRole('navigation', { name: "Today's questions" })).getAllByRole('button')
     expect(dashes).toHaveLength(3)
@@ -1093,11 +1163,12 @@ describe('the evening, from 5 pm', () => {
       screen.queryByRole('button', { name: /^(morning|afternoon|evening|check-in)/i }),
     ).not.toBeInTheDocument()
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+    // On a first day the tender theme (anger) comes last.
     await answer('I get out for a walk')
     next()
-    await answer('Say something calmly')
-    next()
     await answer('Text that I will call later')
+    next()
+    await answer('Say something calmly')
     next()
     const day = await screen.findByRole('region', { name: "That's your day." })
     expect(within(day).getByRole('list', { name: "This evening's answers" }).children).toHaveLength(3)
@@ -1240,6 +1311,7 @@ describe('the evening, from 5 pm', () => {
   })
 
   it('never changes a sitting someone has started when the 18+ answer comes in', async () => {
+    localStorage.setItem('pi.history.v1', pastAnswers(['2026-10-10'], {}))
     vi.setSystemTime(at(18))
     stubApi({ today: { status: 200, body: { ...sixADay, pool: [...sixADay.pool!, closeness] } } })
     render(<App />)
@@ -1971,7 +2043,7 @@ describe('the week', () => {
     await morningThree()
     const morning = await screen.findByRole('region', { name: 'Morning done.' })
     expect(within(morning).getByRole('group', { name: 'Your evening three · 5 pm' })).toBeInTheDocument()
-    expect(screen.getByText('Edition #3 · Monday')).toBeInTheDocument()
+    expect(screen.getByText('Your first morning · Monday')).toBeInTheDocument()
     expect(screen.queryByText('Lunch time. What usually happens?')).not.toBeInTheDocument()
     first.unmount()
 
@@ -2343,6 +2415,7 @@ describe('the app remembers you', () => {
   })
 
   it('meets a heavy answer with kind words, your people and a helpline, never an insight', async () => {
+    localStorage.setItem('pi.history.v1', pastAnswers(['2026-10-10'], {}))
     const fetchMock = stubApi({ today: { status: 200, body: withQuiet } })
     render(<App />)
     await answer('I wonder if people have forgotten me')
@@ -2771,6 +2844,7 @@ describe('where you live', () => {
 
   it("points a heavy answer to that country's helplines, and can be changed in Settings", async () => {
     localStorage.setItem('pi.prefs.v1', JSON.stringify({ adult: null, mild: false, wordsDays: 35, country: 'GH' }))
+    localStorage.setItem('pi.history.v1', pastAnswers(['2026-10-10'], {}))
     stubApi({ today: { status: 200, body: withQuiet } })
     render(<App />)
     await answer('I wonder if people have forgotten me')

@@ -4,12 +4,14 @@ import {
   changeLine,
   changesBetween,
   earned,
+  gentleFirst,
   heavyPause,
   interestScores,
+  isFirstDay,
+  todaysPick,
   isLowMood,
   leaningVerdict,
   notMeSides,
-  LIGHT_THEMES,
   pickThree,
   recordAnswer,
   recordVerdict,
@@ -79,11 +81,11 @@ describe('picking three from the pool', () => {
     expect(pickThree(pool, defaults, { answers: [], skips: [] }, '2026-10-12', false)).toEqual(defaults)
   })
 
-  it('opens a newcomer’s very first sitting on light themes, from the shared three where it can', () => {
-    const three = pickThree(pool, defaults, { answers: [], skips: [] }, '2026-10-12', true, [], null, true)
-    expect(three).toHaveLength(3)
-    for (const x of three) expect(LIGHT_THEMES.has(x.theme!)).toBe(true)
-    expect(new Set(three.map((x) => x.theme)).size).toBe(3)
+  it('keeps the shared three for a newcomer’s first sitting, swapping a tender one for an everyday one', () => {
+    const tender = [pool[0], pool[3], pool[4]] // money, sleep, anger
+    const three = pickThree(pool, tender, { answers: [], skips: [] }, '2026-10-12', true, [], null, true)
+    expect(three.map((x) => x.theme)).toEqual(['money', 'sleep-health', 'friendship'])
+    expect(pickThree(pool, defaults, { answers: [], skips: [] }, '2026-10-12', true, [], null, true)).toEqual(defaults)
   })
 
   it('leans to high-interest themes, adds one rarely seen theme, and never repeats a theme', () => {
@@ -110,6 +112,36 @@ describe('picking three from the pool', () => {
     const h: History = { answers: [answer('2026-10-11', 'intimacy', 4), answer('2026-10-11', 'intimacy', 4)], skips: [] }
     expect(pickThree(pool, defaults, h, '2026-10-12', false).some((p) => p.care === 'intimate')).toBe(false)
     expect(pickThree(pool, defaults, h, '2026-10-12', true).some((p) => p.care === 'intimate')).toBe(true)
+  })
+})
+
+// Edwin, 2026-10-26: day one should feel light. The first day opens on
+// everyday questions; tender themes wait until later in the sitting.
+describe("a person's first day", () => {
+  it('is a day with nothing answered or skipped before it', () => {
+    expect(isFirstDay({ answers: [], skips: [] }, '2026-10-12')).toBe(true)
+    expect(isFirstDay({ answers: [answer('2026-10-12', 'money', 2)], skips: [] }, '2026-10-12')).toBe(true)
+    expect(isFirstDay({ answers: [answer('2026-10-11', 'money', 2)], skips: [] }, '2026-10-12')).toBe(false)
+    expect(isFirstDay({ answers: [], skips: [{ date: '2026-10-11', theme: 'money' }] }, '2026-10-12')).toBe(false)
+  })
+
+  it('puts everyday questions first and tender ones last, keeping the order within each', () => {
+    const body = q('b1', 'body')
+    const sad = q('d1', 'sadness-stress', 'personal')
+    const habits = q('h2', 'habits')
+    const money = q('m3', 'money')
+    expect(gentleFirst([body, habits, sad, money]).map((x) => x.id)).toEqual(['h2', 'm3', 'b1', 'd1'])
+    expect(gentleFirst([habits, money])).toEqual([habits, money])
+  })
+
+  it('orders the first sitting gently, and leaves later days as picked', () => {
+    const body = q('b1', 'body')
+    const first = todaysPick([], [body, pool[0], pool[3]], '2026-10-12', false)
+    expect(first.map((x) => x.theme)).toEqual(['money', 'sleep-health', 'body'])
+    localStorage.clear()
+    localStorage.setItem('pi.history.v1', JSON.stringify({ answers: [answer('2026-10-11', 'money', 2)], skips: [] }))
+    const later = todaysPick([], [body, pool[0], pool[3]], '2026-10-12', false)
+    expect(later[0].theme).not.toBe('money')
   })
 })
 

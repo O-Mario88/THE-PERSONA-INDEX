@@ -1,5 +1,5 @@
 import { adviceFor } from './advice'
-import { heavyPause, loadHistory, type History } from './profile'
+import { heavyPause, isLowMood, loadHistory, type History } from './profile'
 import { daysBetween, load, save } from './storage'
 
 // The first week (Edwin, 2026-10-26: "simple, healthy and focused"). A new
@@ -58,6 +58,8 @@ export function glimpseHere(date: string, sitting: 'morning' | 'evening', h: His
   const kept = load(GLIMPSE_KEY)
   if (kept) return kept === here
   if (!isNewcomer()) return false
+  // After a heavy answer the close keeps to kind words: no glimpse, no sign-up.
+  if (h.answers.some((a) => a.date === date && (a.heavy || isLowMood(a.theme, a.depth)))) return false
   // Every answer so far is from this sitting's day: this is the first one.
   const answered = h.answers.filter((a) => (sitting === 'evening' ? a.evening : !a.evening) && a.date === date)
   if (answered.length === 0 || h.answers.some((a) => a.date !== date || (sitting === 'morning') === !!a.evening)) return false

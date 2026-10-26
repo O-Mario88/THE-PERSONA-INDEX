@@ -1116,6 +1116,15 @@ fieldset.notice,
   box-shadow: none;
 }
 
+/* The thread keeps a narrow gutter for its small bars, so they never sit on the words. */
+.thread {
+  padding-left: 36px;
+}
+
+.thread::before {
+  left: 0;
+}
+
 /* Things inside a section lose their own boxes too. */
 .stat-tile,
 .growing .stat-tile,
@@ -1313,4 +1322,10 @@ fieldset.notice,
 }
 .signin-page-foot .link-button.strong {
   margin-top: var(--s-3);
+}
+.glimpse-quality {
+  font-family: var(--serif, inherit);
+  font-size: 1.125rem;
+  line-height: 1.45;
+  color: var(--text);
 }
