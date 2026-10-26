@@ -1,19 +1,21 @@
 // Connect (the web app's Circle.tsx): a private space for understanding,
-// encouragement and meaningful connection. No feed. This first native
-// version has Your Circle (the three private circles, placed on this device
-// only) and inviting a friend; Our Common Ground, What Helped Us and
-// Support & Celebrate follow from the web app next.
+// encouragement and meaningful connection. No feed. Your Circle (the three
+// private circles, placed on this device only), inviting a friend, Growing
+// together, Our Common Ground, What Helped Us and Support & Celebrate, with
+// at most two quiet "Closer together" cards above them.
 import { useCallback, useEffect, useState } from 'react'
 import { Pressable, Share, View } from 'react-native'
 import { ApiError } from '@shared/api'
 import { loadRings, placeIn, RING_NAMES, RING_NOTES, RINGS, ringOf, type Ring, type Rings } from '@shared/rings'
+import type { Question } from '@shared/api'
 import { createInvite, getCircle, inviteLink, TAG_NAMES, TAGS, type AccountView, type CircleView, type Tag } from '@shared/social'
 import { dayMonth } from '@shared/reflect'
 import { radius } from '../theme'
 import { Button, Chip, Hairline, Page, T, Tinted } from '../ui/kit'
 import { Avatar, Disc, Ring as Progress } from '../ui/parts'
+import { CloserTogether, CommonGround, Growing, SupportCelebrate, WhatHelped } from './ConnectMore'
 
-export function Connect({ me, onSignIn }: { me: AccountView | null; onSignIn: () => void }) {
+export function Connect({ me, onSignIn, today, questions = [] }: { me: AccountView | null; onSignIn: () => void; today?: string; questions?: Question[] }) {
   const [circle, setCircle] = useState<CircleView | null>(null)
   const [error, setError] = useState('')
   const [rings, setRings] = useState<Rings>(loadRings)
@@ -47,6 +49,7 @@ export function Connect({ me, onSignIn }: { me: AccountView | null; onSignIn: ()
           <T tone="text2">No password: a 6-digit code. Your answers stay as private as they are now.</T>
           <Button label="Sign in" onPress={onSignIn} />
         </Tinted>
+        {today && <Growing date={today} questions={questions} circle={null} />}
         <Tagline />
       </Page>
     )
@@ -62,6 +65,7 @@ export function Connect({ me, onSignIn }: { me: AccountView | null; onSignIn: ()
         <T tone="text2">A private space for understanding, encouragement and meaningful connection.</T>
       </View>
       {error ? <T tone="danger">{error}</T> : null}
+      {friends.length > 0 && <CloserTogether friends={friends} rings={rings} />}
 
       <View style={{ gap: 14 }}>
         <T v="h2">Your Circle</T>
@@ -90,7 +94,28 @@ export function Connect({ me, onSignIn }: { me: AccountView | null; onSignIn: ()
       <Hairline />
       <Invite circle={circle} />
 
+      {today && (
+        <>
+          <Hairline />
+          <Growing date={today} questions={questions} circle={circle} />
+        </>
+      )}
+      {friends.length > 0 && (
+        <>
+          <Hairline />
+          <CommonGround friends={friends} />
+          <Hairline />
+          <WhatHelped />
+          <Hairline />
+          <SupportCelebrate today={today} />
+        </>
+      )}
+
       <Tagline />
+      <T v="small" tone="muted" center>
+        Friends see that you’re connected and the circle tag you gave them. Never your answers, your readings, or who else is here. Anything more is only what you
+        choose to share, with the people you choose.
+      </T>
     </Page>
   )
 }

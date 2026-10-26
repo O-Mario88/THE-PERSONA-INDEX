@@ -352,7 +352,7 @@ export function Shell({ phoneDark }: { phoneDark: boolean }) {
   } else if (tab === 'insights') {
     body = <Insights today={date} questions={[...morningQs, ...eveningQs]} pulse={pulseOn(prefs)} onOpenReflect={() => goTab('notebook')} onOpenSettings={() => goTab('account')} />
   } else if (tab === 'circle') {
-    body = <Connect me={me} onSignIn={() => open('signin')} />
+    body = <Connect me={me} onSignIn={() => open('signin')} today={date} questions={[...morningQs, ...eveningQs]} />
   } else if (tab === 'account') {
     body = (
       <You
