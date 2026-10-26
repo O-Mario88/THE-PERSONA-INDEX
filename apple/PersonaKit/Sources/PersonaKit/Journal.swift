@@ -63,14 +63,6 @@ public struct ReflectionEntry: Codable, Sendable, Hashable, Identifiable {
     /// The thread this reflection belongs to: its own id if it started one.
     public var root: String { thread ?? id }
 
-    /// The reflection this one follows up: the field, or the id form native
-    /// entries used before ("follow-<id>~<date>").
-    public var followUpOf: String? {
-        if let followsUp { return followsUp }
-        guard id.hasPrefix("follow-") else { return nil }
-        return id.dropFirst("follow-".count).split(separator: "~").first.map(String.init)
-    }
-
     enum CodingKeys: String, CodingKey {
         case kind, id, date, period, area, group, source, about, question, answer, followsUp, free, why, thread, at
     }

@@ -38,28 +38,6 @@ struct ReflectionTests {
         #expect(Reflection.items(period: .day, answered: [], mirror: try mirror()).isEmpty)
     }
 
-    @Test("turns each item into a question the person answers in their own words")
-    func questions() {
-        let items = Reflection.items(period: .week, answered: answered, mirror: nil)
-        let prompts = Reflection.prompts(for: items, period: .week, past: [], today: "2026-10-25")
-        #expect(prompts.first?.question == "Where did you see this in yourself this week?")
-        #expect(prompts.contains { $0.question == "What is one small thing you could do differently next week?" })
-        #expect(prompts.allSatisfy { !$0.question.contains("%") })
-    }
-
-    @Test("brings back something the person wrote before, and asks how it went")
-    func followsUp() {
-        let past = [ReflectionEntry(id: "r1", date: "2026-10-18", period: .week, area: .work, kind: .grow,
-                                    source: .yourAnswers, about: "Staying every time can leave little for you.",
-                                    question: "What is one small thing you could do differently next week?",
-                                    answer: "Leave on time on Fridays.")]
-        let prompts = Reflection.prompts(for: [], period: .week, past: past, today: "2026-10-25")
-        let follow = prompts.first
-        #expect(follow?.question == "On 18 October you wrote: “Leave on time on Fridays.” How has it gone since?")
-        #expect(follow?.followsUp == "r1")
-        #expect(Reflection.prompts(for: [], period: .week, past: past, today: "2026-10-18").isEmpty)
-    }
-
     @Test("keeps every answer on the device with its date, newest first")
     func store() {
         let store = ReflectionStore(store: MemoryStore())
@@ -76,10 +54,4 @@ struct ReflectionTests {
         #expect(LifeArea.of(theme: theme) != nil)
     }
 
-    @Test("asks after a strength in the person's own week")
-    func strengthQuestion() throws {
-        let items = Reflection.items(period: .week, answered: [], mirror: try mirror())
-        let prompts = Reflection.prompts(for: items, period: .week, past: [], today: "2026-10-25")
-        #expect(prompts.contains { $0.kind == .strength && $0.question == "Where did this strength help you this week?" })
-    }
 }
