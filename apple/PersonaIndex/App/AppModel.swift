@@ -280,6 +280,27 @@ final class AppModel {
         await refresh()
     }
 
+    // MARK: Saved
+
+    /// Changes when a card is kept or removed, so Saved and the buttons redraw.
+    private(set) var savedVersion = 0
+    var notebook: Notebook { _ = savedVersion; return Notebook(store: defaults) }
+
+    /// Keeps a card in Saved, on this device only (and in the backup, if on).
+    func keep(prompt: String, questionId: String, theme: String?, intimate: Bool, answer: String, reveal: String, otherSide: String?, step: String?, date: String) {
+        let parts = Reveal.split(reveal)
+        let verdict = AnswerHistory(store: defaults).answers().first { $0.questionId == questionId }?.verdict
+        Notebook(store: defaults).keep(KeptCard(date: date, questionId: questionId, theme: theme ?? "", private: intimate ? true : nil,
+                                                prompt: prompt, answer: answer, headline: parts.headline,
+                                                body: parts.body.isEmpty ? nil : parts.body, otherSide: otherSide, step: step, verdict: verdict))
+        savedVersion += 1
+    }
+
+    func unkeep(_ questionId: String) {
+        Notebook(store: defaults).remove(questionId)
+        savedVersion += 1
+    }
+
     // MARK: The mirror
 
     /// The month, quarter or year that holds today, from the server.
