@@ -9,11 +9,11 @@ never in a screen file.
 ## Direction
 
 Since 2026-10-26 the app copies Edwin's second set of references (Connect,
-Your Circle, Insights and Reflect, light and dark). A soft green-white page,
+Your Circle, Insights and Reflect, light and dark). A soft teal-white page,
 white cards on a hairline with a soft lift, a deep forest sidebar on a wide
 screen, forest-green primary buttons and chosen tabs, mint cards, and pastel
 discs (green, blue, purple, rose, amber) behind line icons. Dark mode is a
-near-black green, where the filled accent turns lime. Three rules stay
+near-black teal, where the filled accent turns lime. Three rules stay
 where the references differ: initials instead of photos, no feed of shared
 moments, and only real counts (no invented numbers or percentages).
 
@@ -21,14 +21,14 @@ moments, and only real counts (no invented numbers or percentages).
 
 | Token | Light | Dark | Use |
 |---|---|---|---|
-| `--bg`, `--surface` | `#f6f8f6`, `#ffffff` | `#0b1411`, `#111d18` | page, cards |
-| `--surface-2`, `--surface-3` | `#f1f5f1`, `#e6ede7` | `#17261f`, `#1f3128` | fields, tracks |
-| `--text`, `--text-2`, `--muted` | `#10231b`, `#3c4e45`, `#66766d` | `#f0f5f1`, `#c4d1c9`, `#94a69b` | words |
-| `--forest`, `--forest-2` | `#0f3d2e`, `#1a5a41` | same | sidebar, primary buttons, chosen tabs |
+| `--bg`, `--surface` | `#f5f8f8`, `#ffffff` | `#0a1514`, `#0f1e1d` | page, cards |
+| `--surface-2`, `--surface-3` | `#eef5f4`, `#e2ecea` | `#152826`, `#1d3331` | fields, tracks |
+| `--text`, `--text-2`, `--muted` | `#0e2322`, `#394e4c`, `#627573` | `#eff6f5`, `#c2d3d1`, `#92a7a4` | words |
+| `--forest`, `--forest-2` | `#0f3d3a`, `#175a55` (deep teal) | same | sidebar, primary buttons, chosen tabs |
 | `--lime` | forest (the filled accent) | `#c6f24e` | filled accents, always under `--on-lime` |
 | `--brand-lime` | `#c6f24e` | same | the leaf and active icon on the forest sidebar, words on forest cards |
-| `--leaf` | `#2f9a4e` | same | icons, checks, progress |
-| `--accent-ink`, `--accent-wash`, `--accent-line` | `#1f7a3e`, `#edf7ea`, `#cfe6c9` | lime, `#16281c`, `#2d4a2f` | green words, mint cards, tags |
+| `--leaf` | `#1f8a80` | `#6fd6c9` | icons, checks, progress |
+| `--accent-ink`, `--accent-wash`, `--accent-line` | `#136f66`, `#e7f4f2`, `#c4e2de` | lime, `#122d2a`, `#244e49` | teal words, soft teal boxes, tags |
 | `--blue`, `--purple`, `--rose`, `--amber` (+ `-wash`) | pastel ink on a pale wash | darker washes | discs and tinted cards |
 | `--danger` | `#c4321f` | same | warnings only |
 
@@ -69,3 +69,6 @@ by school/company" list. The writing guide forbids streaks, scores and
 comparison, and the circle shows who answered, never what. Those places
 show the day's "N of 5" ring, the person's own words and patterns, initials
 on a tint, and suggestions from shared circles only.
+
+
+Since 2026-10-26 14:03 the greens are deep teal (Edwin). Most of the page sits on the background with hairlines; only a few highlights keep a tinted box. Settings shows three everyday choices and folds the rest under "More settings".

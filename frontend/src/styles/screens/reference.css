@@ -209,12 +209,12 @@
 
 /* Avatars: initials on a soft pastel disc (no photos), always dark ink. */
 .avatar {
-  color: #10231b;
+  color: #0e2322;
   font-weight: 800;
 }
 
 .ring-person text {
-  fill: #10231b;
+  fill: #0e2322;
 }
 
 /* ---------- Reflect ---------- */
@@ -424,7 +424,7 @@
 }
 
 .rings-figure .ring-inner {
-  fill: #e3f3dc;
+  fill: #dbefec;
   stroke: var(--accent-line);
 }
 
@@ -441,18 +441,18 @@
 }
 
 .app.is-dark .rings-figure .ring-outer {
-  fill: #12231a;
-  stroke: #24402f;
+  fill: #0f2321;
+  stroke: #224240;
 }
 
 .app.is-dark .rings-figure .ring-middle {
-  fill: #162a20;
-  stroke: #2a4a37;
+  fill: #132b29;
+  stroke: #284c48;
 }
 
 .app.is-dark .rings-figure .ring-inner {
-  fill: #1b3326;
-  stroke: #2f5540;
+  fill: #183431;
+  stroke: #2d5853;
 }
 
 .app.is-dark .rings-figure .ring-you {
@@ -506,7 +506,7 @@
 }
 
 .rings-dot.ring-outer {
-  background: #b9c6bd;
+  background: #b6c7c5;
   box-shadow: none;
 }
 
@@ -1193,4 +1193,45 @@ fieldset.notice,
   border-radius: 0;
   background: transparent;
   color: var(--muted);
+}
+
+/* Settings: the few everyday choices first, the rest folded away. */
+.settings-lead {
+  margin-top: calc(-1 * var(--s-2));
+}
+
+.settings-more {
+  border-top: 1px solid var(--line);
+}
+
+.settings-more > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 56px;
+  font-weight: 700;
+  list-style: none;
+  cursor: pointer;
+}
+
+.settings-more > summary::-webkit-details-marker {
+  display: none;
+}
+
+.settings-more > summary::after {
+  content: '›';
+  color: var(--muted);
+  font-size: 1.5rem;
+  transition: transform var(--t-fast) var(--ease);
+}
+
+.settings-more[open] > summary::after {
+  transform: rotate(90deg);
+}
+
+.settings-more[open] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+  padding-bottom: var(--s-5);
 }

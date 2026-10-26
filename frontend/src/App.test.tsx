@@ -2539,7 +2539,7 @@ describe('settings', () => {
     expect(await screen.findByRole('heading', { name: 'Good afternoon.' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'You' }))
     fireEvent.click(await screen.findByRole('button', { name: /^Settings/ }))
-    const field = await screen.findByRole('textbox', { name: /Your first name, for the greeting/ })
+    const field = await screen.findByRole('textbox', { name: /For the greeting/ })
     fireEvent.change(field, { target: { value: 'Paul' } })
     fireEvent.blur(field)
     expect(localStorage.getItem('pi.name')).toBe('Paul')
