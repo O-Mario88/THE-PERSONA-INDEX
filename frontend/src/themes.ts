@@ -41,8 +41,6 @@ export const THEMES: Record<string, ThemeStyle> = {
 
 const FALLBACK: ThemeStyle = { name: 'Today', icon: '✨', from: '#6d5dfc', to: '#ec4899', area: '' }
 
-export const THEME_COUNT = Object.keys(THEMES).length
-
 export function themeName(slug: string): string {
   return THEMES[slug]?.name ?? slug
 }

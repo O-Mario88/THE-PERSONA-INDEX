@@ -8,19 +8,6 @@
   gap: var(--s-5);
 }
 
-.head-actions {
-  flex-wrap: nowrap;
-  gap: 0;
-  align-self: flex-start;
-}
-
-/* Three numbers in tiles */
-.stat-tiles {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--s-3);
-}
-
 .stat-tile {
   display: flex;
   flex-direction: column;
@@ -42,31 +29,6 @@
   color: var(--muted);
   font-size: var(--fs-small);
   line-height: 1.25;
-}
-
-/* Unlock Outside Mirror: a lime-edged card with a three-step track. */
-.circle-hero {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--s-4);
-  padding: var(--s-5);
-  border: 1.5px solid var(--accent-line);
-  border-radius: var(--r-lg);
-  background: var(--accent-wash);
-}
-
-.circle-hero-words {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: var(--s-1);
-  min-width: 0;
-}
-
-.circle-hero-title {
-  font-size: var(--fs-h3);
-  line-height: 1.3;
-  font-weight: 800;
 }
 
 .unlock-track {
