@@ -158,35 +158,6 @@ struct FriendRow: View {
     }
 }
 
-/// Chips that wrap onto the next line when they run out of room.
-struct FlowRow: Layout {
-    var spacing: CGFloat = Space.s2
-
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let width = proposal.width ?? .infinity
-        var x: CGFloat = 0, y: CGFloat = 0, row: CGFloat = 0, widest: CGFloat = 0
-        for v in subviews {
-            let s = v.sizeThatFits(.unspecified)
-            if x > 0, x + s.width > width { y += row + spacing; x = 0; row = 0 }
-            x += s.width + spacing
-            row = max(row, s.height)
-            widest = max(widest, x - spacing)
-        }
-        return CGSize(width: min(widest, width), height: y + row)
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        var x = bounds.minX, y = bounds.minY, row: CGFloat = 0
-        for v in subviews {
-            let s = v.sizeThatFits(.unspecified)
-            if x > bounds.minX, x + s.width > bounds.maxX { y += row + spacing; x = bounds.minX; row = 0 }
-            v.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(s))
-            x += s.width + spacing
-            row = max(row, s.height)
-        }
-    }
-}
-
 /// Sign in with a 6-digit code, as on the web.
 struct SignInCard: View {
     @Environment(AppModel.self) private var model
@@ -299,11 +270,15 @@ struct GrowingSection: View {
             Eyebrow(text: "Today", color: Palette.muted)
             Text("Growing together").font(.pTitle)
             Text("How people are showing up today, so you know you are not alone in it.").foregroundStyle(Palette.muted)
-            LazyVGrid(columns: [GridItem(.flexible(), spacing: Space.s3), GridItem(.flexible())], spacing: Space.s3) {
+            // The day's total on its own row; the circle's two side by side, the same height.
+            VStack(spacing: Space.s3) {
                 tile(model.growing.map { "\($0.answers)" } ?? "–", "answers to today’s questions")
                 if let c = model.circle {
-                    tile("\(c.active)", "friends active this week")
-                    tile("\(c.friends.filter { $0.since >= monday }.count)", "new connections this week")
+                    HStack(spacing: Space.s3) {
+                        tile("\(c.active)", "friends active this week")
+                        tile("\(c.friends.filter { $0.since >= monday }.count)", "new connections this week")
+                    }
+                    .fixedSize(horizontal: false, vertical: true)
                 }
             }
             if shares.isEmpty {
@@ -337,7 +312,7 @@ struct GrowingSection: View {
             Text(number).font(.figtree(28, .heavy))
             Text(name).font(.figtree(13)).foregroundStyle(Palette.muted)
         }
-        .frame(maxWidth: .infinity, minHeight: 80, alignment: .topLeading)
+        .frame(maxWidth: .infinity, minHeight: 80, maxHeight: .infinity, alignment: .topLeading)
         .card(padding: Space.s4)
     }
 }

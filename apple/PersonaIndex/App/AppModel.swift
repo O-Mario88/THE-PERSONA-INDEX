@@ -83,6 +83,8 @@ final class AppModel {
         }
         defaults.set(nil, forKey: Keys.oldPulse)
         self.prefs = prefs
+        self.saved = Notebook(store: defaults).shelf()
+        backup.tookIn = { [weak self] in self?.reloadSaved() }
     }
 
     static func live() -> AppModel {
@@ -293,6 +295,7 @@ final class AppModel {
         name = defaults.string(forKey: Keys.name) ?? name
         rings = ringStore.all()
         reflect.load()
+        reloadSaved()
         prefs = PrefStore(store: defaults).prefs
         insightsVersion += 1
         await refresh()
@@ -318,9 +321,11 @@ final class AppModel {
 
     // MARK: Saved
 
-    /// Changes when a card is kept or removed, so Saved and the buttons redraw.
-    private(set) var savedVersion = 0
-    var notebook: Notebook { _ = savedVersion; return Notebook(store: defaults) }
+    /// What Saved holds, read once and again only when it changes (a card
+    /// kept or removed, a restore): reading it lists every stored value.
+    private(set) var saved = Notebook.Shelf()
+    var notebook: Notebook { Notebook(store: defaults) }
+    private func reloadSaved() { saved = notebook.shelf() }
 
     /// Keeps a card in Saved, on this device only (and in the backup, if on).
     func keep(prompt: String, questionId: String, theme: String?, intimate: Bool, answer: String, reveal: String, otherSide: String?, step: String?, date: String) {
@@ -329,12 +334,12 @@ final class AppModel {
         Notebook(store: defaults).keep(KeptCard(date: date, questionId: questionId, theme: theme ?? "", private: intimate ? true : nil,
                                                 prompt: prompt, answer: answer, headline: parts.headline,
                                                 body: parts.body.isEmpty ? nil : parts.body, otherSide: otherSide, step: step, verdict: verdict))
-        savedVersion += 1
+        reloadSaved()
     }
 
     func unkeep(_ questionId: String) {
         Notebook(store: defaults).remove(questionId)
-        savedVersion += 1
+        reloadSaved()
     }
 
     // MARK: The mirror

@@ -132,18 +132,10 @@ private struct AnswerCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.s4) {
-            HStack(spacing: Space.s3) {
-                ZStack {
-                    Circle().fill(Palette.onLime)
-                    Circle().fill(Palette.lime).padding(5)
-                }
-                .frame(width: 22, height: 22)
-                Text(option.label).font(.pH3)
-            }
-            .padding(.horizontal, Space.s5)
-            .frame(maxWidth: .infinity, minHeight: 60, alignment: .leading)
-            .background(Palette.accentWash, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: Radius.md, style: .continuous).strokeBorder(Palette.accentLine, lineWidth: 1.5))
+            // The same row as before the tap, filled in, so nothing shifts.
+            OptionRow(label: option.label, chosen: true) {}
+                .allowsHitTesting(false)
+                .accessibilityAddTraits(.isSelected)
 
             if option.heavy == true {
                 HeavyNote()
