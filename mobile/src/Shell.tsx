@@ -261,8 +261,9 @@ export function Shell({ phoneDark }: { phoneDark: boolean }) {
     pullSync(acc.sync).catch(() => {})
   }
 
-  // Midnight on every tab through the evening and night, as the Dark mode note says.
-  const dark = blackOn(prefs) && (phoneDark || win === 'evening' || win === 'night' || win === 'rest')
+  // Same rule as the web: midnight when the phone asks for dark, and on Today
+  // through the evening and night; the Dark mode switch turns both off.
+  const dark = blackOn(prefs) && (phoneDark || ((win === 'evening' || win === 'night' || win === 'rest') && tab === 'today'))
   const palette = dark ? darkPalette : lightPalette
 
   const hero = set

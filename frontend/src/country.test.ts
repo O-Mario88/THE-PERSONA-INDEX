@@ -24,7 +24,7 @@ describe('where someone lives', () => {
     try {
       expect(countryName('UG')).toBe('Uganda')
     } finally {
-      Intl.DisplayNames = real
+      Object.defineProperty(Intl, 'DisplayNames', { value: real, configurable: true, writable: true })
     }
   })
 
