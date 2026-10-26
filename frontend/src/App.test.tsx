@@ -799,7 +799,7 @@ describe('the daily questions', () => {
       '✨Todayanswered',
     ])
     // Day one closes on a first glimpse, warm and short (Edwin, 2026-10-26).
-    expect(done).toHaveTextContent('your first day')
+    expect(done).toHaveTextContent('Your first morning')
     expect(done).not.toHaveTextContent(/day \d+ of 90/)
     const glimpse = within(done).getByRole('region', { name: 'Here’s what your first answers hint at.' })
     expect(glimpse).toHaveTextContent('Steady follow-through, with a soft spot for a finished list.')
@@ -3087,7 +3087,7 @@ describe('the first week', () => {
     expect(glimpse).toHaveTextContent('You lean towards getting things done.')
     expect(glimpse).toHaveTextContent('on Sunday it becomes your first mirror')
     expect(screen.queryByRole('note', { name: "Today's thread" })).not.toBeInTheDocument()
-    expect(screen.getByText(/your first day/)).toBeInTheDocument()
+    expect(screen.getAllByText(/Your first morning/).length).toBeGreaterThan(0)
     // No sheet over the glimpse: the sign-up page comes after it.
     expect(screen.queryByText('Not now — keep it on this phone')).not.toBeInTheDocument()
 

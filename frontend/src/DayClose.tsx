@@ -96,8 +96,9 @@ export function DayClose(props: Props) {
       <div className="close-hero">
         <div className="close-hero-top">
           <span className="close-hero-label">
-            {sitting === 'morning' ? 'Morning close' : 'Evening close'} ·{' '}
-            {dayWithYou ? (dayWithYou === 1 ? 'your first day' : `your day ${dayWithYou}`) : `day ${s.day} of 90`}
+            {dayWithYou === 1
+              ? `Your first ${sitting}`
+              : `${sitting === 'morning' ? 'Morning close' : 'Evening close'} · ${dayWithYou ? `your day ${dayWithYou}` : `day ${s.day} of 90`}`}
           </span>
           {questions.length > 0 && (
             <span className="close-hero-pill">
@@ -130,7 +131,8 @@ export function DayClose(props: Props) {
           ) : (
             <Thread answers={mine} history={history} date={date} paused={paused} />
           )}
-          <MorningMoves date={date} />
+          {/* On the first glimpse an empty list of steps is left out. */}
+          {!(glimpseFor && movesOn(date).length === 0) && <MorningMoves date={date} />}
           {eveningThemes && (
             <Upcoming
               label={`Your evening three · ${opensAt('evening')}`}
