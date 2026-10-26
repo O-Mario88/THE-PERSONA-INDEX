@@ -12,6 +12,7 @@
 		180BA927900C8DB708B45017 /* ReflectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F09A5454739BE97B969D5F31 /* ReflectView.swift */; };
 		1D0492F8C55CFEC97378191E /* ReflectModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B72C7744E886263E1EC5F792 /* ReflectModel.swift */; };
 		2B79CDCDC6E41ED0F1DFB900 /* PersonaKit in Frameworks */ = {isa = PBXBuildFile; productRef = EF3AD5D0AC460371D67BCA0C /* PersonaKit */; };
+		383BD813053A879C84B61FB1 /* PeriodMirrorViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8ED1B412C2B8F4B7CB97E31 /* PeriodMirrorViews.swift */; };
 		3A1AE93FA9522237C588D353 /* CircleParts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE8BAB23E7E7EC540CDF751 /* CircleParts.swift */; };
 		412E2197CCED5A1AE3644FD8 /* WhatHelpedCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19B0D1E76A0FF3541F0D50FA /* WhatHelpedCard.swift */; };
 		428EA353940BB8242CB6575C /* MainTabs.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC5CA5B943743B90359E4D1F /* MainTabs.swift */; };
@@ -79,6 +80,7 @@
 		CDEDBD2C2DC174469D6DBCA2 /* Tokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tokens.swift; sourceTree = "<group>"; };
 		CEB81C37CC2C0AFCDACAD5CA /* CommonGroundCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommonGroundCard.swift; sourceTree = "<group>"; };
 		D6E70DFE9CC59514123930D5 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		D8ED1B412C2B8F4B7CB97E31 /* PeriodMirrorViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeriodMirrorViews.swift; sourceTree = "<group>"; };
 		D978FEB9E326C63E6D93F817 /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
 		DC5CA5B943743B90359E4D1F /* MainTabs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabs.swift; sourceTree = "<group>"; };
 		DDE6E0628DDA64A022D9C66F /* Figtree-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Figtree-SemiBold.ttf"; sourceTree = "<group>"; };
@@ -111,6 +113,14 @@
 				7BC60757B82543565543A8D1 /* PersonaIndex.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		281B990C6CA281783580012F /* Mirrors */ = {
+			isa = PBXGroup;
+			children = (
+				D8ED1B412C2B8F4B7CB97E31 /* PeriodMirrorViews.swift */,
+			);
+			path = Mirrors;
 			sourceTree = "<group>";
 		};
 		2D38EAD9B81A1BA3ACAFEE8F /* App */ = {
@@ -205,6 +215,7 @@
 				D978FEB9E326C63E6D93F817 /* WelcomeView.swift */,
 				FDF00EC06F79706885373CFA /* YouView.swift */,
 				381D68EF02406DD88A95CFE3 /* Connect */,
+				281B990C6CA281783580012F /* Mirrors */,
 				DF34E7023AB9662BD99F7DD8 /* Reflect */,
 				C3DC2FE116C1A713EBDF8992 /* Settings */,
 			);
@@ -338,6 +349,7 @@
 				B14BDA1CAA5AE068960D2C45 /* LockScreen.swift in Sources */,
 				428EA353940BB8242CB6575C /* MainTabs.swift in Sources */,
 				4AE36D19290FBF3D85ECF321 /* MirrorsView.swift in Sources */,
+				383BD813053A879C84B61FB1 /* PeriodMirrorViews.swift in Sources */,
 				79D7E26BD8BDEFEC5A1F0774 /* PersonaIndexApp.swift in Sources */,
 				B1E4DA417025BEAE24B575F9 /* PhraseSheet.swift in Sources */,
 				1D0492F8C55CFEC97378191E /* ReflectModel.swift in Sources */,

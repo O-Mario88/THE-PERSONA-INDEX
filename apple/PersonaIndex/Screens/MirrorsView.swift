@@ -1,12 +1,47 @@
 import PersonaKit
 import SwiftUI
 
-/// Mirrors: the weekly mirror, one tap from Insights. The week's line from
-/// the clearest read (a leaning, never a type), the week in numbers, the
-/// week at a glance, each trait's leaning on its line (never a score), set
-/// only against this phone's own past, and the small steps. Each part shows
-/// only when there is something real in it.
+/// Mirrors, one tap from Insights: the week, month, quarter and year, each
+/// set only against this phone's own past, and the Outside Mirror. The
+/// week's line from the clearest read (a leaning, never a type), the week in
+/// numbers, the week at a glance, each trait's leaning on its line (never a
+/// score), and the small steps. Each part shows only when there is something
+/// real in it.
 struct MirrorsView: View {
+    @State private var span: Span = .week
+
+    enum Span: String, CaseIterable, Identifiable {
+        case week, month, quarter, year
+        var id: String { rawValue }
+        var name: String { rawValue.capitalized }
+        var period: Period? { Period(rawValue: rawValue) }
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: Space.s5) {
+                Picker("Look back over", selection: $span) {
+                    ForEach(Span.allCases) { Text($0.name).tag($0) }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .padding(.top, Space.s2)
+                if let period = span.period {
+                    PeriodMirrorTab(period: period).id(period)
+                } else {
+                    WeekMirrorTab()
+                }
+            }
+            .padding(Space.gutter)
+            .frame(maxWidth: 720, alignment: .leading)
+            .frame(maxWidth: .infinity)
+        }
+        .background(Palette.bg)
+    }
+}
+
+/// The week's mirror, the first of the Mirrors' four spans.
+struct WeekMirrorTab: View {
     @Environment(AppModel.self) private var model
     @State private var state: LoadState = .loading
 
@@ -15,8 +50,7 @@ struct MirrorsView: View {
     }
 
     var body: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: Space.s5) {
+        LazyVStack(alignment: .leading, spacing: Space.s5) {
                 switch state {
                 case .loading:
                     Text("Putting your week together…").foregroundStyle(Palette.muted).padding(.vertical, Space.s8)
@@ -28,15 +62,10 @@ struct MirrorsView: View {
                     .card(fill: Palette.surface2, stroke: .clear)
                 case .ready(let m):
                     MirrorPage(m: m, connection: connection(m))
+                    if model.signedIn { OutsideMirrorSection(own: Dictionary(m.traits.map { ($0.trait, $0.score) }, uniquingKeysWith: { a, _ in a })) }
                 }
-            }
-            .padding(Space.gutter)
-            .frame(maxWidth: 720, alignment: .leading)
-            .frame(maxWidth: .infinity)
         }
-        .background(Palette.bg)
         .task { await load() }
-        .refreshable { await load() }
     }
 
     /// "Your week in connection": the person's own moves, from this device.
@@ -80,6 +109,19 @@ private struct MirrorPage: View {
                 .font(.pSmall).foregroundStyle(Palette.muted)
         }
     }
+
+    /// The sections in page order; a section's number counts only those shown.
+    private enum Part { case glance, traits, steps, connection, comingUp }
+
+    private var shown: [Part] {
+        [.glance]
+            + (m.traits.isEmpty ? [] : [.traits])
+            + (m.steps.isEmpty ? [] : [.steps])
+            + (connection == nil ? [] : [.connection])
+            + (m.comingUp.isEmpty ? [] : [.comingUp])
+    }
+
+    private func number(of part: Part) -> Int { (shown.firstIndex(of: part) ?? 0) + 1 }
 
     private var header: some View {
         VStack(alignment: .leading, spacing: Space.s3) {
@@ -126,7 +168,7 @@ private struct MirrorPage: View {
     }
 
     private var glance: some View {
-        Section(number: 1, title: "Your week at a glance") {
+        MirrorSection(number: 1, title: "Your week at a glance") {
             HStack(spacing: 6) {
                 ForEach(m.days, id: \.date) { day in
                     VStack(spacing: Space.s2) {
@@ -150,7 +192,7 @@ private struct MirrorPage: View {
     }
 
     private var traits: some View {
-        Section(number: 2, title: "Your trait read") {
+        MirrorSection(number: number(of: .traits), title: "Your trait read") {
             ForEach(m.traits, id: \.trait) { read in
                 if let trait = Traits.all[read.trait] {
                     VStack(alignment: .leading, spacing: Space.s2) {
@@ -173,7 +215,7 @@ private struct MirrorPage: View {
     }
 
     private var steps: some View {
-        Section(number: 3, title: "Your small steps") {
+        MirrorSection(number: number(of: .steps), title: "Your small steps") {
             ForEach(m.steps, id: \.step) { step in
                 VStack(alignment: .leading, spacing: 2) {
                     Text(Themes.style(step.theme).name.uppercased()).font(.figtree(11, .bold)).tracking(1.4).foregroundStyle(Palette.muted)
@@ -187,14 +229,14 @@ private struct MirrorPage: View {
     }
 
     private func inConnection(_ c: ConnectionCounts) -> some View {
-        Section(number: m.steps.isEmpty ? 3 : 4, title: "Your week in connection") {
+        MirrorSection(number: number(of: .connection), title: "Your week in connection") {
             Text(ConnectionLog.line(c, span: "week")).font(.figtree(17, .semibold))
             Text("Only what you did, kept on this device. Never who, and never sent.").font(.pSmall).foregroundStyle(Palette.muted)
         }
     }
 
     private var comingUp: some View {
-        Section(number: (m.steps.isEmpty ? 3 : 4) + (connection == nil ? 0 : 1), title: "Next week") {
+        MirrorSection(number: number(of: .comingUp), title: "Next week") {
             FlowChips(themes: m.comingUp)
         }
     }
@@ -233,7 +275,7 @@ private struct MirrorPage: View {
 }
 
 /// A numbered section card: the lime number, the title, then its body.
-private struct Section<Content: View>: View {
+struct MirrorSection<Content: View>: View {
     let number: Int
     let title: String
     @ViewBuilder let content: Content
@@ -297,7 +339,7 @@ private struct Legend: View {
 
 /// A line with the middle marked and a dot where the answers sit. No
 /// number: it is a leaning, not a score (Edwin, 2026-10-25).
-private struct ScaleLine: View {
+struct ScaleLine: View {
     let score: Double
     let leaning: String
 
