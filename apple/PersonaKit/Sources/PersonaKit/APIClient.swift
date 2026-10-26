@@ -106,7 +106,7 @@ public actor APIClient {
 
     /// Runs a request with the pass; when the server no longer knows it, gets
     /// a new one and sends the same request once more.
-    private func withDevice<T>(_ send: (String) async throws -> T) async throws -> T {
+    func withDevice<T>(_ send: (String) async throws -> T) async throws -> T {
         do {
             return try await send(try await deviceToken())
         } catch let error as APIError where error.code == "invalid_device" || error.code == "device_forgotten" {

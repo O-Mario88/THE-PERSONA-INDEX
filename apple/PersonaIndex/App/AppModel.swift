@@ -282,6 +282,16 @@ final class AppModel {
 
     // MARK: The mirror
 
+    /// The month, quarter or year that holds today, from the server.
+    func periodMirror(_ period: Period) async throws -> PeriodMirror {
+        try await api.periodMirror(period, date: date)
+    }
+
+    /// The Outside Mirror, for a signed-in person.
+    func outsideMirror() async throws -> OutsideMirror {
+        try await api.outsideMirror()
+    }
+
     /// This phone's week, from the server.
     func weekMirror() async throws -> WeekMirror {
         try await api.mirror(date)
@@ -291,6 +301,8 @@ final class AppModel {
 
     func refresh() async {
         tick()
+        // Signed in is known from the Keychain, so every screen sees it from the start.
+        signedIn = await api.isSignedIn
         CardTexts(store: defaults).prune(today: date)
         if set == nil { load = .loading }
         do {
