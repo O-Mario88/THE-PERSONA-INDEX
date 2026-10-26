@@ -52,7 +52,7 @@ describe('Reflect’s quiet machinery', () => {
   })
 
   it('keeps the Reflect choices off by default', () => {
-    expect(reflectSettings()).toEqual({ threadsInMirror: false, reflectionsInNoticed: false })
+    expect(reflectSettings()).toEqual({ threadsInMirror: false, reflectionsInNoticed: false, reflectionsInGrowth: false })
     setReflectSettings({ threadsInMirror: true })
     expect(reflectSettings().threadsInMirror).toBe(true)
   })

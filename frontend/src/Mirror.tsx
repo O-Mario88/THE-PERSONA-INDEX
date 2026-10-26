@@ -68,6 +68,8 @@ import {
 } from './reaching'
 import { helplineHere } from './prefs'
 import { ReadLink } from './Read'
+import { MirrorPatterns } from './MirrorPatterns'
+import { hasPatterns } from './patterns'
 import { MirrorThreads } from './MirrorThreads'
 import { threadsBetween } from './journal'
 import { InConnection, showConnection } from './MirrorConnection'
@@ -1089,6 +1091,7 @@ function PeriodPage({ p, onOpenKept }: { p: PeriodMirror; onOpenKept: () => void
       body: <Who leans={lean} date={p.date} span={noun} onVerdict={() => setNotMe(notMeSides(p.date))} />,
       show: lean.length > 0,
     },
+    { key: 'patterns', title: 'Patterns in your answers', body: <MirrorPatterns today={p.date} />, show: hasPatterns(p.date) },
     { key: 'lines', title: 'In your own words, week by week', body: <WeekLines lines={lines} />, show: lines.length > 0 },
     { key: 'threads', title: 'Threads you kept going', body: <MirrorThreads from={p.from} to={p.to} span={noun} />, show: threadsBetween(p.from, p.to).length > 0 },
     { key: 'connection', title: `Your ${noun} in connection`, body: <InConnection from={p.from} to={p.to} span={noun} />, show: showConnection(p.from, p.to) },
