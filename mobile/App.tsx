@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useColorScheme, View } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
-import { StatusBar } from 'expo-status-bar'
 import * as SplashScreen from 'expo-splash-screen'
 import {
   useFonts,
@@ -32,7 +31,6 @@ export default function App() {
   if (!fonts || !kept) return <View style={{ flex: 1, backgroundColor: light.bg }} />
   return (
     <SafeAreaProvider>
-      <StatusBar style="auto" />
       <Shell phoneDark={scheme === 'dark'} />
     </SafeAreaProvider>
   )

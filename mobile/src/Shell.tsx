@@ -3,6 +3,7 @@
 // The rules come from the shared code (frontend/src); only the drawing is
 // native. Keep the two in step: a change to the flow in App.tsx belongs here
 // too.
+import { StatusBar } from 'expo-status-bar'
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { AppState, Pressable, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -565,6 +566,8 @@ export function Shell({ phoneDark }: { phoneDark: boolean }) {
   const showTabs = !fullScreen
   return (
     <ThemeProvider palette={palette}>
+      {/* Light clock and icons on midnight, dark ones on cream. */}
+      <StatusBar style={dark ? 'light' : 'dark'} />
       <View style={{ flex: 1, backgroundColor: palette.bg }}>
         <View style={{ flex: 1 }}>{body}</View>
         {showTabs && <TabBar tab={tab} onTab={goTab} shown={TABS.filter((t) => t.tab !== 'circle' || connectShown)} />}
