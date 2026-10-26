@@ -46,6 +46,7 @@
 		D4E9841C7AFCCBA8104898DC /* Tokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDEDBD2C2DC174469D6DBCA2 /* Tokens.swift */; };
 		DC9715A8218E881D21F1208B /* Figtree-Black.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A96E3BCFE2645770CCFAA219 /* Figtree-Black.ttf */; };
 		DD94C641717F7FD2587A2C1A /* Figtree-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1EB308A4B0ABF8E2D333F7C9 /* Figtree-Bold.ttf */; };
+		EDE8AB711D3C19A6493D54A1 /* ReminderScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54779884F3CF5113D8603F2E /* ReminderScheduler.swift */; };
 		EDFE9B55FCDC8ABFB874441B /* SavedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BA9FE939FD90AB54F312D40 /* SavedView.swift */; };
 		F615132247B6CBB11A85ADFC /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CCF8B6533CC7E0D2F85606A /* SettingsView.swift */; };
 		F8CA8287A6239627147721D5 /* TodayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1FFBAB58ADFFB5DE259DCD2 /* TodayView.swift */; };
@@ -60,6 +61,7 @@
 		1EB308A4B0ABF8E2D333F7C9 /* Figtree-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Figtree-Bold.ttf"; sourceTree = "<group>"; };
 		3BA9FE939FD90AB54F312D40 /* SavedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedView.swift; sourceTree = "<group>"; };
 		4D7E35BDE335C3BA19A62164 /* ReflectParts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReflectParts.swift; sourceTree = "<group>"; };
+		54779884F3CF5113D8603F2E /* ReminderScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderScheduler.swift; sourceTree = "<group>"; };
 		56E04314E6E77555685610A4 /* PersonaIndex.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PersonaIndex.entitlements; sourceTree = "<group>"; };
 		5BB9F50E31CB03D40F8B39A9 /* PhraseSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhraseSheet.swift; sourceTree = "<group>"; };
 		5C8C112AE3F39E2B249F141A /* OFL.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = OFL.txt; sourceTree = "<group>"; };
@@ -137,6 +139,7 @@
 				7372EDEC6D9D4B71C0462EFF /* Dictation.swift */,
 				8DB7B86359BCF5B3EEA8FD8B /* PersonaIndexApp.swift */,
 				B72C7744E886263E1EC5F792 /* ReflectModel.swift */,
+				54779884F3CF5113D8603F2E /* ReminderScheduler.swift */,
 				F87198315A3F42D2E528B99A /* SelfSnapshot.swift */,
 			);
 			path = App;
@@ -362,6 +365,7 @@
 				1D0492F8C55CFEC97378191E /* ReflectModel.swift in Sources */,
 				CD868504FFD61E84FD3FDDC8 /* ReflectParts.swift in Sources */,
 				180BA927900C8DB708B45017 /* ReflectView.swift in Sources */,
+				EDE8AB711D3C19A6493D54A1 /* ReminderScheduler.swift in Sources */,
 				EDFE9B55FCDC8ABFB874441B /* SavedView.swift in Sources */,
 				067C1F114E6F16DA187A8985 /* SelfSnapshot.swift in Sources */,
 				F615132247B6CBB11A85ADFC /* SettingsView.swift in Sources */,

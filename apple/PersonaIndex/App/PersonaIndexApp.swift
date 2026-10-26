@@ -11,6 +11,7 @@ struct PersonaIndexApp: App {
                 .environment(model)
                 .task {
                     if await model.backup.resumeAfterInstall() { await model.reloadAfterRestore() } else { await model.refresh() }
+                    await model.rescheduleReminders()
                 }
                 #if os(macOS) && DEBUG
                 .onAppear { SelfSnapshot.runIfAsked(model) }
@@ -58,12 +59,17 @@ struct RootView: View {
         }
         .onChange(of: phase) { _, now in
             model.lock.covered = now != .active
+            if now == .active { Task { await model.rescheduleReminders() } }
             if now == .background {
                 model.lock.lock()
                 Task { await model.backup.backUpQuietly() }
             }
         }
         .onAppear(perform: Launch.firstScreen)
+        // A tapped reminder opens where it points: today's sitting, the Mirrors or Reflect.
+        .onChange(of: model.reminders.opened) { _, section in
+            if let section { model.section = section; model.reminders.opened = nil }
+        }
     }
 }
 
