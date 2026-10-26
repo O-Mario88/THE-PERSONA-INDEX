@@ -1,6 +1,7 @@
 // Client for the backend API. Shapes mirror backend/api.go.
 
 import type { Need } from './needs'
+import type { HelpedOutcome } from './stepReports'
 import { markCheckSent, unsentChecks } from './notebook'
 import { addDays, dateOf, daysBetween, keys, load, loadJSON, remove, save, saveJSON } from './storage'
 
@@ -292,11 +293,12 @@ export type Kept = {
     planChecks?: number
     weeklyNotes: number
     votes: number
+    reports?: number // What Helped (stepReports.ts)
     firstAnswer?: string
   }
   keptFor: { answersDays: number; weeklyNotesDays: number; votesDays: number; backupDays?: number }
 }
-export type Deleted = { answers: number; steps: number; planChecks?: number; weeklyNotes: number; votes: number }
+export type Deleted = { answers: number; steps: number; planChecks?: number; weeklyNotes: number; votes: number; reports?: number }
 
 // Everything the server holds for this phone, written out, for "Download my
 // book". Shapes mirror backend/keep.go.
@@ -318,6 +320,7 @@ export type ServerExport = {
   planChecks: { date: string; status: 'did' | 'not_yet' }[]
   weeklyNotes: { week: string; summary: Record<string, unknown> }[]
   votes: { hour: string; kind: 'answer' | 'rating'; question: string; answer: string }[]
+  reports?: { week: string; question: string; step: string; outcome: HelpedOutcome }[] // What Helped
 }
 
 // getExport fetches the server's copy. A phone with no pass has none there.
@@ -380,6 +383,18 @@ export function saveStep(
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ questionId, optionId, status, date, voterId, ...(needStep ? { needStep } : {}) }),
+    }),
+  )
+}
+
+// What Helped (stepReports.ts): how a saved step went, sent only when the
+// person taps an answer, with nothing but the step's answer and the outcome.
+export function reportStep(questionId: string, optionId: string, outcome: HelpedOutcome, date: string): Promise<unknown> {
+  return withDevice((voterId) =>
+    request('/api/what-helped', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ questionId, optionId, outcome, date, voterId }),
     }),
   )
 }

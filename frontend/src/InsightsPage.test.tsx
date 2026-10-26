@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Option, Question } from './api'
 import { keepCardText } from './insights'
 import { Insights } from './InsightsPage'
-import { intentions } from './notebook'
+import { intentions, keepIntention } from './notebook'
 import type { AnswerRecord } from './profile'
 import { voiceProblems } from './voice'
 
@@ -186,5 +186,105 @@ describe('the words on the page', () => {
     render(<Insights {...props} />)
     const text = document.body.textContent ?? ''
     for (const sentence of text.split(/(?<=[.!?])\s+/)) expect(voiceProblems(sentence)).toEqual([])
+  })
+})
+
+describe('What Helped', () => {
+  const qid = '2026-10-25-q1'
+  const posts: { path: string; body: unknown }[] = []
+
+  function stubHelped(steps: unknown[] | null, sendOk = true) {
+    posts.length = 0
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const path = String(input)
+        if (path === '/api/what-helped' && init?.method === 'POST') {
+          posts.push({ path, body: JSON.parse(String(init.body)) })
+          return sendOk ? new Response('{"status":"saved"}', { status: 200 }) : new Response('{"error":"unavailable"}', { status: 503 })
+        }
+        if (path === '/api/what-helped' && steps) return new Response(JSON.stringify({ min: 50, few: 10, steps }), { status: 200 })
+        return new Response('{"error":"unavailable"}', { status: 503 })
+      }),
+    )
+  }
+
+  function savedYesterday() {
+    localStorage.setItem('pi.device.v1', 'pass-1')
+    answered(qid)
+    keepIntention({ id: `insight-${qid}`, date: '2026-10-24', text: 'Leave one cup until morning.', from: qid })
+  }
+
+  it('asks how a saved step went from the next day, and sends nothing until a tap', async () => {
+    stubHelped(null)
+    savedYesterday()
+    render(<Insights {...props} />)
+    const section = screen.getByRole('region', { name: 'What Helped' })
+    expect(within(section).getByText('Leave one cup until morning.')).toBeInTheDocument()
+    const ask = within(section).getByRole('group', { name: 'How did it go?' })
+    expect(within(ask).getAllByRole('button').map((b) => b.textContent)).toEqual([
+      'Tried it: helped a lot',
+      'Tried it: helped a little',
+      'Tried it: no change',
+      'Didn’t try it',
+    ])
+    expect(within(section).getByText(/it’s anonymous and never includes your words/)).toBeInTheDocument()
+    expect(posts).toHaveLength(0)
+
+    fireEvent.click(within(ask).getByRole('button', { name: 'Tried it: helped a little' }))
+    expect(await within(section).findByText('Thanks. Counted anonymously, with others who reported back.')).toBeInTheDocument()
+    expect(posts).toEqual([
+      { path: '/api/what-helped', body: { questionId: qid, optionId: 'a', outcome: 'helped_little', date: today, voterId: 'pass-1' } },
+    ])
+    expect(localStorage.getItem(`pi.helped.${qid}.a`)).toBe('helped_little')
+    expect(within(section).queryByRole('group', { name: 'How did it go?' })).not.toBeInTheDocument()
+    expect(within(section).getByText('You said: Tried it: helped a little.')).toBeInTheDocument()
+
+    fireEvent.click(within(section).getByRole('button', { name: 'Change' }))
+    expect(within(section).getByRole('group', { name: 'How did it go?' })).toBeInTheDocument()
+  })
+
+  it('says so when a report does not go through, and counts nothing', async () => {
+    stubHelped(null, false)
+    savedYesterday()
+    render(<Insights {...props} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Didn’t try it' }))
+    expect(await screen.findByText('That didn’t go through, so nothing was counted. Try again later.')).toBeInTheDocument()
+    expect(localStorage.getItem(`pi.helped.${qid}.a`)).toBeNull()
+    expect(screen.getByRole('group', { name: 'How did it go?' })).toBeInTheDocument()
+  })
+
+  it('shows what others found once enough reported back, in counts, and who is counted', async () => {
+    stubHelped([
+      {
+        questionId: qid,
+        optionId: 'a',
+        total: 63,
+        outcomes: [
+          { outcome: 'helped_lot', count: 41 },
+          { outcome: 'helped_little', count: 12 },
+          { outcome: 'no_change', count: 0, few: true },
+          { outcome: 'not_tried', count: 10 },
+        ],
+      },
+    ])
+    savedYesterday()
+    render(<Insights {...props} />)
+    const section = screen.getByRole('region', { name: 'What Helped' })
+    expect(
+      await within(section).findByText(
+        'Of those who tried this and reported back, 41 said it helped a lot, 12 said it helped a little and a few saw no change.',
+      ),
+    ).toBeInTheDocument()
+    expect(within(section).getByText('10 more said they didn’t get to try it.')).toBeInTheDocument()
+    expect(within(section).getByText(/Only people who chose to report back are counted/)).toBeInTheDocument()
+    expect(section.textContent).not.toMatch(/%/)
+  })
+
+  it('has no totals to show below the minimum, and says the step is still being reported on', async () => {
+    stubHelped([])
+    savedYesterday()
+    render(<Insights {...props} />)
+    expect(await screen.findByText('Not enough people have reported back on this step yet.')).toBeInTheDocument()
   })
 })

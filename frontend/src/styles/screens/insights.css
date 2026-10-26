@@ -156,3 +156,47 @@
     max-width: 1240px;
   }
 }
+
+/* What Helped: a step the person saved, a voluntary "how did it go?", and
+   what others who tried it and reported back found, in counts. */
+.helped-step {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  padding: var(--s-5);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+}
+
+.helped-text {
+  font-weight: 700;
+  font-size: var(--fs-h3);
+}
+
+.helped-ask {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.helped-question {
+  font-weight: 600;
+}
+
+.helped-said {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s-2);
+  color: var(--text-2);
+}
+
+.helped-others {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  padding: var(--s-4);
+  border-radius: var(--r-md);
+  background: var(--accent-wash);
+}

@@ -75,6 +75,7 @@ type Store interface {
 	MirrorStore
 	VaultStore
 	SocialStore
+	HelpedStore
 }
 
 // VoteStore is the durable boundary: a vote is acknowledged only after Accept
@@ -110,10 +111,11 @@ type memoryStore struct {
 	byIdemKey map[string]int // scoped idempotency key -> index into events
 	byDedupe  map[string]int // voteDedupeKey -> index into events
 	counts    map[string]map[string]int
-	mirror    memoryMirror           // see mirrorstore.go
-	vaults    map[string]memoryVault // see vault.go
-	social    memorySocial           // see socialmemory.go
-	closer    memoryCloser           // see closermemory.go
+	mirror    memoryMirror                              // see mirrorstore.go
+	vaults    map[string]memoryVault                    // see vault.go
+	social    memorySocial                              // see socialmemory.go
+	closer    memoryCloser                              // see closermemory.go
+	helped    map[string]map[HelpedStepKey]HelpedReport // reporter key -> step -> report; see whathelped.go
 }
 
 func newMemoryStore() *memoryStore {
@@ -125,6 +127,7 @@ func newMemoryStore() *memoryStore {
 		vaults: map[string]memoryVault{},
 		social: newMemorySocial(),
 		closer: newMemoryCloser(),
+		helped: map[string]map[HelpedStepKey]HelpedReport{},
 	}
 }
 

@@ -53,6 +53,9 @@ type deviceSigner struct {
 
 	hashVoter, hashMirror, hashPrivate []byte
 
+	// What Helped (whathelped.go): the key a phone's reports are kept under.
+	hashHelped []byte
+
 	// Accounts (accounts.go): the login hash, the account's device id, the
 	// friend mark and the seal on a synced backup phrase, each its own key
 	// from the data secret.
@@ -87,6 +90,7 @@ func newKeyring(c KeyConfig) (*deviceSigner, error) {
 	d.hashVoter = deriveKey(c.DataSecret, "voter-hash v1")
 	d.hashMirror = deriveKey(c.DataSecret, "mirror-key v1")
 	d.hashPrivate = deriveKey(c.DataSecret, "private-question v1")
+	d.hashHelped = deriveKey(c.DataSecret, "helped-key v1")
 	d.hashLogin = deriveKey(c.DataSecret, "login-key v1")
 	d.accountDevice = deriveKey(c.DataSecret, "account-device v1")
 	d.friendMark = deriveKey(c.DataSecret, "friend-mark v1")
@@ -201,6 +205,16 @@ func (d *deviceSigner) voterHash(id, questionID string) string {
 // joined on it.
 func (d *deviceSigner) mirrorKey(id string) string {
 	m := hmac.New(sha256.New, d.hashMirror)
+	m.Write([]byte(id))
+	return hex.EncodeToString(m.Sum(nil)[:16])
+}
+
+// helpedKey is the key one phone's What Helped reports are kept under: one
+// per phone, so a report can be changed and deleted with everything else,
+// but made with its own key, so the reports cannot be joined to the votes
+// or to the mirror.
+func (d *deviceSigner) helpedKey(id string) string {
+	m := hmac.New(sha256.New, d.hashHelped)
 	m.Write([]byte(id))
 	return hex.EncodeToString(m.Sum(nil)[:16])
 }
