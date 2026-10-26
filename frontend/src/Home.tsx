@@ -49,6 +49,7 @@ export function Home({
   date,
   window: w,
   name,
+  note,
   hero,
   onOpen,
   onAccount,
@@ -62,6 +63,7 @@ export function Home({
   date: string
   window: Window
   name?: string | null
+  note?: string | null // a personal line under the greeting
   hero: Hero
   onOpen: () => void
   onAccount: () => void
@@ -94,6 +96,7 @@ export function Home({
           <h2 id="home-title" className="display">
             {greeting(w, name)}
           </h2>
+          {note && <p className="home-note">{note}</p>}
         </div>
         <Ring
           part={doneCount / items.length}

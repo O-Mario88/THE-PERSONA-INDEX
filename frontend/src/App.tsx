@@ -52,6 +52,8 @@ import { useAccount } from './useAccount'
 import { keys, load as loadKey, remove as removeKey, save as saveKey } from './storage'
 import { NAME_KEY, Welcome, WELCOMED } from './Welcome'
 import { pruneCardTexts } from './insights'
+import { CONNECT_OPEN_KEY, dayWithYou, glimpseHere, inWeekOne, isNewcomer, lastLeaning, markStarted, needsAccount, SHOW_ALL_KEY } from './firstWeek'
+import { signInMethods } from './social'
 
 type State =
   | { kind: 'loading' }
@@ -144,6 +146,28 @@ function App() {
   const nods = useNods(date)
   const [togethers, refreshTogethers] = useTogethers()
   const [askedSignIn, setAskedSignIn] = useState(() => !!loadKey(SIGNIN_ASKED))
+  // The first week (firstWeek.ts): read each render, since one answer can
+  // change it. dayN counts the person's own days, from 1.
+  const weekOne = inWeekOne(date)
+  const dayN = dayWithYou(date)
+  // The sign-up page after the first glimpse, and whether signing in works
+  // here at all (no account is asked for where it can't be made).
+  const [signup, setSignup] = useState(false)
+  const [canSignIn, setCanSignIn] = useState(false)
+  useEffect(() => {
+    let live = true
+    signInMethods().then(
+      (m) => live && setCanSignIn(!!(m.email || m.phone || m.google || m.apple)),
+      () => {},
+    )
+    return () => {
+      live = false
+    }
+  }, [])
+  const accountFirst = canSignIn && needsAccount(!!me, date)
+  // Connect comes in after the first week, or sooner once there is someone
+  // to connect with: signed in, invited, or asked for from the first glimpse.
+  const connectShown = !weekOne || !!me || !!invited || loadKey(CONNECT_OPEN_KEY) === '1'
 
   useEffect(() => {
     let live = true
@@ -447,7 +471,33 @@ function App() {
   const togetherCards = togethers.filter((t) => t.state !== 'revealed' || t.asked)
 
   let body: ReactNode = null
-  if (set && tab === 'today') {
+  const signupName = me?.name || localName
+  if (set && tab === 'today' && (signup || (accountFirst && (flow === 'morning' || flow === 'evening')))) {
+    const back = () => {
+      setSignup(false)
+      closeFlow()
+    }
+    body = (
+      <SignInSheet
+        page={{
+          label: accountFirst ? 'Your next three are ready' : 'Your first glimpse is saved',
+          title: signupName ? `Keep going, ${signupName}.` : 'Keep going.',
+          lead: 'Make a free account to carry on. No password to remember: one tap, or a 6-digit code.',
+          head: 'Create your free account',
+          points: SIGNUP_POINTS,
+        }}
+        onDone={(acc) => {
+          saveKey(SIGNIN_ASKED, '1')
+          setAskedSignIn(true)
+          pullSync(acc.sync).catch(() => {})
+          setSignup(false)
+          if (!accountFirst) closeFlow()
+        }}
+        onNotNow={back}
+        notNow={accountFirst ? 'Back to today' : 'Maybe later'}
+      />
+    )
+  } else if (set && tab === 'today') {
     if (!flow || !hero) {
       body = (
         <Home
@@ -460,6 +510,7 @@ function App() {
           }}
           onAccount={() => setTab('account')}
           name={me?.name || localName || null}
+          note={homeNote(set.date, weekOne ? dayN : null)}
           since={since}
           feed={feed}
           morning={morning}
@@ -509,6 +560,9 @@ function App() {
       const name = WINDOW_INFO[flow].name
       const at = flowStep.at
       const closing = at >= steps.length
+      // The close of the person's first sitting carries their first glimpse,
+      // then the sign-up page (firstWeek.ts).
+      const glimpse = closing && steps.length > 0 && glimpseHere(set.date, flow)
       body = (
         <Flow
           tone={flow}
@@ -535,8 +589,11 @@ function App() {
                 })}
               </nav>
               <p className="label edition-line">
-                {set.edition ? `Edition #${set.edition}` : "Today's questions"} · {weekday(set.date)}
-                {flow === 'evening' && ' evening'}
+                {weekOne
+                  ? dayN === 1
+                    ? `Your first ${flow}`
+                    : `Day ${dayN} with you · ${weekday(set.date)}${flow === 'evening' ? ' evening' : ''}`
+                  : `${set.edition ? `Edition #${set.edition}` : "Today's questions"} · ${weekday(set.date)}${flow === 'evening' ? ' evening' : ''}`}
               </p>
               </>
             )
@@ -544,12 +601,12 @@ function App() {
           footer={
             !closing && current ? (
               <p className="muted small">
-                {flow === 'evening' && at === 0 ? 'Then: the route you took this morning.' : 'What you usually do, not what you wish you did.'}
+                {flow === 'evening' && at === 0 && !weekOne ? 'Then: the route you took this morning.' : 'What you usually do, not what you wish you did.'}
               </p>
             ) : undefined
           }
         >
-          {hasIntimate && prefs.adult === null && !closing && (
+          {hasIntimate && prefs.adult === null && !isNewcomer() && !closing && (
             <section className="card gate" aria-labelledby="gate-title">
               <h2 id="gate-title" className="title">
                 Are you 18 or older?
@@ -607,6 +664,8 @@ function App() {
                 morning={morningQs}
                 tomorrowThemes={set.tomorrowThemes ?? []}
                 onPractice={openPractice}
+                glimpse={glimpse ? { name: me?.name || localName || null } : undefined}
+                dayWithYou={weekOne ? dayN : undefined}
               />
             ) : (
               <DayClose
@@ -615,9 +674,11 @@ function App() {
                 questions={morningQs}
                 eveningThemes={hasEvening ? themesOf(eveningQs) : null}
                 tomorrowThemes={set.tomorrowThemes ?? []}
+                glimpse={glimpse ? { name: me?.name || localName || null } : undefined}
+                dayWithYou={weekOne ? dayN : undefined}
               />
             ))}
-          {closing && steps.length > 0 && !me && !askedSignIn && (
+          {closing && steps.length > 0 && !me && !askedSignIn && !glimpse && (
             <SignInSheet
               overlay
               card={closeCard(flow === 'evening' ? eveningQs : morningQs)}
@@ -633,10 +694,47 @@ function App() {
               }}
             />
           )}
-          {closing && steps.length > 0 && prefs.country === undefined && (
+          {closing && steps.length > 0 && hasIntimate && prefs.adult === null && isNewcomer() && dayN > 1 && !glimpse && (
+            <section className="card gate" aria-labelledby="gate-title">
+              <h2 id="gate-title" className="title">
+                One more thing: are you 18 or older?
+              </h2>
+              <p className="muted">
+                Some questions are about intimacy and sex. They are frank, never graphic, and only kept as "a private
+                answer". You can change this any time in Settings.
+              </p>
+              <div className="row-gap">
+                <button type="button" className="btn small" onClick={() => changePrefs({ ...prefs, adult: true })}>
+                  Yes, I'm 18 or older
+                </button>
+                <button type="button" className="btn small ghost" onClick={() => changePrefs({ ...prefs, adult: false })}>
+                  No
+                </button>
+              </div>
+            </section>
+          )}
+          {closing && steps.length > 0 && prefs.country === undefined && !glimpse && (
             <CountryAsk onAnswer={(country) => changePrefs({ ...prefs, country })} />
           )}
-          {closing && steps.length > 0 && (
+          {glimpse && (
+            <div className="glimpse-next">
+              <button type="button" className="btn wide close-cta" onClick={() => (canSignIn && !me ? setSignup(true) : closeFlow())}>
+                {canSignIn && !me ? 'Keep going' : 'Back to today'}
+              </button>
+              <button
+                type="button"
+                className="text-button"
+                onClick={() => {
+                  saveKey(CONNECT_OPEN_KEY, '1')
+                  setFlow(null)
+                  goTab('circle')
+                }}
+              >
+                Invite one friend who knows you well
+              </button>
+            </div>
+          )}
+          {closing && steps.length > 0 && !glimpse && (
             <button type="button" className="btn wide close-cta" onClick={closeFlow}>
               {flow === 'morning' && hasEvening && hasOpenStep(set.date) && new Date().getHours() < 12
                 ? "I'll try it · we'll check in at lunch"
@@ -711,6 +809,7 @@ function App() {
           <Welcome
             onBegin={(name) => {
               saveKey(WELCOMED, '1')
+              markStarted(date)
               if (name) {
                 saveKey(NAME_KEY, name)
                 setLocalName(name)
@@ -731,7 +830,7 @@ function App() {
             <Icon name="leaf" size={26} />
             <span>The Persona Index</span>
           </span>
-          {TABS.map((t) => (
+          {TABS.filter((t) => t.tab !== 'circle' || connectShown).map((t) => (
             <button
               key={t.tab}
               type="button"
@@ -756,14 +855,20 @@ function App() {
           ))}
           {/* On a wide screen the sidebar also lists the Mirrors, Saved and
               Settings, as the reference designs do. */}
-          <button type="button" className="tab side-only" aria-label="Open your mirrors" aria-pressed={tab === 'mirror'} onClick={() => open('mirror')} disabled={!set}>
-            <Icon name="mirror" size={22} />
-            <span className="tab-name">Mirrors</span>
-          </button>
-          <button type="button" className="tab side-only" aria-label="Open saved" aria-pressed={tab === 'kept'} onClick={() => open('kept')}>
-            <Icon name="bookmark" size={22} />
-            <span className="tab-name">Saved</span>
-          </button>
+          {/* In the first week the Mirrors and Saved wait until there is
+              something in them; Insights links to both. */}
+          {!weekOne && (
+            <>
+              <button type="button" className="tab side-only" aria-label="Open your mirrors" aria-pressed={tab === 'mirror'} onClick={() => open('mirror')} disabled={!set}>
+                <Icon name="mirror" size={22} />
+                <span className="tab-name">Mirrors</span>
+              </button>
+              <button type="button" className="tab side-only" aria-label="Open saved" aria-pressed={tab === 'kept'} onClick={() => open('kept')}>
+                <Icon name="bookmark" size={22} />
+                <span className="tab-name">Saved</span>
+              </button>
+            </>
+          )}
           <button type="button" className="tab side-only side-settings" aria-label="Open settings" aria-pressed={tab === 'settings'} onClick={() => open('settings')}>
             <Icon name="gear" size={22} />
             <span className="tab-name">Settings</span>
@@ -815,6 +920,14 @@ function App() {
               onOpenKept={() => open('kept')}
               onBack={() => setTab(back)}
               name={localName}
+              onShowAll={
+                weekOne
+                  ? () => {
+                      saveKey(SHOW_ALL_KEY, '1')
+                      setFinished((n) => n + 1)
+                    }
+                  : undefined
+              }
               onName={(n) => {
                 if (n) saveKey(NAME_KEY, n)
                 else removeKey(NAME_KEY)
@@ -900,8 +1013,25 @@ function prefetchScreens() {
   else setTimeout(all, 1500)
 }
 
+// What an account keeps, on the sign-up page after the first glimpse.
+const SIGNUP_POINTS = [
+  'Your first glimpse and every answer, kept',
+  'Three new questions each morning and evening',
+  'Your first mirror on Sunday',
+  'Your notebook stays encrypted',
+]
+
 // The sign-in sheet after the first sitting is offered once.
 const SIGNIN_ASKED = 'pi.signin.asked'
+
+// The line under the greeting: the person's own day count in their first
+// week, and what their answers last leaned towards, in the traits' own words.
+function homeNote(today: string, dayN: number | null): string | null {
+  const lean = lastLeaning(today)
+  const day = dayN && dayN > 1 ? `Day ${dayN} with you. ` : ''
+  if (lean) return `${day}Last time, your answers leaned towards ${lean}.`
+  return day ? day.trim() : null
+}
 
 function weekday(iso: string): string {
   return new Date(`${iso}T00:00:00Z`).toLocaleDateString('en', { weekday: 'long', timeZone: 'UTC' })

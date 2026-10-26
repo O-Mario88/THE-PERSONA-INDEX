@@ -2988,3 +2988,83 @@ describe('Stage 5 in the day', () => {
     expect(screen.queryByRole('region', { name: /How your circle experiences you/ })).not.toBeInTheDocument()
   })
 })
+
+// The first week (firstWeek.ts, Edwin 2026-10-26): three light questions,
+// a first glimpse by name, then the sign-up page; a few tabs until there
+// is something in the rest.
+describe('the first week', () => {
+  const methods = (url: string) => (url === '/api/auth/methods' ? { status: 200, body: { email: true, phone: false, google: false, apple: false } } : undefined)
+
+  it('ends the first three with a first glimpse by name, then the sign-up page, with "Maybe later" for today', async () => {
+    localStorage.removeItem('pi.welcomed')
+    stubApi({ today: { status: 200, body: sixADay }, social: methods })
+    render(<App />)
+    fireEvent.change(await screen.findByRole('textbox', { name: 'What should I call you? (optional)' }), { target: { value: 'Ama' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Begin your first reflection' }))
+    expect(await screen.findByText(/Your first morning/)).toBeInTheDocument()
+    expect(screen.queryByText(/Edition #/)).not.toBeInTheDocument()
+    await answer('Right after eating')
+    next()
+    await skip()
+    await answer('Several')
+    next()
+
+    const glimpse = await screen.findByRole('region', { name: 'Ama, here’s what your first answers hint at.' })
+    expect(glimpse).toHaveTextContent('You lean towards getting things done.')
+    expect(glimpse).toHaveTextContent('on Sunday it becomes your first mirror')
+    expect(screen.queryByRole('note', { name: "Today's thread" })).not.toBeInTheDocument()
+    expect(screen.getByText(/your first day/)).toBeInTheDocument()
+    // No sheet over the glimpse: the sign-up page comes after it.
+    expect(screen.queryByText('Not now — keep it on this phone')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Keep going' }))
+    expect(await screen.findByRole('heading', { name: 'Keep going, Ama.' })).toBeInTheDocument()
+    expect(screen.getByText('Create your free account')).toBeInTheDocument()
+    expect(screen.getByText('Your first mirror on Sunday')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Maybe later' }))
+    expect(await screen.findByRole('heading', { name: /Good morning, Ama\./ })).toBeInTheDocument()
+
+    // The first week keeps to a few tabs.
+    const tabs = within(screen.getByRole('navigation', { name: 'Sections' }))
+    expect(tabs.getByRole('button', { name: 'Reflect' })).toBeInTheDocument()
+    expect(tabs.getByRole('button', { name: 'Insights' })).toBeInTheDocument()
+    expect(tabs.queryByRole('button', { name: 'Connect' })).not.toBeInTheDocument()
+    expect(tabs.queryByRole('button', { name: 'Open your mirrors' })).not.toBeInTheDocument()
+  })
+
+  it('opens Connect from the first glimpse when the person wants to invite a friend', async () => {
+    localStorage.removeItem('pi.welcomed')
+    stubApi({ today: { status: 200, body: sixADay }, social: methods })
+    render(<App />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Begin your first reflection' }))
+    await answer('Right after eating')
+    next()
+    await skip()
+    await skip()
+    fireEvent.click(await screen.findByRole('button', { name: 'Invite one friend who knows you well' }))
+    const tabs = within(await screen.findByRole('navigation', { name: 'Sections' }))
+    expect(tabs.getByRole('button', { name: 'Connect' })).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('asks for an account before the next day’s questions, and says what it keeps', async () => {
+    localStorage.setItem('pi.started', '2026-10-11')
+    localStorage.setItem('pi.glimpse', '2026-10-11|morning')
+    localStorage.setItem('pi.history.v1', JSON.stringify({ answers: [{ date: '2026-10-11', questionId: 'q-old', theme: 'habits', depth: 2, traits: { conscientiousness: 1 }, optionId: 'a' }], skips: [] }))
+    stubApi({ today: { status: 200, body: sixADay }, social: methods })
+    render(<App />)
+    expect(await screen.findByRole('heading', { name: 'Keep going.' })).toBeInTheDocument()
+    expect(screen.getByText('Your next three are ready')).toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'When do you wash the dishes?' })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Back to today' }))
+    // Today greets them with their own day and what they last leaned towards.
+    expect(await screen.findByText('Day 2 with you. Last time, your answers leaned towards getting things done.')).toBeInTheDocument()
+  })
+
+  it('leaves someone who was here before the first week as they were', async () => {
+    localStorage.setItem('pi.history.v1', JSON.stringify({ answers: [{ date: '2026-10-11', questionId: 'q-old', theme: 'habits', depth: 2, traits: {}, optionId: 'a' }], skips: [] }))
+    stubApi({ today: { status: 200, body: sixADay }, social: methods })
+    render(<App />)
+    expect(await screen.findByText(/Edition #3/)).toBeInTheDocument()
+    expect(within(screen.getByRole('navigation', { name: 'Sections' })).getByRole('button', { name: 'Connect' })).toBeInTheDocument()
+  })
+})

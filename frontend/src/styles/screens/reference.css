@@ -1241,3 +1241,76 @@ fieldset.notice,
   background: var(--amber-wash);
   color: var(--amber-ink);
 }
+
+/* ---- The first week (firstWeek.ts) ---- */
+
+/* The first glimpse: one of the few boxes, since it is the moment the
+   person came for. Cream on the soft celeste tint. */
+.glimpse {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  padding: var(--s-5);
+  border-radius: var(--r-lg, 20px);
+  background: var(--accent-wash);
+  border: 1px solid var(--accent-line);
+}
+.glimpse-title {
+  font-size: var(--fs-h3);
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--text);
+}
+.glimpse-points {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.glimpse-points li {
+  padding-left: var(--s-4);
+  border-left: 3px solid var(--brand-lime);
+  line-height: 1.5;
+}
+.glimpse-next {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-3);
+}
+.app.is-dark .glimpse {
+  background: var(--surface-2);
+  border-color: var(--line);
+}
+
+.home-note {
+  margin-top: var(--s-2);
+  color: var(--text-2);
+  font-size: 1rem;
+  line-height: 1.45;
+  max-width: 34rem;
+}
+
+.signin-points {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  margin: var(--s-4) 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--on-navy-2, #e6edf2);
+}
+.signin-points li {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+.signin-points svg {
+  color: var(--brand-lime);
+  flex: none;
+}
+.signin-page-foot .link-button.strong {
+  margin-top: var(--s-3);
+}

@@ -17,6 +17,7 @@
 // - Evening follow-up answers (asked until 2026-10-15, still read while they
 //   are kept) carry trait weights but no depth, so they never move interest.
 
+import { isNewcomer } from './firstWeek'
 import type { Question, Verdict } from './api'
 import { isNeed, type Need } from './needs'
 import { addDays, loadJSON, remove, saveJSON } from './storage'
@@ -150,13 +151,14 @@ export function pickThree(
   adult: boolean,
   taken: Question[] = [],
   offer: Question | null = null,
+  light = false, // a newcomer's very first sitting opens light (firstThree)
 ): Question[] {
   const takenIds = new Set(taken.map((q) => q.id))
   const eligible = pool.filter((q) => (q.care !== 'intimate' || adult) && !takenIds.has(q.id))
   // The shared defaults, less any the morning already took, topped up from the pool.
   const fallback = defaults.filter((q) => !takenIds.has(q.id))
   for (const q of eligible) if (fallback.length < 3 && !fallback.includes(q)) fallback.push(q)
-  if (h.answers.length === 0 && h.skips.length === 0) return fallback
+  if (h.answers.length === 0 && h.skips.length === 0) return light ? firstThree(fallback, eligible) : fallback
   const interest = interestScores(h, today)
   const seen: Record<string, number> = {}
   for (const a of h.answers) if (!a.evening && days(a.date, today) <= 14) seen[a.theme] = (seen[a.theme] ?? 0) + 1
@@ -177,6 +179,37 @@ export function pickThree(
   if (offer && !takenIds.has(offer.id) && !usedThemes.has(offer.theme ?? offer.id)) take(offer)
   else take([...fresh()].sort(bySeen)[0])
   return picked.length === 3 ? picked : fallback
+}
+
+// The very first sitting opens light (the day-one review of 2026-10-26: a
+// body worry or an 18+ question is a heavy way to meet someone). Everyday
+// themes come first, from the shared three where they can, and the heavier
+// themes wait for another day. The full bank is unchanged.
+export const LIGHT_THEMES = new Set([
+  'habits',
+  'sleep-health',
+  'food',
+  'phone',
+  'getting-around',
+  'home',
+  'learning',
+  'work-career',
+  'happiness',
+  'friendship',
+])
+const isLight = (q: Question) => q.care !== 'intimate' && !!q.theme && LIGHT_THEMES.has(q.theme) && !q.options.some((o) => o.heavy)
+
+function firstThree(fallback: Question[], eligible: Question[]): Question[] {
+  const out: Question[] = []
+  const themes = new Set<string>()
+  for (const q of [...fallback, ...eligible]) {
+    if (out.length === 3) break
+    if (!isLight(q) || themes.has(q.theme!) || out.includes(q)) continue
+    out.push(q)
+    themes.add(q.theme!)
+  }
+  for (const q of fallback) if (out.length < 3 && !out.includes(q)) out.push(q)
+  return out
 }
 
 // writeFirstOf picks the one card of a sitting that opens with a short box
@@ -224,7 +257,7 @@ export function todaysPick(
     const qs = ids.map((id) => known.find((q) => q.id === id))
     if (qs.every(Boolean)) return qs as Question[]
   }
-  const qs = pickThree(pool.length ? pool : defaults, defaults, loadHistory(), today, adult, taken, offer)
+  const qs = pickThree(pool.length ? pool : defaults, defaults, loadHistory(), today, adult, taken, offer, isNewcomer())
   saveJSON(key, qs.map((q) => q.id))
   return qs
 }

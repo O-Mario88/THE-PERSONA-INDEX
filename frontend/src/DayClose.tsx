@@ -25,6 +25,8 @@ import {
   routeLead,
   STEP_REPLIES as REPLIES,
   SUNDAY_LINE,
+  GLIMPSE_BALANCED,
+  GLIMPSE_NEXT,
 } from './words'
 
 // The close of each sitting. The morning's: what the answers add up to,
@@ -36,6 +38,10 @@ import {
 
 type Props = {
   date: string
+  // The close of the person's very first sitting: their first glimpse in
+  // place of the usual thread (firstWeek.ts), with their name if they gave one.
+  glimpse?: { name: string | null }
+  dayWithYou?: number // in the first week, the close counts the person's own days
   questions: Question[] // this sitting's questions
   tomorrowThemes: string[]
   onPractice?: (p: Practice) => void
@@ -58,7 +64,7 @@ const answersIn = (h: History, questions: Question[], date: string): AnswerRecor
   })
 
 export function DayClose(props: Props) {
-  const { date, questions, tomorrowThemes, sitting, onPractice } = props
+  const { date, questions, tomorrowThemes, sitting, onPractice, glimpse, dayWithYou } = props
   const headingId = `close-${sitting}-${date}`
   const [history] = useState(loadHistory)
   // A plan made before this sitting began is asked about at its close.
@@ -87,7 +93,8 @@ export function DayClose(props: Props) {
       <div className="close-hero">
         <div className="close-hero-top">
           <span className="close-hero-label">
-            {sitting === 'morning' ? 'Morning close' : 'Evening close'} · day {s.day} of 90
+            {sitting === 'morning' ? 'Morning close' : 'Evening close'} ·{' '}
+            {dayWithYou ? (dayWithYou === 1 ? 'your first day' : `your day ${dayWithYou}`) : `day ${s.day} of 90`}
           </span>
           {questions.length > 0 && (
             <span className="close-hero-pill">
@@ -115,7 +122,11 @@ export function DayClose(props: Props) {
 
       {props.sitting === 'morning' ? (
         <>
-          <Thread answers={mine} history={history} date={date} paused={paused} />
+          {glimpse ? (
+            <FirstGlimpse answers={mine} history={history} date={date} name={glimpse.name} />
+          ) : (
+            <Thread answers={mine} history={history} date={date} paused={paused} />
+          )}
           <MorningMoves date={date} />
           {eveningThemes && (
             <Upcoming
@@ -127,6 +138,7 @@ export function DayClose(props: Props) {
         </>
       ) : (
         <>
+          {glimpse && <FirstGlimpse answers={mine} history={history} date={date} name={glimpse.name} />}
           <MoveCheck date={date} />
           {!paused && <RouteCheck date={date} morning={props.morning} />}
           <ForTomorrow
@@ -248,6 +260,35 @@ function Thread({ answers, history, date, paused }: Read) {
         </details>
       )}
     </div>
+  )
+}
+
+// The first glimpse (the day-one review of 2026-10-26): after a person's
+// first three answers, two or three plain lines on what they hint at
+// together, said to them by name, and what happens next. Only what the
+// answers say; one sitting is a hint, and it says so.
+function FirstGlimpse({ answers, history, date, name }: Omit<Read, 'paused'> & { name: string | null }) {
+  if (answers.length === 0) return null
+  const advice = adviceFor(answers, history, date, 'morning')
+  return (
+    <section className="glimpse" aria-labelledby="glimpse-title">
+      <p className="eyebrow">Your first glimpse</p>
+      <h3 id="glimpse-title" className="glimpse-title">
+        {name ? `${name}, here’s what your first answers hint at.` : 'Here’s what your first answers hint at.'}
+      </h3>
+      {advice.points.length === 0 ? (
+        <p>{GLIMPSE_BALANCED}</p>
+      ) : (
+        <ul className="glimpse-points">
+          {advice.points.map((p) => (
+            <li key={p.trait}>
+              <strong>You lean towards {p.lean}.</strong> {p.strength}
+            </li>
+          ))}
+        </ul>
+      )}
+      <p className="muted">{GLIMPSE_NEXT}</p>
+    </section>
   )
 }
 

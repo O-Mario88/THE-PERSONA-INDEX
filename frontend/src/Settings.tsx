@@ -21,6 +21,7 @@ export function SettingsScreen({
   onBack,
   name = '',
   onName,
+  onShowAll,
 }: {
   prefs: Prefs
   onChange: (p: Prefs) => void
@@ -28,6 +29,7 @@ export function SettingsScreen({
   onBack: () => void
   name?: string // what the greeting calls the person, kept on this phone
   onName?: (name: string) => void
+  onShowAll?: () => void // in the first week: show every section now (firstWeek.ts)
 }) {
   return (
     <section className="screen settings" aria-labelledby="settings-title">
@@ -120,6 +122,18 @@ export function SettingsScreen({
         <p className="muted small">People I'll point you to if an answer sounds heavy. They stay on this phone.</p>
         <PeopleEditor />
       </fieldset>
+
+      {onShowAll && (
+        <fieldset className="notice">
+          <legend className="eyebrow">Your first week</legend>
+          <p className="muted small">
+            For your first week the app keeps to Today, Reflect and Insights. Connect and your Mirrors arrive as they fill in.
+          </p>
+          <button type="button" className="btn small soft" onClick={onShowAll}>
+            Show every section now
+          </button>
+        </fieldset>
+      )}
 
       <BackupSettings />
 

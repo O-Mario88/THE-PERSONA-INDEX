@@ -9,6 +9,7 @@ import {
   isLowMood,
   leaningVerdict,
   notMeSides,
+  LIGHT_THEMES,
   pickThree,
   recordAnswer,
   recordVerdict,
@@ -76,6 +77,13 @@ describe('interest scores', () => {
 describe('picking three from the pool', () => {
   it('gives a phone with no history the shared default three', () => {
     expect(pickThree(pool, defaults, { answers: [], skips: [] }, '2026-10-12', false)).toEqual(defaults)
+  })
+
+  it('opens a newcomer’s very first sitting on light themes, from the shared three where it can', () => {
+    const three = pickThree(pool, defaults, { answers: [], skips: [] }, '2026-10-12', true, [], null, true)
+    expect(three).toHaveLength(3)
+    for (const x of three) expect(LIGHT_THEMES.has(x.theme!)).toBe(true)
+    expect(new Set(three.map((x) => x.theme)).size).toBe(3)
   })
 
   it('leans to high-interest themes, adds one rarely seen theme, and never repeats a theme', () => {

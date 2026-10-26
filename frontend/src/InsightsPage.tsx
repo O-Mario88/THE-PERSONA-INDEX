@@ -8,6 +8,9 @@ import { loadHistory } from './profile'
 import { count } from './pulse'
 import { ConnectNudge } from './ConnectNudge'
 import { GrowthSection } from './GrowthSection'
+import { growthPairs } from './growth'
+import { reflectSettings } from './journal'
+import { reflections } from './notebook'
 import { HeavyCard } from './QuestionCard'
 import { rateAnswer } from './rating'
 import { splitReveal } from './reveal'
@@ -34,11 +37,13 @@ type Props = {
   onOpenSupport: () => void
 }
 
-// The pill row jumps to each section on the page.
+// The pill row jumps to each section on the page. A section shows only
+// once there is something in it (the day-one review of 2026-10-26: a new
+// person met more "not yet" than anything else). What Helped waits for its
+// own reports (the follow-up dataset) before it appears at all.
 const JUMPS: [string, string][] = [
   ['for-you-title', 'For You'],
   ['not-alone-title', 'You’re Not Alone'],
-  ['helped-title', 'What Helped'],
   ['growth-title', 'Your Growth'],
   ['saved-title', 'Saved Insights'],
 ]
@@ -55,6 +60,20 @@ export function Insights({ today, questions, pulse, onOpenMirror, onOpenKept, on
     return forYou(loadHistory(), today, days, questions)
   }, [today, days, questions, version])
   const shown = days === WEEK ? cards.slice(0, FOR_YOU_MAX) : cards
+  const growth = useMemo(
+    () => growthPairs(loadHistory(), reflections(), today, undefined, { reflections: reflectSettings().reflectionsInGrowth }),
+    [today],
+  )
+  const saved = keptCards().filter((c) => !c.private)
+  const counted = cards.some((c) => !c.heavy && !c.regional)
+  const present: Record<string, boolean> = {
+    'for-you-title': true,
+    'not-alone-title': counted,
+    'growth-title': growth.length > 0,
+    'saved-title': saved.length > 0,
+  }
+  const jumps = JUMPS.filter(([id]) => present[id])
+  const answeredAny = loadHistory().answers.length > 0
 
   return (
     <section className="insights" aria-labelledby="insights-title">
@@ -66,16 +85,20 @@ export function Insights({ today, questions, pulse, onOpenMirror, onOpenKept, on
       </header>
 
       <div className="insights-controls">
+        {jumps.length > 2 && (
         <nav className="insights-tabs" aria-label="Insights sections">
-          {JUMPS.map(([id, name], i) => (
+          {jumps.map(([id, name], i) => (
             <button key={id} type="button" className={i === 0 ? 'insights-tab is-first' : 'insights-tab'} onClick={() => document.getElementById(id)?.scrollIntoView?.({ behavior: 'smooth', block: 'start' })}>
               {name}
             </button>
           ))}
         </nav>
+        )}
+        {answeredAny && (
         <button type="button" className="chip range" aria-pressed={days === MONTH} onClick={() => setDays(days === MONTH ? WEEK : MONTH)}>
           <Icon name="calendar" size={16} /> Last 30 days
         </button>
+        )}
         <button type="button" className="text-button" onClick={onOpenMirror}>
           Your Mirrors →
         </button>
@@ -107,22 +130,12 @@ export function Insights({ today, questions, pulse, onOpenMirror, onOpenKept, on
           )}
         </section>
 
-        <NotAlone today={today} cards={cards} pulse={pulse} onOpenSettings={onOpenSettings} />
+        {counted && <NotAlone today={today} cards={cards} pulse={pulse} onOpenSettings={onOpenSettings} />}
 
         <ConnectNudge today={today} onOpenSupport={onOpenSupport} />
-        <section className="insights-helped" aria-labelledby="helped-title">
-          <div className="insight-side-head">
-            <Disc icon="heart" tone="green" size={40} />
-            <h3 id="helped-title" className="section-title">
-              What Helped
-            </h3>
-          </div>
-          <p className="muted empty-note">This fills in as you and others report back on the small steps you try.</p>
-        </section>
+        {growth.length > 0 && <GrowthSection pairs={growth} />}
 
-        <GrowthSection today={today} />
-
-        <Saved onOpenKept={onOpenKept} />
+        {saved.length > 0 && <Saved kept={saved} onOpenKept={onOpenKept} />}
       </div>
     </section>
   )
@@ -332,8 +345,7 @@ function lineFor(line: ReturnType<typeof notAloneFor>): string {
 
 const SAVED_SHOWN = 3
 
-function Saved({ onOpenKept }: { onOpenKept: () => void }) {
-  const kept = keptCards().filter((c) => !c.private)
+function Saved({ kept, onOpenKept }: { kept: ReturnType<typeof keptCards>; onOpenKept: () => void }) {
   return (
     <section className="insights-saved" aria-labelledby="saved-title">
       <div className="insight-side-head">
@@ -342,15 +354,11 @@ function Saved({ onOpenKept }: { onOpenKept: () => void }) {
           Saved insights
         </h3>
       </div>
-      {kept.length === 0 ? (
-        <p className="muted small">Cards you keep show here.</p>
-      ) : (
-        <ul className="saved-list">
-          {kept.slice(0, SAVED_SHOWN).map((c) => (
-            <li key={c.questionId}>{c.headline}</li>
-          ))}
-        </ul>
-      )}
+      <ul className="saved-list">
+        {kept.slice(0, SAVED_SHOWN).map((c) => (
+          <li key={c.questionId}>{c.headline}</li>
+        ))}
+      </ul>
       <button type="button" className="text-button" onClick={onOpenKept}>
         Open Saved
       </button>
