@@ -46,7 +46,7 @@ import { CountryAsk } from './screens/Country'
 import { themeName } from '@shared/themes'
 import { InstallInvite } from './screens/Browser'
 import { ReminderAsk } from './screens/Reminders'
-import { setLanguage, tr } from '@shared/i18n'
+import { setLanguage, tr, trf } from '@shared/i18n'
 import { backFromGoogle } from './platform/googleWeb'
 import { locale } from '@shared/locale'
 
@@ -433,7 +433,7 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
       const glimpse = closing && steps.length > 0 && glimpseHere(set.date, flow)
       body = (
         <Flow
-          label={steps.length === 0 ? name : closing ? `${name} close` : `${name} · ${at + 1} of ${steps.length}`}
+          label={steps.length === 0 ? tr(name) : closing ? trf('{name} close', { name: tr(name) }) : trf('{name} · {n} of {m}', { name: tr(name), n: at + 1, m: steps.length })}
           onClose={closeFlow}
           dashes={steps.map((q, i) => ({ done: !!recalledChoice(q.id), now: at === i, go: () => flowStep.go(i) }))}
           line={
@@ -441,7 +441,7 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
               ? weekOne && dayN > 1
                 ? `Day ${dayN} with you · ${weekday(set.date)}${flow === 'evening' ? ' evening' : ''}`
                 : weekOne || firstDay
-                  ? `Your first ${flow} · ${weekday(set.date)}`
+                  ? trf('Your first {sitting} · {day}', { sitting: tr(flow), day: weekday(set.date) })
                   : `${set.edition ? `Edition #${set.edition}` : "Today's questions"} · ${weekday(set.date)}${flow === 'evening' ? ' evening' : ''}`
               : undefined
           }

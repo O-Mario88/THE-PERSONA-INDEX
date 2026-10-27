@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { es } from './es'
+import { fr } from './fr'
+import { pt } from './pt'
 import { setLanguage, tr, uiLanguage } from './index'
 
 afterEach(() => setLanguage('auto', 'en'))
@@ -21,7 +23,18 @@ describe('the app in more than one language', () => {
     expect(tr('Today')).toBe('Today')
   })
 
-  it('has no empty Spanish lines', () => {
-    for (const [en, word] of Object.entries(es)) expect(word.trim(), en).not.toBe('')
+  it('has no empty lines, and keeps every {placeholder} in a template', () => {
+    for (const map of [es, pt, fr])
+      for (const [en, word] of Object.entries(map)) {
+        expect(word.trim(), en).not.toBe('')
+        for (const ph of en.match(/\{\w+\}/g) ?? []) expect(word, en).toContain(ph)
+      }
+  })
+
+  it('speaks Portuguese and French too', () => {
+    setLanguage('auto', 'pt-BR')
+    expect(tr('Today')).toBe('Hoje')
+    setLanguage('auto', 'fr-SN')
+    expect(tr('Today')).toBe("Aujourd'hui")
   })
 })

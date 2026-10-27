@@ -7,14 +7,18 @@
 // (Latin America, the US and Spain).
 
 import { es } from './es'
+import { fr } from './fr'
+import { pt } from './pt'
 
-export type Lang = 'en' | 'es'
+export type Lang = 'en' | 'es' | 'pt' | 'fr'
 export const LANGS: { id: Lang; name: string }[] = [
   { id: 'en', name: 'English' },
   { id: 'es', name: 'Español' },
+  { id: 'pt', name: 'Português' },
+  { id: 'fr', name: 'Français' },
 ]
 
-const MAPS: Record<Exclude<Lang, 'en'>, Record<string, string>> = { es }
+const MAPS: Record<Exclude<Lang, 'en'>, Record<string, string>> = { es, pt, fr }
 
 let chosen: Lang | 'auto' = 'auto'
 let device = 'en'
@@ -37,4 +41,10 @@ export function tr(english: string): string {
   const lang = uiLanguage()
   if (lang === 'en') return english
   return MAPS[lang][english] ?? english
+}
+
+// trf fills a line built from parts: the template is looked up whole, then
+// each {name} is filled in, so word order can differ by language.
+export function trf(template: string, vars: Record<string, string | number>): string {
+  return tr(template).replace(/\{(\w+)\}/g, (_, k: string) => String(vars[k] ?? `{${k}}`))
 }
