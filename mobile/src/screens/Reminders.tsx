@@ -5,7 +5,8 @@ import { View } from 'react-native'
 import { clock } from '@shared/day'
 import { CHECK_IN_AT, SUNDAY_AT, eveningMinutes, morningMinutes, type ReminderSettings } from '@shared/reminders'
 import { reminderSettings, remindersAvailable, remindersDenied, updateReminders } from '../platform/reminders'
-import { Chip, T, Toggle } from '../ui/kit'
+import { load, save } from '@shared/storage'
+import { Button, Card, Chip, T, Toggle } from '../ui/kit'
 
 const MORNING_TIMES = [6 * 60, 7 * 60, 8 * 60, 9 * 60, 10 * 60, 12 * 60]
 const EVENING_TIMES = [17 * 60 + 30, 18 * 60 + 30, 19 * 60, 20 * 60, 21 * 60, 22 * 60]
@@ -63,5 +64,53 @@ export function ReminderSettingsView() {
         </T>
       )}
     </View>
+  )
+}
+
+// Asked once, at the close of the very first sitting (Edwin, 2026-10-27:
+// "would it bring you back tomorrow?"). Yes turns on the morning and evening
+// nudges; Not now is remembered and the switches stay in Settings.
+export const REMINDERS_ASKED = 'pi.reminders.asked'
+
+export function ReminderAsk() {
+  const [answer, setAnswer] = useState<string | null>(() => load(REMINDERS_ASKED))
+  if (!remindersAvailable || (answer && answer !== 'yes-now')) return null
+  if (answer === 'yes-now')
+    return (
+      <Card>
+        <T bold>Done. I'll let you know when your next questions open.</T>
+        <T v="small" tone="muted">
+          You can change the times in Settings.
+        </T>
+      </Card>
+    )
+  const s = reminderSettings()
+  return (
+    <Card style={{ gap: 12 }}>
+      <T v="h3">Do you want me to let you know when your next three open?</T>
+      <T tone="text2">
+        Morning at {clock(s.morningAt)} and evening at {clock(s.eveningAt)}. Nothing else, and never a word of your answers.
+      </T>
+      <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
+        <Button
+          small
+          label="Yes, remind me"
+          onPress={async () => {
+            await updateReminders({ ...s, morning: true, evening: true })
+            save(REMINDERS_ASKED, 'yes')
+            setAnswer('yes-now')
+          }}
+        />
+        <Button
+          small
+          kind="ghost"
+          label="Not now"
+          onPress={() => {
+            save(REMINDERS_ASKED, 'no')
+            setAnswer('no')
+          }}
+        />
+      </View>
+    </Card>
   )
 }

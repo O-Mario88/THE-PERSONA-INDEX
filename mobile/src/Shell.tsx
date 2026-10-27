@@ -7,7 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ComponentRef, t
 import { AppState, Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ApiError, cacheEdition, cachedEdition, getDay, pruneLocal, pruneWords, recalledChoice, sendPlanChecks, sendUnrated, type DailySet, type Question } from '@shared/api'
-import { dayAt, nextTurn, WINDOW_INFO, type Day, type OpenWindow, type Sitting } from '@shared/day'
+import { clock, dayAt, nextTurn, WINDOW_INFO, type Day, type OpenWindow, type Sitting } from '@shared/day'
 import { heroFor, type Progress } from '@shared/homeHero'
 import { pruneNotebook } from '@shared/notebook'
 import { sendUnsent } from '@shared/moves'
@@ -44,6 +44,7 @@ import { Mirror } from './screens/Mirror'
 import { ReadScreen } from './screens/ReadScreen'
 import { CountryAsk } from './screens/Country'
 import { InstallInvite } from './screens/Browser'
+import { ReminderAsk } from './screens/Reminders'
 import { backFromGoogle } from './platform/googleWeb'
 import { locale } from '@shared/locale'
 
@@ -310,6 +311,11 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
             setLocalName(name)
           }
           setWelcome(false)
+          // The first questions straight away, whatever the hour they're open.
+          if (set && !set.review) {
+            if (morning !== 'done' && canSit('morning')) setFlow('morning')
+            else if (evening !== null && evening !== 'done' && canSit('evening')) setFlow('evening')
+          }
         }}
       />
     )
@@ -437,7 +443,7 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
           }
         >
           {hasIntimate && prefs.adult === null && !isNewcomer() && !closing && !firstDay && <AdultGate onAnswer={(adult) => changePrefs({ ...prefs, adult })} />}
-          {steps.length === 0 && <T tone="muted">{flow === 'evening' ? 'Your evening three open at 5 pm.' : 'Your morning three open at 5 am.'}</T>}
+          {steps.length === 0 && <T tone="muted">{flow === 'evening' ? `Your evening three open at ${clock(17 * 60)}.` : `Your morning three open at ${clock(5 * 60)}.`}</T>}
           {current && (
             <QuestionCard
               key={current.id}
@@ -475,6 +481,7 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
                 dayWithYou={weekOne ? dayN : undefined}
               />
             ))}
+          {closing && steps.length > 0 && glimpse && <ReminderAsk />}
           {closing && steps.length > 0 && !me && !askedSignIn && !glimpse && canSignIn && (
             <Tinted>
               <T v="h2">Your {steps.length === 3 ? 'three cards are' : 'cards are'} on this phone. Keep them everywhere.</T>
