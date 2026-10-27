@@ -17,7 +17,7 @@ Checks: `npx tsc --noEmit -p .` and `npm run build:web`.
 
 ## Sign in with Apple and Google
 
-The buttons show only when the server accepts the app's tokens and the build knows its own IDs.
+The buttons show only when the server accepts the app's tokens and the build knows its own IDs. On the website, "Continue with Google" uses the server's web client (`GOOGLE_CLIENT_ID`, see `docs/operations.md`): the page goes to Google and comes back to the site's front page with an ID token (`src/platform/googleWeb.ts`). Apple is iPhone only.
 
 - **Server** (see `docs/operations.md`): `APPLE_APP_IDS=com.personaindex.app` and `GOOGLE_APP_CLIENT_IDS=<iOS client ID>,<Android client ID>`.
 - **Apple:** turn on "Sign in with Apple" for the `com.personaindex.app` App ID in the Apple Developer account. The app's entitlement comes from `ios.usesAppleSignIn` in `app.json`. iPhone only.

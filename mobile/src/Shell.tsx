@@ -44,6 +44,7 @@ import { Mirror } from './screens/Mirror'
 import { ReadScreen } from './screens/ReadScreen'
 import { CountryAsk } from './screens/Country'
 import { InstallInvite } from './screens/Browser'
+import { backFromGoogle } from './platform/googleWeb'
 
 type State = { kind: 'loading' } | { kind: 'ready'; set: DailySet; day: string; offline?: true } | { kind: 'empty' } | { kind: 'error' }
 type Tab = 'today' | 'notebook' | 'circle' | 'insights' | 'account'
@@ -122,7 +123,8 @@ function useStep(steps: Question[]) {
 export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart: () => void }) {
   const [state, setState] = useState<State>({ kind: 'loading' })
   const [attempt, setAttempt] = useState(0)
-  const [tab, setTab] = useState<View_>('today')
+  // Back from Google's sign-in on the website: open on sign-in to finish it.
+  const [tab, setTab] = useState<View_>(() => (backFromGoogle() ? 'signin' : 'today'))
   const wide = useWindowDimensions().width >= WIDE
   const mirrorScroll = useRef<ComponentRef<typeof ScrollView>>(null)
   const [back, setBack] = useState<Tab>('today')

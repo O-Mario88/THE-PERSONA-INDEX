@@ -22,7 +22,7 @@ How the backend runs in production, and the decisions behind it.
 | `SIGNIN_CODE_WEBHOOK` | Optional, https only. Turns on sign-in by code: the server POSTs `{"kind","to","code","text"}` here, for an email or SMS provider (or a small function in front of one) to deliver. Without it, and without Google or Apple, the sign-in sheet offers nothing. A local run without `DATABASE_URL` prints codes to the log instead. |
 | `SIGNIN_CODE_WEBHOOK_TOKEN` | Sent to the webhook as `Authorization: Bearer <token>`. |
 | `SIGNIN_CODE_KINDS` | `email,phone` (default), `email` or `phone`: which addresses the code sign-in accepts. |
-| `GOOGLE_CLIENT_ID` | Turns on "Continue with Google". ID tokens are checked against Google's published keys. |
+| `GOOGLE_CLIENT_ID` | Turns on "Continue with Google" on the website. A Google Cloud OAuth client of type *Web application*, with the site's address (`https://personaindex.com`) as an authorised JavaScript origin and `https://personaindex.com/` as an authorised redirect URI: the page goes to Google and comes back with an ID token (`frontend/src/googleRedirect.ts`). ID tokens are checked against Google's published keys. |
 | `APPLE_CLIENT_ID` | Turns on "Continue with Apple" (the Services ID). |
 | `GOOGLE_APP_CLIENT_IDS` | The phone app's Google OAuth client IDs (iOS, Android), comma-separated. Turns on "Continue with Google" in the app. |
 | `APPLE_APP_IDS` | The phone app's bundle ID (`com.personaindex.app`). Turns on "Continue with Apple" in the iPhone app. |
