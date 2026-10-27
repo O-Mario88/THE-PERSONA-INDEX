@@ -220,12 +220,12 @@ The app never shows a source, but every card's research must be accurate:
 | No survey scales; no loaded labels; no presumed partner | `backend/content.go`, `backend/voice.go` |
 | Lengths, headline at most 70 characters, shallow-to-deep order, one cited card per question | `backend/content.go` |
 | Heavy only on a deep answer outside intimacy | `backend/content.go` |
-| Heavy cards show people and a helpline, never an insight | `frontend/src/QuestionCard.tsx`, tested in `App.test.tsx` |
+| Heavy cards show people and a helpline, never an insight | `mobile/src/screens/QuestionCard.tsx` |
 | Change shown only against your own past | `frontend/src/profile.ts` (`changeAt`), tested in `profile.test.ts` |
 | Every answer option names one of the seven needs | `backend/content.go` (gate), ids kept in step with `frontend/src/needs.ts` by `needs_test.go` |
 | Need steps follow the voice rules | `backend/voice.go`, `backend/content.go` (length) |
 | What a week reached for counts only your own answers, never intimacy, heavy or "Not me" | `frontend/src/reaching.ts`, tested in `reaching.test.ts` |
 | Regional questions: a known region, no intimacy, no id shared with the main bank, at least three a region, every main-bank rule | `backend/regional.go` (`validateRegional`), tested in `regional_test.go` |
-| A regional answer, tap or step never leaves the phone | `frontend/src/QuestionCard.tsx`, `moves.ts`, tested in `regional.test.ts` and `App.test.tsx` |
+| A regional answer, tap or step never leaves the phone | `mobile/src/screens/QuestionCard.tsx`, `frontend/src/moves.ts`, tested in `regional.test.ts` |
 
 Run `cd backend && go test ./...` and `cd frontend && npm test` after any change to the bank or the app's words.

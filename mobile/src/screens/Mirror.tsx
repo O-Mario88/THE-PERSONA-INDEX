@@ -1,5 +1,4 @@
-// The Mirrors (the web app's Mirror.tsx, with Keep.tsx's pieces it uses and
-// MirrorPatterns / MirrorThreads / MirrorConnection): the week opens first,
+// The Mirrors, the fuller view: the week opens first,
 // the month, quarter and year look further back. Built by the server from
 // this phone's kept answers, so every number is real; a section with nothing
 // real in it stays hidden. It sets the person only against their own past.
@@ -92,7 +91,7 @@ import {
   timesDoneLine,
   WORDS_BACK_ASK,
 } from '@shared/words'
-import { radius, useTheme, type Palette } from '../theme'
+import { font, radius, type Palette, useTheme } from '../theme'
 import { Icon } from '../ui/Icon'
 import { Button, Chip, Field, Hairline, T, Tinted } from '../ui/kit'
 import { Box, Chips, Eyebrow, Note, Quote } from './MirrorBits'
@@ -267,7 +266,7 @@ function Scale({ dots }: { dots: { at: number; color: string }[] }) {
   )
 }
 
-// One ink at three strengths, as the web's mirror.css: light is the faintest,
+// One ink at three strengths: light is the faintest,
 // deep stronger, and deeper the darkest (text colour, or white in dark).
 const depthColor = (p: Palette, d: Depth) =>
   d === 'deeper' ? (p.dark ? '#ffffff' : p.text) : d === 'deep' ? `${p.accentInk}${p.dark ? 'BF' : 'A6'}` : d === 'light' ? `${p.accentInk}${p.dark ? '66' : '4D'}` : p.accentInk
@@ -414,7 +413,7 @@ function MirrorPage({ m, today, reload, onCircle, onRead }: { m: MirrorData; tod
           )}
         </T>
         {line ? (
-          <T tone="onNavy" style={{ fontFamily: 'Georgia', fontSize: 19, lineHeight: 26 }}>
+          <T tone="onNavy" style={{ fontFamily: font.semibold, fontSize: 19, lineHeight: 26 }}>
             {line}
           </T>
         ) : null}
@@ -996,7 +995,7 @@ function Footer({ onOpenKept }: { onOpenKept: () => void }) {
   return (
     <View style={{ gap: 10 }}>
       <Hairline />
-      <T bold>For self-reflection, not a diagnosis.</T>
+      <T bold>Something to think about, never a diagnosis.</T>
       <Eyebrow>What leaves my phone</Eyebrow>
       <Note>
         {signedIn
@@ -1049,7 +1048,7 @@ function PeriodPage({ p: pm, onRead }: { p: PeriodMirror; onRead?: (r: Read) => 
           )}
         </T>
         {line ? (
-          <T tone="onNavy" style={{ fontFamily: 'Georgia', fontSize: 19, lineHeight: 26 }}>
+          <T tone="onNavy" style={{ fontFamily: font.semibold, fontSize: 19, lineHeight: 26 }}>
             {line}
           </T>
         ) : null}

@@ -1,7 +1,7 @@
-// Discs, initials, rings and the season tapestry: the web app's ui/ parts.
+// Discs, initials, rings and the season tapestry.
 import { Text, View } from 'react-native'
 import Svg, { Circle } from 'react-native-svg'
-import { tintFor } from '@shared/ui/Avatar'
+import { tintFor } from '@shared/avatarTint'
 import { NEED_TINTS } from '@shared/needs'
 import type { Season } from '@shared/tapestry'
 import { font, useTheme } from '../theme'
@@ -60,9 +60,9 @@ export function Ring({ part, big, small, size = 64, label, onDark }: { part: num
           />
         )}
       </Svg>
-      <Text style={{ fontFamily: font.heavy, fontSize: size * 0.3, lineHeight: size * 0.34, color: onDark ? p.onNavy : p.text }}>{big}</Text>
+      <Text style={{ fontFamily: font.bold, fontSize: size * 0.3, lineHeight: size * 0.34, color: onDark ? p.onNavy : p.text }}>{big}</Text>
       {small ? (
-        <Text style={{ fontFamily: font.bold, fontSize: Math.max(8, size * 0.09), letterSpacing: 1, textTransform: 'uppercase', color: onDark ? p.onNavy2 : p.muted }}>
+        <Text style={{ fontFamily: font.bold, fontSize: Math.max(8, size * 0.09), color: onDark ? p.onNavy2 : p.muted }}>
           {small}
         </Text>
       ) : null}

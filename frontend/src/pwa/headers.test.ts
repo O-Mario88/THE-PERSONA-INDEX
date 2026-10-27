@@ -5,7 +5,7 @@
 // backend/static_test.go checks the same file from the server's side.
 
 import headers from '../../public/_headers?raw'
-import indexHtml from '../../index.html?raw'
+import indexHtml from '../../../mobile/public/index.html?raw'
 import { readSite } from '../reads/site'
 
 // policyFor gives the Content-Security-Policy the rules set for a path,
@@ -40,7 +40,10 @@ describe('site headers', () => {
   it('lets the app run only its own scripts', () => {
     const app = policyFor('/')
     expect(directive(app, 'script-src')).toBe("script-src 'self'")
-    expect(app).not.toContain('unsafe')
+    // React Native for Web writes the app's styles into <style> tags as it
+    // draws, so inline styles are allowed; nothing else unsafe is.
+    expect(directive(app, 'style-src')).toBe("style-src 'self' 'unsafe-inline'")
+    expect(app.replace("style-src 'self' 'unsafe-inline'", '')).not.toContain('unsafe')
     expect(directive(app, 'frame-ancestors')).toBe("frame-ancestors 'none'")
     expect(directive(app, 'connect-src')).toBe("connect-src 'self'")
   })
@@ -58,6 +61,8 @@ describe('site headers', () => {
     const read = policyFor('/read/sleep/')
     expect(directive(read, 'default-src')).toBe("default-src 'none'")
     expect(directive(read, 'script-src')).toBeUndefined()
+    // The app's one typeface, from the site itself (mobile/scripts/build-web.mjs puts it in /fonts/).
+    expect(directive(read, 'font-src')).toBe("font-src 'self'")
     const { files } = readSite()
     const pages = Object.entries(files).filter(([name]) => name.endsWith('.html'))
     expect(pages.length).toBeGreaterThan(50)

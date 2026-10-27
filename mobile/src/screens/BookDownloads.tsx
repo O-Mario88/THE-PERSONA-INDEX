@@ -1,4 +1,4 @@
-// "Download my book" and the data file (the web app's BookDownloads.tsx).
+// "Download my book" and the data file.
 // The shared book.ts makes both on the phone. Here the book becomes a PDF
 // and both go to the phone's share sheet, to keep in Files, print or send;
 // the web build saves them as the browser does.

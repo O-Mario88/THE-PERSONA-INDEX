@@ -40,9 +40,9 @@ export type ThoughtInput = {
 }
 
 const LEAD: Record<ReflectionPeriod, string> = {
-  day: 'Take a moment to reflect on what felt meaningful, challenging or different. There’s no right answer.',
-  week: 'Look back over the week: what repeated, what helped, what changed.',
-  month: 'Step back a little: what this month taught you, and what you want to carry on.',
+  day: 'What felt meaningful to you today, or hard, or different? There’s no right answer, just yours.',
+  week: 'Looking back over your week: what kept coming up for you, what helped, what changed?',
+  month: 'Looking at your month: what did it teach you, and what do you want to carry on?',
 }
 
 const GENERAL: Record<ReflectionPeriod, string[]> = {

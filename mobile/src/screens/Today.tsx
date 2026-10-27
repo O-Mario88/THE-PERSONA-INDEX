@@ -1,17 +1,17 @@
-// Today (the web app's Home.tsx): the greeting and the day's ring, one card
+// Today: the greeting and the day's ring, one card
 // for what is open now, the season tapestry, the day's five windows, and
 // today's read. Nothing here asks for anything.
 import { useState, type ReactNode } from 'react'
 import { Pressable, useWindowDimensions, View } from 'react-native'
 import { clock, left, MORNING_CLOSES, useNow, WINDOW_INFO, WINDOWS, type OpenWindow, type Window } from '@shared/day'
-import { greeting, type Hero, type Progress } from '@shared/Home'
+import { greeting, type Hero, type Progress } from '@shared/homeHero'
 import { load } from '@shared/storage'
 import { season } from '@shared/tapestry'
 import { windowsDone } from '@shared/windows'
 import { minutes, todaysRead } from '@shared/reads/reads'
 import type { Read } from '@shared/reads/types'
-import { font, gutter, lift, radius, useTheme } from '../theme'
-import { Button, Hairline, RowLink, T } from '../ui/kit'
+import { font, gutter, lift, radius, RAIL_W, useTheme, WIDE } from '../theme'
+import { Button, Card, RowLink, T } from '../ui/kit'
 import { Avatar, Ring, Tapestry } from '../ui/parts'
 import { Icon } from '../ui/Icon'
 
@@ -30,6 +30,8 @@ export function Today({
   themes,
   intimacy,
   onRead,
+  rail,
+  onWrite,
   children,
 }: {
   date: string
@@ -44,6 +46,8 @@ export function Today({
   themes: string[]
   intimacy: boolean
   onRead: (r: Read) => void
+  rail?: boolean // a right-hand column beside the feed, on a very wide screen
+  onWrite: () => void
   children?: ReactNode
 }) {
   const { width } = useWindowDimensions()
@@ -52,12 +56,14 @@ export function Today({
   const items = dayItems(date, w, morning, evening, nowMin)
   const doneCount = items.filter((i) => i.state === 'done').length
   const s = season(date)
-  const inner = Math.min(width, 640) - gutter * 2
-  return (
+  // The tapestry's width inside its card (the card's padding and hairline).
+  const inner = (rail ? RAIL_W : Math.min(width, 640) - gutter * 2) - 42
+  const top = (
     <>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        {/* Beside the sidebar the brand is already on screen. */}
         <T v="label" tone="text">
-          The Persona Index
+          {width >= WIDE ? '' : 'The Persona Index'}
         </T>
         <Pressable accessibilityRole="button" accessibilityLabel="You and settings" onPress={onAccount} hitSlop={8}>
           <Avatar name={name || 'You'} size={36} />
@@ -75,29 +81,98 @@ export function Today({
         </View>
         <Ring part={doneCount / items.length} label={`${doneCount} of ${items.length} windows done today`} big={String(doneCount)} small={`of ${items.length} today`} size={92} />
       </View>
-
+    </>
+  )
+  // The first cards. On a very wide screen they start level with the
+  // right-hand column, under the greeting that spans both.
+  const lead = (
+    <>
       <HeroCard hero={hero} now={now} onOpen={onOpen} />
-
-      <Hairline />
-      <View style={{ gap: 12 }}>
-        <T v="label">Season tapestry · day {s.day} of 90</T>
-        <Tapestry s={s} cols={18} width={inner} />
+      <Composer name={name} window={w} onWrite={onWrite} />
+    </>
+  )
+  const tapestry = (
+    <Card style={{ gap: 12 }}>
+      <T v="label">Your season · day {s.day} of 90</T>
+      <Tapestry s={s} cols={rail ? 12 : 18} width={inner} />
+    </Card>
+  )
+  const ritual = (
+    <Card style={{ gap: 16 }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
+        <T v="h2">Your day so far</T>
+        <T v="small" tone="muted">
+          {doneCount} of {items.length} complete
+        </T>
       </View>
-      <Hairline />
-
-      <View style={{ gap: 16 }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
-          <T v="h2">Today’s ritual</T>
-          <T v="small" tone="muted">
-            {doneCount} of {items.length} complete
-          </T>
+      <DayLine items={items} />
+    </Card>
+  )
+  const read = <TodaysRead date={date} themes={themes} intimacy={intimacy} onRead={onRead} />
+  if (rail) {
+    return (
+      <View style={{ gap: 20 }}>
+        {top}
+        <View style={{ flexDirection: 'row', gap: 24, alignItems: 'flex-start' }}>
+          <View style={{ flex: 1, gap: 20 }}>
+            {lead}
+            {ritual}
+            {children}
+          </View>
+          <View style={{ width: RAIL_W, gap: 20 }}>
+            {tapestry}
+            {read}
+          </View>
         </View>
-        <DayLine items={items} />
       </View>
-
-      <TodaysRead date={date} themes={themes} intimacy={intimacy} onRead={onRead} />
+    )
+  }
+  return (
+    <>
+      {top}
+      {lead}
+      {tapestry}
+      {ritual}
+      {read}
       {children}
     </>
+  )
+}
+
+// A blank page, always one tap away, the way Facebook asks what's on your
+// mind. The words follow the hour, and nothing written here leaves the phone.
+const COMPOSER: Record<Window, string> = {
+  morning: "What's on your mind",
+  midday: "What's on your mind",
+  afternoon: "What's on your mind",
+  evening: 'How was today',
+  night: 'Anything you want to put down before sleep',
+  rest: 'Still up',
+}
+
+function Composer({ name, window: w, onWrite }: { name?: string | null; window: Window; onWrite: () => void }) {
+  const p = useTheme()
+  const ask = `${COMPOSER[w]}${name ? `, ${name}` : ''}?`
+  return (
+    <Card pad={16} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+      <Avatar name={name || 'You'} size={40} />
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={ask}
+        accessibilityHint="Opens a blank page in Reflect. Only you can read it."
+        onPress={onWrite}
+        style={(s) => ({
+          flex: 1,
+          minHeight: 44,
+          justifyContent: 'center',
+          paddingHorizontal: 16,
+          borderRadius: radius.pill,
+          backgroundColor: (s as { hovered?: boolean }).hovered ? p.surface3 : p.surface2,
+        })}
+      >
+        <T tone="muted">{ask}</T>
+      </Pressable>
+    </Card>
   )
 }
 
@@ -199,15 +274,14 @@ function TodaysRead({ date, themes, intimacy, onRead }: { date: string; themes: 
   if (!read) return null
   return (
     <>
-      <Hairline />
-      <View style={{ gap: 10 }}>
-        <T v="eyebrow">Today's read · {minutes(read)} min</T>
+      <Card style={{ gap: 10 }}>
+        <T v="eyebrow">Something for you to read · {minutes(read)} min</T>
         <T v="h2" style={{ fontSize: 22, lineHeight: 28 }}>
           {read.title}
         </T>
         <T tone="muted">{read.summary}</T>
         <RowLink label={load(OPENED + read.slug) === date ? 'Read it again' : 'Read it'} onPress={() => onRead(read)} />
-      </View>
+      </Card>
     </>
   )
 }

@@ -1,22 +1,21 @@
-// The app's frame, the native twin of the web app's App.tsx: which tab is
-// open, today's questions, the sittings, the first week, and the tab bar.
-// The rules come from the shared code (frontend/src); only the drawing is
-// native. Keep the two in step: a change to the flow in App.tsx belongs here
-// too.
+// The app's frame on every platform: which tab is open, today's questions,
+// the sittings, the first week, and the tab bar (the sidebar on a wide
+// screen). The rules come from the shared code (frontend/src); this file
+// only draws them.
 import { StatusBar } from 'expo-status-bar'
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentRef, type ReactNode } from 'react'
-import { AppState, Pressable, ScrollView, Text, View } from 'react-native'
+import { AppState, Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ApiError, cacheEdition, cachedEdition, getDay, pruneLocal, pruneWords, recalledChoice, sendPlanChecks, sendUnrated, type DailySet, type Question } from '@shared/api'
 import { dayAt, nextTurn, WINDOW_INFO, type Day, type OpenWindow, type Sitting } from '@shared/day'
-import { heroFor, type Progress } from '@shared/Home'
+import { heroFor, type Progress } from '@shared/homeHero'
 import { pruneNotebook } from '@shared/notebook'
 import { sendUnsent } from '@shared/moves'
 import { forgetPick, isFirstDay, loadHistory, todaysPick, writeFirstOf, type Half } from '@shared/profile'
 import { blackOn, intimacyOn, loadPrefs, pulseOn, regionHere, savePrefs, type Prefs } from '@shared/prefs'
 import { cachedPack, fetchPack, regionalFor, regionalToday } from '@shared/regional'
 import { keys, load as loadKey, remove as removeKey, save as saveKey } from '@shared/storage'
-import { NAME_KEY, WELCOMED } from '@shared/Welcome'
+import { NAME_KEY, WELCOMED } from '@shared/welcomeKeys'
 import { pruneCardTexts } from '@shared/insights'
 import { CONNECT_OPEN_KEY, dayWithYou, glimpseHere, inWeekOne, isNewcomer, lastLeaning, markStarted, needsAccount, SHOW_ALL_KEY } from '@shared/firstWeek'
 import { signInMethods, type AccountView } from '@shared/social'
@@ -26,9 +25,10 @@ import { startBackups } from '@shared/vault'
 import { startReminders, type Opens } from './platform/reminders'
 import { markWindow } from '@shared/windows'
 import type { Read } from '@shared/reads/types'
-import { dark as darkPalette, font, light as lightPalette, radius, ThemeProvider, useTheme } from './theme'
+import { dark as darkPalette, font, light as lightPalette, radius, RAIL_AT, RAIL_W, ThemeProvider, useTheme, WIDE } from './theme'
 import { Back, Button, Page, PrivacyLine, T, Tinted } from './ui/kit'
 import { Icon, type IconName } from './ui/Icon'
+import { Sidebar, type SideItem } from './ui/Sidebar'
 import { QuestionCard } from './screens/QuestionCard'
 import { Close } from './screens/Close'
 import { Afternoon, Midday, Night } from './screens/Windows'
@@ -43,6 +43,8 @@ import { Settings } from './screens/Settings'
 import { Mirror } from './screens/Mirror'
 import { ReadScreen } from './screens/ReadScreen'
 import { CountryAsk } from './screens/Country'
+import { InstallInvite } from './screens/Browser'
+import { backFromGoogle } from './platform/googleWeb'
 
 type State = { kind: 'loading' } | { kind: 'ready'; set: DailySet; day: string; offline?: true } | { kind: 'empty' } | { kind: 'error' }
 type Tab = 'today' | 'notebook' | 'circle' | 'insights' | 'account'
@@ -121,7 +123,12 @@ function useStep(steps: Question[]) {
 export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart: () => void }) {
   const [state, setState] = useState<State>({ kind: 'loading' })
   const [attempt, setAttempt] = useState(0)
-  const [tab, setTab] = useState<View_>('today')
+  // Back from Google's sign-in on the website: open on sign-in to finish it.
+  const [tab, setTab] = useState<View_>(() => (backFromGoogle() ? 'signin' : 'today'))
+  const { width: windowWidth } = useWindowDimensions()
+  const wide = windowWidth >= WIDE
+  const rail = windowWidth >= RAIL_AT
+  const [writeFree, setWriteFree] = useState(false)
   const mirrorScroll = useRef<ComponentRef<typeof ScrollView>>(null)
   const [back, setBack] = useState<Tab>('today')
   const [reading, setReading] = useState<Read | null>(null)
@@ -250,7 +257,13 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
 
   function goTab(t: Tab) {
     setTab(t)
+    setWriteFree(false)
     if (t === 'today' && tab === 'today') setFlow(null)
+  }
+  // Today's "What's on your mind?" opens Reflect on a blank page.
+  function write() {
+    setTab('notebook')
+    setWriteFree(true)
   }
   function open(v: 'settings' | 'kept' | 'signin' | 'mirror') {
     if (tab === 'today' || tab === 'notebook' || tab === 'circle' || tab === 'insights' || tab === 'account') setBack(tab)
@@ -383,7 +396,7 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
       </Page>
     )
   } else if (tab === 'notebook') {
-    body = <Reflect today={date} questions={[...morningQs, ...eveningQs]} mild={!intimacyOn(prefs)} />
+    body = <Reflect today={date} questions={[...morningQs, ...eveningQs]} mild={!intimacyOn(prefs)} startFree={writeFree} name={me?.name || localName || null} />
   } else if (tab === 'insights') {
     body = <Insights today={date} questions={[...morningQs, ...eveningQs]} pulse={pulseOn(prefs)} onOpenReflect={() => goTab('notebook')} onOpenSettings={() => goTab('account')} onOpenMirror={() => open('mirror')} />
   } else if (tab === 'circle') {
@@ -522,7 +535,7 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
   } else {
     // Today itself.
     body = (
-      <Page>
+      <Page wideMax={rail ? RAIL_W + 24 : 0}>
         {offline && <T tone="muted">You're offline, so I opened what this phone already had. Answers go through once you're back.</T>}
         {set && hero ? (
           <Today
@@ -541,6 +554,8 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
             themes={themesOf([...morningQs, ...eveningQs])}
             intimacy={intimacyOn(prefs)}
             onRead={openRead}
+            rail={rail}
+            onWrite={write}
           >
             {!set.review && morning !== 'done' && win !== 'morning' && clockSitting === 'morning' && (
               <Tinted>
@@ -560,6 +575,7 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
                 <T tone="muted">No new questions today. Fresh questions arrive tomorrow at 5 am.</T>
               </Tinted>
             )}
+            <InstallInvite today={set.date} />
             <PrivacyLine onKept={() => open('kept')} onSettings={() => open('settings')} />
           </Today>
         ) : state.kind === 'empty' ? (
@@ -585,17 +601,51 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
     )
   }
 
-  const showTabs = !fullScreen
+  const shown = TABS.filter((t) => t.tab !== 'circle' || connectShown)
+  // A wide browser or Mac window keeps the sidebar through a sitting, as the
+  // web app does; the welcome and sign-up pages stand alone.
+  const sidebar = wide && !welcome && !(fullScreen && !flow)
+  const showTabs = !wide && !fullScreen
+  // As on the web: You reads "Profile" here, and after the first week the
+  // Mirrors and Saved get their own rows.
+  const sideItems = (ts: typeof TABS): SideItem[] =>
+    ts.map((t) => ({
+      key: t.tab,
+      name: t.tab === 'account' ? 'Profile' : t.name,
+      icon: t.icon,
+      on: tab === t.tab || (t.tab === 'insights' && tab === 'mirror'),
+      onPress: () => goTab(t.tab),
+    }))
+  const sideExtras: SideItem[] = weekOne
+    ? []
+    : [
+        { key: 'mirror', name: 'Mirrors', icon: 'mirror', on: tab === 'mirror', onPress: () => open('mirror') },
+        { key: 'kept', name: 'Saved', icon: 'bookmark', on: tab === 'kept', onPress: () => open('kept') },
+      ]
   return (
     <ThemeProvider palette={palette}>
       {/* Light clock and icons on midnight, dark ones on cream. */}
       <StatusBar style={dark ? 'light' : 'dark'} />
-      <View style={{ flex: 1, backgroundColor: palette.bg }}>
+      <View style={{ flex: 1, flexDirection: sidebar ? 'row' : 'column', backgroundColor: palette.bg }}>
+        {sidebar && (
+          <Sidebar
+            top={[...sideItems(shown.filter((t) => t.tab !== 'account')), ...sideExtras]}
+            foot={[
+              ...sideItems(shown.filter((t) => t.tab === 'account')),
+              { key: 'settings', name: 'Settings', icon: 'gear', on: tab === 'settings', onPress: () => open('settings') },
+            ]}
+          />
+        )}
         <View style={{ flex: 1 }}>{body}</View>
-        {showTabs && <TabBar tab={tab} onTab={goTab} shown={TABS.filter((t) => t.tab !== 'circle' || connectShown)} />}
+        {showTabs && <TabBar tab={tab} onTab={goTab} shown={shown} />}
       </View>
     </ThemeProvider>
   )
+}
+
+// Inner pages light the tab they belong under.
+function tabHome(tab: View_): View_ {
+  return tab === 'settings' || tab === 'kept' || tab === 'signin' ? 'account' : tab === 'mirror' ? 'insights' : tab
 }
 
 function TabBar({ tab, onTab, shown }: { tab: View_; onTab: (t: Tab) => void; shown: typeof TABS }) {
@@ -607,9 +657,7 @@ function TabBar({ tab, onTab, shown }: { tab: View_; onTab: (t: Tab) => void; sh
       style={{ flexDirection: 'row', backgroundColor: p.surface, borderTopWidth: 1, borderTopColor: p.line, paddingBottom: Math.max(insets.bottom, 8), paddingTop: 8 }}
     >
       {shown.map((t) => {
-        // Inner pages light the tab they belong under.
-        const home: View_ = tab === 'settings' || tab === 'kept' || tab === 'signin' ? 'account' : tab === 'mirror' ? 'insights' : tab
-        const on = home === t.tab
+        const on = tabHome(tab) === t.tab
         return (
           <Pressable
             key={t.tab}

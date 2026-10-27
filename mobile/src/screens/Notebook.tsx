@@ -1,4 +1,4 @@
-// My notebook (the web app's NotebookScreen.tsx), under Reflect: the cards a
+// My notebook, under Reflect: the cards a
 // person kept, and what they wrote themselves (three good things, Sunday
 // lines, plans and the names they gave their weeks). On this phone only.
 import { useState } from 'react'
@@ -8,7 +8,7 @@ import { allGoodThings, keptCards, names, plans, removePlan, sentencesBetween, u
 import { themeName } from '@shared/themes'
 import { TRAITS } from '@shared/traits'
 import { REVISIT_WORDS, VERDICT_WORDS } from '@shared/words'
-import { font, useTheme } from '../theme'
+import { useTheme } from '../theme'
 import { Button, Chip, T } from '../ui/kit'
 import { DownloadButtons } from './BookDownloads'
 
@@ -154,7 +154,7 @@ export function Notebook({ mild, today }: { mild: boolean; today: string }) {
         </View>
       )}
       {!empty && <DownloadButtons today={today} mild={mild} />}
-      <Muted>For self-reflection, not a diagnosis.</Muted>
+      <Muted>Something to think about, never a diagnosis.</Muted>
     </View>
   )
 }
@@ -170,7 +170,7 @@ function CardEntry({ card: c, onRemove }: { card: KeptCard; onRemove: () => void
       style={{ borderTopColor: p.line, borderTopWidth: 1, paddingTop: 16, gap: 8 }}
     >
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
-        <T v="tiny" tone="accent" style={{ fontFamily: font.heavy, letterSpacing: 1.7, textTransform: 'uppercase' }}>
+        <T v="eyebrow">
           {c.theme ? themeName(c.theme) : 'Today'}
         </T>
         <Muted>

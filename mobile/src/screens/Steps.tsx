@@ -1,6 +1,5 @@
-// The small steps picked under a card, and how each went (the web app's
-// MorningMoves, StepCheck and StepNudge). Answers are kept on this device
-// and sent with moves.ts, as on the web.
+// The small steps picked under a card, and how each went. Answers are kept
+// on this device and sent with the shared moves.ts.
 import { useState } from 'react'
 import { View } from 'react-native'
 import type { StepStatus } from '@shared/api'

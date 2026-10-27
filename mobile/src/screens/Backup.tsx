@@ -1,5 +1,4 @@
-// The backup with 12 words (the web app's Backup.tsx, and Reflect's "bring
-// your writing back"): off until the person turns it on, sealed on this
+// The backup with 12 words (and Reflect's "bring your writing back"): off until the person turns it on, sealed on this
 // phone before it is sent, and only the 12 words open it. There is no email
 // and no account behind it (frontend/src/vault.ts). Phones get the crypto it
 // needs from platform/subtle.ts, so a backup made in a browser opens here.

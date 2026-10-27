@@ -9,7 +9,7 @@
 // that came from the person or the server is escaped.
 
 import { getExport, wordsBetween, type OwnWords, type ServerExport } from './api'
-import { HELPLINE_LINE } from './Helpline'
+import { HELPLINE_LINE } from './helplineText'
 import {
   allGoodThings,
   keptCards,
@@ -249,7 +249,7 @@ export function bookHTML(b: Book): string {
 ${empty ? '<p>Nothing kept yet. Tap “Keep this” under any card in the app and it will be here next time.</p>' : body}
 <footer>
 ${notes.map((n) => `<p class="meta">${esc(n)}</p>`).join('\n')}
-<p class="note">For self-reflection, not a diagnosis.</p>
+<p class="note">Something to think about, never a diagnosis.</p>
 <p class="meta">${esc(HELPLINE_LINE)} ${esc(helplineHere().replace(/^https:\/\//, ''))}</p>
 </footer>
 </main>
@@ -259,20 +259,20 @@ ${notes.map((n) => `<p class="meta">${esc(n)}</p>`).join('\n')}
 }
 
 const BOOK_CSS = `
-/* Midnight & Cream, as in styles/tokens.css. */
+/* Midnight & Cream, as in mobile/src/theme.tsx. */
 :root{--bg:#fbf7f0;--fg:#12283a;--muted:#69737c;--rule:#ece3d4;--card:#fffdf9;--accent:#013d5a;color-scheme:light}
 @media (prefers-color-scheme:dark){:root{--bg:#0b1a24;--fg:#f6efe3;--muted:#9eaab3;--rule:#1d3545;--card:#102330;--accent:#f4a258;color-scheme:dark}}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--fg);font:17px/1.6 Georgia,'Times New Roman',serif}
+body{margin:0;background:var(--bg);color:var(--fg);font:17px/1.6 Figtree,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif}
 main{max-width:40rem;margin:0 auto;padding:2.5rem max(16px,env(safe-area-inset-right)) 3rem max(16px,env(safe-area-inset-left))}
 h1{font-size:2.2rem;line-height:1.15;margin:.2rem 0 .4rem;text-wrap:balance}
-h2{font:600 .8rem/1.4 system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin:2.6rem 0 1rem;padding-top:1rem;border-top:1px solid var(--rule)}
-h3{font:600 1rem/1.4 system-ui,sans-serif;margin:1.6rem 0 .6rem}
+h2{font:600 .8rem/1.4 Figtree,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin:2.6rem 0 1rem;padding-top:1rem;border-top:1px solid var(--rule)}
+h3{font:600 1rem/1.4 Figtree,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;margin:1.6rem 0 .6rem}
 p{margin:.3rem 0}
 ul{list-style:none;padding:0;margin:0}
 ul>li{padding:.7rem 0;border-bottom:1px solid var(--rule)}
 ol{margin:.3rem 0;padding-left:1.4rem}
-.brand,.meta,.label{font:.85rem/1.5 system-ui,sans-serif;color:var(--muted)}
+.brand,.meta,.label{font:.85rem/1.5 Figtree,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:var(--muted)}
 .brand{letter-spacing:.06em;text-transform:uppercase}
 .label{font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-right:.3rem}
 .card{background:var(--card);border:1px solid var(--rule);border-left:4px solid var(--accent);border-radius:10px;padding:1rem 1.1rem;margin:0 0 1rem;break-inside:avoid}
@@ -280,7 +280,7 @@ ol{margin:.3rem 0;padding-left:1.4rem}
 .headline{font-size:1.1rem;margin-top:.6rem}
 .answer{font-style:italic}
 .other{margin-top:.6rem}
-.said{font:.9rem/1.5 system-ui,sans-serif}
+.said{font:.9rem/1.5 Figtree,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif}
 .line{font-size:1.05rem}
 footer{margin-top:3rem;padding-top:1rem;border-top:1px solid var(--rule)}
 .note{font-style:italic;margin-top:1rem}

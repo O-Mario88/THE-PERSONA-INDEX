@@ -9,7 +9,7 @@ import type { Reflection, ReflectionArea, ReflectionGroup, ReflectionPeriod, Ref
 // from their own answers, their week's earned reads and, once three friends
 // have answered, their circle's blended view. Each item becomes a question
 // answered in their own words, and earlier answers come back later. No
-// scores, no labels. The same rules as the native app (apple/PersonaKit).
+// scores, no labels.
 
 export const AREA_NAMES: Record<ReflectionArea, string> = {
   work: 'Work',

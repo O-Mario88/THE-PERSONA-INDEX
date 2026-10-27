@@ -3,9 +3,9 @@ import { entryFor, REGISTRY } from './registry'
 
 // Every key the app writes on the phone is named in the registry, so the
 // backup, Download and Delete cover it by construction (registry.ts). This
-// reads the app's own source for every "pi." key it spells out.
+// reads the shared code and the app (mobile/src) for every "pi." key spelled out.
 
-const sources = import.meta.glob(['./**/*.{ts,tsx}', '!./**/*.test.{ts,tsx}', '!./fakeVault.ts', '!./setupTests.ts'], {
+const sources = import.meta.glob(['./**/*.{ts,tsx}', '../../mobile/src/**/*.{ts,tsx}', '!./**/*.test.{ts,tsx}', '!./fakeVault.ts', '!./setupTests.ts'], {
   query: '?raw',
   import: 'default',
   eager: true,

@@ -8,19 +8,19 @@ import {
   Figtree_500Medium,
   Figtree_600SemiBold,
   Figtree_700Bold,
-  Figtree_800ExtraBold,
 } from '@expo-google-fonts/figtree'
 import { hydrate } from './src/platform/setup'
 import './src/platform/gzip'
 import { light } from './src/theme'
 import { Shell } from './src/Shell'
+import { WebLockGate } from './src/screens/Browser'
 
 SplashScreen.preventAutoHideAsync().catch(() => {})
 
 // The root: Figtree and what this device kept are loaded before the first
 // screen, so nothing flashes or jumps.
 export default function App() {
-  const [fonts] = useFonts({ Figtree_400Regular, Figtree_500Medium, Figtree_600SemiBold, Figtree_700Bold, Figtree_800ExtraBold })
+  const [fonts] = useFonts({ Figtree_400Regular, Figtree_500Medium, Figtree_600SemiBold, Figtree_700Bold })
   const [kept, setKept] = useState(false)
   const [epoch, setEpoch] = useState(0)
   const scheme = useColorScheme()
@@ -33,7 +33,9 @@ export default function App() {
   if (!fonts || !kept) return <View style={{ flex: 1, backgroundColor: light.bg }} />
   return (
     <SafeAreaProvider>
-      <Shell key={epoch} phoneDark={scheme === 'dark'} onRestart={() => setEpoch((n) => n + 1)} />
+      <WebLockGate>
+        <Shell key={epoch} phoneDark={scheme === 'dark'} onRestart={() => setEpoch((n) => n + 1)} />
+      </WebLockGate>
     </SafeAreaProvider>
   )
 }

@@ -1,8 +1,8 @@
-// The web app's line icons (frontend/src/ui/icons.tsx), drawn with
-// react-native-svg from the same path data, so both apps share one set.
+// The app's line icons, drawn with react-native-svg from the shared path
+// data (frontend/src/iconPaths.ts).
 import Svg, { Path } from 'react-native-svg'
-import { paths } from '@shared/ui/icons'
-import type { IconName as WebIconName } from '@shared/ui/icons'
+import { paths } from '@shared/iconPaths'
+import type { IconName as WebIconName } from '@shared/iconPaths'
 
 export type IconName = WebIconName
 

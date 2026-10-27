@@ -7,10 +7,13 @@
 // Build settings (an EAS secret or a local .env):
 //   EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID      the iOS OAuth client
 //   EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID  the Android OAuth client
+// On the website the server's own web client (GOOGLE_CLIENT_ID, sent as
+// googleClientId) is used, through a full-page trip to Google (googleWeb.ts).
 import * as AppleAuthentication from 'expo-apple-authentication'
 import { AuthRequest, ResponseType, exchangeCodeAsync, type DiscoveryDocument } from 'expo-auth-session'
 import { Platform } from 'react-native'
 import type { SignInMethods } from '@shared/social'
+import { startGoogleWeb } from './googleWeb'
 
 const BUNDLE_ID = 'com.personaindex.app'
 
@@ -30,6 +33,7 @@ export type Providers = { google: boolean; apple: boolean }
 // Which buttons this phone can show.
 export async function appProviders(m: SignInMethods | null): Promise<Providers> {
   const apple = Platform.OS === 'ios' && !!m?.appleApp && (await AppleAuthentication.isAvailableAsync().catch(() => false))
+  if (Platform.OS === 'web') return { google: !!m?.google && !!m.googleClientId, apple: false }
   return { google: !!m?.googleApp && googleClientId() !== '', apple }
 }
 
@@ -53,8 +57,11 @@ export async function appleToken(): Promise<IdToken> {
 }
 
 // Google's own sign-in page in the system browser sheet, with PKCE; the code
-// comes back to the app by its bundle ID and is swapped for an ID token.
-export async function googleToken(): Promise<IdToken> {
+// comes back to the app by its bundle ID and is swapped for an ID token. On
+// the website the page goes to Google instead and the token arrives when it
+// comes back (SignUp reads it).
+export async function googleToken(m: SignInMethods | null): Promise<IdToken> {
+  if (Platform.OS === 'web') return startGoogleWeb(m?.googleClientId ?? '')
   const clientId = googleClientId()
   const req = new AuthRequest({
     clientId,

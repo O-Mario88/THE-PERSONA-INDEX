@@ -30,8 +30,14 @@ describe('the public read pages', () => {
       if (!name.endsWith('.html')) continue
       for (const r of READS) for (const s of r.sources) expect(html, `${name} cites ${s.url}`).not.toContain(s.url)
       expect(html).not.toMatch(/<script/i)
-      expect(html).toContain('For self-reflection, not a diagnosis.')
+      expect(html).toContain('Something to think about, never a diagnosis.')
     }
+  })
+
+  it("read in the app's typeface, Figtree, from the site itself", () => {
+    const page = readSite().files['read/index.html']
+    expect(page).toMatch(/@font-face\{font-family:Figtree;src:url\(\/fonts\/figtree-400\.ttf\)/)
+    expect(page).not.toMatch(/Georgia|Times|[^-]serif|system-ui/)
   })
 
   it('end the heavy reads with the helpline', () => {

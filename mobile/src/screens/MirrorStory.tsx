@@ -1,5 +1,4 @@
-// The story-first Mirrors (Edwin, 2026-10-26; the web app's MirrorParts.tsx,
-// MirrorWeek.tsx, MirrorPeriodStory.tsx and MirrorYear.tsx). A story first,
+// The story-first Mirrors (Edwin, 2026-10-26). A story first,
 // built only from real answers; then what they revealed, what helped, the
 // people, the person's own words and one gentle direction. Every finding
 // has "Why am I seeing this?" and can be answered with That's me / Partly /
@@ -11,7 +10,7 @@ import Svg, { Circle, Path } from 'react-native-svg'
 import { getPeriodMirror, PERIODS_BACK, type Mirror as MirrorData, type PeriodMirror } from '@shared/api'
 import { connectionBetween } from '@shared/connection'
 import { getNotAlone, type NotAloneQuestion } from '@shared/insights'
-import { reflectSettings, setReflectSettings, threadsBetween } from '@shared/journal'
+import { reflectSettings, threadsBetween } from '@shared/journal'
 import {
   answerStillImportant,
   chooseDirection,
@@ -115,7 +114,7 @@ function StoryHero({ eyebrow, story, meta, span }: { eyebrow: string; story: Sto
         <T v="eyebrow" tone="onNavy2">
           {eyebrow}
         </T>
-        <T v="serif" tone="onNavy" style={{ fontSize: 28, lineHeight: 33 }}>
+        <T v="quote" tone="onNavy" style={{ fontSize: 28, lineHeight: 33 }}>
           {story.headline}
         </T>
         <View style={{ width: 40, height: 3, borderRadius: 2, backgroundColor: p.brandLime }} />
@@ -187,7 +186,7 @@ function Section({ id, icon, tone = 'green', title, note, children }: { id: stri
       <View style={{ flexDirection: 'row', gap: 12, alignItems: 'flex-start' }}>
         <Disc icon={icon} tone={tone} size={40} />
         <View style={{ flex: 1, gap: 2 }}>
-          <T v="h3" style={{ fontFamily: font.heavy }}>
+          <T v="h3">
             {title}
           </T>
           {note ? (
@@ -218,7 +217,7 @@ function Quote({ text, when }: { text: string; when?: string }) {
   const p = useTheme()
   return (
     <View style={{ borderLeftWidth: 3, borderLeftColor: p.purple, paddingLeft: 14, gap: 4 }}>
-      <T style={{ fontFamily: 'Georgia', fontSize: 19, lineHeight: 27 }}>“{text}”</T>
+      <T style={{ fontFamily: font.semibold, fontSize: 19, lineHeight: 27 }}>“{text}”</T>
       {when ? <Fine>{when}</Fine> : null}
     </View>
   )
@@ -417,28 +416,10 @@ function OthersView({ picks }: { picks: OthersPick[] }) {
   )
 }
 
-// In your own words: off until the person lets their reflections in. Read on
-// this phone and never sent.
-function OwnWordsView({ pick, span, onChange }: { pick: { id: string; date: string; sentence: string } | null; span: Span; onChange: () => void }) {
-  const [on, setOn] = useState(() => reflectSettings().reflectionsInMirror)
+// In your own words: one line the person wrote in Reflect comes back, read
+// on this phone and never sent.
+function OwnWordsView({ pick, span }: { pick: { id: string; date: string; sentence: string } | null; span: Span }) {
   const [still, setStill] = useState<StillImportant | null>(() => (pick ? stillImportant(pick.id) : null))
-  if (!on) {
-    return (
-      <View style={{ gap: 10 }}>
-        <Quiet>Your Mirror can bring back one line you wrote in Reflect and ask whether it still matters. It is read on this phone only.</Quiet>
-        <Row>
-          <Chip
-            label="Bring my words back"
-            onPress={() => {
-              setReflectSettings({ reflectionsInMirror: true })
-              setOn(true)
-              onChange()
-            }}
-          />
-        </Row>
-      </View>
-    )
-  }
   if (!pick) return <Quiet>Nothing written in Reflect in this {span === 'week' ? 'week' : span} yet. When you write, a line can come back here.</Quiet>
   return (
     <View style={{ gap: 12 }}>
@@ -519,10 +500,10 @@ function DirectionBox({ span, from, today, direction, title, allowOwn = false }:
         <View style={{ flexDirection: 'row', gap: 12 }}>
           <Disc icon="arrow" tone="amber" size={40} />
           <View style={{ flex: 1, gap: 4 }}>
-            <T v="h3" style={{ fontFamily: font.heavy }}>
+            <T v="h3">
               {title}
             </T>
-            {direction && <T v="serif" style={{ fontSize: 20, lineHeight: 27 }}>{direction.text}</T>}
+            {direction && <T v="quote" style={{ fontSize: 20, lineHeight: 27 }}>{direction.text}</T>}
             {direction && (
               <T v="small" tone="muted">
                 {direction.why}
@@ -768,13 +749,13 @@ export function SundayMirror({
 
       {helped.length > 0 && (
         <Section id="ms-helped" icon="check" title="What helped you this week?" note="Based on the steps you chose to try, in your own words.">
-          {helpedLine ? <T v="serif" style={{ fontSize: 19, lineHeight: 26 }}>{helpedLine}</T> : null}
+          {helpedLine ? <T v="quote" style={{ fontSize: 19, lineHeight: 26 }}>{helpedLine}</T> : null}
           <HelpedList items={helped} span="week" />
         </Section>
       )}
 
-      <Section id="ms-words" icon="notebook" tone="purple" title="In your own words" note="From your private reflections, only if you want them here.">
-        <OwnWordsView pick={words} span="week" onChange={() => setTick((t) => t + 1)} />
+      <Section id="ms-words" icon="notebook" tone="purple" title="In your own words" note="From your private reflections, only on this phone.">
+        <OwnWordsView pick={words} span="week" />
       </Section>
 
       <Section id="ms-alone" icon="people" tone="blue" title="You’re not alone">
@@ -966,7 +947,7 @@ export function PeriodStory({ p: pm, today, back, jumpTo, deeper, footer }: { p:
 
       {helped.length > 0 && (
         <Section id="ms-worked" icon="check" title="What worked for you" note="Only what you marked yourself. Choosing a step is not the same as it working.">
-          {helpedSentence(helped) ? <T v="serif" style={{ fontSize: 19, lineHeight: 26 }}>{helpedSentence(helped)}</T> : null}
+          {helpedSentence(helped) ? <T v="quote" style={{ fontSize: 19, lineHeight: 26 }}>{helpedSentence(helped)}</T> : null}
           <HelpedList items={helped} span={noun} />
         </Section>
       )}
@@ -974,13 +955,8 @@ export function PeriodStory({ p: pm, today, back, jumpTo, deeper, footer }: { p:
       {(intention || words || threads) && (
         <Section id="ms-memory" icon="notebook" tone="purple" title="Your reflection memory" note="Something from earlier, brought back to ask whether it still matters.">
           {intention && <IntentionAsk id={intention.id} text={intention.text} noun={noun} today={today} onDone={() => setTick((t) => t + 1)} />}
-          {words && <OwnWordsView pick={words} span={noun} onChange={() => setTick((t) => t + 1)} />}
+          {words && <OwnWordsView pick={words} span={noun} />}
           {threads && <MirrorThreads from={pm.from} to={pm.to} span={noun} />}
-        </Section>
-      )}
-      {!words && !reflectSettings().reflectionsInMirror && (
-        <Section id="ms-words" icon="notebook" tone="purple" title="In your own words" note="From your private reflections, only if you want them here.">
-          <OwnWordsView pick={null} span={noun} onChange={() => setTick((t) => t + 1)} />
         </Section>
       )}
 
@@ -1056,7 +1032,7 @@ function ThemeBox({ noun, from, today, themes, back }: { noun: 'month' | 'quarte
           <View style={{ flexDirection: 'row', gap: 12 }}>
             <Disc icon="arrow" tone="amber" size={40} />
             <View style={{ flex: 1, gap: 2 }}>
-              <T v="h3" style={{ fontFamily: font.heavy }}>
+              <T v="h3">
                 One direction for the coming {noun}
               </T>
               <T v="small" tone="muted">
@@ -1090,7 +1066,6 @@ export function YearMirror({ y, today, back, jumpTo, deeper, footer }: { y: Peri
   const p = useTheme()
   const jumps = useJumps(jumpTo)
   const [deep, setDeep] = useDepth()
-  const [, setTick] = useState(0)
   const quarters = useQuarters(y, today)
   const chapters = [1, 2, 3, 4].map((q) => chapterOf(q, quarters ? quarters[q - 1] : null))
   const story = quarters ? yearStory(chapters, y) : { headline: 'Gathering your year…', paragraphs: [], evidence: [] }
@@ -1196,7 +1171,7 @@ export function YearMirror({ y, today, back, jumpTo, deeper, footer }: { y: Peri
         {remembered.length > 0 ? (
           remembered.map((r) => <Quote key={r.id} text={r.answer.length > 280 ? `${r.answer.slice(0, 279)}…` : r.answer} when={whenSaid(r.date, 'year')} />)
         ) : (
-          <OwnWordsView pick={null} span="year" onChange={() => setTick((t) => t + 1)} />
+          <OwnWordsView pick={null} span="year" />
         )}
       </Section>
 
@@ -1258,7 +1233,7 @@ function ChapterCard({ c }: { c: Chapter }) {
   return (
     <View style={{ gap: 4, padding: 16, borderRadius: radius.lg, borderWidth: 1, borderColor: p.line, backgroundColor: quiet ? 'transparent' : p.surface, borderStyle: quiet ? 'dashed' : 'solid' }}>
       <T v="label">{c.months}</T>
-      <T v="serif" style={{ fontSize: 20, lineHeight: 26, color: quiet ? p.muted : p.text }}>
+      <T v="quote" style={{ fontSize: 20, lineHeight: 26, color: quiet ? p.muted : p.text }}>
         {c.title}
       </T>
       {c.state === 'told' && (
@@ -1292,7 +1267,7 @@ function Proud({ year }: { year: string }) {
   const [saved, setSaved] = useState(false)
   return (
     <View style={{ gap: 10 }}>
-      <T v="h3" style={{ fontFamily: font.heavy }}>
+      <T v="h3">
         What you’re proud of
       </T>
       <T v="small" tone="text2">
@@ -1355,13 +1330,13 @@ function Forward({
   function copy() {
     const parts = [`My year in perspective · ${y.label}`, '', ...chapters.map((c) => `${c.months}: ${c.title}`), '', ...lines]
     if (withWords && remembered.length) parts.push('', ...remembered.map((r) => `${whenSaid(r.date, 'year')}: “${r.answer}”`))
-    parts.push('', 'For self-reflection, not a diagnosis.')
+    parts.push('', 'Something to think about, never a diagnosis.')
     Share.share({ message: parts.join('\n') }).catch(() => {})
   }
 
   return (
     <View ref={ref} collapsable={false} style={{ gap: 12 }}>
-      <T v="h3" style={{ fontFamily: font.heavy }}>
+      <T v="h3">
         What you’re carrying forward
       </T>
       {lines.length > 0 ? lines.map((l) => <T key={l}>• {l}</T>) : <Quiet>As the year fills in, what you learned and what still matters gathers here.</Quiet>}

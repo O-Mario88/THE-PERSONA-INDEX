@@ -91,7 +91,7 @@ describe('the book', () => {
     expect(html).toContain('Payday: what goes first?')
     expect(html).toContain('Move £10 on payday.')
     expect(html).toContain('Helped')
-    expect(html).toContain('For self-reflection, not a diagnosis.')
+    expect(html).toContain('Something to think about, never a diagnosis.')
     expect(html).toContain('findahelpline.com')
     // A page that stands on its own: nothing fetched, nothing run.
     expect(html).not.toMatch(/<script|<link|src=|@import|url\(/i)

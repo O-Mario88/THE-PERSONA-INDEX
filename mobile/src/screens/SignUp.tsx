@@ -1,5 +1,5 @@
-// The sign-up page after the first glimpse, and signing in from You (the
-// web app's SignIn.tsx, page mode). No password: a 6-digit code to an email
+// The sign-up page after the first glimpse, and signing in from You. No
+// password: a 6-digit code to an email
 // or a phone, or Apple and Google through their own sheets (idSignIn.ts).
 // Only the ways the server can really use are shown.
 import { useEffect, useState } from 'react'
@@ -9,6 +9,7 @@ import { ApiError } from '@shared/api'
 import * as AppleAuthentication from 'expo-apple-authentication'
 import { patchAccount, sendCode, signInMethods, signInWithID, verifyCode, type AccountView, type SignInMethods } from '@shared/social'
 import { Cancelled, appProviders, appleToken, googleToken, type IdToken, type Providers } from '../platform/idSignIn'
+import { doneWithGoogleReturn, takeGoogleReturn } from '../platform/googleWeb'
 import { font, gutter, radius, useTheme } from '../theme'
 import { Button, Field, T } from '../ui/kit'
 import { Icon } from '../ui/Icon'
@@ -85,6 +86,16 @@ export function SignUp({ page, onDone, onNotNow, notNow }: { page: SignUpPage; o
       if (t.givenName) setName(t.givenName)
       finish((await signInWithID(provider, t.token)).account)
     })
+  // Back from Google on the website: finish signing in with its token.
+  useEffect(() => {
+    const back = takeGoogleReturn()
+    if (!back) return
+    doneWithGoogleReturn()
+    if ('token' in back) withID('google', async () => back)
+    else if (back.error !== 'cancelled') setError("Google didn't confirm it was you. Please try again.")
+    // Once, when the page comes back from Google.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   const codes = !!methods && (methods.email || methods.phone)
   const oneTap = providers.apple || providers.google
   const none = !!methods && !codes && !oneTap
@@ -100,7 +111,7 @@ export function SignUp({ page, onDone, onNotNow, notNow }: { page: SignUpPage; o
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 40 }}>
         <View style={{ backgroundColor: p.navy, paddingHorizontal: gutter, paddingTop: Math.max(insets.top, 20) + 16, paddingBottom: 28, gap: 18 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <Text style={{ fontFamily: font.heavy, fontSize: 16, color: p.onNavy }}>P</Text>
+            <Text style={{ fontFamily: font.bold, fontSize: 16, color: p.onNavy }}>P</Text>
             <T v="label" tone="onNavy">
               The Persona Index
             </T>
@@ -150,7 +161,7 @@ export function SignUp({ page, onDone, onNotNow, notNow }: { page: SignUpPage; o
                 />
               )}
               {methods && providers.google && (
-                <Button wide kind="outline" label="Continue with Google" disabled={busy} onPress={() => withID('google', googleToken)} />
+                <Button wide kind="outline" label="Continue with Google" disabled={busy} onPress={() => withID('google', () => googleToken(methods))} />
               )}
               {codes && oneTap && (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>

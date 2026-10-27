@@ -1,4 +1,4 @@
-// Insights (the web app's InsightsPage.tsx): understand yourself, find what
+// Insights: understand yourself, find what
 // helps. For You is the person's own answers, worked out on this device;
 // You're Not Alone shows the server's real counts, only to someone who
 // turned the Human Pulse on; Saved holds the cards they kept. No made-up
@@ -15,7 +15,7 @@ import { rateAnswer } from '@shared/rating'
 import { splitReveal } from '@shared/reveal'
 import { NOT_ME_REPLY, VERDICT_REPLIES } from '@shared/words'
 import { radius, useTheme } from '../theme'
-import { Button, Chip, Hairline, Page, T, Tinted } from '../ui/kit'
+import { Button, Card, Chip, Page, T, Tinted } from '../ui/kit'
 import { Disc } from '../ui/parts'
 import { HeavyCard, VerdictRow } from './QuestionCard'
 
@@ -49,10 +49,35 @@ export function Insights({
   const counted = cards.some((c) => !c.heavy && !c.regional)
   const answeredAny = loadHistory().answers.length > 0
   return (
-    <Page>
+    <Page
+      aside={
+        counted || saved.length > 0 ? (
+        <>
+          {counted && (
+            <Card>
+              <NotAlone today={today} cards={cards} pulse={pulse} onOpenSettings={onOpenSettings} />
+            </Card>
+          )}
+          {saved.length > 0 && (
+            <>
+              <Card style={{ gap: 10 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                  <Disc icon="bookmark" tone="purple" size={40} />
+                  <T v="h2">What you've kept</T>
+                </View>
+                {saved.slice(0, 3).map((c) => (
+                  <T key={c.questionId}>• {c.headline}</T>
+                ))}
+              </Card>
+            </>
+          )}
+        </>
+        ) : undefined
+      }
+    >
       <View style={{ gap: 4 }}>
         <T v="display">Insights</T>
-        <T tone="text2">Understand yourself. Find what helps.</T>
+        <T tone="text2">What I'm learning about you, and what seems to help you.</T>
       </View>
       {(answeredAny || onOpenMirror) && (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
@@ -62,36 +87,17 @@ export function Insights({
       )}
       <T v="h2">For You</T>
       {shown.length === 0 ? (
-        <T tone="muted">
-          {days === WEEK ? 'Answer a few questions and what they may say about you shows here, card by card.' : 'Nothing from the last 30 days yet. Your cards show here as you answer.'}
-        </T>
+        <Card>
+          <T tone="muted">
+            {days === WEEK ? 'Answer a few questions and I’ll show you here what they say about you, one card at a time.' : 'Nothing from the last 30 days yet. As you answer, I’ll add your cards here.'}
+          </T>
+        </Card>
       ) : (
-        shown.map((c, i) => (
-          <View key={c.questionId} style={{ gap: 20 }}>
-            {i > 0 && <Hairline />}
+        shown.map((c) => (
+          <Card key={c.questionId} style={{ gap: 20 }}>
             <InsightCard card={c} today={today} onRated={() => setVersion((v) => v + 1)} onOpenReflect={onOpenReflect} onOpenMirror={onOpenMirror} />
-          </View>
+          </Card>
         ))
-      )}
-      {counted && (
-        <>
-          <Hairline />
-          <NotAlone today={today} cards={cards} pulse={pulse} onOpenSettings={onOpenSettings} />
-        </>
-      )}
-      {saved.length > 0 && (
-        <>
-          <Hairline />
-          <View style={{ gap: 10 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-              <Disc icon="bookmark" tone="purple" size={40} />
-              <T v="h2">Saved insights</T>
-            </View>
-            {saved.slice(0, 3).map((c) => (
-              <T key={c.questionId}>• {c.headline}</T>
-            ))}
-          </View>
-        </>
       )}
     </Page>
   )
@@ -127,7 +133,7 @@ function InsightCard({ card, today, onRated, onOpenReflect, onOpenMirror }: { ca
             <View style={{ gap: 8 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                 <Disc icon="leaf" size={32} />
-                <T v="h3">What may matter here</T>
+                <T v="h3">What this could mean for you</T>
               </View>
               <View style={{ flexDirection: 'row' }}>
                 <View style={{ backgroundColor: p.accentWash, borderRadius: radius.pill, paddingHorizontal: 12, paddingVertical: 4 }}>
@@ -142,7 +148,7 @@ function InsightCard({ card, today, onRated, onOpenReflect, onOpenMirror }: { ca
             <View style={{ gap: 8 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                 <Disc icon="pin" tone="rose" size={32} />
-                <T v="h3">The Other Side</T>
+                <T v="h3">The other side of it</T>
               </View>
               <T v="small" tone="text2">
                 {card.otherSide}
@@ -155,7 +161,7 @@ function InsightCard({ card, today, onRated, onOpenReflect, onOpenMirror }: { ca
             <Chip label="Reflect on this" onPress={onOpenReflect} />
             {onOpenMirror && <Chip label="Weekly Mirror" onPress={onOpenMirror} />}
           </View>
-          <T v="tiny">For self-reflection, not a diagnosis.</T>
+          <T v="tiny">Something to think about, never a diagnosis.</T>
         </>
       )}
     </View>
@@ -229,7 +235,7 @@ function NotAlone({ today, cards, pulse, onOpenSettings }: { today: string; card
     <View style={{ gap: 10 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
         <Disc icon="people" tone="blue" size={40} />
-        <T v="h2">You’re Not Alone</T>
+        <T v="h2">You're not alone in this</T>
       </View>
       {!pulse ? (
         <>

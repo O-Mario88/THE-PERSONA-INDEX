@@ -3,7 +3,7 @@
 
 import type { StepStatus, Verdict } from './api'
 import { BALANCED } from './advice'
-import { HELPLINE_LINE } from './Helpline'
+import { HELPLINE_LINE } from './helplineText'
 import { NEEDS, reachingLine } from './needs'
 
 // Saturday looks ahead to Sunday, the review day.
@@ -183,3 +183,5 @@ export const FIXED_WORDS: [string, string][] = [
   ['local note', LOCAL_NOTE],
   ...Object.entries(SAFETY_REPLIES).map(([k, v]): [string, string] => [`safety reply ${k}`, v]),
 ]
+
+export const PRIVACY_LINE = 'Your writing is private, end-to-end encrypted and synced only to your devices.'

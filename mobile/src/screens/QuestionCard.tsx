@@ -1,5 +1,4 @@
-// One question on its own screen, as on the web (frontend/src/QuestionCard.tsx):
-// tap an answer or put it in your own words, and the same screen turns into
+// One question on its own screen: tap an answer or put it in your own words, and the same screen turns into
 // what it may say about you, one small step to try and whether it is you.
 // Every rule lives in the shared code; this file only draws it.
 import { useEffect, useMemo, useState } from 'react'
@@ -36,7 +35,7 @@ import {
   type Verdict,
 } from '@shared/api'
 import { isEvening } from '@shared/day'
-import { HELPLINE_LINE } from '@shared/Helpline'
+import { HELPLINE_LINE } from '@shared/helplineText'
 import { moveFor, startMove } from '@shared/moves'
 import { focusPlan, keepCard, keptCard, makePlan, unkeepCard } from '@shared/notebook'
 import { inOrder } from '@shared/order'
@@ -49,7 +48,7 @@ import { themeName, themeStyle } from '@shared/themes'
 import { keepCardText } from '@shared/insights'
 import { rateAnswer } from '@shared/rating'
 import { CRISIS_LINE, focusTouch, HEAVY_HEADLINE, HEAVY_THANKS, LOCAL_NOTE, NO_PEOPLE, NOT_ME_REPLY, peopleAsk, SWAP_NOTE, VERDICT_REPLIES } from '@shared/words'
-import { font, radius, useTheme } from '../theme'
+import { font, lift, radius, useTheme } from '../theme'
 import { B, Button, Chip, Field, Option, T, Tinted } from '../ui/kit'
 
 export type Done = 'answered' | 'skipped'
@@ -70,7 +69,6 @@ type Mode = 'options' | 'writing' | 'closest'
 
 export function QuestionCard({ question, date, sitting, wordsDays = DEFAULT_WORDS_DAYS, writeFirst = false, index, of, onDone, onNext }: Props) {
   const [choice, setChoice] = useState<string | null>(() => recalledChoice(question.id))
-  const [recalled] = useState(() => !!recalledChoice(question.id))
   const [words, setWords] = useState<OwnWords | null>(() => recalledWords(question.id))
   const [draft, setDraft] = useState(() => (recalledChoice(question.id) ? '' : recalledDraft(question.id)))
   const [first, setFirst] = useState(() => writeFirst && !recalledChoice(question.id) && draft.length <= MAX_FIRST_LINE)
@@ -220,7 +218,7 @@ export function QuestionCard({ question, date, sitting, wordsDays = DEFAULT_WORD
       {!choice && mode === 'closest' && (
         <View style={{ gap: 12 }}>
           <Quote text={typed} />
-          <T tone="text2">Which of these comes closest? Your insight comes from that one.</T>
+          <T tone="text2">Which of these is closest to what you meant? I'll read your answer from that one.</T>
           {options.map((o) => (
             <Option key={o.id} label={o.label} disabled={sending} onPress={() => vote(o, typed)} />
           ))}
@@ -272,7 +270,6 @@ export function QuestionCard({ question, date, sitting, wordsDays = DEFAULT_WORD
           words={words}
           date={date}
           wordsDays={wordsDays}
-          still={recalled}
           card={index !== undefined && of ? `Card ${index + 1} of ${of}` : undefined}
           nextLabel={index !== undefined && of && index + 1 < of ? `Question ${index + 2} of ${of}` : 'Next'}
           onNext={onNext}
@@ -292,7 +289,7 @@ function Quote({ text }: { text: string }) {
   const p = useTheme()
   return (
     <View style={{ borderLeftWidth: 3, borderLeftColor: p.amber, paddingLeft: 14 }}>
-      <T v="body" style={{ fontFamily: 'Georgia', fontSize: 18, lineHeight: 26 }}>
+      <T v="body" style={{ fontFamily: font.semibold, fontSize: 18, lineHeight: 26 }}>
         “{text}”
       </T>
     </View>
@@ -313,15 +310,15 @@ function YourWords({ words }: { words: OwnWords }) {
   )
 }
 
-// The card: the headline, then the reading, then what it reached for and the
-// other side, each on a tap; Next stays right under it from the start.
+// The answer: one insight card with the whole reading at once (Edwin,
+// 2026-10-27: the headline alone was too short), then Next, keeping it,
+// one small step and whether it is you.
 function Answer({
   question,
   option,
   words,
   date,
   wordsDays,
-  still,
   card,
   nextLabel,
   onNext,
@@ -331,7 +328,6 @@ function Answer({
   words: OwnWords | null
   date: string
   wordsDays: number
-  still: boolean
   card?: string
   nextLabel: string
   onNext: () => void
@@ -343,10 +339,6 @@ function Answer({
     return f && (option.traits?.[f.trait] ?? 0) !== 0 ? f : null
   })
   const [notMe, setNotMe] = useState(() => recalledVerdict(question.id) === 'not_me')
-  const hasBody = !!insight && !!splitReveal(insight.reveal).body
-  const [beat, setBeat] = useState(() => (still || !insight ? 2 : 0))
-  const advance = () => setBeat((b) => (b === 0 && hasBody ? 1 : 2))
-  const whole = beat >= 2
   return (
     <View style={{ gap: 16 }}>
       {card && <T v="label">{card}</T>}
@@ -370,15 +362,13 @@ function Answer({
           reach={notMe || !isNeed(option.need) ? null : NEED_PHRASES[option.need!]}
           thread={notMe ? null : thread}
           focus={notMe || !focus ? null : focusTouch(focus.when, focus.will)}
-          beat={beat}
         />
       )}
       {insight && isLowMood(question.theme, option.depth) && <Helpline />}
       <Button wide label={nextLabel} onPress={onNext} />
-      {insight && whole && <KeepThis question={question} option={option} words={words} date={date} />}
-      {!whole && <Button wide kind="ghost" label={beat === 0 && hasBody ? 'Read on' : 'And the other side'} onPress={advance} />}
-      {whole && insight?.step && <TryThis question={question} option={option} step={insight.step} needStep={insight.needStep} date={date} />}
-      {whole && insight && <Rate question={question} option={option} date={date} wordsDays={wordsDays} onVerdict={(v) => setNotMe(v === 'not_me')} />}
+      {insight && <KeepThis question={question} option={option} words={words} date={date} />}
+      {insight?.step && <TryThis question={question} option={option} step={insight.step} needStep={insight.needStep} date={date} />}
+      {insight && <Rate question={question} option={option} date={date} wordsDays={wordsDays} onVerdict={(v) => setNotMe(v === 'not_me')} />}
     </View>
   )
 }
@@ -418,11 +408,14 @@ export function HeavyCard() {
           Talk to someone now
         </Text>
       </T>
-      <T v="tiny">For self-reflection, not a diagnosis.</T>
+      <T v="tiny">Something to think about, never a diagnosis.</T>
     </Tinted>
   )
 }
 
+// The insight card, all at once as the iPhone app showed it: the headline
+// (the bright side of the answer), the fuller reading, the other side, and
+// what it reached for.
 function InsightPanel({
   area,
   chose,
@@ -431,7 +424,6 @@ function InsightPanel({
   reach,
   thread,
   focus,
-  beat,
 }: {
   area: string
   chose?: string
@@ -440,12 +432,14 @@ function InsightPanel({
   reach: string | null
   thread: string | null
   focus: string | null
-  beat: number
 }) {
   const p = useTheme()
   const { headline, body } = splitReveal(reveal)
   return (
-    <View accessibilityLabel="What your answer may say" style={{ gap: 14 }}>
+    <View
+      accessibilityLabel="What your answer may say"
+      style={[{ gap: 16, padding: 20, borderRadius: radius.lg, borderWidth: 1, borderColor: p.line, backgroundColor: p.surface }, lift(p)]}
+    >
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
         <T v="eyebrow">{area}</T>
         {chose && (
@@ -457,26 +451,28 @@ function InsightPanel({
       <T v="title" style={{ fontSize: 26, lineHeight: 31 }}>
         {headline}
       </T>
-      {body && beat >= 1 && <T tone="text2">{body}</T>}
-      {beat >= 2 && reach && (
-        <View style={{ gap: 4 }}>
-          <T v="eyebrow" tone="leaf">
-            What it reached for
-          </T>
-          <T>{reach}</T>
-        </View>
-      )}
-      {beat >= 2 && otherSide && (
-        <View style={{ gap: 4, borderLeftWidth: 3, borderLeftColor: p.rose, paddingLeft: 14 }}>
-          <T v="eyebrow" style={{ color: p.rose }}>
-            The other side
-          </T>
-          <T tone="text2">{otherSide}</T>
-        </View>
-      )}
-      {beat >= 2 && thread && <T tone="text2">↺ {thread}</T>}
-      {beat >= 2 && focus && <T tone="text2">→ {focus}</T>}
-      <T v="tiny">For self-reflection, not a diagnosis.</T>
+      {body ? (
+        <T tone="text2" style={{ fontSize: 17, lineHeight: 26 }}>
+          {body}
+        </T>
+      ) : null}
+      {otherSide ? <Side label="The other side" color={p.rose} text={otherSide} /> : null}
+      {reach && <Side label="What you were reaching for" color={p.accentInk} text={reach} />}
+      {thread && <T tone="text2">↺ {thread}</T>}
+      {focus && <T tone="text2">→ {focus}</T>}
+      <T v="tiny">Something to think about, never a diagnosis.</T>
+    </View>
+  )
+}
+
+// One side of a reading: a coloured rule, its name, and the words.
+function Side({ label, color, text }: { label: string; color: string; text: string }) {
+  return (
+    <View style={{ gap: 4, borderLeftWidth: 3, borderLeftColor: color, paddingLeft: 14 }}>
+      <T v="eyebrow" style={{ color }}>
+        {label}
+      </T>
+      <T tone="text2">{text}</T>
     </View>
   )
 }

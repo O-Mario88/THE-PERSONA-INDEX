@@ -1,4 +1,4 @@
-// Reflect (the web app's ReflectGuide.tsx and ReflectWriting.tsx): a quiet
+// Reflect: a quiet
 // space for your thoughts. Writing first, with one question made on this
 // device from the person's own answers, cards and earlier words, or none at
 // all; then what they have noticed across the parts of their life, earlier
@@ -7,18 +7,20 @@ import { writingWaits } from '@shared/vault'
 import { useEffect, useMemo, useState } from 'react'
 import { Pressable, Text, TextInput, View } from 'react-native'
 import { cachedEdition, getMirror, recalledChoice, type Mirror, type Question } from '@shared/api'
-import { draftOf, reflectSettings, reminderFor, saveDraft, setReflectSettings, type DraftSpace, type ReflectSettings } from '@shared/journal'
-import { intentionsDue, keepIntention, keepReflection, keptCards, reflections, type ReflectionArea, type ReflectionPeriod } from '@shared/notebook'
+import { draftOf, reflectSettings, reminderFor, saveDraft, type DraftSpace } from '@shared/journal'
+import { allGoodThings, intentionsDue, keepIntention, keepReflection, keptCards, reflections, type ReflectionArea, type ReflectionPeriod } from '@shared/notebook'
+import { KINDER_FRIEND, KINDER_TITLE, KINDER_WRITE, kinderLook, readWriting, type Reading } from '@shared/kinder'
 import { noticedFrom, type Noticed, type NoticedSource } from '@shared/noticed'
 import { loadHistory } from '@shared/profile'
 import { AREA_NAMES, dayMonth, PERIOD_NAMES, reflectionItems } from '@shared/reflect'
-import { PRIVACY_LINE } from '@shared/ReflectWriting'
+import { PRIVACY_LINE } from '@shared/words'
 import { addDays } from '@shared/storage'
 import { thoughtsFor, type Answered, type Thought } from '@shared/thoughts'
 import { BringBack } from './Backup'
 import { Notebook } from './Notebook'
+import { HeavyCard } from './QuestionCard'
 import { font, radius, useTheme } from '../theme'
-import { Button, Hairline, Page, T, Tinted, Toggle } from '../ui/kit'
+import { Button, Card, Page, T, Tinted } from '../ui/kit'
 import { Disc, type Tone } from '../ui/parts'
 import { Icon, type IconName } from '../ui/Icon'
 
@@ -61,14 +63,25 @@ function fromNoticed(n: Noticed, period: ReflectionPeriod): Thought {
 
 const countWords = (s: string) => s.trim().split(/\s+/).filter(Boolean).length
 
-export function Reflect({ today, questions, mild = false }: { today: string; questions: Question[]; mild?: boolean }) {
+export function Reflect({
+  today,
+  questions,
+  mild = false,
+  startFree = false,
+  name = null,
+}: {
+  today: string
+  questions: Question[]
+  mild?: boolean
+  startFree?: boolean
+  name?: string | null
+}) {
   const p = useTheme()
   const [period, setPeriod] = useState<ReflectionPeriod>('day')
-  const [free, setFree] = useState(false)
+  const [free, setFree] = useState(startFree)
   const [at, setAt] = useState(0)
   const [chosen, setChosen] = useState<Thought | null>(null)
   const [mirror, setMirror] = useState<Mirror | null>(null)
-  const [settings, setSettings] = useState<ReflectSettings>(reflectSettings)
   const [version, setVersion] = useState(0)
   const [group, setGroup] = useState<'strength' | 'grow'>('strength')
 
@@ -94,19 +107,56 @@ export function Reflect({ today, questions, mild = false }: { today: string; que
     return option ? [{ question: q, option }] : []
   })
   const items = reflectionItems(period, period === 'day' ? todays : answered, mirror, null)
-  const noticed = noticedFrom(items, past, settings.reflectionsInNoticed, addDays(today, -30))
+  const noticed = noticedFrom(items, past, reflectSettings().reflectionsInNoticed, addDays(today, -30))
   const consider = noticed.find((n) => n.group === 'grow') ?? null
 
-  function changeSettings(next: Partial<ReflectSettings>) {
-    setReflectSettings(next)
-    setSettings(reflectSettings())
-  }
 
   return (
-    <Page>
+    <Page
+      aside={
+        <>
+          <Card style={{ flexDirection: 'row', gap: 14 }}>
+            <Disc icon="leaf" tone="amber" size={44} />
+            <View style={{ flex: 1, gap: 4 }}>
+              <T v="h3">Remember</T>
+              <T tone="muted">{reminderFor(today)}</T>
+            </View>
+          </Card>
+          {past.length > 0 && (
+            <Card style={{ gap: 12 }}>
+              <T v="h2">Your recent reflections</T>
+              {past.slice(0, 4).map((r) => (
+                <View key={r.id} style={{ flexDirection: 'row', gap: 12, alignItems: 'flex-start' }}>
+                  <Icon name="doc" size={20} color={p.text2} />
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <T v="small" tone="muted">
+                      {dayMonth(r.date)}
+                    </T>
+                    <T bold lines={2}>
+                      {r.answer}
+                    </T>
+                  </View>
+                </View>
+              ))}
+            </Card>
+          )}
+
+          {consider && (
+            <View style={{ flexDirection: 'row', gap: 14 }}>
+              <Disc icon="pin" tone="rose" size={44} />
+              <View style={{ flex: 1, gap: 8 }}>
+                <T v="h3">Something I noticed</T>
+                <T tone="muted">{consider.text}</T>
+                <Button small kind="soft" label="Reflect on this" iconAfter="arrow" onPress={() => setChosen(fromNoticed(consider, period))} />
+              </View>
+            </View>
+          )}
+        </>
+      }
+    >
       <View style={{ gap: 4 }}>
         <T v="display">Reflect</T>
-        <T tone="text2">A quiet space for your thoughts.</T>
+        <T tone="text2">{name ? `A quiet space for your thoughts, ${name}.` : 'A quiet space for your thoughts.'}</T>
       </View>
 
       <View style={{ flexDirection: 'row', backgroundColor: p.surface, borderColor: p.line, borderWidth: 1, borderRadius: radius.md, padding: 4 }}>
@@ -143,53 +193,18 @@ export function Reflect({ today, questions, mild = false }: { today: string; que
         onAnother={() => (chosen ? setChosen(null) : setAt((n) => n + 1))}
         onSaved={() => setVersion((v) => v + 1)}
         onDone={() => setChosen(null)}
+        onKinder={(rid) => {
+          setFree(false)
+          setChosen({ id: `kinder-${rid}`, question: KINDER_FRIEND, lead: '', why: 'From what you just wrote', source: 'reflections', area: 'self', followsUp: rid })
+          setVersion((v) => v + 1)
+        }}
       />
 
-      <View style={{ flexDirection: 'row', gap: 14 }}>
-        <Disc icon="leaf" tone="amber" size={44} />
-        <View style={{ flex: 1, gap: 4 }}>
-          <T v="h3">A gentle reminder</T>
-          <T tone="muted">{reminderFor(today)}</T>
-        </View>
-      </View>
-
-      {past.length > 0 && (
-        <View style={{ gap: 12 }}>
-          <Hairline />
-          <T v="h2">Your recent reflections</T>
-          {past.slice(0, 4).map((r) => (
-            <View key={r.id} style={{ flexDirection: 'row', gap: 12, alignItems: 'flex-start' }}>
-              <Icon name="doc" size={20} color={p.text2} />
-              <View style={{ flex: 1, gap: 2 }}>
-                <T v="small" tone="muted">
-                  {dayMonth(r.date)}
-                </T>
-                <T bold lines={2}>
-                  {r.answer}
-                </T>
-              </View>
-            </View>
-          ))}
-        </View>
-      )}
-
-      {consider && (
-        <View style={{ flexDirection: 'row', gap: 14 }}>
-          <Disc icon="pin" tone="rose" size={44} />
-          <View style={{ flex: 1, gap: 8 }}>
-            <T v="h3">Something to consider</T>
-            <T tone="muted">{consider.text}</T>
-            <Button small kind="soft" label="Reflect on this" iconAfter="arrow" onPress={() => setChosen(fromNoticed(consider, period))} />
-          </View>
-        </View>
-      )}
-
-      <Hairline />
-      <View style={{ gap: 14 }}>
+      <Card style={{ gap: 14 }}>
         <View style={{ gap: 4 }}>
-          <T v="h2">What you’ve noticed</T>
+          <T v="h2">What I've noticed about you</T>
           <T v="small" tone="muted">
-            Insights from your answers, your Circle and, if you choose, your reflections.
+            From your answers, your Circle and what you write to me.
           </T>
         </View>
         <View style={{ flexDirection: 'row', gap: 20, borderBottomWidth: 1, borderBottomColor: p.line }}>
@@ -223,35 +238,11 @@ export function Reflect({ today, questions, mild = false }: { today: string; que
             )
           })}
         </View>
-      </View>
+      </Card>
 
-      <Hairline />
-      <View style={{ gap: 4 }}>
-        <T v="h2">Your choices</T>
-        <Toggle
-          label="Use my reflections in What you’ve noticed"
-          note="Only counts of what you wrote about, worked out on this phone. Off unless you turn it on."
-          value={settings.reflectionsInNoticed}
-          onChange={(on) => changeSettings({ reflectionsInNoticed: on })}
-        />
-        <Toggle
-          label="Show my reflections in Your Growth"
-          note="Insights sets an earlier and a more recent reflection side by side, on this phone only. Off unless you turn it on."
-          value={settings.reflectionsInGrowth}
-          onChange={(on) => changeSettings({ reflectionsInGrowth: on })}
-        />
-        <Toggle
-          label="Let my threads add to the longer Mirrors"
-          note="Your month, quarter and year Mirrors show which threads you kept going. Off unless you turn it on."
-          value={settings.threadsInMirror}
-          onChange={(on) => changeSettings({ threadsInMirror: on })}
-        />
-        <T v="small" tone="muted" style={{ marginTop: 8 }}>
-          🔒 {PRIVACY_LINE}
-        </T>
-      </View>
-      <Hairline />
-      <Notebook mild={mild} today={today} />
+      <Card>
+        <Notebook mild={mild} today={today} />
+      </Card>
     </Page>
   )
 }
@@ -264,6 +255,7 @@ function Writing({
   onAnother,
   onSaved,
   onDone,
+  onKinder,
 }: {
   today: string
   period: ReflectionPeriod
@@ -272,11 +264,13 @@ function Writing({
   onAnother: () => void
   onSaved: () => void
   onDone: () => void
+  onKinder: (savedId: string) => void
 }) {
   const p = useTheme()
   const space: DraftSpace = free ? 'free' : period
   const [text, setText] = useState(() => draftOf(space))
   const [saved, setSaved] = useState<string | null>(null)
+  const [reading, setReading] = useState<Reading | null>(null)
   const [intention, setIntention] = useState('')
   const [kept, setKept] = useState(false)
 
@@ -297,6 +291,7 @@ function Writing({
       ...(thought && !free ? { why: thought.why } : {}),
       ...(thought?.followsUp ? { followsUp: thought.followsUp } : {}),
     })
+    setReading(readWriting(text))
     setText('')
     saveDraft(space, '')
     setSaved(rid)
@@ -304,6 +299,9 @@ function Writing({
 
   if (saved) {
     return (
+      <>
+      {reading?.kind === 'crisis' && <HeavyCard />}
+      {reading?.kind === 'hard' && <KinderCard reading={reading} onWrite={() => onKinder(saved)} />}
       <Tinted>
         <T tone="leaf" bold>
           ✓ Saved, on this phone.
@@ -349,6 +347,7 @@ function Writing({
           }}
         />
       </Tinted>
+      </>
     )
   }
 
@@ -360,7 +359,7 @@ function Writing({
         </View>
         <View style={{ flex: 1, gap: 6 }}>
           <T v="eyebrow">{free ? 'Write freely' : 'A thought for you'}</T>
-          <T style={{ fontFamily: 'Georgia', fontSize: 24, lineHeight: 30 }}>{free ? 'Whatever is on your mind.' : (thought?.question ?? 'Your reflection')}</T>
+          <T style={{ fontFamily: font.semibold, fontSize: 24, lineHeight: 30 }}>{free ? 'Whatever is on your mind.' : (thought?.question ?? 'Your reflection')}</T>
         </View>
         {!free && (
           <Pressable accessibilityRole="button" accessibilityLabel="Another question" onPress={onAnother} hitSlop={10}>
@@ -402,5 +401,45 @@ function Writing({
       </T>
       <Button label="Save reflection" iconAfter="arrow" disabled={!text.trim()} onPress={save} />
     </Tinted>
+  )
+}
+
+// A kinder look, after harsh words about oneself (shared kinder.ts): the
+// feeling first, one gentle question, the wider view, the person's own good
+// words, and a friend's eyes. Read on this phone; nothing is sent.
+function KinderCard({ reading, onWrite }: { reading: Extract<Reading, { kind: 'hard' }>; onWrite: () => void }) {
+  const p = useTheme()
+  const [look] = useState(() =>
+    kinderLook(reading, {
+      goodThings: allGoodThings().flatMap((g) => g.lines.map((text) => ({ date: g.date, text }))),
+      kept: keptCards()
+        .filter((c) => !c.private)
+        .map((c) => ({ date: c.date, text: c.headline })),
+    }),
+  )
+  return (
+    <Card style={{ gap: 14 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        <Disc icon="heart" tone="rose" size={40} />
+        <T v="h2">{KINDER_TITLE}</T>
+      </View>
+      {look.lines.slice(0, -1).map((line) => (
+        <T key={line} tone="text2">
+          {line}
+        </T>
+      ))}
+      {look.evidence && (
+        <View style={{ gap: 4, borderLeftWidth: 3, borderLeftColor: p.leaf, paddingLeft: 14 }}>
+          <T v="eyebrow" tone="leaf">
+            {look.evidence.lead}
+          </T>
+          <T v="quote" style={{ fontSize: 18, lineHeight: 25 }}>
+            “{look.evidence.text}”
+          </T>
+        </View>
+      )}
+      <T bold>{look.lines[look.lines.length - 1]}</T>
+      <Button small label={KINDER_WRITE} icon="pencil" onPress={onWrite} />
+    </Card>
   )
 }

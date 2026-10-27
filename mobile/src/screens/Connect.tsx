@@ -1,4 +1,4 @@
-// Connect (the web app's Circle.tsx): a private space for understanding,
+// Connect: a private space for understanding,
 // encouragement and meaningful connection. No feed. Your Circle (the three
 // private circles, placed on this device only), inviting a friend, Growing
 // together, Our Common Ground, What Helped Us and Support & Celebrate, with
@@ -10,8 +10,8 @@ import { loadRings, placeIn, RING_NAMES, RING_NOTES, RINGS, ringOf, type Ring, t
 import type { Question } from '@shared/api'
 import { createInvite, getCircle, inviteLink, TAG_NAMES, TAGS, type AccountView, type CircleView, type Tag } from '@shared/social'
 import { dayMonth } from '@shared/reflect'
-import { radius } from '../theme'
-import { Button, Chip, Hairline, Page, T, Tinted } from '../ui/kit'
+import { font, radius } from '../theme'
+import { Button, Card, Chip, Page, T, Tinted } from '../ui/kit'
 import { Avatar, Disc, Ring as Progress } from '../ui/parts'
 import { CloserTogether, CommonGround, Growing, SupportCelebrate, WhatHelped } from './ConnectMore'
 
@@ -38,7 +38,7 @@ export function Connect({ me, onSignIn, today, questions = [] }: { me: AccountVi
         <View style={{ gap: 4 }}>
           <T v="label">Connect</T>
           <T v="display">Your circle</T>
-          <T tone="text2">A private space for understanding, encouragement and meaningful connection.</T>
+          <T tone="text2">The people who matter to you, and a quiet way to stay close to them.</T>
         </View>
         <T tone="muted">
           Three friends unlock your Outside Mirror: how the people around you experience you, blended so no one answer can be traced. Friends never see your
@@ -58,16 +58,22 @@ export function Connect({ me, onSignIn, today, questions = [] }: { me: AccountVi
   const friends = circle?.friends ?? []
   const counts = RINGS.map((r) => friends.filter((f) => ringOf(rings, f.id) === r).length)
   return (
-    <Page>
+    <Page
+      aside={
+        <Card>
+          <Invite circle={circle} />
+        </Card>
+      }
+    >
       <View style={{ gap: 4 }}>
         <T v="label">Connect{me.handle ? ` · @${me.handle}` : ''}</T>
         <T v="display">Connect</T>
-        <T tone="text2">A private space for understanding, encouragement and meaningful connection.</T>
+        <T tone="text2">The people who matter to you, and a quiet way to stay close to them.</T>
       </View>
       {error ? <T tone="danger">{error}</T> : null}
       {friends.length > 0 && <CloserTogether friends={friends} rings={rings} />}
 
-      <View style={{ gap: 14 }}>
+      <Card style={{ gap: 14 }}>
         <T v="h2">Your Circle</T>
         <View style={{ flexDirection: 'row', gap: 24 }}>
           <Stat n={friends.length} label="People in your circle" />
@@ -89,25 +95,24 @@ export function Connect({ me, onSignIn, today, questions = [] }: { me: AccountVi
         {friends.map((f) => (
           <Friend key={f.id} name={f.name} sub={`${TAG_NAMES[f.tag]}${f.active ? ' · active this week' : ''}`} ring={ringOf(rings, f.id)} onPlace={(r) => setRings(placeIn(f.id, r))} />
         ))}
-      </View>
-
-      <Hairline />
-      <Invite circle={circle} />
+      </Card>
 
       {today && (
-        <>
-          <Hairline />
+        <Card>
           <Growing date={today} questions={questions} circle={circle} />
-        </>
+        </Card>
       )}
       {friends.length > 0 && (
         <>
-          <Hairline />
-          <CommonGround friends={friends} />
-          <Hairline />
-          <WhatHelped />
-          <Hairline />
-          <SupportCelebrate today={today} />
+          <Card>
+            <CommonGround friends={friends} />
+          </Card>
+          <Card>
+            <WhatHelped />
+          </Card>
+          <Card>
+            <SupportCelebrate today={today} />
+          </Card>
         </>
       )}
 
@@ -219,7 +224,7 @@ function Invite({ circle }: { circle: CircleView | null }) {
 
 function Tagline() {
   return (
-    <T style={{ fontFamily: 'Georgia', fontSize: 20, lineHeight: 28 }} center>
+    <T style={{ fontFamily: font.semibold, fontSize: 20, lineHeight: 28 }} center>
       A little closer. A little stronger. Together.
     </T>
   )

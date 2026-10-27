@@ -1,8 +1,8 @@
-// One short read (the web app's Read.tsx): the topic, the words, something
+// One short read: the topic, the words, something
 // to try, and two more on the same area.
 import { useEffect } from 'react'
 import { Linking, Text, View } from 'react-native'
-import { HELPLINE_LINE } from '@shared/Helpline'
+import { HELPLINE_LINE } from '@shared/helplineText'
 import { helplineHere } from '@shared/prefs'
 import { appOnly, heavy, minutes, related, topicOf } from '@shared/reads/reads'
 import type { Read } from '@shared/reads/types'
@@ -49,7 +49,7 @@ export function ReadScreen({ read, date, intimacy, onBack, onOpen }: { read: Rea
           ))}
         </View>
       )}
-      <T v="tiny">For self-reflection, not a diagnosis.</T>
+      <T v="tiny">Something to think about, never a diagnosis.</T>
     </Page>
   )
 }

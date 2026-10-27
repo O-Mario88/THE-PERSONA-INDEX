@@ -1,5 +1,4 @@
-// The three short windows between the sittings (the web app's Midday.tsx,
-// PulseViews.tsx and Night.tsx): a check on the morning's step, the
+// The three short windows between the sittings: a check on the morning's step, the
 // afternoon's anonymous totals for those who asked for them, and three good
 // things before bed.
 import { useEffect, useState } from 'react'
@@ -67,8 +66,8 @@ export function Afternoon({ questions, pulse, onPulse }: { questions: Question[]
   return (
     <View style={{ gap: 20 }}>
       <T v="display">The afternoon pulse.</T>
-      <T tone="muted">How everyone else handled this morning's questions. Anonymous totals, never who.</T>
-      {answered.length === 0 && <T tone="muted">Answer this morning's questions and their totals show here.</T>}
+      <T tone="muted">How everyone else answered this morning's questions. Only totals, never who.</T>
+      {answered.length === 0 && <T tone="muted">Answer this morning's questions and I'll show you how others answered.</T>}
       {answered.map((q) => (
         <PulseCard key={q.id} question={q} />
       ))}
@@ -155,7 +154,7 @@ export function Night({ date, tomorrowThemes, onClose }: { date: string; tomorro
         <T v="display">That's your day.</T>
         {picked.length > 0 && <T tone="muted">Kept in your notebook: {picked.join(' · ')}.</T>}
         {isSaturday(date) ? <T>{SUNDAY_LINE}</T> : <Upcoming label="Tomorrow" themes={tomorrowThemes} />}
-        <T style={{ fontFamily: 'Georgia', fontSize: 20, lineHeight: 28 }}>
+        <T style={{ fontFamily: font.semibold, fontSize: 20, lineHeight: 28 }}>
           {isSaturday(date) ? 'Sleep well. Tomorrow is for looking back: your week will be waiting in your mirror.' : `Sleep well. Your next three open at ${opensAt('morning')}.`}
         </T>
       </View>

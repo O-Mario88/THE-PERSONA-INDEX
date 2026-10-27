@@ -89,15 +89,22 @@ func TestTheSiteHeadersFile(t *testing.T) {
 			t.Errorf("app scripts must come from the site alone: %s", d)
 		}
 	}
-	if strings.Contains(app, "unsafe-") {
-		t.Errorf("app policy allows something unsafe: %s", app)
+	// React Native for Web writes the app's styles into <style> tags as it
+	// draws, so inline styles are allowed; nothing else unsafe is.
+	for _, d := range strings.Split(app, ";") {
+		d = strings.TrimSpace(d)
+		if strings.Contains(d, "unsafe-") && d != "style-src 'self' 'unsafe-inline'" {
+			t.Errorf("app policy allows something unsafe: %s", d)
+		}
 	}
 	read := at("/read/sleep/").Get("Content-Security-Policy")
 	if !strings.Contains(read, "default-src 'none'") || strings.Contains(read, "script-src") {
 		t.Errorf("read pages must run no script: %s", read)
 	}
-	if got := at("/assets/index-abc.js").Get("Cache-Control"); !strings.Contains(got, "immutable") {
-		t.Errorf("assets cached as %q", got)
+	for _, path := range []string{"/assets/index-abc.js", "/_expo/static/js/web/index-abc.js"} {
+		if got := at(path).Get("Cache-Control"); !strings.Contains(got, "immutable") {
+			t.Errorf("%s cached as %q", path, got)
+		}
 	}
 	for _, path := range []string{"/", "/sw.js", "/read/sleep/"} {
 		if got := at(path).Get("Cache-Control"); got != "no-cache" {
@@ -110,13 +117,15 @@ func writeSite(t *testing.T) string {
 	t.Helper()
 	dir := t.TempDir()
 	for name, body := range map[string]string{
-		"index.html":            "<!doctype html><title>app</title>",
-		"read/index.html":       "<!doctype html><title>reads</title>",
-		"read/sleep/index.html": "<!doctype html><title>sleep</title>",
-		"assets/index-abc.js":   "console.log(1)",
-		"manifest.webmanifest":  "{}",
-		".env":                  "SECRET=1",
-		"_headers":              "/*\n  X-Site: yes\n/read/*\n  X-Read: yes\n",
+		"index.html":                       "<!doctype html><title>app</title>",
+		"read/index.html":                  "<!doctype html><title>reads</title>",
+		"read/sleep/index.html":            "<!doctype html><title>sleep</title>",
+		"assets/index-abc.js":              "console.log(1)",
+		"_expo/static/js/web/index-abc.js": "console.log(2)",
+		"_redirects":                       "/c/* /index.html 200",
+		"manifest.webmanifest":             "{}",
+		".env":                             "SECRET=1",
+		"_headers":                         "/*\n  X-Site: yes\n/read/*\n  X-Read: yes\n",
 	} {
 		p := filepath.Join(dir, name)
 		os.MkdirAll(filepath.Dir(p), 0o755)
@@ -139,7 +148,7 @@ func TestStaticSite(t *testing.T) {
 		s.Handler().ServeHTTP(w, httptest.NewRequest(method, path, nil))
 		return w
 	}
-	for path, want := range map[string]string{"/": "app", "/c/abcdefghjk": "app", "/read/": "reads", "/read/sleep/": "sleep", "/assets/index-abc.js": "console"} {
+	for path, want := range map[string]string{"/": "app", "/c/abcdefghjk": "app", "/read/": "reads", "/read/sleep/": "sleep", "/assets/index-abc.js": "console", "/_expo/static/js/web/index-abc.js": "console.log(2)"} {
 		w := get(http.MethodGet, path)
 		if w.Code != http.StatusOK || !strings.Contains(w.Body.String(), want) {
 			t.Errorf("%s: %d %q", path, w.Code, w.Body)
@@ -154,7 +163,7 @@ func TestStaticSite(t *testing.T) {
 	if w := get(http.MethodGet, "/manifest.webmanifest"); w.Header().Get("Content-Type") != "application/manifest+json" {
 		t.Errorf("manifest served as %q", w.Header().Get("Content-Type"))
 	}
-	for _, hidden := range []string{"/_headers", "/.env", "/assets/", "/nowhere", "/c/short", "/c/abcdefghjk/x"} {
+	for _, hidden := range []string{"/_headers", "/_redirects", "/.env", "/assets/", "/nowhere", "/c/short", "/c/abcdefghjk/x"} {
 		if w := get(http.MethodGet, hidden); w.Code != http.StatusNotFound {
 			t.Errorf("%s: %d, want 404", hidden, w.Code)
 		}

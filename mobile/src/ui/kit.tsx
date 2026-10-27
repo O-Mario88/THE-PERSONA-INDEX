@@ -1,5 +1,5 @@
-// The parts every screen is built from, matching the web app's base.css:
-// type, buttons, fields, choices, chips, hairlines and the page itself.
+// The parts every screen is built from (mobile/DESIGN.md): type, buttons,
+// fields, choices, chips, hairlines and the page itself.
 import { useState, type ComponentRef, type ReactNode, type Ref } from 'react'
 import {
   ActivityIndicator,
@@ -9,6 +9,7 @@ import {
   Switch,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
   type StyleProp,
   type TextInputProps,
@@ -16,25 +17,30 @@ import {
   type ViewStyle,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { font, gutter, radius, useTheme, type Palette } from '../theme'
+import { font, gutter, lift, radius, RAIL_AT, RAIL_W, useTheme, WIDE, type Palette } from '../theme'
 import { Icon, type IconName } from './Icon'
 
 // ---- type ----
 
-type Variant = 'display' | 'title' | 'h2' | 'h3' | 'body' | 'small' | 'tiny' | 'label' | 'eyebrow' | 'serif'
+type Variant = 'display' | 'title' | 'h2' | 'h3' | 'body' | 'small' | 'tiny' | 'label' | 'eyebrow' | 'quote'
 type Tone = 'text' | 'text2' | 'muted' | 'accent' | 'onNavy' | 'onNavy2' | 'danger' | 'leaf' | 'warm'
 
+// X-style type (Edwin, 2026-10-27): one face, few sizes, Bold headings (never
+// extra bold) with tight tracking, compact body lines, and labels in sentence case rather
+// than spaced capitals.
 const VARIANTS: Record<Variant, TextStyle> = {
-  display: { fontFamily: font.heavy, fontSize: 34, lineHeight: 38, letterSpacing: -0.85 },
-  title: { fontFamily: font.heavy, fontSize: 28, lineHeight: 32, letterSpacing: -0.7 },
-  h2: { fontFamily: font.heavy, fontSize: 20, lineHeight: 25, letterSpacing: -0.3 },
-  h3: { fontFamily: font.bold, fontSize: 17, lineHeight: 22 },
-  body: { fontFamily: font.regular, fontSize: 16, lineHeight: 24 },
-  small: { fontFamily: font.regular, fontSize: 14, lineHeight: 20 },
-  tiny: { fontFamily: font.medium, fontSize: 12, lineHeight: 16 },
-  label: { fontFamily: font.bold, fontSize: 12, lineHeight: 16, letterSpacing: 2.4, textTransform: 'uppercase' },
-  eyebrow: { fontFamily: font.bold, fontSize: 12, lineHeight: 16, letterSpacing: 2.4, textTransform: 'uppercase' },
-  serif: { fontFamily: 'Georgia', fontSize: 26, lineHeight: 32 },
+  display: { fontFamily: font.bold, fontSize: 31, lineHeight: 36, letterSpacing: -0.6 },
+  title: { fontFamily: font.bold, fontSize: 23, lineHeight: 28, letterSpacing: -0.35 },
+  h2: { fontFamily: font.bold, fontSize: 20, lineHeight: 24, letterSpacing: -0.2 },
+  h3: { fontFamily: font.bold, fontSize: 17, lineHeight: 22, letterSpacing: -0.1 },
+  body: { fontFamily: font.regular, fontSize: 16, lineHeight: 22 },
+  small: { fontFamily: font.regular, fontSize: 14, lineHeight: 19 },
+  tiny: { fontFamily: font.medium, fontSize: 13, lineHeight: 16 },
+  label: { fontFamily: font.bold, fontSize: 13, lineHeight: 16 },
+  eyebrow: { fontFamily: font.bold, fontSize: 13, lineHeight: 16 },
+  // A line set apart: a quote, a thought, a direction. The same face, a
+  // little larger and lighter than a heading.
+  quote: { fontFamily: font.semibold, fontSize: 22, lineHeight: 28, letterSpacing: -0.2 },
 }
 
 function toneColor(p: Palette, tone: Tone): string {
@@ -95,6 +101,10 @@ export function B({ children }: { children: ReactNode }) {
   return <Text style={{ fontFamily: font.bold }}>{children}</Text>
 }
 
+// React Native for Web adds `hovered` to a Pressable's state on a computer;
+// a phone never sets it.
+const hovered = (s: { pressed: boolean }) => !!(s as { hovered?: boolean }).hovered
+
 // ---- buttons ----
 
 type Kind = 'primary' | 'soft' | 'ghost' | 'outline' | 'text' | 'danger' | 'light'
@@ -142,17 +152,17 @@ export function Button({
       accessibilityLabel={label}
       disabled={off}
       onPress={onPress}
-      style={({ pressed }) => [
+      style={(s) => [
         styles.btn,
         {
-          backgroundColor: off && kind === 'primary' ? p.surface3 : l.bg,
+          backgroundColor: off && kind === 'primary' ? p.surface3 : hovered(s) && !off && (kind === 'outline' || kind === 'light' || kind === 'ghost') ? p.surface2 : l.bg,
           borderColor: l.border ?? 'transparent',
           borderWidth: l.border ? 1 : 0,
           minHeight: small ? 40 : kind === 'text' ? 36 : wide ? 56 : 48,
           paddingHorizontal: kind === 'text' ? 0 : small ? 16 : 24,
           alignSelf: wide ? 'stretch' : 'flex-start',
           borderRadius: small ? radius.pill : radius.md,
-          opacity: pressed ? 0.85 : 1,
+          opacity: s.pressed ? 0.85 : hovered(s) && !off && (kind === 'primary' || kind === 'soft') ? 0.92 : 1,
         },
         style,
       ]}
@@ -177,7 +187,7 @@ export function RowLink({ label, sub, onPress, icon }: { label: string; sub?: st
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
-      style={({ pressed }) => [styles.rowLink, { borderColor: p.line, backgroundColor: p.surface, opacity: pressed ? 0.8 : 1 }]}
+      style={(s) => [styles.rowLink, { borderColor: hovered(s) ? p.lineStrong : p.line, backgroundColor: hovered(s) ? p.surface2 : p.surface, opacity: s.pressed ? 0.8 : 1 }]}
     >
       {icon}
       <View style={{ flex: 1 }}>
@@ -204,10 +214,10 @@ export function Option({ label, onPress, disabled, chosen, icon }: { label: stri
       onPress={onPress}
       onPressIn={() => setDown(true)}
       onPressOut={() => setDown(false)}
-      style={[
-        styles.option,
-        { backgroundColor: on ? p.accentWash : p.surface, borderColor: on ? p.accentLine : p.line, opacity: disabled ? 0.6 : 1 },
-      ]}
+      style={(s) => {
+        const lit = on || (hovered(s) && !disabled)
+        return [styles.option, { backgroundColor: lit ? p.accentWash : p.surface, borderColor: lit ? p.accentLine : p.line, opacity: disabled ? 0.6 : 1 }]
+      }}
     >
       <View style={[styles.optionRing, { borderColor: chosen ? p.lime : p.lineStrong, backgroundColor: chosen ? p.lime : p.surface }]}>
         {chosen && <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: p.onLime }} />}
@@ -305,26 +315,76 @@ export function Field(props: TextInputProps & { label?: string; note?: string })
 
 // ---- layout ----
 
-// The page: the cream background, the gutter, room for the tab bar.
-export function Page({ children, bottom = 32, refresh, scrollRef }: { children: ReactNode; bottom?: number; refresh?: number; scrollRef?: Ref<ComponentRef<typeof ScrollView>> }) {
+// The column of a page beside the sidebar: Facebook's feed width.
+export const FEED = 680
+
+// The page: the cream background, the gutter, room for the tab bar. Beside
+// the wide-screen sidebar it gets roomier margins and the feed's width, plus
+// wideMax for a page that draws its own right-hand column. A page can hand
+// its side cards over as `aside`: from RAIL_AT they stand in a right-hand
+// column, as on Facebook's home; narrower, they follow the page.
+export function Page({
+  children,
+  aside,
+  bottom = 32,
+  refresh,
+  scrollRef,
+  wideMax,
+}: {
+  children: ReactNode
+  aside?: ReactNode
+  bottom?: number
+  refresh?: number
+  scrollRef?: Ref<ComponentRef<typeof ScrollView>>
+  wideMax?: number
+}) {
   const p = useTheme()
   const insets = useSafeAreaInsets()
+  const { width } = useWindowDimensions()
+  const wide = width >= WIDE
+  const rail = !!aside && width >= RAIL_AT
+  const extra = rail ? RAIL_W + 24 : (wideMax ?? 0)
   return (
     <View style={{ flex: 1, backgroundColor: p.bg }}>
       <ScrollView
         key={refresh}
         ref={scrollRef}
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingHorizontal: gutter, paddingTop: Math.max(insets.top, 20) + 8, paddingBottom: bottom, gap: 20, maxWidth: 640, width: '100%', alignSelf: 'center' }}
+        contentContainerStyle={{
+          paddingHorizontal: wide ? 40 : gutter,
+          paddingTop: wide ? 32 : Math.max(insets.top, 20) + 8,
+          paddingBottom: wide ? Math.max(bottom, 40) : bottom,
+          gap: 20,
+          maxWidth: (wide ? FEED : 640) + (wide ? 80 : 0) + extra,
+          width: '100%',
+          alignSelf: 'center',
+        }}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
       >
-        {children}
+        {rail ? (
+          <View style={{ flexDirection: 'row', gap: 24, alignItems: 'flex-start' }}>
+            <View style={{ flex: 1, gap: 20 }}>{children}</View>
+            <View style={{ width: RAIL_W, gap: 20 }}>{aside}</View>
+          </View>
+        ) : (
+          <>
+            {children}
+            {aside}
+          </>
+        )}
       </ScrollView>
       {/* The page colour behind the status bar, so words don't scroll under the clock. */}
       <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: insets.top, backgroundColor: p.bg }} />
     </View>
   )
+}
+
+// A Facebook-style card: one section of a page, white on the cream page with
+// a hairline and the soft lift. Pages are a column of these.
+export function Card({ children, style, pad = 20 }: { children: ReactNode; style?: StyleProp<ViewStyle>; pad?: number }) {
+  const p = useTheme()
+  return <View style={[{ backgroundColor: p.surface, borderColor: p.line, borderWidth: 1, borderRadius: radius.lg, padding: pad, gap: 12 }, lift(p), style]}>{children}</View>
 }
 
 export function Hairline({ style }: { style?: StyleProp<ViewStyle> }) {

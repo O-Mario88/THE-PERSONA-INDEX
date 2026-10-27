@@ -1,4 +1,4 @@
-// You (the web app's Account.tsx) and What I keep (Kept.tsx): the two
+// You and What I keep: the two
 // things friends see, the person's choices, what is kept and the ways out.
 // Signed out, it is "This phone", and everything stays here.
 import { useEffect, useState } from 'react'
@@ -10,7 +10,7 @@ import { notebookCount } from '@shared/notebook'
 import { blackOn, loadPrefs, pulseOn, type Prefs } from '@shared/prefs'
 import { loadHistory } from '@shared/profile'
 import { forgetSession, patchAccount, signOut, type AccountView } from '@shared/social'
-import { Back, Button, Field, Hairline, Page, RowLink, T, Tinted, Toggle } from '../ui/kit'
+import { Back, Button, Card, Field, Page, RowLink, T, Tinted, Toggle } from '../ui/kit'
 import { Avatar } from '../ui/parts'
 import { DownloadButtons } from './BookDownloads'
 
@@ -112,8 +112,7 @@ export function You({
         </View>
       )}
 
-      <Hairline />
-      <View style={{ gap: 4 }}>
+      <Card style={{ gap: 4 }}>
         <T v="label">Choices</T>
         <Toggle
           label="Dark mode"
@@ -135,9 +134,8 @@ export function You({
             onChange={(on) => onChange({ ...prefs, mild: on })}
           />
         )}
-      </View>
+      </Card>
 
-      <Hairline />
       <RowLink label="Settings" sub="Your name, intimacy questions, where you live" onPress={onOpenSettings} />
       <RowLink label="What I keep, and how to delete it" onPress={onOpenKept} />
 
@@ -234,9 +232,9 @@ export function KeptScreen({ today, mild, signedIn, onBack, onDeleted }: { today
       <View style={{ gap: 10 }}>
         <T v="eyebrow">On the server</T>
         {server === 'loading' ? (
-          <T tone="muted">Asking the server…</T>
+          <T tone="muted">Just a moment…</T>
         ) : server === 'error' ? (
-          <T tone="muted">I couldn’t reach the server just now.</T>
+          <T tone="muted">I couldn't get that just now. Try again in a moment.</T>
         ) : !server ? (
           <T tone="muted">Nothing from this phone yet.</T>
         ) : (

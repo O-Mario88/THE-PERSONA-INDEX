@@ -1,8 +1,8 @@
-# The Persona Index: iPhone, Android and Mac app
+# The Persona Index app: iPhone, Android, Mac and web
 
-One React Native + Expo app for iPhone and Android. On a Mac with Apple Silicon it runs the iPhone build; browsers keep using the web app in `frontend/`.
+One React Native + Expo app for every platform: iPhone and Android, the Mac (the iPhone/iPad build runs on Apple Silicon), and the website, built with React Native for Web (`npm run build:web`, see `scripts/build-web.mjs`). From 900px wide it shows the midnight sidebar instead of the tab bar.
 
-It reuses the web app's TypeScript directly: anything imported as `@shared/<file>` comes from `frontend/src/<file>` (see `metro.config.js`), and it talks to the same Go API.
+It is built on the shared TypeScript: anything imported as `@shared/<file>` comes from `frontend/src/<file>` (see `metro.config.js`), and it talks to the same Go API.
 
 ## Run it
 
@@ -13,13 +13,11 @@ npx expo start                  # i = iPhone simulator, a = Android emulator
 npx expo run:ios                # a full native build in Xcode
 ```
 
-Checks: `npx tsc --noEmit -p .` and `npx expo export --platform ios`.
-
-The SwiftUI app in `apple/` stays until this app matches it.
+Checks: `npx tsc --noEmit -p .` and `npm run build:web`.
 
 ## Sign in with Apple and Google
 
-The buttons show only when the server accepts the app's tokens and the build knows its own IDs.
+The buttons show only when the server accepts the app's tokens and the build knows its own IDs. On the website, "Continue with Google" uses the server's web client (`GOOGLE_CLIENT_ID`, see `docs/operations.md`): the page goes to Google and comes back to the site's front page with an ID token (`src/platform/googleWeb.ts`). Apple is iPhone only.
 
 - **Server** (see `docs/operations.md`): `APPLE_APP_IDS=com.personaindex.app` and `GOOGLE_APP_CLIENT_IDS=<iOS client ID>,<Android client ID>`.
 - **Apple:** turn on "Sign in with Apple" for the `com.personaindex.app` App ID in the Apple Developer account. The app's entitlement comes from `ios.usesAppleSignIn` in `app.json`. iPhone only.

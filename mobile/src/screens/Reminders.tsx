@@ -1,5 +1,4 @@
-// Reminders in Settings, under "More settings" (the SwiftUI app's
-// RemindersCard): a quiet nudge at a time the person picks, planned on this
+// Reminders in Settings, under "More settings": a quiet nudge at a time the person picks, planned on this
 // phone (platform/reminders.ts). Off until turned on.
 import { useEffect, useState } from 'react'
 import { View } from 'react-native'

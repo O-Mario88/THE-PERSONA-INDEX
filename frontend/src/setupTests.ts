@@ -1,10 +1,5 @@
-import '@testing-library/jest-dom/vitest'
-
-// jsdom has no scrolling; the app scrolls to the top between questions.
-window.scrollTo = () => {}
-
-// Most tests read a whole answer card at once, as someone with "Reduce
-// motion" on sees it. The beats themselves are tested with still={false}.
+// The shared code runs under jsdom in tests. Most tests read a whole answer
+// card at once, as someone with "Reduce motion" on sees it (prefs.ts).
 if (typeof window.matchMedia !== 'function') {
   window.matchMedia = (query: string) =>
     ({
