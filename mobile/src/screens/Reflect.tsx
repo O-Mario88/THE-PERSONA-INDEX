@@ -8,7 +8,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { Pressable, Text, TextInput, View } from 'react-native'
 import { cachedEdition, getMirror, recalledChoice, type Mirror, type Question } from '@shared/api'
 import { draftOf, reflectSettings, reminderFor, saveDraft, type DraftSpace } from '@shared/journal'
-import { intentionsDue, keepIntention, keepReflection, keptCards, reflections, type ReflectionArea, type ReflectionPeriod } from '@shared/notebook'
+import { allGoodThings, intentionsDue, keepIntention, keepReflection, keptCards, reflections, type ReflectionArea, type ReflectionPeriod } from '@shared/notebook'
+import { KINDER_FRIEND, KINDER_TITLE, KINDER_WRITE, kinderLook, readWriting, type Reading } from '@shared/kinder'
 import { noticedFrom, type Noticed, type NoticedSource } from '@shared/noticed'
 import { loadHistory } from '@shared/profile'
 import { AREA_NAMES, dayMonth, PERIOD_NAMES, reflectionItems } from '@shared/reflect'
@@ -17,6 +18,7 @@ import { addDays } from '@shared/storage'
 import { thoughtsFor, type Answered, type Thought } from '@shared/thoughts'
 import { BringBack } from './Backup'
 import { Notebook } from './Notebook'
+import { HeavyCard } from './QuestionCard'
 import { font, radius, useTheme } from '../theme'
 import { Button, Card, Page, T, Tinted } from '../ui/kit'
 import { Disc, type Tone } from '../ui/parts'
@@ -191,13 +193,18 @@ export function Reflect({
         onAnother={() => (chosen ? setChosen(null) : setAt((n) => n + 1))}
         onSaved={() => setVersion((v) => v + 1)}
         onDone={() => setChosen(null)}
+        onKinder={(rid) => {
+          setFree(false)
+          setChosen({ id: `kinder-${rid}`, question: KINDER_FRIEND, lead: '', why: 'From what you just wrote', source: 'reflections', area: 'self', followsUp: rid })
+          setVersion((v) => v + 1)
+        }}
       />
 
       <Card style={{ gap: 14 }}>
         <View style={{ gap: 4 }}>
           <T v="h2">What you’ve noticed</T>
           <T v="small" tone="muted">
-            Insights from your answers, your Circle and, if you choose, your reflections.
+            Insights from your answers, your Circle and your reflections.
           </T>
         </View>
         <View style={{ flexDirection: 'row', gap: 20, borderBottomWidth: 1, borderBottomColor: p.line }}>
@@ -248,6 +255,7 @@ function Writing({
   onAnother,
   onSaved,
   onDone,
+  onKinder,
 }: {
   today: string
   period: ReflectionPeriod
@@ -256,11 +264,13 @@ function Writing({
   onAnother: () => void
   onSaved: () => void
   onDone: () => void
+  onKinder: (savedId: string) => void
 }) {
   const p = useTheme()
   const space: DraftSpace = free ? 'free' : period
   const [text, setText] = useState(() => draftOf(space))
   const [saved, setSaved] = useState<string | null>(null)
+  const [reading, setReading] = useState<Reading | null>(null)
   const [intention, setIntention] = useState('')
   const [kept, setKept] = useState(false)
 
@@ -281,6 +291,7 @@ function Writing({
       ...(thought && !free ? { why: thought.why } : {}),
       ...(thought?.followsUp ? { followsUp: thought.followsUp } : {}),
     })
+    setReading(readWriting(text))
     setText('')
     saveDraft(space, '')
     setSaved(rid)
@@ -288,6 +299,9 @@ function Writing({
 
   if (saved) {
     return (
+      <>
+      {reading?.kind === 'crisis' && <HeavyCard />}
+      {reading?.kind === 'hard' && <KinderCard reading={reading} onWrite={() => onKinder(saved)} />}
       <Tinted>
         <T tone="leaf" bold>
           ✓ Saved, on this phone.
@@ -333,6 +347,7 @@ function Writing({
           }}
         />
       </Tinted>
+      </>
     )
   }
 
@@ -386,5 +401,45 @@ function Writing({
       </T>
       <Button label="Save reflection" iconAfter="arrow" disabled={!text.trim()} onPress={save} />
     </Tinted>
+  )
+}
+
+// A kinder look, after harsh words about oneself (shared kinder.ts): the
+// feeling first, one gentle question, the wider view, the person's own good
+// words, and a friend's eyes. Read on this phone; nothing is sent.
+function KinderCard({ reading, onWrite }: { reading: Extract<Reading, { kind: 'hard' }>; onWrite: () => void }) {
+  const p = useTheme()
+  const [look] = useState(() =>
+    kinderLook(reading, {
+      goodThings: allGoodThings().flatMap((g) => g.lines.map((text) => ({ date: g.date, text }))),
+      kept: keptCards()
+        .filter((c) => !c.private)
+        .map((c) => ({ date: c.date, text: c.headline })),
+    }),
+  )
+  return (
+    <Card style={{ gap: 14 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        <Disc icon="heart" tone="rose" size={40} />
+        <T v="h2">{KINDER_TITLE}</T>
+      </View>
+      {look.lines.slice(0, -1).map((line) => (
+        <T key={line} tone="text2">
+          {line}
+        </T>
+      ))}
+      {look.evidence && (
+        <View style={{ gap: 4, borderLeftWidth: 3, borderLeftColor: p.leaf, paddingLeft: 14 }}>
+          <T v="eyebrow" tone="leaf">
+            {look.evidence.lead}
+          </T>
+          <T v="quote" style={{ fontSize: 18, lineHeight: 25 }}>
+            “{look.evidence.text}”
+          </T>
+        </View>
+      )}
+      <T bold>{look.lines[look.lines.length - 1]}</T>
+      <Button small label={KINDER_WRITE} icon="pencil" onPress={onWrite} />
+    </Card>
   )
 }
