@@ -44,8 +44,9 @@ import { font, radius, useTheme } from '../theme'
 import { Icon, type IconName } from '../ui/Icon'
 import { Button, Chip, Field, T, Tinted } from '../ui/kit'
 import { Avatar, Disc, type Tone } from '../ui/parts'
+import { locale } from '@shared/locale'
 
-const dayMonth = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', timeZone: 'UTC' })
+const dayMonth = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString(locale(), { day: 'numeric', month: 'long', timeZone: 'UTC' })
 
 function names(list: string[]): string {
   if (list.length <= 1) return list[0] ?? ''

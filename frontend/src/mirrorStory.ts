@@ -25,6 +25,7 @@ import { needsBetween, type NeedRead } from './reaching'
 import { areaOf, AREA_NAMES as LIFE_AREAS } from './reflect'
 import { themeName } from './themes'
 import type { Lean } from './mirrorText'
+import { locale } from './locale'
 
 export type Span = 'week' | 'month' | 'quarter' | 'year'
 
@@ -130,7 +131,7 @@ const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 
 // "Wednesday", or "14 October" for anything further back than a week.
 export function whenSaid(date: string, span: Span = 'week'): string {
   const d = new Date(`${date}T00:00:00Z`)
-  if (span === 'week') return d.toLocaleDateString('en-GB', { weekday: 'long', timeZone: 'UTC' })
+  if (span === 'week') return d.toLocaleDateString(locale(), { weekday: 'long', timeZone: 'UTC' })
   return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`
 }
 
@@ -465,8 +466,8 @@ export function othersHelped(
       const helped = (of('helped_lot')?.few ? 0 : (of('helped_lot')?.count ?? 0)) + (of('helped_little')?.few ? 0 : (of('helped_little')?.count ?? 0))
       const line =
         helped > 0
-          ? `Of the ${s.total.toLocaleString('en-GB')} who tried this and chose to report back, ${helped.toLocaleString('en-GB')} said it helped.`
-          : `${s.total.toLocaleString('en-GB')} reported back on this step.`
+          ? `Of the ${s.total.toLocaleString(locale())} who tried this and chose to report back, ${helped.toLocaleString(locale())} said it helped.`
+          : `${s.total.toLocaleString(locale())} reported back on this step.`
       return { step: textOf(s.questionId)!.step!, total: s.total, rows, line }
     })
 }
@@ -781,7 +782,7 @@ export function yearStory(chapters: Chapter[], year: PeriodMirror | null): Story
     paragraphs.push(`Across the chapters on record, ${NEED_PHRASES[first.needs[0].need]} kept coming back in your answers.`)
   } else {
     headline = 'A year in your own answers.'
-    paragraphs.push(`You gave ${answered.toLocaleString('en-GB')} answers this year. What they reached for is only on record for the most recent weeks, so the earlier chapters are told by their numbers alone.`)
+    paragraphs.push(`You gave ${answered.toLocaleString(locale())} answers this year. What they reached for is only on record for the most recent weeks, so the earlier chapters are told by their numbers alone.`)
   }
   if (helped.length) paragraphs.push(`Along the way, you found ${plural(helped.length, 'small thing', 'small things')} that helped, by your own account, starting with “${helped[0]}”.`)
   const missing = chapters.filter((c) => c.state === 'none').length

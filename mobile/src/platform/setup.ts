@@ -13,6 +13,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as ExpoCrypto from 'expo-crypto'
 import { Platform } from 'react-native'
 import { installSubtle } from './subtle'
+import { setLocale } from '@shared/locale'
+
+// Times, dates and numbers in this phone's own style (shared locale.ts).
+setLocale((typeof navigator !== 'undefined' && navigator.language) || Intl.DateTimeFormat().resolvedOptions().locale)
 
 const PREFIX = 'pi.'
 const values = new Map<string, string>()

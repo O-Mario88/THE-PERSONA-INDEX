@@ -11,9 +11,10 @@ import { REVISIT_WORDS, VERDICT_WORDS } from '@shared/words'
 import { useTheme } from '../theme'
 import { Button, Chip, T } from '../ui/kit'
 import { DownloadButtons } from './BookDownloads'
+import { locale } from '@shared/locale'
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
-const shortDay = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' })
+const shortDay = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString(locale(), { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' })
 
 function mondayOf(iso: string): string {
   const d = new Date(`${iso}T00:00:00Z`)

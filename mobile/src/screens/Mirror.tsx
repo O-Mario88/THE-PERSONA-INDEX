@@ -96,6 +96,7 @@ import { Icon } from '../ui/Icon'
 import { Button, Chip, Field, Hairline, T, Tinted } from '../ui/kit'
 import { Box, Chips, Eyebrow, Note, Quote } from './MirrorBits'
 import { PeriodStory, SundayMirror, YearMirror, type Host } from './MirrorStory'
+import { locale } from '@shared/locale'
 
 type Span = 'week' | Period
 type State = { kind: 'loading' } | { kind: 'week'; m: MirrorData } | { kind: 'period'; p: PeriodMirror } | { kind: 'error' }
@@ -329,7 +330,7 @@ function numbered(parts: Part[]) {
 const titleCase = (s: string) => s.replace(/\b\w/g, (c) => c.toUpperCase())
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
 const edition = (n: number) => (n > 0 ? ` · Edition #${n}` : '')
-const weekday = (iso: string, style: 'short' | 'long' = 'short') => new Date(`${iso}T00:00:00Z`).toLocaleDateString('en', { weekday: style, timeZone: 'UTC' })
+const weekday = (iso: string, style: 'short' | 'long' = 'short') => new Date(`${iso}T00:00:00Z`).toLocaleDateString(locale(), { weekday: style, timeZone: 'UTC' })
 const DEPTH_ANSWER: Record<Depth, string> = { light: 'a light answer', deeper: 'a deeper answer', deep: 'a deep answer', private: 'a private answer' }
 
 // ---- the week ----

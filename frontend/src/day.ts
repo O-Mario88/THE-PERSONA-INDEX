@@ -13,6 +13,7 @@
 // clock decides. Sunday has no questions: it is the day for the mirror.
 
 import { useEffect, useState } from 'react'
+import { clockAt } from './locale'
 
 // Minutes after midnight.
 export const MORNING_OPENS = 5 * 60
@@ -72,9 +73,10 @@ export function isEvening(now = new Date()): boolean {
   return minutesOf(now) >= MORNING_CLOSES
 }
 
-// clock is a time of day as a phone shows it: "07:51".
+// clock is a time of day as this phone shows it: "07:51", or "7:51 AM" on an
+// American phone (locale.ts).
 export function clock(minutes: number): string {
-  return `${pad(Math.floor(minutes / 60) % 24)}:${pad(minutes % 60)}`
+  return clockAt(minutes)
 }
 
 // opensAt names when a sitting opens, the way a person would say it.

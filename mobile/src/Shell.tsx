@@ -45,6 +45,7 @@ import { ReadScreen } from './screens/ReadScreen'
 import { CountryAsk } from './screens/Country'
 import { InstallInvite } from './screens/Browser'
 import { backFromGoogle } from './platform/googleWeb'
+import { locale } from '@shared/locale'
 
 type State = { kind: 'loading' } | { kind: 'ready'; set: DailySet; day: string; offline?: true } | { kind: 'empty' } | { kind: 'error' }
 type Tab = 'today' | 'notebook' | 'circle' | 'insights' | 'account'
@@ -80,7 +81,7 @@ function homeNote(today: string, dayN: number | null): string | null {
   return day ? day.trim() : null
 }
 
-const weekday = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString('en', { weekday: 'long', timeZone: 'UTC' })
+const weekday = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString(locale(), { weekday: 'long', timeZone: 'UTC' })
 
 // useDay: the device's date and window, turning by itself, and checked again
 // whenever the app comes back to the front.

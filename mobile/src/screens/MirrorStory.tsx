@@ -76,6 +76,7 @@ import { Icon, type IconName } from '../ui/Icon'
 import { Button, Chip, T, Tinted } from '../ui/kit'
 import { Disc, type Tone } from '../ui/parts'
 import { CircleLine, InConnection, MirrorPatterns, MirrorThreads, showConnection } from './MirrorBits'
+import { locale } from '@shared/locale'
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
@@ -377,7 +378,7 @@ function NotAloneView({ picks }: { picks: NotAlonePick[] }) {
       {picks.map((x) => (
         <View key={x.questionId} style={{ gap: 6 }} accessible accessibilityLabel={`${x.same} of ${x.total} people chose “${x.label}” too, when asked: ${x.prompt}`}>
           <T v="h3">
-            {x.same.toLocaleString('en-GB')} of {x.total.toLocaleString('en-GB')} people
+            {x.same.toLocaleString(locale())} of {x.total.toLocaleString(locale())} people
           </T>
           <T v="small" tone="text2">
             chose “{x.label}” too, when asked: {x.prompt}
@@ -402,7 +403,7 @@ function OthersView({ picks }: { picks: OthersPick[] }) {
               </T>
               <Bar small part={r.count === null ? 0.03 : r.count / Math.max(1, x.total)} />
               <T v="small" bold style={{ width: 44, textAlign: 'right' }}>
-                {r.count === null ? 'a few' : r.count.toLocaleString('en-GB')}
+                {r.count === null ? 'a few' : r.count.toLocaleString(locale())}
               </T>
             </View>
           ))}
@@ -1099,7 +1100,7 @@ export function YearMirror({ y, today, back, jumpTo, deeper, footer }: { y: Peri
       <StoryHero
         eyebrow={`My year in perspective · ${y.label}`}
         story={story}
-        meta={y.stats.answers > 0 ? `${y.stats.answers.toLocaleString('en-GB')} answers in ${y.stats.weeksActive} weeks` : undefined}
+        meta={y.stats.answers > 0 ? `${y.stats.answers.toLocaleString(locale())} answers in ${y.stats.weeksActive} weeks` : undefined}
         span="year"
       />
       <JumpRow jumps={jumpList} />

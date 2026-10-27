@@ -14,8 +14,9 @@ import { font, gutter, lift, radius, RAIL_W, useTheme, WIDE } from '../theme'
 import { Button, Card, RowLink, T } from '../ui/kit'
 import { Avatar, Ring, Tapestry } from '../ui/parts'
 import { Icon } from '../ui/Icon'
+import { locale } from '@shared/locale'
 
-const weekdayOf = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-GB', { weekday: 'long', timeZone: 'UTC' })
+const weekdayOf = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString(locale(), { weekday: 'long', timeZone: 'UTC' })
 
 export function Today({
   date,

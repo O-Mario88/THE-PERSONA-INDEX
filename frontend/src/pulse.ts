@@ -12,6 +12,7 @@
 
 import type { Question } from './api'
 import { load, save } from './storage'
+import { locale } from './locale'
 
 export const PULSE_MIN = 20
 
@@ -56,7 +57,7 @@ export function sameAs(percent: number): string {
   return 'Few people made the same choice you did. That is allowed.'
 }
 
-export const count = (n: number) => n.toLocaleString('en-GB')
+export const count = (n: number) => n.toLocaleString(locale())
 
 // The last count this phone fetched for a question, to tell the change.
 type Seen = { n: number; t: number }

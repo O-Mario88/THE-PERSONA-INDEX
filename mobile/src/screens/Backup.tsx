@@ -9,6 +9,7 @@ import { newPhrase, normalisePhrase, phraseProblem, restore, restoreWriting, set
 import { font, lift, radius, useTheme } from '../theme'
 import { Icon } from '../ui/Icon'
 import { Button, T, Toggle } from '../ui/kit'
+import { locale } from '@shared/locale'
 
 type Mode =
   | { kind: 'idle' }
@@ -193,9 +194,9 @@ function backupStatus(st: VaultState): string {
   if (st.dirty) return 'Some changes are waiting to be backed up.'
   if (!st.savedAt) return 'Backed up.'
   const at = new Date(st.savedAt)
-  const time = at.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+  const time = at.toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' })
   const sameDay = at.toDateString() === new Date().toDateString()
-  return sameDay ? `Last backed up today at ${time}.` : `Last backed up on ${at.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })}.`
+  return sameDay ? `Last backed up today at ${time}.` : `Last backed up on ${at.toLocaleDateString(locale(), { day: 'numeric', month: 'long' })}.`
 }
 
 function Phrase({ phrase }: { phrase: string }) {

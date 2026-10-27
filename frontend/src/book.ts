@@ -32,6 +32,7 @@ import { keys, load } from './storage'
 import { THEMES, themeName } from './themes'
 import { TRAITS } from './traits'
 import { REVISIT_WORDS, STEP_STATUS_WORDS, VERDICT_WORDS } from './words'
+import { locale } from './locale'
 
 export type Book = {
   made: string // the phone's date, YYYY-MM-DD
@@ -71,7 +72,7 @@ const esc = (s: unknown) =>
 export function fullDate(iso: string): string {
   const d = new Date(`${iso.slice(0, 10)}T00:00:00Z`)
   if (Number.isNaN(d.getTime())) return iso
-  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
+  return d.toLocaleDateString(locale(), { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
 }
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
