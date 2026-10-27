@@ -12,11 +12,17 @@ Requires Go 1.24+ and Node 22+.
 
 ```bash
 cd backend && go test ./...                # backend tests (in memory)
-cd frontend && npm ci && npm test          # frontend tests
+cd frontend && npm ci && npm test          # tests of the shared code
 cd backend && go run .                     # API on :8080
-cd frontend && npm run dev                 # app on :5173 (proxies /api to :8080)
+cd mobile && npm ci && npx expo start      # the app: i = iPhone, a = Android, w = browser
+cd mobile && npm run build:web             # the website, into mobile/dist
 docker compose up --build                  # the production image with Postgres, on :8080
 ```
+
+One React Native app (Expo) runs everywhere: iPhone, Android, the Mac (the
+iPad build on Apple Silicon) and the web (React Native for Web). It lives in
+`mobile/`; the rules it runs on, shared by every platform, live in
+`frontend/src` and are imported as `@shared/...`.
 
 Set `PERSONA_TEST_DATABASE_URL` to run the backend tests against Postgres.
 See `CLAUDE.md` for the working rules.
@@ -35,5 +41,5 @@ See `CLAUDE.md` for the working rules.
 - [docs/backups.md](docs/backups.md): backup retention, restoring and the
   restore drill.
 - [docs/load-test.md](docs/load-test.md): the load gate and its results.
-- [frontend/DESIGN.md](frontend/DESIGN.md): the design system: colours,
+- [mobile/DESIGN.md](mobile/DESIGN.md): the design system: colours,
   type, spacing and the shared parts.

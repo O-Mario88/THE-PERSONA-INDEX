@@ -60,8 +60,8 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
       - run: npm run lint
+      - run: npm run typecheck
       - run: npm test
-      - run: npm run build
 
   # The React Native app (iPhone, Android, Mac and the website): its types,
   # and the website build the image serves.

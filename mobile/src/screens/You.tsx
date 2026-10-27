@@ -1,4 +1,4 @@
-// You (the web app's Account.tsx) and What I keep (Kept.tsx): the two
+// You and What I keep: the two
 // things friends see, the person's choices, what is kept and the ways out.
 // Signed out, it is "This phone", and everything stays here.
 import { useEffect, useState } from 'react'

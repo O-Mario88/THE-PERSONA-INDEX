@@ -13,7 +13,8 @@ monitoring in [monitoring.md](monitoring.md) and backups in
 docker build --build-arg VERSION=$(git rev-parse --short=12 HEAD) -t persona-index .
 ```
 
-- Built from the root `Dockerfile`: the frontend (`npm ci && npm run build`),
+- Built from the root `Dockerfile`: the website, the React Native app built for
+  the browser (`npm run build:web` in `mobile/`),
   then the API as one static binary, copied into a distroless image with no
   shell and no package manager, running as an unprivileged user. About 26 MB.
 - `STATIC_DIR=/app/web` is set inside the image, so the site is served from
@@ -28,7 +29,7 @@ To try it on a laptop with a database: `docker compose up --build`, then open
 <http://localhost:8080>. The secrets in `docker-compose.yml` are for that
 laptop only.
 
-The site can instead go on Cloudflare Pages (build `frontend/`, output `dist`)
+The site can instead go on Cloudflare Pages (build command `npm ci --prefix frontend && npm ci --prefix mobile && npm run build:web --prefix mobile`, output `mobile/dist`)
 with the image serving only `/api/`. Pages reads the same `_headers` file, so
 the safety headers are identical either way. One image is simpler, and is what
 the rest of this page assumes.

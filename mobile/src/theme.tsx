@@ -1,6 +1,6 @@
-// Midnight & Cream, the same tokens as the web app (frontend/src/styles/
-// tokens.css and frontend/DESIGN.md). Change a colour here and in
-// tokens.css together, so the phone, the Mac and the browser match.
+// Midnight & Cream: the one set of design tokens for every platform
+// (mobile/DESIGN.md explains each choice). Change a colour here, never in a
+// screen.
 import { createContext, useContext, type ReactNode } from 'react'
 import type { ViewStyle } from 'react-native'
 
@@ -38,7 +38,7 @@ export type Palette = {
   navy: string
   onNavy: string
   onNavy2: string
-  // The wide-screen sidebar (--side-* in tokens.css).
+  // The wide-screen sidebar.
   side: string
   sideInk: string
   sideOn: string
@@ -138,13 +138,12 @@ export const serif = 'Georgia'
 export const space = { 1: 4, 2: 8, 3: 12, 4: 16, 5: 20, 6: 24, 8: 32, 10: 40 } as const
 export const gutter = 24
 // From this width a browser or a Mac window gets the sidebar instead of the
-// tab bar, as the web app does (@media (min-width: 900px) in shell.css).
+// tab bar.
 export const WIDE = 900
 export const SIDE_W = 248
 export const radius = { sm: 10, md: 14, lg: 18, xl: 24, pill: 999 } as const
 
-// A card's lift: a hairline plus a soft shadow in light, none in dark
-// (--shadow-card in tokens.css).
+// A card's lift: a hairline plus a soft shadow in light, none in dark.
 const CARD_SHADOW = '0 1px 2px rgba(18, 40, 58, 0.04), 0 6px 20px rgba(18, 40, 58, 0.05)'
 export const lift = (p: Palette): ViewStyle => (p.dark ? {} : { boxShadow: CARD_SHADOW })
 

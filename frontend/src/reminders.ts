@@ -1,5 +1,6 @@
-// Reminders, planned on the phone, for the phone app (the browser app has
-// none; the SwiftUI app's PersonaKit Reminders.swift is the same plan). Off
+// Reminders, planned on the phone, for the app on iPhone, Android and Mac
+// (the website has none; mobile/src/platform/reminders.ts hands them to the
+// system). Off
 // until the person turns one on. The plan covers the week ahead, one
 // notification per day per kind, so today's can be dropped once its sitting
 // is done; the app plans again whenever it opens or a sitting is finished.

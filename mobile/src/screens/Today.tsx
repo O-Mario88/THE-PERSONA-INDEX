@@ -1,10 +1,10 @@
-// Today (the web app's Home.tsx): the greeting and the day's ring, one card
+// Today: the greeting and the day's ring, one card
 // for what is open now, the season tapestry, the day's five windows, and
 // today's read. Nothing here asks for anything.
 import { useState, type ReactNode } from 'react'
 import { Pressable, useWindowDimensions, View } from 'react-native'
 import { clock, left, MORNING_CLOSES, useNow, WINDOW_INFO, WINDOWS, type OpenWindow, type Window } from '@shared/day'
-import { greeting, type Hero, type Progress } from '@shared/Home'
+import { greeting, type Hero, type Progress } from '@shared/homeHero'
 import { load } from '@shared/storage'
 import { season } from '@shared/tapestry'
 import { windowsDone } from '@shared/windows'

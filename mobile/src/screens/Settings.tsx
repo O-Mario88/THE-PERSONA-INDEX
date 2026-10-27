@@ -1,11 +1,11 @@
-// Settings (the web app's Settings.tsx): three everyday choices, your name,
+// Settings: three everyday choices, your name,
 // intimacy questions and where you live, and the rest folded under "More
 // settings", so it never feels like paperwork.
 import { useState } from 'react'
 import { Pressable, View } from 'react-native'
 import { countryOf, WORDS_DAYS, type Prefs, type WordsDays } from '@shared/prefs'
 import { regionOf } from '@shared/regions'
-import { MAX_NAME } from '@shared/Welcome'
+import { MAX_NAME } from '@shared/welcomeKeys'
 import { COUNTRY_SETTING, REGIONAL_SWITCH } from '@shared/words'
 import { useTheme } from '../theme'
 import { Back, Button, Field, Hairline, Page, Radio, RowLink, T, Toggle } from '../ui/kit'

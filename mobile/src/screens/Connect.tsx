@@ -1,4 +1,4 @@
-// Connect (the web app's Circle.tsx): a private space for understanding,
+// Connect: a private space for understanding,
 // encouragement and meaningful connection. No feed. Your Circle (the three
 // private circles, placed on this device only), inviting a friend, Growing
 // together, Our Common Ground, What Helped Us and Support & Celebrate, with

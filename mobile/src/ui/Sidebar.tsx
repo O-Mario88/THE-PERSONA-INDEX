@@ -1,7 +1,6 @@
-// The wide-screen sidebar: a browser or a Mac window at least WIDE across gets
-// this in place of the tab bar, as the web app does (shell.css, min-width
-// 900px). Midnight, the brand at the top, the tabs as rows, and You and
-// Settings at the foot.
+// The wide-screen sidebar: a browser or a Mac window at least WIDE across
+// gets this in place of the tab bar. Midnight, the brand at the top, the
+// tabs as rows, and Profile and Settings at the foot.
 import { Pressable, Text, View } from 'react-native'
 import { font, radius, SIDE_W, useTheme } from '../theme'
 import { Icon, type IconName } from './Icon'

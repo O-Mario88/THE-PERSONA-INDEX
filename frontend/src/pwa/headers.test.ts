@@ -5,7 +5,7 @@
 // backend/static_test.go checks the same file from the server's side.
 
 import headers from '../../public/_headers?raw'
-import indexHtml from '../../index.html?raw'
+import indexHtml from '../../../mobile/public/index.html?raw'
 import { readSite } from '../reads/site'
 
 // policyFor gives the Content-Security-Policy the rules set for a path,

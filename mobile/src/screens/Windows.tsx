@@ -1,5 +1,4 @@
-// The three short windows between the sittings (the web app's Midday.tsx,
-// PulseViews.tsx and Night.tsx): a check on the morning's step, the
+// The three short windows between the sittings: a check on the morning's step, the
 // afternoon's anonymous totals for those who asked for them, and three good
 // things before bed.
 import { useEffect, useState } from 'react'

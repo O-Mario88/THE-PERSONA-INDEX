@@ -1,11 +1,11 @@
-// Small pieces the Mirrors share (the web app's MirrorPatterns.tsx,
-// MirrorThreads.tsx and MirrorConnection.tsx, plus the quiet text helpers).
+// Small pieces the Mirrors share: patterns, threads, the circle's line and
+// the quiet text helpers.
 import { useEffect, useState, type ReactNode } from 'react'
 import { View } from 'react-native'
 import type { Period } from '@shared/api'
 import { connectionBetween, connectionLine } from '@shared/connection'
 import { threadsBetween } from '@shared/journal'
-import { circleLine } from '@shared/MirrorConnection'
+import { circleLine } from '@shared/circleLine'
 import { NEED_NAMES, NEED_PHRASES, type Need } from '@shared/needs'
 import { checkPattern, patternCheckOf, patternsFor, type Pattern, type PatternCheck } from '@shared/patterns'
 import { loadHistory } from '@shared/profile'

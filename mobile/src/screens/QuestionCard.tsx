@@ -1,5 +1,4 @@
-// One question on its own screen, as on the web (frontend/src/QuestionCard.tsx):
-// tap an answer or put it in your own words, and the same screen turns into
+// One question on its own screen: tap an answer or put it in your own words, and the same screen turns into
 // what it may say about you, one small step to try and whether it is you.
 // Every rule lives in the shared code; this file only draws it.
 import { useEffect, useMemo, useState } from 'react'
@@ -36,7 +35,7 @@ import {
   type Verdict,
 } from '@shared/api'
 import { isEvening } from '@shared/day'
-import { HELPLINE_LINE } from '@shared/Helpline'
+import { HELPLINE_LINE } from '@shared/helplineText'
 import { moveFor, startMove } from '@shared/moves'
 import { focusPlan, keepCard, keptCard, makePlan, unkeepCard } from '@shared/notebook'
 import { inOrder } from '@shared/order'

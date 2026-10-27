@@ -1,5 +1,4 @@
-// The story-first Mirrors (Edwin, 2026-10-26; the web app's MirrorParts.tsx,
-// MirrorWeek.tsx, MirrorPeriodStory.tsx and MirrorYear.tsx). A story first,
+// The story-first Mirrors (Edwin, 2026-10-26). A story first,
 // built only from real answers; then what they revealed, what helped, the
 // people, the person's own words and one gentle direction. Every finding
 // has "Why am I seeing this?" and can be answered with That's me / Partly /

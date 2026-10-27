@@ -1,5 +1,5 @@
-// The parts every screen is built from, matching the web app's base.css:
-// type, buttons, fields, choices, chips, hairlines and the page itself.
+// The parts every screen is built from (mobile/DESIGN.md): type, buttons,
+// fields, choices, chips, hairlines and the page itself.
 import { useState, type ComponentRef, type ReactNode, type Ref } from 'react'
 import {
   ActivityIndicator,
@@ -307,7 +307,7 @@ export function Field(props: TextInputProps & { label?: string; note?: string })
 // ---- layout ----
 
 // The page: the cream background, the gutter, room for the tab bar. Beside
-// the wide-screen sidebar it gets the web's roomier margins (shell.css .page).
+// the wide-screen sidebar it gets roomier margins and a 760px measure.
 export function Page({ children, bottom = 32, refresh, scrollRef }: { children: ReactNode; bottom?: number; refresh?: number; scrollRef?: Ref<ComponentRef<typeof ScrollView>> }) {
   const p = useTheme()
   const insets = useSafeAreaInsets()

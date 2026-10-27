@@ -1,5 +1,5 @@
-// What the web app's shared code expects from a browser, given to it on a
-// phone or a Mac. Imported first, before any shared file.
+// What the shared code expects from a browser, given to it on a phone or a
+// Mac (the website has the real thing). Imported first, before any shared file.
 //
 // - localStorage: the shared code reads and writes it synchronously, so the
 //   app keeps every "pi." value in memory and writes each change through to

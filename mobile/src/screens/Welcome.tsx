@@ -1,8 +1,8 @@
-// The one-time welcome (the web app's Welcome.tsx): what the app is, in
+// The one-time welcome: what the app is, in
 // three lines, and an optional first name, before the very first sitting.
 import { useState } from 'react'
 import { KeyboardAvoidingView, Platform, View } from 'react-native'
-import { MAX_NAME } from '@shared/Welcome'
+import { MAX_NAME } from '@shared/welcomeKeys'
 import { Button, Field, Page, T } from '../ui/kit'
 import { Disc } from '../ui/parts'
 import type { IconName } from '../ui/Icon'

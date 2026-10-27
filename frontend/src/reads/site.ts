@@ -9,7 +9,7 @@
 // only, after the third paragraph and at the foot (docs/operations.md).
 
 import library from '../../../backend/content/sources.json'
-import { HELPLINE_LINE, HELPLINE_URL } from '../Helpline'
+import { HELPLINE_LINE, HELPLINE_URL } from '../helplineText'
 import { AREA_NAMES } from '../mirrorText'
 import { THEMES } from '../themes'
 import { readsProblems } from './gate'
@@ -109,7 +109,7 @@ export function readSite(): { problems: string[]; files: Record<string, string> 
 }
 
 const CSS = `
-/* Midnight & Cream, as in styles/tokens.css. */
+/* Midnight & Cream, as in mobile/src/theme.tsx. */
 :root{--bg:#fbf7f0;--panel:#fffdf9;--line:#ece3d4;--text:#12283a;--muted:#69737c;--accent:#0b4f70;--mark:#013d5a;color-scheme:light}
 @media (prefers-color-scheme:dark){:root{--bg:#0b1a24;--panel:#102330;--line:#1d3545;--text:#f6efe3;--muted:#9eaab3;--accent:#f4a258;--mark:#f4a258;color-scheme:dark}}
 *{box-sizing:border-box}

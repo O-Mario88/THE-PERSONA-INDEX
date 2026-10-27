@@ -1,7 +1,0 @@
-# Xcode per-user state and builds
-xcuserdata/
-*.xcuserstate
-DerivedData/
-.build/
-.swiftpm/
-PersonaKit/.build/

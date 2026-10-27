@@ -1,5 +1,4 @@
-// The Mirrors (the web app's Mirror.tsx, with Keep.tsx's pieces it uses and
-// MirrorPatterns / MirrorThreads / MirrorConnection): the week opens first,
+// The Mirrors, the fuller view: the week opens first,
 // the month, quarter and year look further back. Built by the server from
 // this phone's kept answers, so every number is real; a section with nothing
 // real in it stays hidden. It sets the person only against their own past.
@@ -267,7 +266,7 @@ function Scale({ dots }: { dots: { at: number; color: string }[] }) {
   )
 }
 
-// One ink at three strengths, as the web's mirror.css: light is the faintest,
+// One ink at three strengths: light is the faintest,
 // deep stronger, and deeper the darkest (text colour, or white in dark).
 const depthColor = (p: Palette, d: Depth) =>
   d === 'deeper' ? (p.dark ? '#ffffff' : p.text) : d === 'deep' ? `${p.accentInk}${p.dark ? 'BF' : 'A6'}` : d === 'light' ? `${p.accentInk}${p.dark ? '66' : '4D'}` : p.accentInk

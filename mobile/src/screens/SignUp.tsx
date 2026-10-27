@@ -1,5 +1,5 @@
-// The sign-up page after the first glimpse, and signing in from You (the
-// web app's SignIn.tsx, page mode). No password: a 6-digit code to an email
+// The sign-up page after the first glimpse, and signing in from You. No
+// password: a 6-digit code to an email
 // or a phone, or Apple and Google through their own sheets (idSignIn.ts).
 // Only the ways the server can really use are shown.
 import { useEffect, useState } from 'react'

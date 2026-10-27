@@ -1,4 +1,4 @@
-// Insights (the web app's InsightsPage.tsx): understand yourself, find what
+// Insights: understand yourself, find what
 // helps. For You is the person's own answers, worked out on this device;
 // You're Not Alone shows the server's real counts, only to someone who
 // turned the Human Pulse on; Saved holds the cards they kept. No made-up

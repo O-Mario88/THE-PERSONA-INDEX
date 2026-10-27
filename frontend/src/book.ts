@@ -9,7 +9,7 @@
 // that came from the person or the server is escaped.
 
 import { getExport, wordsBetween, type OwnWords, type ServerExport } from './api'
-import { HELPLINE_LINE } from './Helpline'
+import { HELPLINE_LINE } from './helplineText'
 import {
   allGoodThings,
   keptCards,
@@ -259,7 +259,7 @@ ${notes.map((n) => `<p class="meta">${esc(n)}</p>`).join('\n')}
 }
 
 const BOOK_CSS = `
-/* Midnight & Cream, as in styles/tokens.css. */
+/* Midnight & Cream, as in mobile/src/theme.tsx. */
 :root{--bg:#fbf7f0;--fg:#12283a;--muted:#69737c;--rule:#ece3d4;--card:#fffdf9;--accent:#013d5a;color-scheme:light}
 @media (prefers-color-scheme:dark){:root{--bg:#0b1a24;--fg:#f6efe3;--muted:#9eaab3;--rule:#1d3545;--card:#102330;--accent:#f4a258;color-scheme:dark}}
 *{box-sizing:border-box}

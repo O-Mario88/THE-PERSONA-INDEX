@@ -1,4 +1,4 @@
-// My notebook (the web app's NotebookScreen.tsx), under Reflect: the cards a
+// My notebook, under Reflect: the cards a
 // person kept, and what they wrote themselves (three good things, Sunday
 // lines, plans and the names they gave their weeks). On this phone only.
 import { useState } from 'react'

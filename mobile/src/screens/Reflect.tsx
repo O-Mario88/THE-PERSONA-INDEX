@@ -1,4 +1,4 @@
-// Reflect (the web app's ReflectGuide.tsx and ReflectWriting.tsx): a quiet
+// Reflect: a quiet
 // space for your thoughts. Writing first, with one question made on this
 // device from the person's own answers, cards and earlier words, or none at
 // all; then what they have noticed across the parts of their life, earlier
@@ -12,7 +12,7 @@ import { intentionsDue, keepIntention, keepReflection, keptCards, reflections, t
 import { noticedFrom, type Noticed, type NoticedSource } from '@shared/noticed'
 import { loadHistory } from '@shared/profile'
 import { AREA_NAMES, dayMonth, PERIOD_NAMES, reflectionItems } from '@shared/reflect'
-import { PRIVACY_LINE } from '@shared/ReflectWriting'
+import { PRIVACY_LINE } from '@shared/words'
 import { addDays } from '@shared/storage'
 import { thoughtsFor, type Answered, type Thought } from '@shared/thoughts'
 import { BringBack } from './Backup'

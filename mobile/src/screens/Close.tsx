@@ -1,4 +1,4 @@
-// The close of a sitting (the web app's DayClose.tsx): the midnight card with
+// The close of a sitting: the midnight card with
 // the season tapestry weaving in, then the first glimpse (first sitting
 // only) or today's thread, the small steps, and what comes next. Nothing is
 // scored, shared or set against anyone else.
@@ -7,8 +7,8 @@ import { useWindowDimensions, View } from 'react-native'
 import { recalledChoice, SKIPPED, type Question } from '@shared/api'
 import { adviceFor, levelLine } from '@shared/advice'
 import { isSaturday, opensAt } from '@shared/day'
-import { sharedNeed } from '@shared/FirstGlimpse'
-import { HELPLINE_LINE } from '@shared/Helpline'
+import { sharedNeed } from '@shared/glimpse'
+import { HELPLINE_LINE } from '@shared/helplineText'
 import { heavyPause, isLowMood, loadHistory, recordRoute, type AnswerRecord, type History, type Route } from '@shared/profile'
 import { NEED_PHRASES, type Need } from '@shared/needs'
 import { routeToAsk } from '@shared/reaching'

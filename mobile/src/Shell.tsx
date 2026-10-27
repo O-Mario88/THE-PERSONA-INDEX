@@ -1,22 +1,21 @@
-// The app's frame, the native twin of the web app's App.tsx: which tab is
-// open, today's questions, the sittings, the first week, and the tab bar.
-// The rules come from the shared code (frontend/src); only the drawing is
-// native. Keep the two in step: a change to the flow in App.tsx belongs here
-// too.
+// The app's frame on every platform: which tab is open, today's questions,
+// the sittings, the first week, and the tab bar (the sidebar on a wide
+// screen). The rules come from the shared code (frontend/src); this file
+// only draws them.
 import { StatusBar } from 'expo-status-bar'
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentRef, type ReactNode } from 'react'
 import { AppState, Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ApiError, cacheEdition, cachedEdition, getDay, pruneLocal, pruneWords, recalledChoice, sendPlanChecks, sendUnrated, type DailySet, type Question } from '@shared/api'
 import { dayAt, nextTurn, WINDOW_INFO, type Day, type OpenWindow, type Sitting } from '@shared/day'
-import { heroFor, type Progress } from '@shared/Home'
+import { heroFor, type Progress } from '@shared/homeHero'
 import { pruneNotebook } from '@shared/notebook'
 import { sendUnsent } from '@shared/moves'
 import { forgetPick, isFirstDay, loadHistory, todaysPick, writeFirstOf, type Half } from '@shared/profile'
 import { blackOn, intimacyOn, loadPrefs, pulseOn, regionHere, savePrefs, type Prefs } from '@shared/prefs'
 import { cachedPack, fetchPack, regionalFor, regionalToday } from '@shared/regional'
 import { keys, load as loadKey, remove as removeKey, save as saveKey } from '@shared/storage'
-import { NAME_KEY, WELCOMED } from '@shared/Welcome'
+import { NAME_KEY, WELCOMED } from '@shared/welcomeKeys'
 import { pruneCardTexts } from '@shared/insights'
 import { CONNECT_OPEN_KEY, dayWithYou, glimpseHere, inWeekOne, isNewcomer, lastLeaning, markStarted, needsAccount, SHOW_ALL_KEY } from '@shared/firstWeek'
 import { signInMethods, type AccountView } from '@shared/social'

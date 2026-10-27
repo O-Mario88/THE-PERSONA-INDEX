@@ -1,7 +1,7 @@
-// Discs, initials, rings and the season tapestry: the web app's ui/ parts.
+// Discs, initials, rings and the season tapestry.
 import { Text, View } from 'react-native'
 import Svg, { Circle } from 'react-native-svg'
-import { tintFor } from '@shared/ui/Avatar'
+import { tintFor } from '@shared/avatarTint'
 import { NEED_TINTS } from '@shared/needs'
 import type { Season } from '@shared/tapestry'
 import { font, useTheme } from '../theme'
