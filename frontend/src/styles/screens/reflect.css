@@ -145,10 +145,6 @@
   gap: var(--s-4);
 }
 
-.m-spans.is-two {
-  grid-template-columns: repeat(2, 1fr);
-}
-
 .noticed-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));

@@ -11,7 +11,7 @@ import { checkPattern, patternCheckOf, patternsFor, type Pattern, type PatternCh
 import { loadHistory } from '@shared/profile'
 import { dayMonth } from '@shared/reflect'
 import { accountToken, outsideMirror, type OutsideMirror } from '@shared/social'
-import { radius, useTheme } from '../theme'
+import { lift, radius, useTheme } from '../theme'
 import { Button, Chip, T } from '../ui/kit'
 
 type Span = 'week' | Period
@@ -36,7 +36,7 @@ export function Note({ children }: { children: ReactNode }) {
 export function Box({ children, eyebrow }: { children: ReactNode; eyebrow?: string }) {
   const p = useTheme()
   return (
-    <View style={{ backgroundColor: p.surface, borderColor: p.line, borderWidth: 1, borderRadius: radius.lg, padding: 16, gap: 8 }}>
+    <View style={[{ backgroundColor: p.surface, borderColor: p.line, borderWidth: 1, borderRadius: radius.lg, padding: 16, gap: 8 }, lift(p)]}>
       {eyebrow ? <Eyebrow accent>{eyebrow}</Eyebrow> : null}
       {children}
     </View>

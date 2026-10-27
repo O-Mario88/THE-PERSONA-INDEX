@@ -37,7 +37,7 @@ import {
 } from './mirrorText'
 import { changesBetween, changeWords, leaningVerdict, loadHistory, notMeSides, rememberLeaning, type Change } from './profile'
 import { addDays } from './storage'
-import { THEMES, themeName, themeStyle, themeVars } from './themes'
+import { THEMES, themeName, themeStyle } from './themes'
 import { honestLine, sideOf, TRAITS } from './traits'
 import { outsideMirror, type OutsideMirror as OutsideMirrorData } from './social'
 import { useAccount } from './useAccount'
@@ -702,7 +702,6 @@ function AllOfYou({ themes: read }: { themes: ThemeRead[] }) {
                   <li
                     key={slug}
                     className={`m-theme ${r ? r.depth : 'none'}`}
-                    style={themeVars(slug)}
                     aria-label={`${t.name}: ${r ? `${r.answers} ${r.answers === 1 ? 'answer' : 'answers'}, ${DEPTH_WORDS[r.depth]}` : 'not yet'}`}
                   >
                     <span aria-hidden="true">{t.icon}</span>
@@ -890,7 +889,7 @@ function OwnWordsList({ words }: { words: OwnWords[] }) {
     <>
       <ul className="m-words">
         {words.map((w) => (
-          <li key={w.questionId} className="m-card m-word" style={themeVars(w.theme)}>
+          <li key={w.questionId} className="m-card m-word">
             <p className="m-step-meta">
               <span aria-hidden="true">{themeStyle(w.theme).icon} </span>
               {w.theme ? themeName(w.theme) : 'Today'} · {longDate(w.date)}
@@ -935,7 +934,7 @@ function Steps({ m, today, reload }: { m: MirrorData; today: string; reload: () 
     <>
       <ul className="m-steps" aria-label="Steps you started">
         {shown.map((s) => (
-          <li key={s.questionId} className="m-card m-step" style={themeVars(s.theme)}>
+          <li key={s.questionId} className="m-card m-step">
             <p className="m-step-meta">
               <span aria-hidden="true">{themeStyle(s.theme).icon} </span>
               {themeName(s.theme)}
@@ -999,7 +998,7 @@ function NextWeek({ m, today, reload }: { m: MirrorData; today: string; reload: 
       {m.nextSteps.length > 0 && (
         <ol className="m-next">
           {m.nextSteps.map((s) => (
-            <li key={s.questionId} className="m-card m-step" style={themeVars(s.theme)}>
+            <li key={s.questionId} className="m-card m-step">
               <p className="m-step-meta">
                 <span aria-hidden="true">{themeStyle(s.theme).icon} </span>
                 {themeName(s.theme)}
@@ -1324,7 +1323,7 @@ function Moments({ p }: { p: PeriodMirror }) {
     <>
       <ul className="m-moments" aria-label="The answers that said the most">
         {p.moments.map((mo) => (
-          <li key={`${mo.date}-${mo.prompt}`} className="m-card m-moment" style={themeVars(mo.theme)}>
+          <li key={`${mo.date}-${mo.prompt}`} className="m-card m-moment">
             <p className="m-step-meta">
               <span aria-hidden="true">{themeStyle(mo.theme).icon} </span>
               {themeName(mo.theme)} · {longDate(mo.date)}
@@ -1348,7 +1347,7 @@ function PeriodSteps({ p }: { p: PeriodMirror }) {
       {p.helped.length > 0 && (
         <ul className="m-steps" aria-label="Steps that helped">
           {p.helped.map((h) => (
-            <li key={`${h.started}-${h.step}`} className="m-card m-step" style={themeVars(h.theme)}>
+            <li key={`${h.started}-${h.step}`} className="m-card m-step">
               <p className="m-step-meta">
                 <span aria-hidden="true">{themeStyle(h.theme).icon} </span>
                 {themeName(h.theme)} · started {longDate(h.started)} ·{' '}

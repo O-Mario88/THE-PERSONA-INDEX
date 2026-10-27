@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react'
 import { TextInput, View } from 'react-native'
 import { onChange } from '@shared/storage'
 import { newPhrase, normalisePhrase, phraseProblem, restore, restoreWriting, setWords, turnOff, turnOn, vaultState, type PhraseProblem, type VaultState } from '@shared/vault'
-import { font, radius, useTheme } from '../theme'
+import { font, lift, radius, useTheme } from '../theme'
 import { Icon } from '../ui/Icon'
 import { Button, T, Toggle } from '../ui/kit'
 
@@ -68,13 +68,13 @@ function WordsField({ label, value, onChangeText, lines = 1 }: { label: string; 
         importantForAutofill="no"
         style={{
           minHeight: lines > 1 ? 24 * lines + 28 : undefined,
-          borderWidth: 1,
+          borderWidth: 1.5,
           borderColor: p.line,
           backgroundColor: p.surface,
           borderRadius: radius.md,
           paddingHorizontal: 16,
           paddingVertical: 14,
-          fontFamily: font.medium,
+          fontFamily: font.regular,
           fontSize: 16,
           color: p.text,
           textAlignVertical: 'top',
@@ -329,7 +329,7 @@ export function BringBack({ onBack }: { onBack: () => void }) {
     }
   }
   return (
-    <View style={{ gap: 10, padding: 20, borderRadius: radius.lg, borderWidth: 1, borderColor: p.line, backgroundColor: p.surface }}>
+    <View style={[{ gap: 10, padding: 20, borderRadius: radius.lg, borderWidth: 1, borderColor: p.line, backgroundColor: p.surface }, lift(p)]}>
       <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
         <Icon name="lock" size={18} color={p.text} />
         <T v="h3" style={{ flex: 1 }}>

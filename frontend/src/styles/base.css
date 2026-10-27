@@ -229,7 +229,7 @@ svg {
   letter-spacing: -0.01em;
 }
 
-/* Buttons. .btn is the primary action: lime, dark ink, full weight. */
+/* Buttons. .btn is the primary action: the filled accent, full weight. */
 
 .btn,
 .next,
@@ -479,7 +479,7 @@ svg {
   gap: var(--s-3);
 }
 
-/* Chips: quiet pills; a pressed one turns lime. */
+/* Chips: quiet pills; a pressed one takes the filled accent. */
 
 .chips {
   display: flex;
@@ -716,7 +716,7 @@ label.field input:focus {
   line-height: 1;
 }
 
-/* Rings: a lime arc on a quiet track, its number in the middle. */
+/* Rings: an accent arc on a quiet track, its number in the middle. */
 
 .ring {
   position: relative;
@@ -767,7 +767,7 @@ label.field input:focus {
   color: var(--muted);
 }
 
-/* Icon tiles: a round lime-washed disc behind a line icon. */
+/* Icon tiles: a round washed disc behind a line icon. */
 
 .icon-disc {
   display: inline-grid;

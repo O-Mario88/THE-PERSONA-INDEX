@@ -487,12 +487,12 @@ function Area({ label, value, onChange, max, lines = 2, id }: { label: string; v
       placeholderTextColor={p.muted}
       style={{
         minHeight: 24 * lines + 28,
-        borderWidth: 1,
+        borderWidth: 1.5,
         borderColor: p.line,
         backgroundColor: p.surface,
         borderRadius: radius.md,
         padding: 14,
-        fontFamily: font.medium,
+        fontFamily: font.regular,
         fontSize: 16,
         color: p.text,
         textAlignVertical: 'top',

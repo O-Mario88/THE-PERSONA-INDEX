@@ -55,7 +55,7 @@
   font-size: 1.0625rem;
 }
 
-/* The tabs: a white bar on a phone, a forest-green sidebar on a wide
+/* The tabs: a white bar on a phone, a midnight sidebar on a wide
    screen (the reference designs). */
 
 .tabs {
@@ -274,7 +274,7 @@
   height: 8px;
   border-radius: 50%;
   background: var(--online);
-  box-shadow: 0 0 0 4px rgb(63 191 95 / 0.2);
+  box-shadow: 0 0 0 4px rgb(95 154 87 / 0.2);
 }
 
 .flow-main,

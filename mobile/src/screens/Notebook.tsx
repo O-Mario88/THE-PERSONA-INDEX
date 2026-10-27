@@ -5,10 +5,10 @@ import { useState } from 'react'
 import { View } from 'react-native'
 import { longDate, weekRange } from '@shared/mirrorText'
 import { allGoodThings, keptCards, names, plans, removePlan, sentencesBetween, unkeepCard, type KeptCard, type Plan, type Revisit } from '@shared/notebook'
-import { themeName, themeStyle } from '@shared/themes'
+import { themeName } from '@shared/themes'
 import { TRAITS } from '@shared/traits'
 import { REVISIT_WORDS, VERDICT_WORDS } from '@shared/words'
-import { radius, useTheme } from '../theme'
+import { font, useTheme } from '../theme'
 import { Button, Chip, T } from '../ui/kit'
 import { DownloadButtons } from './BookDownloads'
 
@@ -164,15 +164,14 @@ function CardEntry({ card: c, onRemove }: { card: KeptCard; onRemove: () => void
   const [open, setOpen] = useState(!c.private)
   const [asking, setAsking] = useState(false)
   const [more, setMore] = useState(false)
-  const t = themeStyle(c.theme)
   return (
     <View
       accessibilityLabel={c.prompt}
-      style={{ backgroundColor: p.surface, borderColor: p.line, borderWidth: 1, borderLeftWidth: 4, borderLeftColor: t.from, borderRadius: radius.lg, padding: 16, gap: 8 }}
+      style={{ borderTopColor: p.line, borderTopWidth: 1, paddingTop: 16, gap: 8 }}
     >
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
-        <T v="small" bold>
-          {t.icon} {c.theme ? themeName(c.theme) : 'Today'}
+        <T v="tiny" tone="accent" style={{ fontFamily: font.heavy, letterSpacing: 1.7, textTransform: 'uppercase' }}>
+          {c.theme ? themeName(c.theme) : 'Today'}
         </T>
         <Muted>
           {shortDay(c.date)}

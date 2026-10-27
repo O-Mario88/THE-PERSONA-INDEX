@@ -2,6 +2,7 @@
 // tokens.css and frontend/DESIGN.md). Change a colour here and in
 // tokens.css together, so the phone, the Mac and the browser match.
 import { createContext, useContext, type ReactNode } from 'react'
+import type { ViewStyle } from 'react-native'
 
 export type Palette = {
   dark: boolean
@@ -14,9 +15,6 @@ export type Palette = {
   text: string
   text2: string
   muted: string
-  forest: string
-  forest2: string
-  onForest: string
   leaf: string
   leafSoft: string
   lime: string // the filled accent: midnight in light, marigold in dark
@@ -38,7 +36,6 @@ export type Palette = {
   amberWash: string
   danger: string
   navy: string
-  navy2: string
   onNavy: string
   onNavy2: string
 }
@@ -54,9 +51,6 @@ export const light: Palette = {
   text: '#12283a',
   text2: '#3d4f5c',
   muted: '#69737c',
-  forest: '#013d5a',
-  forest2: '#0d5275',
-  onForest: '#ffffff',
   leaf: '#5f7d58',
   leafSoft: '#b5c7ae',
   lime: '#013d5a',
@@ -78,7 +72,6 @@ export const light: Palette = {
   amberWash: '#fdf0e1',
   danger: '#b42318',
   navy: '#013d5a',
-  navy2: '#0d5275',
   onNavy: '#ffffff',
   onNavy2: '#c7d8e2',
 }
@@ -97,7 +90,6 @@ export const dark: Palette = {
   text: '#f6efe3',
   text2: '#d6d2c9',
   muted: '#9eaab3',
-  forest2: '#13506f',
   leaf: '#a9c3a1',
   leafSoft: '#7c9a74',
   accentInk: '#f4a258',
@@ -116,7 +108,6 @@ export const dark: Palette = {
   amberWash: '#2d2410',
   danger: '#ff8a7a',
   navy: '#133246',
-  navy2: '#1a3d54',
   onNavy2: '#c2d2dc',
 }
 
@@ -134,6 +125,11 @@ export const serif = 'Georgia'
 export const space = { 1: 4, 2: 8, 3: 12, 4: 16, 5: 20, 6: 24, 8: 32, 10: 40 } as const
 export const gutter = 24
 export const radius = { sm: 10, md: 14, lg: 18, xl: 24, pill: 999 } as const
+
+// A card's lift: a hairline plus a soft shadow in light, none in dark
+// (--shadow-card in tokens.css).
+const CARD_SHADOW = '0 1px 2px rgba(18, 40, 58, 0.04), 0 6px 20px rgba(18, 40, 58, 0.05)'
+export const lift = (p: Palette): ViewStyle => (p.dark ? {} : { boxShadow: CARD_SHADOW })
 
 const ThemeContext = createContext<Palette>(light)
 

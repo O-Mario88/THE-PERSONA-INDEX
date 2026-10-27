@@ -47,7 +47,7 @@ import { isLowMood, loadHistory, recalledAnswer, recordAnswer, recordSkip, recor
 import { isNeed, NEED_PHRASES, type Need } from './needs'
 import { splitReveal } from './reveal'
 import { onOtherTab } from './storage'
-import { themeName, themeStyle, themeVars } from './themes'
+import { themeName, themeStyle } from './themes'
 import { keepCardText } from './insights'
 import { rateAnswer } from './rating'
 import {
@@ -235,7 +235,6 @@ export function QuestionCard({
   return (
     <section
       className={answered ? 'screen question answered' : 'screen question'}
-      style={themeVars(question.theme)}
       aria-labelledby={headingId}
     >
       <span className="theme-chip">

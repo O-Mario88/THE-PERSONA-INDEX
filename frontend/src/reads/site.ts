@@ -23,7 +23,6 @@ const esc = (s: unknown) =>
   String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
 
 const pathOf = (r: Read) => `/read/${r.slug}/`
-const colourOf = (r: Read) => (r.kind === 'theme' ? (THEMES[r.key]?.from ?? '#8b8cf1') : '#8b8cf1')
 
 function page({ title, description, path, body }: { title: string; description: string; path: string; body: string }) {
   return `<!doctype html>
@@ -38,7 +37,7 @@ function page({ title, description, path, body }: { title: string; description: 
 <meta property="og:title" content="${esc(title)}">
 <meta property="og:description" content="${esc(description)}">
 <meta property="og:url" content="${esc(ORIGIN + path)}">
-<meta name="theme-color" content="#10121f">
+<meta name="theme-color" content="#013d5a">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="manifest" href="/manifest.webmanifest">
 <style>${CSS}</style>
@@ -64,7 +63,7 @@ export function readPage(r: Read, others: Read[]): string {
         .map((o) => `<li><a href="${esc(pathOf(o))}">${esc(o.title)}</a><span>${esc(topicOf(o))} · ${minutes(o)} min</span></li>`)
         .join('')}</ul></nav>`
     : ''
-  const body = `<article style="--theme:${esc(colourOf(r))}">
+  const body = `<article>
 <p class="topic">${esc(topicOf(r))} · ${minutes(r)} min read</p>
 <h1>${esc(r.title)}</h1>
 <p class="summary">${esc(r.summary)}</p>
@@ -82,7 +81,7 @@ export function indexPage(reads: Read[]): string {
     `<ul class="list">${rs
       .map(
         (r) =>
-          `<li style="--theme:${esc(colourOf(r))}"><a href="${esc(pathOf(r))}">${esc(r.title)}</a><p>${esc(r.summary)}</p><span>${esc(topicOf(r))} · ${minutes(r)} min</span></li>`,
+          `<li><a href="${esc(pathOf(r))}">${esc(r.title)}</a><p>${esc(r.summary)}</p><span>${esc(topicOf(r))} · ${minutes(r)} min</span></li>`,
       )
       .join('')}</ul>`
   const groups = Object.entries(AREA_NAMES)
@@ -110,8 +109,9 @@ export function readSite(): { problems: string[]; files: Record<string, string> 
 }
 
 const CSS = `
-:root{--bg:#10121f;--panel:#181b2c;--line:#2b304e;--text:#f3f5f8;--muted:#a6acc0;--accent:#a5a6ff;color-scheme:dark}
-@media (prefers-color-scheme:light){:root{--bg:#f6f5f1;--panel:#fff;--line:#e3e1da;--text:#191b29;--muted:#555b70;--accent:#4138c2;color-scheme:light}}
+/* Midnight & Cream, as in styles/tokens.css. */
+:root{--bg:#fbf7f0;--panel:#fffdf9;--line:#ece3d4;--text:#12283a;--muted:#69737c;--accent:#0b4f70;--mark:#013d5a;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#0b1a24;--panel:#102330;--line:#1d3545;--text:#f6efe3;--muted:#9eaab3;--accent:#f4a258;--mark:#f4a258;color-scheme:dark}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font:18px/1.65 Georgia,'Iowan Old Style','Times New Roman',serif;-webkit-text-size-adjust:100%}
 a{color:var(--accent)}
@@ -123,16 +123,15 @@ h1{font:700 clamp(1.9rem,6vw,2.6rem)/1.15 system-ui,sans-serif;letter-spacing:-.
 h2{font:600 .8rem/1.4 system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:2.4rem 0 .8rem}
 p{margin:0 0 1.1rem}
 .topic,.list span,.more span{font:.85rem/1.4 system-ui,sans-serif;color:var(--muted)}
-.topic{border-left:3px solid var(--theme);padding-left:.6rem}
+.topic{border-left:3px solid var(--mark);padding-left:.6rem}
 .summary{font-size:1.15rem;color:var(--muted)}
-.try{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--theme,var(--accent));border-radius:12px;padding:1rem 1.2rem;margin:2rem 0}
+.try{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--mark);border-radius:12px;padding:1rem 1.2rem;margin:2rem 0}
 .try p{margin:0}.try .label{font:600 .8rem/1.4 system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:.4rem}
 .help{font:.95rem/1.5 system-ui,sans-serif;color:var(--muted)}
 ul{list-style:none;margin:0;padding:0}
 .list li,.more li{padding:.9rem 0;border-bottom:1px solid var(--line)}
 .list a,.more a{font:600 1.05rem/1.35 system-ui,sans-serif;display:block;margin-bottom:.25rem}
 .list p{margin:.2rem 0;font-size:1rem;color:var(--muted)}
-.list li{border-left:3px solid var(--theme);padding-left:.8rem}
 .more span{display:block}
 footer{border-top:1px solid var(--line);padding-block:1.2rem 2.5rem;font:.9rem/1.5 system-ui,sans-serif;color:var(--muted)}
 footer .note{font-style:italic}
