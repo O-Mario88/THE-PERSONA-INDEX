@@ -7,7 +7,7 @@ import { writingWaits } from '@shared/vault'
 import { useEffect, useMemo, useState } from 'react'
 import { Pressable, Text, TextInput, View } from 'react-native'
 import { cachedEdition, getMirror, recalledChoice, type Mirror, type Question } from '@shared/api'
-import { draftOf, reflectSettings, reminderFor, saveDraft, setReflectSettings, type DraftSpace, type ReflectSettings } from '@shared/journal'
+import { draftOf, reflectSettings, reminderFor, saveDraft, type DraftSpace } from '@shared/journal'
 import { intentionsDue, keepIntention, keepReflection, keptCards, reflections, type ReflectionArea, type ReflectionPeriod } from '@shared/notebook'
 import { noticedFrom, type Noticed, type NoticedSource } from '@shared/noticed'
 import { loadHistory } from '@shared/profile'
@@ -18,7 +18,7 @@ import { thoughtsFor, type Answered, type Thought } from '@shared/thoughts'
 import { BringBack } from './Backup'
 import { Notebook } from './Notebook'
 import { font, radius, useTheme } from '../theme'
-import { Button, Card, Page, T, Tinted, Toggle } from '../ui/kit'
+import { Button, Card, Page, T, Tinted } from '../ui/kit'
 import { Disc, type Tone } from '../ui/parts'
 import { Icon, type IconName } from '../ui/Icon'
 
@@ -80,7 +80,6 @@ export function Reflect({
   const [at, setAt] = useState(0)
   const [chosen, setChosen] = useState<Thought | null>(null)
   const [mirror, setMirror] = useState<Mirror | null>(null)
-  const [settings, setSettings] = useState<ReflectSettings>(reflectSettings)
   const [version, setVersion] = useState(0)
   const [group, setGroup] = useState<'strength' | 'grow'>('strength')
 
@@ -106,13 +105,9 @@ export function Reflect({
     return option ? [{ question: q, option }] : []
   })
   const items = reflectionItems(period, period === 'day' ? todays : answered, mirror, null)
-  const noticed = noticedFrom(items, past, settings.reflectionsInNoticed, addDays(today, -30))
+  const noticed = noticedFrom(items, past, reflectSettings().reflectionsInNoticed, addDays(today, -30))
   const consider = noticed.find((n) => n.group === 'grow') ?? null
 
-  function changeSettings(next: Partial<ReflectSettings>) {
-    setReflectSettings(next)
-    setSettings(reflectSettings())
-  }
 
   return (
     <Page
@@ -154,30 +149,6 @@ export function Reflect({
               </View>
             </View>
           )}
-          <Card style={{ gap: 4 }}>
-            <T v="h2">Your choices</T>
-            <Toggle
-              label="Use my reflections in What you’ve noticed"
-              note="Only counts of what you wrote about, worked out on this phone. Off unless you turn it on."
-              value={settings.reflectionsInNoticed}
-              onChange={(on) => changeSettings({ reflectionsInNoticed: on })}
-            />
-            <Toggle
-              label="Show my reflections in Your Growth"
-              note="Insights sets an earlier and a more recent reflection side by side, on this phone only. Off unless you turn it on."
-              value={settings.reflectionsInGrowth}
-              onChange={(on) => changeSettings({ reflectionsInGrowth: on })}
-            />
-            <Toggle
-              label="Let my threads add to the longer Mirrors"
-              note="Your month, quarter and year Mirrors show which threads you kept going. Off unless you turn it on."
-              value={settings.threadsInMirror}
-              onChange={(on) => changeSettings({ threadsInMirror: on })}
-            />
-            <T v="small" tone="muted" style={{ marginTop: 8 }}>
-              🔒 {PRIVACY_LINE}
-            </T>
-          </Card>
         </>
       }
     >

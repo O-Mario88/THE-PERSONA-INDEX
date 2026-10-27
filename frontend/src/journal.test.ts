@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { dismissMemory, draftOf, journeyFor, memoryFor, reflectSettings, saveDraft, setReflectSettings, threadOf, threadsOf } from './journal'
+import { dismissMemory, draftOf, journeyFor, memoryFor, reflectSettings, saveDraft, threadOf, threadsOf } from './journal'
 import { keepReflection, type Reflection } from './notebook'
 
 // The quiet machinery of Reflect, all on this phone.
@@ -51,9 +51,10 @@ describe('Reflect’s quiet machinery', () => {
     expect(j.since).toBe(1)
   })
 
-  it('keeps the Reflect choices off by default', () => {
-    expect(reflectSettings()).toEqual({ threadsInMirror: false, reflectionsInNoticed: false, reflectionsInGrowth: false, reflectionsInMirror: false })
-    setReflectSettings({ threadsInMirror: true })
-    expect(reflectSettings().threadsInMirror).toBe(true)
+  it('uses everything the person wrote, on this phone, without asking, even where an old switch said no', () => {
+    const all = { threadsInMirror: true, reflectionsInNoticed: true, reflectionsInGrowth: true, reflectionsInMirror: true }
+    expect(reflectSettings()).toEqual(all)
+    localStorage.setItem('pi.reflect.settings', JSON.stringify({ threadsInMirror: false, reflectionsInMirror: false }))
+    expect(reflectSettings()).toEqual(all)
   })
 })

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fakeServer } from './fakeVault'
 import { checkIntention, keepIntention, keepReflection, reflections } from './notebook'
-import { dismissMemory, saveDraft, setReflectSettings } from './journal'
+import { dismissMemory, saveDraft } from './journal'
 import { entryFor } from './registry'
 import { keys, load, saveJSON } from './storage'
 import { syncOn } from './sync'
@@ -114,10 +114,9 @@ describe('every Reflect store is journal-only', () => {
     checkIntention('i1', 'helped', '2026-10-25')
     for (const space of ['day', 'week', 'month', 'free'] as const) saveDraft(space, MARK)
     dismissMemory('r1')
-    setReflectSettings({ threadsInMirror: true, reflectionsInNoticed: true })
 
     const written = Object.keys(localStorage)
-    expect(written.length).toBeGreaterThanOrEqual(8)
+    expect(written.length).toBeGreaterThanOrEqual(7)
     for (const k of written) expect(entryFor(k)?.backup, k).toBe('journal')
     const main = snapshot(true, 'main')
     expect(Object.keys(main.entries)).toEqual([])

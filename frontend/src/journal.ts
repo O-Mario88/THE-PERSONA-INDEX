@@ -9,7 +9,6 @@ import { daysBetween, keys, load, loadJSON, remove, save, saveJSON } from './sto
 
 const DRAFT = 'pi.reflect.draft.'
 const DISMISSED = 'pi.reflect.dismissed'
-const SETTINGS = 'pi.reflect.settings'
 
 export type DraftSpace = ReflectionPeriod | 'free'
 
@@ -35,19 +34,18 @@ export function dismissMemory(id: string) {
   saveJSON(DISMISSED, [...new Set([...dismissed(), id])])
 }
 
-// reflectionsInMirror (Edwin's Mirrors, 2026-10-26): let the Mirrors bring
-// back a line of the person's reflections ("In your own words", "Your words,
-// remembered"). Off until they turn it on; read and shown on this phone only.
+// What the app may do with the person's own writing: count what they wrote
+// about in What you've noticed, set an earlier and a later reflection side by
+// side in Your Growth, show the threads they kept going and bring a line
+// back in the Mirrors. Always on (Edwin, 2026-10-27: the app should simply
+// feel personal, with no switches to make people wonder), and all of it
+// worked out and shown on this phone only; nothing is sent. Old switches a
+// person set before then (pi.reflect.settings) are no longer read.
 export type ReflectSettings = { threadsInMirror: boolean; reflectionsInNoticed: boolean; reflectionsInGrowth: boolean; reflectionsInMirror: boolean }
-const DEFAULTS: ReflectSettings = { threadsInMirror: false, reflectionsInNoticed: false, reflectionsInGrowth: false, reflectionsInMirror: false }
+const ALWAYS: ReflectSettings = { threadsInMirror: true, reflectionsInNoticed: true, reflectionsInGrowth: true, reflectionsInMirror: true }
 
 export function reflectSettings(): ReflectSettings {
-  const v = loadJSON(SETTINGS)
-  return v && typeof v === 'object' ? { ...DEFAULTS, ...(v as Partial<ReflectSettings>) } : DEFAULTS
-}
-
-export function setReflectSettings(next: Partial<ReflectSettings>) {
-  saveJSON(SETTINGS, { ...reflectSettings(), ...next })
+  return ALWAYS
 }
 
 // Threads: a reflection starts one; later ones name it.

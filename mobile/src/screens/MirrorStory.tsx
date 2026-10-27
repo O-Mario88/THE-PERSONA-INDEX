@@ -10,7 +10,7 @@ import Svg, { Circle, Path } from 'react-native-svg'
 import { getPeriodMirror, PERIODS_BACK, type Mirror as MirrorData, type PeriodMirror } from '@shared/api'
 import { connectionBetween } from '@shared/connection'
 import { getNotAlone, type NotAloneQuestion } from '@shared/insights'
-import { reflectSettings, setReflectSettings, threadsBetween } from '@shared/journal'
+import { reflectSettings, threadsBetween } from '@shared/journal'
 import {
   answerStillImportant,
   chooseDirection,
@@ -416,28 +416,10 @@ function OthersView({ picks }: { picks: OthersPick[] }) {
   )
 }
 
-// In your own words: off until the person lets their reflections in. Read on
-// this phone and never sent.
-function OwnWordsView({ pick, span, onChange }: { pick: { id: string; date: string; sentence: string } | null; span: Span; onChange: () => void }) {
-  const [on, setOn] = useState(() => reflectSettings().reflectionsInMirror)
+// In your own words: one line the person wrote in Reflect comes back, read
+// on this phone and never sent.
+function OwnWordsView({ pick, span }: { pick: { id: string; date: string; sentence: string } | null; span: Span }) {
   const [still, setStill] = useState<StillImportant | null>(() => (pick ? stillImportant(pick.id) : null))
-  if (!on) {
-    return (
-      <View style={{ gap: 10 }}>
-        <Quiet>Your Mirror can bring back one line you wrote in Reflect and ask whether it still matters. It is read on this phone only.</Quiet>
-        <Row>
-          <Chip
-            label="Bring my words back"
-            onPress={() => {
-              setReflectSettings({ reflectionsInMirror: true })
-              setOn(true)
-              onChange()
-            }}
-          />
-        </Row>
-      </View>
-    )
-  }
   if (!pick) return <Quiet>Nothing written in Reflect in this {span === 'week' ? 'week' : span} yet. When you write, a line can come back here.</Quiet>
   return (
     <View style={{ gap: 12 }}>
@@ -772,8 +754,8 @@ export function SundayMirror({
         </Section>
       )}
 
-      <Section id="ms-words" icon="notebook" tone="purple" title="In your own words" note="From your private reflections, only if you want them here.">
-        <OwnWordsView pick={words} span="week" onChange={() => setTick((t) => t + 1)} />
+      <Section id="ms-words" icon="notebook" tone="purple" title="In your own words" note="From your private reflections, only on this phone.">
+        <OwnWordsView pick={words} span="week" />
       </Section>
 
       <Section id="ms-alone" icon="people" tone="blue" title="You’re not alone">
@@ -973,13 +955,8 @@ export function PeriodStory({ p: pm, today, back, jumpTo, deeper, footer }: { p:
       {(intention || words || threads) && (
         <Section id="ms-memory" icon="notebook" tone="purple" title="Your reflection memory" note="Something from earlier, brought back to ask whether it still matters.">
           {intention && <IntentionAsk id={intention.id} text={intention.text} noun={noun} today={today} onDone={() => setTick((t) => t + 1)} />}
-          {words && <OwnWordsView pick={words} span={noun} onChange={() => setTick((t) => t + 1)} />}
+          {words && <OwnWordsView pick={words} span={noun} />}
           {threads && <MirrorThreads from={pm.from} to={pm.to} span={noun} />}
-        </Section>
-      )}
-      {!words && !reflectSettings().reflectionsInMirror && (
-        <Section id="ms-words" icon="notebook" tone="purple" title="In your own words" note="From your private reflections, only if you want them here.">
-          <OwnWordsView pick={null} span={noun} onChange={() => setTick((t) => t + 1)} />
         </Section>
       )}
 
@@ -1089,7 +1066,6 @@ export function YearMirror({ y, today, back, jumpTo, deeper, footer }: { y: Peri
   const p = useTheme()
   const jumps = useJumps(jumpTo)
   const [deep, setDeep] = useDepth()
-  const [, setTick] = useState(0)
   const quarters = useQuarters(y, today)
   const chapters = [1, 2, 3, 4].map((q) => chapterOf(q, quarters ? quarters[q - 1] : null))
   const story = quarters ? yearStory(chapters, y) : { headline: 'Gathering your year…', paragraphs: [], evidence: [] }
@@ -1195,7 +1171,7 @@ export function YearMirror({ y, today, back, jumpTo, deeper, footer }: { y: Peri
         {remembered.length > 0 ? (
           remembered.map((r) => <Quote key={r.id} text={r.answer.length > 280 ? `${r.answer.slice(0, 279)}…` : r.answer} when={whenSaid(r.date, 'year')} />)
         ) : (
-          <OwnWordsView pick={null} span="year" onChange={() => setTick((t) => t + 1)} />
+          <OwnWordsView pick={null} span="year" />
         )}
       </Section>
 
