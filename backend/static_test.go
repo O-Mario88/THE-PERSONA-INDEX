@@ -89,8 +89,13 @@ func TestTheSiteHeadersFile(t *testing.T) {
 			t.Errorf("app scripts must come from the site alone: %s", d)
 		}
 	}
-	if strings.Contains(app, "unsafe-") {
-		t.Errorf("app policy allows something unsafe: %s", app)
+	// React Native for Web writes the app's styles into <style> tags as it
+	// draws, so inline styles are allowed; nothing else unsafe is.
+	for _, d := range strings.Split(app, ";") {
+		d = strings.TrimSpace(d)
+		if strings.Contains(d, "unsafe-") && d != "style-src 'self' 'unsafe-inline'" {
+			t.Errorf("app policy allows something unsafe: %s", d)
+		}
 	}
 	read := at("/read/sleep/").Get("Content-Security-Policy")
 	if !strings.Contains(read, "default-src 'none'") || strings.Contains(read, "script-src") {

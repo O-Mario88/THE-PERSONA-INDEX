@@ -4,8 +4,9 @@
 # it runs: change them here and nowhere else. backend/static_test.go and
 # src/pwa/headers.test.ts check what they must say.
 #
-# The app runs only its own script and styles and talks only to its own
-# server. The read pages run no script at all; when ads come they get their
+# The app runs only its own script and talks only to its own server. React
+# Native for Web writes the app's styles into <style> tags as it draws, so
+# inline styles are allowed (Edwin, 2026-10-27); inline scripts never are. The read pages run no script at all; when ads come they get their
 # own rule here, and nothing changes for the app.
 
 /*
@@ -15,7 +16,7 @@
   X-Frame-Options: DENY
   Cross-Origin-Opener-Policy: same-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), browsing-topics=(), publickey-credentials-get=(self), publickey-credentials-create=(self)
-  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
   Cache-Control: no-cache
 
 # Built files carry their content's hash in their names, so they never change.

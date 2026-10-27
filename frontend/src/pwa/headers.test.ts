@@ -40,7 +40,10 @@ describe('site headers', () => {
   it('lets the app run only its own scripts', () => {
     const app = policyFor('/')
     expect(directive(app, 'script-src')).toBe("script-src 'self'")
-    expect(app).not.toContain('unsafe')
+    // React Native for Web writes the app's styles into <style> tags as it
+    // draws, so inline styles are allowed; nothing else unsafe is.
+    expect(directive(app, 'style-src')).toBe("style-src 'self' 'unsafe-inline'")
+    expect(app.replace("style-src 'self' 'unsafe-inline'", '')).not.toContain('unsafe')
     expect(directive(app, 'frame-ancestors')).toBe("frame-ancestors 'none'")
     expect(directive(app, 'connect-src')).toBe("connect-src 'self'")
   })
