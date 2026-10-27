@@ -103,9 +103,6 @@ export const morningEnd = (date: string) => at(date, MORNING_CLOSES)
 export const sittingStart = (date: string, sitting: Sitting) =>
   at(date, sitting === 'morning' ? MORNING_OPENS : EVENING_OPENS)
 
-// windowCloses is the moment a window of date closes, in ms.
-export const windowCloses = (date: string, w: OpenWindow) => at(date, WINDOW_INFO[w].closes)
-
 // isMidday says whether it is around lunch, from 11:30 am until the evening:
 // the time for the small-step check.
 export function isMidday(now = new Date()): boolean {
@@ -127,15 +124,6 @@ export function nextTurn(now: Date): number {
   const m = minutesOf(now)
   const next = [MORNING_OPENS, MIDDAY_OPENS, AFTERNOON_OPENS, EVENING_OPENS, NIGHT_OPENS].find((t) => t > m)
   return next === undefined ? new Date(y, mo, d + 1).getTime() : new Date(y, mo, d, 0, next).getTime()
-}
-
-// left says how long until a moment, the way the countdown ring shows it:
-// "2h 16m", "16m", or "1m" for anything under a minute.
-export function left(ms: number): { hours: number; minutes: number; text: string } {
-  const total = Math.max(1, Math.ceil(ms / 60_000))
-  const hours = Math.floor(total / 60)
-  const minutes = total % 60
-  return { hours, minutes, text: hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m` }
 }
 
 // useDay is the phone's date and its window. It turns by itself while the
@@ -163,14 +151,4 @@ export function useDay(): Day {
     }
   }, [day])
   return day
-}
-
-// useNow is the time, refreshed once a minute, for countdowns.
-export function useNow(): number {
-  const [now, setNow] = useState(() => Date.now())
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 30_000)
-    return () => clearInterval(id)
-  }, [])
-  return now
 }

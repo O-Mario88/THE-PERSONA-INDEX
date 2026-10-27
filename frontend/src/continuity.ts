@@ -11,23 +11,30 @@ import { splitReveal } from './reveal'
 import { addDays } from './storage'
 
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-const whenWas = (date: string, today: string) =>
+// whenWas names a day in the past week: "Yesterday", or "On Monday".
+export const whenWas = (date: string, today: string): string =>
   date === addDays(today, -1) ? 'Yesterday' : `On ${WEEKDAYS[new Date(`${date}T00:00:00Z`).getUTCDay()]}`
 
-// rememberLine ties today to the most recent earlier answer that had a card:
-// what the person chose, and what the app noticed then. Null on the first
-// day, after a heavy answer, or with nothing from the last week.
-export function rememberLine(today: string, h: History): string | null {
+// The most recent answer before today, from the past week, that had a card:
+// what the person chose and what the app noticed then. Null after a heavy
+// answer, so a hard day is never brought back unasked.
+export function lastCard(today: string, h: History): { date: string; label: string; noticed: string; theme?: string } | null {
   const from = addDays(today, -7)
   const earlier = [...h.answers].filter((a) => a.date < today && a.date >= from).sort((a, b) => b.date.localeCompare(a.date))
   if (earlier[0]?.heavy) return null
   for (const a of earlier) {
     const card = cardTextOf(a.questionId)
     if (!card || card.heavy || !card.reveal) continue
-    const { headline } = splitReveal(card.reveal)
-    return `${whenWas(card.date, today)} you chose “${card.label}”, and I noticed: ${headline} Let's see what today adds.`
+    return { date: card.date, label: card.label, noticed: splitReveal(card.reveal).headline, ...(card.theme ? { theme: card.theme } : {}) }
   }
   return null
+}
+
+// rememberLine ties today to that answer, at the start of a sitting. Null on
+// the first day, after a heavy answer, or with nothing from the last week.
+export function rememberLine(today: string, h: History): string | null {
+  const card = lastCard(today, h)
+  return card ? `${whenWas(card.date, today)} you chose “${card.label}”, and I noticed: ${card.noticed} Let's see what today adds.` : null
 }
 
 // stepToFollow is the oldest step from the past week, before today, that

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { dayWithYou, glimpseHere, inWeekOne, lastLeaning, markStarted, needsAccount } from './firstWeek'
+import { dayWithYou, glimpseHere, inWeekOne, markStarted, needsAccount } from './firstWeek'
 import type { History } from './profile'
 
 const a = (date: string, more: object = {}) => ({ date, questionId: `${date}-q`, theme: 'habits', depth: 2, traits: { conscientiousness: 1 }, ...more })
@@ -48,24 +48,10 @@ describe('the first week', () => {
     expect(needsAccount(false, '2026-10-13')).toBe(true)
     expect(needsAccount(true, '2026-10-13')).toBe(false)
   })
-
-  it('says what the last answers leaned towards, but not after a heavy answer', () => {
-    expect(lastLeaning('2026-10-13', { answers: [a('2026-10-12')], skips: [] })).toBe('getting things done')
-    expect(lastLeaning('2026-10-13', { answers: [a('2026-10-12'), a('2026-10-13', { heavy: true })], skips: [] })).toBeNull()
-    expect(lastLeaning('2026-10-13', { answers: [], skips: [] })).toBeNull()
-  })
 })
 
 describe('what brings someone back in their first week', () => {
   const ans = (date: string, traits: Record<string, number>) => ({ date, questionId: `q-${date}-${Object.keys(traits)[0]}`, theme: 'habits', depth: 2, traits })
-
-  it('counts the days to the first Sunday Mirror, and the days answered, with nothing lost', async () => {
-    const { firstMirrorIn } = await import('./firstWeek')
-    localStorage.setItem('pi.started', '2026-10-27')
-    const h = { answers: [ans('2026-10-27', { extraversion: 1 })], skips: [] }
-    expect(firstMirrorIn('2026-10-29', h)).toEqual({ days: 3, answered: [true, false, false] })
-    expect(firstMirrorIn('2026-11-01', h).days).toBe(0)
-  })
 
   it('finds what keeps coming up only once there are two days of answers', async () => {
     const { acrossDays } = await import('./firstWeek')

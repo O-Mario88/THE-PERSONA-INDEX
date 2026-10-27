@@ -1,6 +1,6 @@
 // What Today's card offers in each window, and the greeting above it: shared
 // by the app's Today screen (mobile/src/screens/Today.tsx and Shell.tsx).
-import { clock, opensAt, WINDOW_INFO, windowCloses, type OpenWindow, type Window } from './day'
+import { clock, MORNING_CLOSES, opensAt, WINDOW_INFO, type OpenWindow, type Window } from './day'
 import { windowsDone } from './windows'
 
 export type Progress = 'none' | 'started' | 'done'
@@ -10,8 +10,6 @@ export type Hero = {
   title: string
   sub: string
   action?: string // the button's words; none when there is nothing to open
-  closes?: number // ms, for the ring
-  opened?: number // ms, when the window opened
 }
 
 // greeting is the title (Edwin, 2026-10-25: "instead of using midday, use
@@ -31,7 +29,22 @@ export function greeting(w: Window, name?: string | null): string {
   return name ? `${GREETINGS[w]}, ${name}.` : `${GREETINGS[w]}.`
 }
 
-// heroFor says what Today's dark card offers in each window.
+// A sitting's three questions, in its own window or still open after it:
+// the button says start, or carry on once one is answered.
+function sitting(which: 'morning' | 'evening', eyebrow: string, started: boolean): Hero & { opens: OpenWindow } {
+  const morning = which === 'morning'
+  return {
+    eyebrow,
+    title: `Your ${which} three are ${started ? 'waiting' : 'ready'}`,
+    sub: morning ? 'Two minutes, then the day is yours.' : 'One tap on this morning’s step, then three questions.',
+    action: started ? 'Carry on' : morning ? 'Start today’s questions' : 'Start your evening three',
+    opens: which,
+  }
+}
+
+// heroFor says what Today's main card offers: the open sitting first, even
+// after its own window (the morning three stay open until the evening, the
+// evening three until midnight), then whatever the hour brings.
 export function heroFor({
   date,
   window: w,
@@ -62,14 +75,14 @@ export function heroFor({
     return { eyebrow: 'Rest', title: 'The night is yours', sub: `Your morning three open at ${clock(5 * 60)}. Nothing to do until then but rest.`, opens: null }
   }
   const info = WINDOW_INFO[w]
-  const closes = windowCloses(date, w)
-  const opened = closes - (info.closes - info.opens) * 60_000
-  const timed = { closes, opened, eyebrow: `Open now · closes ${clock(info.closes % (24 * 60))}` }
+  const timed = { eyebrow: `Open now · closes ${clock(info.closes % (24 * 60))}` }
+  if ((w === 'midday' || w === 'afternoon') && morning !== 'done') return sitting('morning', `Still open · until ${clock(MORNING_CLOSES)}`, morning === 'started')
+  if (w === 'night' && evening && evening !== 'done') return sitting('evening', 'Still open · until midnight', evening === 'started')
   switch (w) {
     case 'morning':
       return morning === 'done'
         ? { eyebrow: 'Morning done', title: 'Your three are answered', sub: `Midday opens at ${clock(WINDOW_INFO.midday.opens)}: one tap on your step.`, action: 'See your morning', opens: 'morning' }
-        : { ...timed, title: morning === 'started' ? 'Your morning three are waiting' : 'Three questions are ready', sub: 'Two minutes, then the day is yours.', action: 'Open', opens: 'morning' }
+        : sitting('morning', `Today’s questions · closes ${clock(info.closes)}`, morning === 'started')
     case 'midday':
       return {
         ...timed,
@@ -90,7 +103,7 @@ export function heroFor({
       if (!evening) return { ...timed, title: "That's today's questions", sub: `Three good things open at ${clock(21 * 60)}.`, opens: null }
       return evening === 'done'
         ? { eyebrow: 'Evening done', title: 'Your evening three are answered', sub: `The night wind-down opens at ${clock(WINDOW_INFO.night.opens)}.`, action: 'See your evening', opens: 'evening' }
-        : { ...timed, title: 'Three evening questions', sub: 'One tap on this morning’s step, then three questions.', action: 'Open', opens: 'evening' }
+        : sitting('evening', `This evening’s questions · closes ${clock(info.closes)}`, evening === 'started')
     case 'night':
       if (windowsDone(date).night !== undefined)
         return { eyebrow: 'Night done', title: "That's your day", sub: `Sleep well. Your morning three open at ${opensAt('morning')}.`, opens: null }

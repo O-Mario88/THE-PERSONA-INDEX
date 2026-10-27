@@ -1,131 +1,81 @@
-// Today: the greeting and the day's ring, one card
-// for what is open now, the season tapestry, the day's five windows, and
-// today's read. Nothing here asks for anything.
+// Today, focused (Edwin, 2026-10-28): your greeting and a line from your own
+// days, one card that remembers what you said and opens today's questions,
+// one quiet next step, a way in when something happens, and the Mirror
+// that's coming. Nothing here counts, badges or asks for more.
 import { useState, type ReactNode } from 'react'
-import { Pressable, useWindowDimensions, View } from 'react-native'
-import { clock, left, MORNING_CLOSES, useNow, WINDOW_INFO, WINDOWS, type OpenWindow, type Window } from '@shared/day'
-import { greeting, type Hero, type Progress } from '@shared/homeHero'
-import { load } from '@shared/storage'
-import { season } from '@shared/tapestry'
-import { windowsDone } from '@shared/windows'
-import { minutes, todaysRead } from '@shared/reads/reads'
+import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native'
+import Svg, { Circle, Defs, LinearGradient, Path, RadialGradient, Rect, Stop } from 'react-native-svg'
+import type { Window } from '@shared/day'
+import { greeting, type Hero } from '@shared/homeHero'
+import { tr } from '@shared/i18n'
 import type { Read } from '@shared/reads/types'
-import { font, gutter, lift, radius, RAIL_W, useTheme, WIDE } from '../theme'
-import { Button, Card, Chip, RowLink, T } from '../ui/kit'
-import { HeavyCard } from './QuestionCard'
-import { Avatar, Ring, Tapestry } from '../ui/parts'
+import type { Memory } from '@shared/todayFocus'
+import { radius, RAIL_W, useTheme, WIDE } from '../theme'
+import { Button, Card, Chip, Hairline, T } from '../ui/kit'
+import { Avatar } from '../ui/parts'
 import { Icon } from '../ui/Icon'
-import { locale } from '@shared/locale'
+import { HeavyCard } from './QuestionCard'
+import { MirrorCard, QuietStepCard, TodaysRead } from './TodayCards'
 
-const weekdayOf = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString(locale(), { weekday: 'long', timeZone: 'UTC' })
-
-export function Today({
-  date,
-  window: w,
-  name,
-  note,
-  hero,
-  onOpen,
-  onAccount,
-  morning,
-  evening,
-  themes,
-  intimacy,
-  onRead,
-  rail,
-  onWrite,
-  onMoment,
-  children,
-}: {
+interface TodayProps {
   date: string
   window: Window
   name?: string | null
-  note?: string | null
+  note?: string | null // a line from your own days, under the greeting
   hero: Hero
+  memory: Memory | null
+  link: string | null // how today's questions tie to the memory, when they do
+  tomorrow: string | null
   onOpen: () => void
   onAccount: () => void
-  morning: Progress
-  evening: Progress | null
   themes: string[]
   intimacy: boolean
   onRead: (r: Read) => void
   rail?: boolean // a right-hand column beside the feed, on a very wide screen
-  onWrite: () => void
-  onMoment: (prompt: string) => void
+  onWrite: (prompt?: string) => void
   children?: ReactNode
-}) {
+}
+
+export function Today({ date, window: w, name, note, hero, memory, link, tomorrow, onOpen, onAccount, themes, intimacy, onRead, rail, onWrite, children }: TodayProps) {
   const { width } = useWindowDimensions()
-  const now = useNow()
-  const nowMin = new Date(now).getHours() * 60 + new Date(now).getMinutes()
-  const items = dayItems(date, w, morning, evening, nowMin)
-  const doneCount = items.filter((i) => i.state === 'done').length
-  const s = season(date)
-  // The tapestry's width inside its card (the card's padding and hairline).
-  const inner = (rail ? RAIL_W : Math.min(width, 640) - gutter * 2) - 42
-  const top = (
-    <>
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+  const header = (
+    <View style={styles.header}>
+      <Wash />
+      <View style={styles.headerTop}>
         {/* Beside the sidebar the brand is already on screen. */}
         <T v="label" tone="text">
           {width >= WIDE ? '' : 'The Persona Index'}
         </T>
-        <Pressable accessibilityRole="button" accessibilityLabel="You and settings" onPress={onAccount} hitSlop={8}>
+        <Pressable accessibilityRole="button" accessibilityLabel={tr('You and settings')} onPress={onAccount} hitSlop={8}>
           <Avatar name={name || 'You'} size={36} />
         </Pressable>
       </View>
-      <View style={{ flexDirection: 'row', gap: 16, alignItems: 'flex-start' }}>
-        <View style={{ flex: 1, gap: 8 }}>
-          <T v="label">
-            {weekdayOf(date)} · {clock(nowMin)}
-          </T>
-          <T v="display" style={{ fontSize: 36, lineHeight: 40 }}>
-            {greeting(w, name)}
-          </T>
-          {note ? <T tone="text2">{note}</T> : null}
-        </View>
-        <Ring part={doneCount / items.length} label={`${doneCount} of ${items.length} windows done today`} big={String(doneCount)} small={`of ${items.length} today`} size={92} />
-      </View>
-    </>
-  )
-  // The first cards. On a very wide screen they start level with the
-  // right-hand column, under the greeting that spans both.
-  const lead = (
-    <>
-      <HeroCard hero={hero} now={now} onOpen={onOpen} />
-      <Composer name={name} window={w} onWrite={onWrite} onMoment={onMoment} />
-    </>
-  )
-  const tapestry = (
-    <Card style={{ gap: 12 }}>
-      <T v="label">Your season · day {s.day} of 90</T>
-      <Tapestry s={s} cols={rail ? 12 : 18} width={inner} />
-    </Card>
-  )
-  const ritual = (
-    <Card style={{ gap: 16 }}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
-        <T v="h2">Your day so far</T>
-        <T v="small" tone="muted">
-          {doneCount} of {items.length} complete
+      <View style={{ gap: 8, paddingTop: 28 }}>
+        <T v="display" style={{ fontSize: 34, lineHeight: 40 }}>
+          {greeting(w, name)}
         </T>
+        {note ? <T tone="text2">{note}</T> : null}
       </View>
-      <DayLine items={items} />
-    </Card>
+    </View>
   )
-  const read = <TodaysRead date={date} themes={themes} intimacy={intimacy} onRead={onRead} />
+  const main = <MainCard hero={hero} memory={memory} link={link} tomorrow={tomorrow} onOpen={onOpen} />
+  const step = <QuietStepCard today={date} />
+  const moment = <NeedAMoment onWrite={onWrite} />
+  const mirror = <MirrorCard today={date} onWrite={onWrite} />
   if (rail) {
     return (
       <View style={{ gap: 20 }}>
-        {top}
+        {header}
         <View style={{ flexDirection: 'row', gap: 24, alignItems: 'flex-start' }}>
           <View style={{ flex: 1, gap: 20 }}>
-            {lead}
-            {ritual}
+            {main}
+            {step}
+            {moment}
             {children}
           </View>
           <View style={{ width: RAIL_W, gap: 20 }}>
-            {tapestry}
-            {read}
+            {mirror}
+            <TodaysRead date={date} themes={themes} intimacy={intimacy} onRead={onRead} />
           </View>
         </View>
       </View>
@@ -133,190 +83,160 @@ export function Today({
   }
   return (
     <>
-      {top}
-      {lead}
-      {tapestry}
-      {ritual}
-      {read}
+      {header}
+      {main}
+      {step}
+      {moment}
+      {mirror}
+      <TodaysRead compact date={date} themes={themes} intimacy={intimacy} onRead={onRead} />
       {children}
     </>
   )
 }
 
-// A blank page, always one tap away, the way Facebook asks what's on your
-// mind. The words follow the hour, and nothing written here leaves the phone.
-const COMPOSER: Record<Window, string> = {
-  morning: "What's on your mind",
-  midday: "What's on your mind",
-  afternoon: "What's on your mind",
-  evening: 'How was today',
-  night: 'Anything you want to put down before sleep',
-  rest: 'Still up',
+// A soft cream-to-midnight wash behind the greeting, with a low sun and two
+// hills: the feeling of a morning without a photo. Midnight and marigold
+// come from the palette, so it turns with dark mode.
+function Wash() {
+  const p = useTheme()
+  return (
+    <Svg style={StyleSheet.absoluteFill} width="100%" height="100%" viewBox="0 0 400 200" preserveAspectRatio="xMidYMid slice" pointerEvents="none">
+      <Defs>
+        <LinearGradient id="todaySky" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor={p.dark ? p.accentWash : p.amberWash} />
+          <Stop offset="1" stopColor={p.surface} />
+        </LinearGradient>
+        <RadialGradient id="todaySun" cx="0.5" cy="0.5" r="0.5">
+          <Stop offset="0" stopColor={p.brandLime} stopOpacity={p.dark ? 0.3 : 0.5} />
+          <Stop offset="1" stopColor={p.brandLime} stopOpacity={0} />
+        </RadialGradient>
+      </Defs>
+      <Rect x="0" y="0" width="400" height="200" fill="url(#todaySky)" />
+      <Circle cx="330" cy="58" r="96" fill="url(#todaySun)" />
+      <Path d="M0 158 C 80 122, 160 152, 240 132 S 360 112, 400 126 L400 200 L0 200 Z" fill={p.lime} opacity={0.03} />
+      <Path d="M0 182 C 100 152, 200 176, 300 162 S 380 152, 400 160 L400 200 L0 200 Z" fill={p.lime} opacity={0.045} />
+    </Svg>
+  )
 }
 
-function Composer({ name, window: w, onWrite, onMoment }: { name?: string | null; window: Window; onWrite: () => void; onMoment: (prompt: string) => void }) {
+// The one card that matters: what you said last time (kept behind a tap, so
+// nobody glancing at your phone reads it), and today's questions tied to it.
+function MainCard({ hero, memory, link, tomorrow, onOpen }: { hero: Hero; memory: Memory | null; link: string | null; tomorrow: string | null; onOpen: () => void }) {
+  return (
+    <Card style={{ gap: 16 }}>
+      {memory && (
+        <>
+          <MemoryRow memory={memory} />
+          <Hairline />
+        </>
+      )}
+      <View style={{ gap: 6 }}>
+        <T v="label">{hero.eyebrow}</T>
+        <T v="h2" style={{ fontSize: 22, lineHeight: 27 }}>
+          {hero.title}
+        </T>
+        <T tone="text2">{link ?? hero.sub}</T>
+        {tomorrow ? (
+          <T v="small" tone="muted">
+            {tomorrow}
+          </T>
+        ) : null}
+      </View>
+      {hero.action && <Button wide label={hero.action} iconAfter="chevron" onPress={onOpen} />}
+    </Card>
+  )
+}
+
+function MemoryRow({ memory }: { memory: Memory }) {
   const p = useTheme()
   const [open, setOpen] = useState(false)
-  const [heavy, setHeavy] = useState(false)
-  const ask = `${COMPOSER[w]}${name ? `, ${name}` : ''}?`
+  const label = tr(memory.kind === 'writing' ? 'From your last reflection' : 'From your last answers')
   return (
-    <>
-    <Card pad={16} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-      <Avatar name={name || 'You'} size={40} />
+    <View style={{ gap: 10 }}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={ask}
-        accessibilityHint="Opens a blank page in Reflect. Only you can read it."
+        accessibilityState={{ expanded: open }}
+        accessibilityLabel={`${label}, ${tr(memory.when)}. ${tr(open ? 'Hide it' : 'Tap to read')}`}
         onPress={() => setOpen(!open)}
-        style={(s) => ({
-          flex: 1,
-          minHeight: 44,
-          justifyContent: 'center',
-          paddingHorizontal: 16,
-          borderRadius: radius.pill,
-          backgroundColor: (s as { hovered?: boolean }).hovered ? p.surface3 : p.surface2,
-        })}
+        hitSlop={8}
+        style={{ flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 32 }}
       >
-        <T tone="muted">{ask}</T>
+        <Icon name={open ? 'bookmark' : 'lock'} size={16} color={p.muted} />
+        <T v="label" style={{ flex: 1 }}>
+          {`${label} · ${tr(memory.when)}`}
+        </T>
+        <T v="small" tone="accent" bold>
+          {open ? 'Hide it' : 'Tap to read'}
+        </T>
       </Pressable>
-    </Card>
-    {open && (
-      <Card style={{ gap: 10 }}>
-        <T v="h3">What's going on?</T>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          <Chip label="Something feels heavy" onPress={() => setHeavy(true)} />
-          {MOMENTS.map((m) => (
-            <Chip key={m.label} label={m.label} onPress={() => onMoment(m.prompt)} />
-          ))}
-          <Chip label="Just write" onPress={onWrite} />
-        </View>
-        {heavy && (
-          <>
-            <HeavyCard />
-            <Button small kind="ghost" icon="pencil" label="Write it down, just for me" onPress={() => onMoment('What’s weighing on you right now? You can write as much or as little as you like.')} />
-          </>
-        )}
-      </Card>
-    )}
-    </>
+      {open &&
+        (memory.kind === 'writing' ? (
+          <T v="quote" lines={5} style={{ fontSize: 19, lineHeight: 25 }}>
+            “{memory.text}”
+          </T>
+        ) : (
+          <View style={{ gap: 4 }}>
+            <T v="h3">You chose “{memory.label}”.</T>
+            <T tone="text2">I noticed: {memory.noticed}</T>
+          </View>
+        ))}
+    </View>
   )
 }
 
 // The real-life moment: open the app because something happened, not
-// because it's time. Each opens one fitting question in Reflect; heavy goes
-// to people and a helpline first.
+// because it's time. Each way in opens one fitting question in Reflect;
+// heavy goes to people and a helpline first.
 const MOMENTS = [
   { label: 'I need clarity', prompt: 'What are you trying to decide, and what matters most to you in it?' },
   { label: 'A difficult conversation', prompt: 'Who is the conversation with, and what do you most want them to understand?' },
   { label: 'Something good happened', prompt: 'What happened? Tell me about it, so you can come back to it.' },
 ]
 
-function HeroCard({ hero, now, onOpen }: { hero: Hero; now: number; onOpen: () => void }) {
+function NeedAMoment({ onWrite }: { onWrite: (prompt?: string) => void }) {
   const p = useTheme()
-  let ring: ReactNode = null
-  if (hero.closes && hero.opened) {
-    const l = left(hero.closes - now)
-    const part = (hero.closes - now) / (hero.closes - hero.opened)
-    ring = <Ring part={part} label={`${l.text} left`} big={l.hours > 0 ? `${l.hours}h` : `${l.minutes}m`} small={l.hours > 0 ? `${l.minutes}m` : undefined} size={60} />
-  }
+  const [open, setOpen] = useState(false)
+  const [heavy, setHeavy] = useState(false)
   return (
-    <View style={[{ backgroundColor: p.surface, borderColor: p.line, borderWidth: 1, borderRadius: radius.lg, padding: 20, gap: 16 }, lift(p)]}>
-      <View style={{ flexDirection: 'row', gap: 12 }}>
-        <View style={{ flex: 1, gap: 6 }}>
-          <T v="eyebrow">{hero.eyebrow}</T>
-          <T v="h2" style={{ fontSize: 22, lineHeight: 27 }}>
-            {hero.title}
-          </T>
-          <T tone="text2">{hero.sub}</T>
-        </View>
-        {ring}
-      </View>
-      {hero.action && <Button wide label={hero.action} iconAfter="chevron" onPress={onOpen} />}
-    </View>
-  )
-}
-
-type DayItem = { k: OpenWindow; name: string; state: 'done' | 'now' | 'open' | 'missed' | 'later'; sub: string }
-
-function dayItems(date: string, w: Window, morning: Progress, evening: Progress | null, nowMin: number): DayItem[] {
-  const done = windowsDone(date)
-  return WINDOWS.map((k) => {
-    const info = WINDOW_INFO[k]
-    const isDone = k === 'morning' ? morning === 'done' : k === 'evening' ? evening === 'done' : done[k] !== undefined
-    const isNow = k === w
-    const stillOpen =
-      (k === 'morning' && morning !== 'done' && nowMin >= info.opens && nowMin < MORNING_CLOSES) ||
-      (k === 'evening' && evening !== null && evening !== 'done' && nowMin >= info.opens)
-    const past = nowMin >= info.closes
-    const state = isDone ? 'done' : isNow ? 'now' : stillOpen ? 'open' : past ? 'missed' : 'later'
-    const at = done[k]
-    const sub =
-      state === 'done' ? (at !== undefined ? `done · ${clock(at)}` : 'done') : state === 'now' ? 'now' : state === 'open' ? 'still open' : state === 'missed' ? 'closed' : clock(info.opens)
-    return { k, name: info.short, state, sub }
-  })
-}
-
-// "Today's ritual": the five windows as one stepper.
-function DayLine({ items }: { items: DayItem[] }) {
-  const p = useTheme()
-  return (
-    <View accessibilityLabel="Your day" style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-      <View style={{ position: 'absolute', left: '10%', right: '10%', top: 15, height: 2, backgroundColor: p.line }} />
-      {items.map((i) => {
-        const done = i.state === 'done'
-        const now = i.state === 'now'
-        return (
-          <View key={i.k} style={{ flex: 1, alignItems: 'center', gap: 6 }}>
-            <View
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: 16,
-                borderWidth: 2,
-                borderColor: done || now ? p.lime : p.lineStrong,
-                backgroundColor: p.bg,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              {done && <Icon name="check" size={16} color={p.lime} width={2.4} />}
-            </View>
-            <T v="small" style={{ fontFamily: done || now ? font.bold : font.medium, color: done || now ? p.text : p.muted }}>
-              {i.name}
-            </T>
-            <T v="tiny">{i.sub}</T>
-          </View>
-        )
-      })}
-    </View>
-  )
-}
-
-const OPENED = 'pi.read.'
-
-function TodaysRead({ date, themes, intimacy, onRead }: { date: string; themes: string[]; intimacy: boolean; onRead: (r: Read) => void }) {
-  const [read] = useState(() =>
-    todaysRead(
-      date,
-      themes,
-      (slug) => {
-        const d = load(OPENED + slug)
-        return d !== null && d < date
-      },
-      intimacy,
-    ),
-  )
-  if (!read) return null
-  return (
-    <>
-      <Card style={{ gap: 10 }}>
-        <T v="eyebrow">Something for you to read · {minutes(read)} min</T>
-        <T v="h2" style={{ fontSize: 22, lineHeight: 28 }}>
-          {read.title}
+    <View style={{ gap: 12 }}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ expanded: open }}
+        onPress={() => setOpen(!open)}
+        hitSlop={8}
+        style={{ flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', minHeight: 44, paddingHorizontal: 4 }}
+      >
+        <Icon name="heart" size={18} color={p.accentInk} />
+        <T tone="accent" bold>
+          Need a moment?
         </T>
-        <T tone="muted">{read.summary}</T>
-        <RowLink label={load(OPENED + read.slug) === date ? 'Read it again' : 'Read it'} onPress={() => onRead(read)} />
-      </Card>
-    </>
+        <View style={{ transform: [{ rotate: open ? '90deg' : '0deg' }] }}>
+          <Icon name="chevron" size={16} color={p.accentInk} />
+        </View>
+      </Pressable>
+      {open && (
+        <Card style={{ gap: 10 }}>
+          <T v="h3">What's going on?</T>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            <Chip label="Something feels heavy" on={heavy} onPress={() => setHeavy(true)} />
+            {MOMENTS.map((m) => (
+              <Chip key={m.label} label={m.label} onPress={() => onWrite(m.prompt)} />
+            ))}
+            <Chip label="Just write" onPress={() => onWrite()} />
+          </View>
+          {heavy && (
+            <>
+              <HeavyCard />
+              <Button small kind="ghost" icon="pencil" label="Write it down, just for me" onPress={() => onWrite('What’s weighing on you right now? You can write as much or as little as you like.')} />
+            </>
+          )}
+        </Card>
+      )}
+    </View>
   )
 }
+
+const styles = StyleSheet.create({
+  header: { borderRadius: radius.lg, overflow: 'hidden', padding: 20, paddingBottom: 28 },
+  headerTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 36 },
+})

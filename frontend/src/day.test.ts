@@ -1,4 +1,4 @@
-import { clock, dayAt, isEvening, isSaturday, left, localDate, MORNING_CLOSES, morningEnd, nextTurn, opensAt, sittingOf, windowAt } from './day'
+import { clock, dayAt, isEvening, isSaturday, localDate, MORNING_CLOSES, morningEnd, nextTurn, opensAt, sittingOf, windowAt } from './day'
 import { loadMoves, moveFor, movesOn, sendUnsent, setMoveStatus, startMove, startedInEvening } from './moves'
 
 describe('the local day', () => {
@@ -46,10 +46,7 @@ describe('the local day', () => {
     expect(opensAt('evening')).toBe('5 pm')
   })
 
-  it('says how long a window has left, the way the ring shows it', () => {
-    expect(left(2 * 3600_000 + 16 * 60_000).text).toBe('2h 16m')
-    expect(left(16 * 60_000).text).toBe('16m')
-    expect(left(10_000).text).toBe('1m')
+  it('writes a time of day the way the phone does', () => {
     expect(clock(7 * 60 + 51)).toBe('07:51')
   })
 

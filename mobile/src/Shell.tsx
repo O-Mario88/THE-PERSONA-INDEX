@@ -10,15 +10,16 @@ import { ApiError, cacheEdition, cachedEdition, getDay, pruneLocal, pruneWords, 
 import { clock, dayAt, nextTurn, WINDOW_INFO, type Day, type OpenWindow, type Sitting } from '@shared/day'
 import { heroFor, type Progress } from '@shared/homeHero'
 import { pruneNotebook } from '@shared/notebook'
-import { sendUnsent, setMoveStatus, startMove } from '@shared/moves'
-import { carryLine, ideaToTry, rememberLine, stepToFollow } from '@shared/continuity'
+import { sendUnsent } from '@shared/moves'
+import { carryLine, rememberLine } from '@shared/continuity'
+import { lastMemory, linkLine, personalLine } from '@shared/todayFocus'
 import { forgetPick, isFirstDay, loadHistory, todaysPick, writeFirstOf, type Half } from '@shared/profile'
 import { blackOn, intimacyOn, loadPrefs, pulseOn, regionHere, savePrefs, type Prefs } from '@shared/prefs'
 import { cachedPack, fetchPack, regionalFor, regionalToday } from '@shared/regional'
 import { keys, load as loadKey, remove as removeKey, save as saveKey } from '@shared/storage'
 import { NAME_KEY, WELCOMED } from '@shared/welcomeKeys'
 import { pruneCardTexts } from '@shared/insights'
-import { acrossDays, CONNECT_OPEN_KEY, dayWithYou, firstMirrorIn, glimpseHere, inWeekOne, isNewcomer, lastLeaning, markStarted, needsAccount, SHOW_ALL_KEY } from '@shared/firstWeek'
+import { CONNECT_OPEN_KEY, dayWithYou, glimpseHere, inWeekOne, isNewcomer, markStarted, needsAccount, SHOW_ALL_KEY } from '@shared/firstWeek'
 import { signInMethods, type AccountView } from '@shared/social'
 import { pullSync } from '@shared/sync'
 import { useAccount } from '@shared/useAccount'
@@ -27,7 +28,7 @@ import { startReminders, type Opens } from './platform/reminders'
 import { markWindow } from '@shared/windows'
 import type { Read } from '@shared/reads/types'
 import { dark as darkPalette, font, light as lightPalette, radius, RAIL_AT, RAIL_W, ThemeProvider, useTheme, WIDE } from './theme'
-import { Back, Button, Chip, Page, PrivacyLine, T, Tinted } from './ui/kit'
+import { Back, Button, Page, PrivacyLine, T, Tinted } from './ui/kit'
 import { Icon, type IconName } from './ui/Icon'
 import { Sidebar, type SideItem } from './ui/Sidebar'
 import { QuestionCard } from './screens/QuestionCard'
@@ -45,9 +46,6 @@ import { Mirror } from './screens/Mirror'
 import { ReadScreen } from './screens/ReadScreen'
 import { CountryAsk } from './screens/Country'
 import { themeName } from '@shared/themes'
-import { AREA_NAMES } from '@shared/reflect'
-import type { ReflectionArea } from '@shared/notebook'
-import { loadJSON, saveJSON } from '@shared/storage'
 import { InstallInvite } from './screens/Browser'
 import { ReminderAsk } from './screens/Reminders'
 import { setLanguage, tr, trf } from '@shared/i18n'
@@ -79,13 +77,6 @@ const themesOf = (qs: Question[]) => qs.map((q) => q.theme).filter((t): t is str
 function progressOf(qs: Question[]): Progress {
   const done = qs.filter((q) => recalledChoice(q.id)).length
   return done === 0 ? 'none' : done === qs.length ? 'done' : 'started'
-}
-
-function homeNote(today: string, dayN: number | null): string | null {
-  const lean = lastLeaning(today)
-  const day = dayN && dayN > 1 ? `Day ${dayN} with you. ` : ''
-  if (lean) return `${day}Last time, your answers leaned towards ${lean}.`
-  return day ? day.trim() : null
 }
 
 const weekday = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString(locale(), { weekday: 'long', timeZone: 'UTC' })
@@ -306,6 +297,15 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
   const hero = set
     ? heroFor({ date: set.date, window: win, review: !!set.review, morning, evening, pulse: prefs.pulse !== false, friend: null })
     : null
+
+  // Focused Today: what you said last time, tied to the sitting on offer
+  // only when one of its questions truly comes back to it (todayFocus.ts).
+  const memory = set && !welcome ? lastMemory(set.date, loadHistory()) : null
+  const offering = hero && ((hero.opens === 'morning' && morning !== 'done') || (hero.opens === 'evening' && evening !== null && evening !== 'done'))
+  const link = memory && offering ? linkLine(memory, themesOf(hero.opens === 'evening' ? eveningQs : morningQs)) : null
+  const dayDone = evening === 'done' || (evening === null && morning === 'done')
+  const tomorrowThemes = (set?.tomorrowThemes ?? []).slice(0, 2).map((t) => themeName(t).toLowerCase())
+  const tomorrow = dayDone && tomorrowThemes.length > 0 ? `Tomorrow your morning three open at ${clock(5 * 60)}, with questions about ${tomorrowThemes.join(' and ')}.` : null
 
   const signupName = me?.name || localName
   let body: ReactNode = null
@@ -580,55 +580,23 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
             date={set.date}
             window={win}
             name={me?.name || localName || null}
-            note={homeNote(set.date, weekOne ? dayN : null)}
+            note={personalLine(weekOne ? dayN : null, memory)}
             hero={hero}
+            memory={memory}
+            link={link}
+            tomorrow={tomorrow}
             onOpen={() => {
               if (hero.opens === 'mirror') open('mirror')
               else if (hero.opens) setFlow(hero.opens)
             }}
             onAccount={() => goTab('account')}
-            morning={morning}
-            evening={evening}
             themes={themesOf([...morningQs, ...eveningQs])}
             intimacy={intimacyOn(prefs)}
             onRead={openRead}
             rail={rail}
-            onWrite={() => write()}
-            onMoment={(prompt) => write(prompt)}
+            onWrite={write}
           >
-            <StepFollowUp today={set.date} />
-            <DayDiscovery today={set.date} onInsights={() => goTab('insights')} />
-            <IdeaToTry today={set.date} />
-            {!weekOne && <SecondWeek today={set.date} onWrite={write} />}
-            {!set.review && morning !== 'done' && win !== 'morning' && clockSitting === 'morning' && (
-              <Tinted>
-                <T>Your morning three are still open until 17:00.</T>
-                <Button small label="Answer them" onPress={() => setFlow('morning')} />
-              </Tinted>
-            )}
-            {!set.review && evening !== null && evening !== 'done' && win === 'night' && (
-              <Tinted>
-                <T>Your evening three are still open until midnight.</T>
-                <Button small label="Answer them" onPress={() => setFlow('evening')} />
-              </Tinted>
-            )}
-            {set.review && (
-              <Tinted tone="plain">
-                <T v="h2">Sunday is for looking back.</T>
-                <T tone="muted">No new questions today. Fresh questions arrive tomorrow at 5 am.</T>
-              </Tinted>
-            )}
             <InstallInvite today={set.date} />
-            {weekOne && !set.review && <FirstMirror today={set.date} />}
-            {(evening === 'done' || (evening === null && morning === 'done')) && (set.tomorrowThemes?.length ?? 0) > 0 && (
-              <Tinted tone="plain">
-                <T v="h3">Tomorrow</T>
-                <T tone="text2">
-                  Your morning three open at {clock(5 * 60)}, with questions about {(set.tomorrowThemes ?? []).slice(0, 2).map((t) => themeName(t).toLowerCase()).join(' and ')}.
-                  {weekOne ? ' On Sunday, your first Mirror.' : ''}
-                </T>
-              </Tinted>
-            )}
             <PrivacyLine onKept={() => open('kept')} onSettings={() => open('settings')} />
           </Today>
         ) : state.kind === 'empty' ? (
@@ -784,138 +752,6 @@ function AdultGate({ again, onAnswer }: { again?: boolean; onAnswer: (adult: boo
       <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
         <Button small label="Yes, I'm 18 or older" onPress={() => onAnswer(true)} />
         <Button small kind="ghost" label="No" onPress={() => onAnswer(false)} />
-      </View>
-    </Tinted>
-  )
-}
-
-// Week one: how far it is to the first Sunday Mirror, and a dot for each day
-// so far, filled where you answered. Nothing is lost on a missed day.
-function FirstMirror({ today }: { today: string }) {
-  const p = useTheme()
-  const { days, answered } = firstMirrorIn(today)
-  return (
-    <Tinted tone="plain" style={{ gap: 10 }}>
-      <T v="h3">{days === 0 ? 'Your first Mirror is ready today' : days === 1 ? 'Your first Mirror is tomorrow' : `Your first Mirror in ${days} days`}</T>
-      <T v="small" tone="muted">
-        Each day you answer adds to it. A missed day takes nothing away.
-      </T>
-      <View style={{ flexDirection: 'row', gap: 6 }}>
-        {[...answered, ...Array(days).fill(null)].map((d, i) => (
-          <View key={i} style={{ flex: 1, height: 8, borderRadius: radius.pill, backgroundColor: d ? p.lime : p.surface3 }} />
-        ))}
-      </View>
-    </Tinted>
-  )
-}
-
-// A step you said you'd try on an earlier day comes back to you here, one at
-// a time, so your answers lead somewhere.
-function StepFollowUp({ today }: { today: string }) {
-  const [move, setMove] = useState(() => stepToFollow(today))
-  const [said, setSaid] = useState<string | null>(null)
-  if (said) return <Tinted tone="plain"><T tone="text2">{said}</T></Tinted>
-  if (!move) return null
-  const answer = (status: 'helped' | 'no_change' | 'not_tried', reply: string) => {
-    setMoveStatus(move.questionId, status, today).catch(() => {})
-    setSaid(reply)
-    setMove(null)
-  }
-  return (
-    <Tinted style={{ gap: 10 }}>
-      <T v="h3">You said you'd try this</T>
-      <T>“{move.step}”</T>
-      <T tone="text2">How did it go?</T>
-      <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-        <Button small label="It helped" onPress={() => answer('helped', 'That’s worth knowing. I’ll remember it helped you.')} />
-        <Button small kind="ghost" label="No change yet" onPress={() => answer('no_change', 'Thanks for telling me. Not every step lands, and trying still counts.')} />
-        <Button small kind="ghost" label="Didn't get to it" onPress={() => answer('not_tried', 'That’s fine. Life gets in the way. It stays in your notebook.')} />
-      </View>
-    </Tinted>
-  )
-}
-
-// From day 2: something noticed across all your days, the thing one sitting
-// can't show (shared firstWeek.ts acrossDays), so value doesn't wait for Sunday.
-function DayDiscovery({ today, onInsights }: { today: string; onInsights: () => void }) {
-  const { days, lean } = acrossDays(today)
-  if (!lean) return null
-  return (
-    <Tinted tone="blue" style={{ gap: 8 }}>
-      <T v="h3">Something I noticed across your {days} days</T>
-      <T tone="text2">Your answers keep leaning towards {lean}. Does that feel true?</T>
-      <Button kind="text" label="See it in Insights" iconAfter="arrow" onPress={onInsights} />
-    </Tinted>
-  )
-}
-
-// For a day you don't feel like answering: a small step from one of your own
-// recent cards that you haven't tried yet. Trying it brings it back tomorrow.
-function IdeaToTry({ today }: { today: string }) {
-  const [idea] = useState(() => ideaToTry(today, loadHistory()))
-  const [kept, setKept] = useState(false)
-  if (!idea) return null
-  return (
-    <Tinted tone="plain" style={{ gap: 8 }}>
-      <T v="h3">A small idea, if you want one</T>
-      <T>“{idea.step}”</T>
-      <T v="small" tone="muted">
-        From when you chose “{idea.from}”.
-      </T>
-      {kept ? (
-        <T v="small" tone="muted">
-          I’ll ask you how it went.
-        </T>
-      ) : (
-        <Button
-          small
-          label="I'll try it"
-          onPress={() => {
-            startMove(today, idea.questionId, idea.optionId, idea.step).catch(() => {})
-            setKept(true)
-          }}
-        />
-      )}
-    </Tinted>
-  )
-}
-
-// After the first Mirror: pick one area of your life to look at together, so
-// week two has a direction of its own. Kept on this phone (pi.journey.v1).
-const JOURNEY = 'pi.journey.v1'
-const JOURNEY_AREAS: ReflectionArea[] = ['work', 'family', 'social', 'money', 'health', 'self']
-
-function SecondWeek({ today, onWrite }: { today: string; onWrite: () => void }) {
-  const [journey, setJourney] = useState(() => loadJSON(JOURNEY) as { area: ReflectionArea; since: string } | null)
-  if (!journey) {
-    return (
-      <Tinted style={{ gap: 10 }}>
-        <T v="h3">What would you like to understand better?</T>
-        <T tone="text2">Pick one part of your life and we’ll look at it together this week.</T>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          {JOURNEY_AREAS.map((a) => (
-            <Chip
-              key={a}
-              label={AREA_NAMES[a]}
-              onPress={() => {
-                const next = { area: a, since: today }
-                saveJSON(JOURNEY, next)
-                setJourney(next)
-              }}
-            />
-          ))}
-        </View>
-      </Tinted>
-    )
-  }
-  const name = AREA_NAMES[journey.area].toLowerCase()
-  return (
-    <Tinted tone="plain" style={{ gap: 8 }}>
-      <T v="h3">This week: {name}</T>
-      <T tone="text2">What’s one thing about {name} you’d like to see more clearly? Write it down, and your Mirror can bring your words back to you.</T>
-      <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-        <Button small label="Write about it" icon="pencil" onPress={onWrite} />
-        <Button small kind="ghost" label="Choose another" onPress={() => { removeKey(JOURNEY); setJourney(null) }} />
       </View>
     </Tinted>
   )

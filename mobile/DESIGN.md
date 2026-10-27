@@ -72,8 +72,8 @@ in dark.
 - **Cards** (`Card`): Facebook-style. Every section of a page is a white card
   on the cream page, with a hairline and `lift()`; `Tinted` boxes are for the
   few highlights.
-- **Progress**: segments under a sitting, the five-dot "Today's ritual",
-  rings for the day and countdowns.
+- **Progress**: segments under a sitting, and the dots towards Sunday's
+  Mirror on Today (filled where you answered; a missed day takes nothing away).
 
 ## Layout
 
@@ -81,8 +81,33 @@ Facebook-style (Edwin, 2026-10-27). Below 900px wide: a tab bar (Today,
 Reflect, Connect, Insights, You). From 900px (a browser or a Mac window): the
 midnight sidebar with Today, Reflect, Connect, Insights, Mirrors and Saved,
 then Profile and Settings at the foot, and a 680px feed column (`FEED`). From
-1340px Today adds a 300px right-hand column with the season tapestry and
+1340px Today adds a 300px right-hand column with the coming Mirror and
 today's read.
+
+## Today
+
+Focused (Edwin, 2026-10-28): one thing to do, and everything on it is the
+person's own.
+
+- **Greeting** on a soft wash (cream to marigold, midnight in dark, with a low
+  sun and two hills drawn from the palette, never a photo), with initials on
+  a tint and no bell or badge. Under it, one line from their own days: the day
+  count in week one and what they wrote about or answered last time, naming
+  the part of life, never their words.
+- **The main card**: what they said last time, behind "Tap to read" so nobody
+  glancing at the phone reads it, then the sitting on offer. It says how the
+  day's questions tie to that memory only when one truly does
+  (`linkLine`, shared `todayFocus.ts`). The morning three stay on this card
+  until 5 pm and the evening three until midnight.
+- **A quiet next step**: how a step they said they'd try went, else one thing
+  to carry from today's answers, else a small idea from their own cards.
+  Nothing generic: no step of theirs, no card.
+- **Need a moment?**: the real-life moment, one tap away, never competing
+  with the main button.
+- **The coming Mirror**: how far away, a dot a day this week, and what the
+  answers lean towards so far.
+
+The season tapestry lives on a sitting's close, not on Today.
 
 ## On the website
 
@@ -98,5 +123,5 @@ The reference designs include a streak ring, mood percentages, averages, an
 archetype badge, named friends' moods, profile photos and a "suggested by
 school/company" list. The writing guide forbids streaks, scores and
 comparison, and the circle shows who answered, never what. Those places show
-the day's "N of 5" ring, the person's own words and patterns, initials on a
-tint, and suggestions from shared circles only.
+the person's own words and patterns, initials on a tint, and suggestions
+from shared circles only.
