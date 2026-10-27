@@ -114,7 +114,7 @@ function StoryHero({ eyebrow, story, meta, span }: { eyebrow: string; story: Sto
         <T v="eyebrow" tone="onNavy2">
           {eyebrow}
         </T>
-        <T v="serif" tone="onNavy" style={{ fontSize: 28, lineHeight: 33 }}>
+        <T v="quote" tone="onNavy" style={{ fontSize: 28, lineHeight: 33 }}>
           {story.headline}
         </T>
         <View style={{ width: 40, height: 3, borderRadius: 2, backgroundColor: p.brandLime }} />
@@ -217,7 +217,7 @@ function Quote({ text, when }: { text: string; when?: string }) {
   const p = useTheme()
   return (
     <View style={{ borderLeftWidth: 3, borderLeftColor: p.purple, paddingLeft: 14, gap: 4 }}>
-      <T style={{ fontFamily: 'Georgia', fontSize: 19, lineHeight: 27 }}>“{text}”</T>
+      <T style={{ fontFamily: font.semibold, fontSize: 19, lineHeight: 27 }}>“{text}”</T>
       {when ? <Fine>{when}</Fine> : null}
     </View>
   )
@@ -521,7 +521,7 @@ function DirectionBox({ span, from, today, direction, title, allowOwn = false }:
             <T v="h3" style={{ fontFamily: font.heavy }}>
               {title}
             </T>
-            {direction && <T v="serif" style={{ fontSize: 20, lineHeight: 27 }}>{direction.text}</T>}
+            {direction && <T v="quote" style={{ fontSize: 20, lineHeight: 27 }}>{direction.text}</T>}
             {direction && (
               <T v="small" tone="muted">
                 {direction.why}
@@ -767,7 +767,7 @@ export function SundayMirror({
 
       {helped.length > 0 && (
         <Section id="ms-helped" icon="check" title="What helped you this week?" note="Based on the steps you chose to try, in your own words.">
-          {helpedLine ? <T v="serif" style={{ fontSize: 19, lineHeight: 26 }}>{helpedLine}</T> : null}
+          {helpedLine ? <T v="quote" style={{ fontSize: 19, lineHeight: 26 }}>{helpedLine}</T> : null}
           <HelpedList items={helped} span="week" />
         </Section>
       )}
@@ -965,7 +965,7 @@ export function PeriodStory({ p: pm, today, back, jumpTo, deeper, footer }: { p:
 
       {helped.length > 0 && (
         <Section id="ms-worked" icon="check" title="What worked for you" note="Only what you marked yourself. Choosing a step is not the same as it working.">
-          {helpedSentence(helped) ? <T v="serif" style={{ fontSize: 19, lineHeight: 26 }}>{helpedSentence(helped)}</T> : null}
+          {helpedSentence(helped) ? <T v="quote" style={{ fontSize: 19, lineHeight: 26 }}>{helpedSentence(helped)}</T> : null}
           <HelpedList items={helped} span={noun} />
         </Section>
       )}
@@ -1257,7 +1257,7 @@ function ChapterCard({ c }: { c: Chapter }) {
   return (
     <View style={{ gap: 4, padding: 16, borderRadius: radius.lg, borderWidth: 1, borderColor: p.line, backgroundColor: quiet ? 'transparent' : p.surface, borderStyle: quiet ? 'dashed' : 'solid' }}>
       <T v="label">{c.months}</T>
-      <T v="serif" style={{ fontSize: 20, lineHeight: 26, color: quiet ? p.muted : p.text }}>
+      <T v="quote" style={{ fontSize: 20, lineHeight: 26, color: quiet ? p.muted : p.text }}>
         {c.title}
       </T>
       {c.state === 'told' && (

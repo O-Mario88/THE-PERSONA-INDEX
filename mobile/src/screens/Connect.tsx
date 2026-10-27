@@ -10,7 +10,7 @@ import { loadRings, placeIn, RING_NAMES, RING_NOTES, RINGS, ringOf, type Ring, t
 import type { Question } from '@shared/api'
 import { createInvite, getCircle, inviteLink, TAG_NAMES, TAGS, type AccountView, type CircleView, type Tag } from '@shared/social'
 import { dayMonth } from '@shared/reflect'
-import { radius } from '../theme'
+import { font, radius } from '../theme'
 import { Button, Card, Chip, Page, T, Tinted } from '../ui/kit'
 import { Avatar, Disc, Ring as Progress } from '../ui/parts'
 import { CloserTogether, CommonGround, Growing, SupportCelebrate, WhatHelped } from './ConnectMore'
@@ -224,7 +224,7 @@ function Invite({ circle }: { circle: CircleView | null }) {
 
 function Tagline() {
   return (
-    <T style={{ fontFamily: 'Georgia', fontSize: 20, lineHeight: 28 }} center>
+    <T style={{ fontFamily: font.semibold, fontSize: 20, lineHeight: 28 }} center>
       A little closer. A little stronger. Together.
     </T>
   )

@@ -30,4 +30,4 @@
 # The public read pages: plain pages with their styles inline and no script.
 /read/*
   ! Content-Security-Policy
-  Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src 'self'; font-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'

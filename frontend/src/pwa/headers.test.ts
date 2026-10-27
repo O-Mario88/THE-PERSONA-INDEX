@@ -61,6 +61,8 @@ describe('site headers', () => {
     const read = policyFor('/read/sleep/')
     expect(directive(read, 'default-src')).toBe("default-src 'none'")
     expect(directive(read, 'script-src')).toBeUndefined()
+    // The app's one typeface, from the site itself (mobile/scripts/build-web.mjs puts it in /fonts/).
+    expect(directive(read, 'font-src')).toBe("font-src 'self'")
     const { files } = readSite()
     const pages = Object.entries(files).filter(([name]) => name.endsWith('.html'))
     expect(pages.length).toBeGreaterThan(50)

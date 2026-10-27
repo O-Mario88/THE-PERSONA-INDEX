@@ -132,7 +132,6 @@ export const font = {
   bold: 'Figtree_700Bold',
   heavy: 'Figtree_800ExtraBold',
 }
-export const serif = 'Georgia'
 
 // A 4px grid, a 24px gutter, and the radii of the web app.
 export const space = { 1: 4, 2: 8, 3: 12, 4: 16, 5: 20, 6: 24, 8: 32, 10: 40 } as const

@@ -11,7 +11,7 @@ import { checkPattern, patternCheckOf, patternsFor, type Pattern, type PatternCh
 import { loadHistory } from '@shared/profile'
 import { dayMonth } from '@shared/reflect'
 import { accountToken, outsideMirror, type OutsideMirror } from '@shared/social'
-import { lift, radius, useTheme } from '../theme'
+import { font, lift, radius, useTheme } from '../theme'
 import { Button, Chip, T } from '../ui/kit'
 
 type Span = 'week' | Period
@@ -48,7 +48,7 @@ export function Chips({ children }: { children: ReactNode }) {
 }
 
 export function Quote({ children, big }: { children: ReactNode; big?: boolean }) {
-  return <T style={{ fontFamily: 'Georgia', fontSize: big ? 22 : 19, lineHeight: big ? 29 : 26 }}>{children}</T>
+  return <T style={{ fontFamily: font.semibold, fontSize: big ? 22 : 19, lineHeight: big ? 29 : 26 }}>{children}</T>
 }
 
 

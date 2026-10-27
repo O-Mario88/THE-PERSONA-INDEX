@@ -34,6 +34,12 @@ describe('the public read pages', () => {
     }
   })
 
+  it("read in the app's typeface, Figtree, from the site itself", () => {
+    const page = readSite().files['read/index.html']
+    expect(page).toMatch(/@font-face\{font-family:Figtree;src:url\(\/fonts\/figtree-400\.ttf\)/)
+    expect(page).not.toMatch(/Georgia|Times|[^-]serif|system-ui/)
+  })
+
   it('end the heavy reads with the helpline', () => {
     const page = (slug: string) => site.files[`read/${slug}/index.html`]
     const low = READS.find((r) => r.key === 'sadness-stress')!

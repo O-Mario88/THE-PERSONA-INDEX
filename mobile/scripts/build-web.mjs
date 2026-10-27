@@ -33,6 +33,12 @@ function exportApp() {
 
 function copySiteFiles() {
   cpSync(join(frontend, 'public'), dist, { recursive: true })
+  // Figtree at stable addresses, for the read pages (reads/site.ts).
+  mkdirSync(join(dist, 'fonts'), { recursive: true })
+  const faces = { 400: '400Regular', 600: '600SemiBold', 700: '700Bold', 800: '800ExtraBold' }
+  for (const [weight, name] of Object.entries(faces)) {
+    cpSync(join(app, 'node_modules/@expo-google-fonts/figtree', name, `Figtree_${name}.ttf`), join(dist, 'fonts', `figtree-${weight}.ttf`))
+  }
 }
 
 async function loadShared() {

@@ -40,7 +40,7 @@ import {
   type ThemeOption,
 } from '@shared/social'
 import { useAccount } from '@shared/useAccount'
-import { radius, useTheme } from '../theme'
+import { font, radius, useTheme } from '../theme'
 import { Icon, type IconName } from '../ui/Icon'
 import { Button, Chip, Field, T, Tinted } from '../ui/kit'
 import { Avatar, Disc, type Tone } from '../ui/parts'
@@ -339,7 +339,7 @@ export function CommonGround({ friends }: { friends: FriendView[] }) {
                 </T>
               </View>
             </View>
-            <T style={{ fontFamily: 'Georgia', fontSize: 22, lineHeight: 28 }}>{pair.headline}</T>
+            <T style={{ fontFamily: font.semibold, fontSize: 22, lineHeight: 28 }}>{pair.headline}</T>
             <Chips>
               {pair.shared.map((id) => (
                 <Chip key={id} label={label(id)} />
@@ -545,7 +545,7 @@ function HelpedCard({ share: s, title }: { share: ShareView; title: string }) {
         </View>
       </View>
       {title ? <T v="eyebrow" tone="muted">{title}</T> : null}
-      <T style={{ fontFamily: 'Georgia', fontSize: 20, lineHeight: 27 }}>“{s.text}”</T>
+      <T style={{ fontFamily: font.semibold, fontSize: 20, lineHeight: 27 }}>“{s.text}”</T>
       {s.why ? (
         <View style={{ flexDirection: 'row', gap: 10 }}>
           <Icon name="sun" size={18} color={p.text} />

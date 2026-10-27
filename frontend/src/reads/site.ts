@@ -108,31 +108,36 @@ export function readSite(): { problems: string[]; files: Record<string, string> 
   return { problems, files }
 }
 
+// The app's one typeface, Figtree, from the site itself (mobile/scripts/build-web.mjs copies it to /fonts/).
+const FONT_FACES = [400, 600, 700, 800].map((w) => `@font-face{font-family:Figtree;src:url(/fonts/figtree-${w}.ttf) format('truetype');font-weight:${w};font-display:swap}`).join('\n')
+const SANS = "Figtree,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif"
+
 const CSS = `
+${FONT_FACES}
 /* Midnight & Cream, as in mobile/src/theme.tsx. */
 :root{--bg:#fbf7f0;--panel:#fffdf9;--line:#ece3d4;--text:#12283a;--muted:#69737c;--accent:#0b4f70;--mark:#013d5a;color-scheme:light}
 @media (prefers-color-scheme:dark){:root{--bg:#0b1a24;--panel:#102330;--line:#1d3545;--text:#f6efe3;--muted:#9eaab3;--accent:#f4a258;--mark:#f4a258;color-scheme:dark}}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font:18px/1.65 Georgia,'Iowan Old Style','Times New Roman',serif;-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:17px/1.6 ${SANS};-webkit-text-size-adjust:100%}
 a{color:var(--accent)}
 .top,main,footer{max-width:40rem;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right))}
-.top{display:flex;justify-content:space-between;align-items:center;gap:1rem;padding-block:1rem;font:600 .9rem/1.4 system-ui,sans-serif}
+.top{display:flex;justify-content:space-between;align-items:center;gap:1rem;padding-block:1rem;font:600 .9rem/1.4 ${SANS}}
 .top a{color:var(--text);text-decoration:none}.top .all{color:var(--muted)}
 main{padding-block:1.5rem 2rem}
-h1{font:700 clamp(1.9rem,6vw,2.6rem)/1.15 system-ui,sans-serif;letter-spacing:-.01em;margin:.3rem 0 1rem;text-wrap:balance}
-h2{font:600 .8rem/1.4 system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:2.4rem 0 .8rem}
+h1{font:700 clamp(1.9rem,6vw,2.6rem)/1.15 ${SANS};letter-spacing:-.01em;margin:.3rem 0 1rem;text-wrap:balance}
+h2{font:600 .8rem/1.4 ${SANS};letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:2.4rem 0 .8rem}
 p{margin:0 0 1.1rem}
-.topic,.list span,.more span{font:.85rem/1.4 system-ui,sans-serif;color:var(--muted)}
+.topic,.list span,.more span{font:.85rem/1.4 ${SANS};color:var(--muted)}
 .topic{border-left:3px solid var(--mark);padding-left:.6rem}
 .summary{font-size:1.15rem;color:var(--muted)}
 .try{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--mark);border-radius:12px;padding:1rem 1.2rem;margin:2rem 0}
-.try p{margin:0}.try .label{font:600 .8rem/1.4 system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:.4rem}
-.help{font:.95rem/1.5 system-ui,sans-serif;color:var(--muted)}
+.try p{margin:0}.try .label{font:600 .8rem/1.4 ${SANS};letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:.4rem}
+.help{font:.95rem/1.5 ${SANS};color:var(--muted)}
 ul{list-style:none;margin:0;padding:0}
 .list li,.more li{padding:.9rem 0;border-bottom:1px solid var(--line)}
-.list a,.more a{font:600 1.05rem/1.35 system-ui,sans-serif;display:block;margin-bottom:.25rem}
+.list a,.more a{font:600 1.05rem/1.35 ${SANS};display:block;margin-bottom:.25rem}
 .list p{margin:.2rem 0;font-size:1rem;color:var(--muted)}
 .more span{display:block}
-footer{border-top:1px solid var(--line);padding-block:1.2rem 2.5rem;font:.9rem/1.5 system-ui,sans-serif;color:var(--muted)}
+footer{border-top:1px solid var(--line);padding-block:1.2rem 2.5rem;font:.9rem/1.5 ${SANS};color:var(--muted)}
 footer .note{font-style:italic}
 `

@@ -373,7 +373,7 @@ function Writing({
         </View>
         <View style={{ flex: 1, gap: 6 }}>
           <T v="eyebrow">{free ? 'Write freely' : 'A thought for you'}</T>
-          <T style={{ fontFamily: 'Georgia', fontSize: 24, lineHeight: 30 }}>{free ? 'Whatever is on your mind.' : (thought?.question ?? 'Your reflection')}</T>
+          <T style={{ fontFamily: font.semibold, fontSize: 24, lineHeight: 30 }}>{free ? 'Whatever is on your mind.' : (thought?.question ?? 'Your reflection')}</T>
         </View>
         {!free && (
           <Pressable accessibilityRole="button" accessibilityLabel="Another question" onPress={onAnother} hitSlop={10}>

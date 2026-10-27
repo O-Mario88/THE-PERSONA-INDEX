@@ -289,7 +289,7 @@ function Quote({ text }: { text: string }) {
   const p = useTheme()
   return (
     <View style={{ borderLeftWidth: 3, borderLeftColor: p.amber, paddingLeft: 14 }}>
-      <T v="body" style={{ fontFamily: 'Georgia', fontSize: 18, lineHeight: 26 }}>
+      <T v="body" style={{ fontFamily: font.semibold, fontSize: 18, lineHeight: 26 }}>
         “{text}”
       </T>
     </View>

@@ -22,7 +22,7 @@ import { Icon, type IconName } from './Icon'
 
 // ---- type ----
 
-type Variant = 'display' | 'title' | 'h2' | 'h3' | 'body' | 'small' | 'tiny' | 'label' | 'eyebrow' | 'serif'
+type Variant = 'display' | 'title' | 'h2' | 'h3' | 'body' | 'small' | 'tiny' | 'label' | 'eyebrow' | 'quote'
 type Tone = 'text' | 'text2' | 'muted' | 'accent' | 'onNavy' | 'onNavy2' | 'danger' | 'leaf' | 'warm'
 
 // X-style type (Edwin, 2026-10-27): one face, few sizes, heavy headings with
@@ -38,7 +38,9 @@ const VARIANTS: Record<Variant, TextStyle> = {
   tiny: { fontFamily: font.medium, fontSize: 13, lineHeight: 16 },
   label: { fontFamily: font.bold, fontSize: 13, lineHeight: 16 },
   eyebrow: { fontFamily: font.bold, fontSize: 13, lineHeight: 16 },
-  serif: { fontFamily: 'Georgia', fontSize: 26, lineHeight: 32 },
+  // A line set apart: a quote, a thought, a direction. The same face, a
+  // little larger and lighter than a heading.
+  quote: { fontFamily: font.semibold, fontSize: 22, lineHeight: 28, letterSpacing: -0.2 },
 }
 
 function toneColor(p: Palette, tone: Tone): string {
