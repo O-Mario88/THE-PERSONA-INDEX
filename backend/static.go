@@ -70,13 +70,15 @@ func (s *staticSite) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 var invitePath = regexp.MustCompile(`^/c/[a-z2-9]{10}$`)
 
-// siteFS hides what is not part of the site (the _headers file, dot files)
-// and never lists a folder: a folder without index.html is not found.
+// siteFS hides what is not part of the site (the _headers and _redirects
+// files, dot files) and never lists a folder: a folder without index.html is
+// not found. Other underscore names are the site's own: the React Native web
+// build keeps its script under /_expo/ (mobile/scripts/build-web.mjs).
 type siteFS struct{ fs http.FileSystem }
 
 func (s siteFS) Open(name string) (http.File, error) {
 	for _, part := range strings.Split(name, "/") {
-		if strings.HasPrefix(part, ".") || strings.HasPrefix(part, "_") {
+		if strings.HasPrefix(part, ".") || part == "_headers" || part == "_redirects" {
 			return nil, fs.ErrNotExist
 		}
 	}

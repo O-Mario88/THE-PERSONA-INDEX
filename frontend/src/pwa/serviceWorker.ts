@@ -6,8 +6,8 @@
 // - keeps the app's page, script, styles, fonts and icons, so the app opens
 //   without a connection (the app keeps the day's questions itself);
 // - pages: the network first, the kept copy when offline;
-// - files under /assets/: the kept copy first, since their names change
-//   whenever their content does;
+// - files under /assets/ and /_expo/: the kept copy first, since their names
+//   change whenever their content does;
 // - never touches /api/: answers, votes, the mirror and the backup always
 //   go to the server, and nothing the server says is kept by the worker.
 
@@ -63,7 +63,7 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url)
   if (url.origin !== self.location.origin) return
   if (url.pathname.startsWith('/api/') || url.pathname === '/sw.js') return
-  if (url.pathname.startsWith('/assets/')) return event.respondWith(keptFirst(request))
+  if (url.pathname.startsWith('/assets/') || url.pathname.startsWith('/_expo/')) return event.respondWith(keptFirst(request))
   event.respondWith(networkFirst(request))
 })
 `
@@ -72,12 +72,18 @@ self.addEventListener('fetch', (event) => {
 // precacheList picks what the worker keeps from a build's files: the page,
 // its script and styles, the Latin fonts and the icons. Other alphabets'
 // fonts, the reads chunk and the read pages are kept once they are used.
+// It reads both the React Native web build (mobile/scripts/build-web.mjs:
+// /_expo/ script, app.css, the Figtree weights the app draws with) and the
+// older Vite build.
 export function precacheList(files: string[]): string[] {
   const keep = files.filter(
     (f) =>
       f === 'index.html' ||
       /^assets\/index-[\w-]+\.(js|css)$/.test(f) ||
       /^assets\/[\w-]*-latin-wght-normal-[\w-]+\.woff2$/.test(f) ||
+      f === 'app.css' ||
+      /^_expo\/static\/js\/web\/index-[\w-]+\.js$/.test(f) ||
+      /^assets\/node_modules\/@expo-google-fonts\/figtree\/[45678]00[A-Za-z]+\/Figtree_[45678]00[A-Za-z]+\.[\w]+\.ttf$/.test(f) ||
       /^(manifest\.webmanifest|favicon\.svg|icon-192\.png|apple-touch-icon\.png)$/.test(f),
   )
   return ['/', ...keep.filter((f) => f !== 'index.html').map((f) => `/${f}`)].sort()

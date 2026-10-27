@@ -47,11 +47,35 @@ describe('the service worker', () => {
     ])
   })
 
+  it('keeps the React Native web build: its script, the Figtree faces the app draws with, and the icons', () => {
+    const expo = [
+      'index.html',
+      'app.css',
+      '_expo/static/js/web/index-9bdcdbe5f9584522a138355c67028d4f.js',
+      'assets/node_modules/@expo-google-fonts/figtree/400Regular/Figtree_400Regular.fde4a0ff.ttf',
+      'assets/node_modules/@expo-google-fonts/figtree/800ExtraBold/Figtree_800ExtraBold.2960d6e0.ttf',
+      'assets/node_modules/@expo-google-fonts/figtree/900Black/Figtree_900Black.cb929048.ttf',
+      'assets/node_modules/@expo-google-fonts/figtree/400Regular_Italic/Figtree_400Regular_Italic.9d65a509.ttf',
+      'manifest.webmanifest',
+      'favicon.svg',
+      'sw.js',
+    ]
+    expect(precacheList(expo)).toEqual([
+      '/',
+      '/_expo/static/js/web/index-9bdcdbe5f9584522a138355c67028d4f.js',
+      '/app.css',
+      '/assets/node_modules/@expo-google-fonts/figtree/400Regular/Figtree_400Regular.fde4a0ff.ttf',
+      '/assets/node_modules/@expo-google-fonts/figtree/800ExtraBold/Figtree_800ExtraBold.2960d6e0.ttf',
+      '/favicon.svg',
+      '/manifest.webmanifest',
+    ])
+  })
+
   // Runs the worker's code against a stand-in for its global scope, with
   // caches held in a map and the network on or off.
   function worker(online = false) {
     const handlers: Record<string, (e: unknown) => void> = {}
-    const kept = new Map<string, string>([['/', 'the app page'], ['/assets/index-AbC123.js', 'the script']])
+    const kept = new Map<string, string>([['/', 'the app page'], ['/assets/index-AbC123.js', 'the script'], ['/_expo/static/js/web/index-abc.js', 'the expo script']])
     const path = (r: string | { url: string }) => new URL(typeof r === 'string' ? r : r.url, 'https://personaindex.com').pathname
     const caches = {
       match: async (r: string | { url: string }) => kept.get(path(r)),
@@ -93,6 +117,9 @@ describe('the service worker', () => {
     const online = worker(true)
     expect(await online.answer('https://personaindex.com/', { mode: 'navigate' })).toMatchObject({ body: 'from the network' })
     expect(await online.answer('https://personaindex.com/assets/index-AbC123.js')).toBe('the script')
+    expect(online.net).toHaveBeenCalledTimes(1)
+    // The React Native web build's script carries its hash too, so the kept copy comes first.
+    expect(await online.answer('https://personaindex.com/_expo/static/js/web/index-abc.js')).toBe('the expo script')
     expect(online.net).toHaveBeenCalledTimes(1)
   })
 

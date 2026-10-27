@@ -22,6 +22,9 @@
 /assets/*
   ! Cache-Control
   Cache-Control: public, max-age=31536000, immutable
+/_expo/*
+  ! Cache-Control
+  Cache-Control: public, max-age=31536000, immutable
 
 # The public read pages: plain pages with their styles inline and no script.
 /read/*
