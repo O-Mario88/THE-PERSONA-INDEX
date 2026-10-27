@@ -68,19 +68,23 @@ export function Reflect({
   questions,
   mild = false,
   startFree = false,
+  startPrompt = null,
   name = null,
 }: {
   today: string
   questions: Question[]
   mild?: boolean
   startFree?: boolean
+  startPrompt?: string | null
   name?: string | null
 }) {
   const p = useTheme()
   const [period, setPeriod] = useState<ReflectionPeriod>('day')
   const [free, setFree] = useState(startFree)
   const [at, setAt] = useState(0)
-  const [chosen, setChosen] = useState<Thought | null>(null)
+  const [chosen, setChosen] = useState<Thought | null>(() =>
+    startPrompt ? { id: `moment-${Date.now().toString(36)}`, question: startPrompt, lead: '', why: 'Something on your mind', source: 'general', area: 'self' } : null,
+  )
   const [mirror, setMirror] = useState<Mirror | null>(null)
   const [version, setVersion] = useState(0)
   const [group, setGroup] = useState<'strength' | 'grow'>('strength')

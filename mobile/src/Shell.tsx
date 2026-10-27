@@ -137,6 +137,7 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
   const wide = windowWidth >= WIDE
   const rail = windowWidth >= RAIL_AT
   const [writeFree, setWriteFree] = useState(false)
+  const [writePrompt, setWritePrompt] = useState<string | null>(null)
   const mirrorScroll = useRef<ComponentRef<typeof ScrollView>>(null)
   const [back, setBack] = useState<Tab>('today')
   const [reading, setReading] = useState<Read | null>(null)
@@ -268,12 +269,14 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
   function goTab(t: Tab) {
     setTab(t)
     setWriteFree(false)
+    setWritePrompt(null)
     if (t === 'today' && tab === 'today') setFlow(null)
   }
   // Today's "What's on your mind?" opens Reflect on a blank page.
-  function write() {
+  function write(prompt?: string) {
     setTab('notebook')
-    setWriteFree(true)
+    setWritePrompt(prompt ?? null)
+    setWriteFree(!prompt)
   }
   function open(v: 'settings' | 'kept' | 'signin' | 'mirror') {
     if (tab === 'today' || tab === 'notebook' || tab === 'circle' || tab === 'insights' || tab === 'account') setBack(tab)
@@ -411,7 +414,7 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
       </Page>
     )
   } else if (tab === 'notebook') {
-    body = <Reflect today={date} questions={[...morningQs, ...eveningQs]} mild={!intimacyOn(prefs)} startFree={writeFree} name={me?.name || localName || null} />
+    body = <Reflect today={date} questions={[...morningQs, ...eveningQs]} mild={!intimacyOn(prefs)} startFree={writeFree} startPrompt={writePrompt} name={me?.name || localName || null} />
   } else if (tab === 'insights') {
     body = <Insights today={date} questions={[...morningQs, ...eveningQs]} pulse={pulseOn(prefs)} onOpenReflect={() => goTab('notebook')} onOpenSettings={() => goTab('account')} onOpenMirror={() => open('mirror')} />
   } else if (tab === 'circle') {
@@ -590,7 +593,8 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
             intimacy={intimacyOn(prefs)}
             onRead={openRead}
             rail={rail}
-            onWrite={write}
+            onWrite={() => write()}
+            onMoment={(prompt) => write(prompt)}
           >
             <StepFollowUp today={set.date} />
             <DayDiscovery today={set.date} onInsights={() => goTab('insights')} />

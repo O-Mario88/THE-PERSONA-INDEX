@@ -11,7 +11,8 @@ import { windowsDone } from '@shared/windows'
 import { minutes, todaysRead } from '@shared/reads/reads'
 import type { Read } from '@shared/reads/types'
 import { font, gutter, lift, radius, RAIL_W, useTheme, WIDE } from '../theme'
-import { Button, Card, RowLink, T } from '../ui/kit'
+import { Button, Card, Chip, RowLink, T } from '../ui/kit'
+import { HeavyCard } from './QuestionCard'
 import { Avatar, Ring, Tapestry } from '../ui/parts'
 import { Icon } from '../ui/Icon'
 import { locale } from '@shared/locale'
@@ -33,6 +34,7 @@ export function Today({
   onRead,
   rail,
   onWrite,
+  onMoment,
   children,
 }: {
   date: string
@@ -49,6 +51,7 @@ export function Today({
   onRead: (r: Read) => void
   rail?: boolean // a right-hand column beside the feed, on a very wide screen
   onWrite: () => void
+  onMoment: (prompt: string) => void
   children?: ReactNode
 }) {
   const { width } = useWindowDimensions()
@@ -89,7 +92,7 @@ export function Today({
   const lead = (
     <>
       <HeroCard hero={hero} now={now} onOpen={onOpen} />
-      <Composer name={name} window={w} onWrite={onWrite} />
+      <Composer name={name} window={w} onWrite={onWrite} onMoment={onMoment} />
     </>
   )
   const tapestry = (
@@ -151,17 +154,20 @@ const COMPOSER: Record<Window, string> = {
   rest: 'Still up',
 }
 
-function Composer({ name, window: w, onWrite }: { name?: string | null; window: Window; onWrite: () => void }) {
+function Composer({ name, window: w, onWrite, onMoment }: { name?: string | null; window: Window; onWrite: () => void; onMoment: (prompt: string) => void }) {
   const p = useTheme()
+  const [open, setOpen] = useState(false)
+  const [heavy, setHeavy] = useState(false)
   const ask = `${COMPOSER[w]}${name ? `, ${name}` : ''}?`
   return (
+    <>
     <Card pad={16} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
       <Avatar name={name || 'You'} size={40} />
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={ask}
         accessibilityHint="Opens a blank page in Reflect. Only you can read it."
-        onPress={onWrite}
+        onPress={() => setOpen(!open)}
         style={(s) => ({
           flex: 1,
           minHeight: 44,
@@ -174,8 +180,36 @@ function Composer({ name, window: w, onWrite }: { name?: string | null; window: 
         <T tone="muted">{ask}</T>
       </Pressable>
     </Card>
+    {open && (
+      <Card style={{ gap: 10 }}>
+        <T v="h3">What's going on?</T>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          <Chip label="Something feels heavy" onPress={() => setHeavy(true)} />
+          {MOMENTS.map((m) => (
+            <Chip key={m.label} label={m.label} onPress={() => onMoment(m.prompt)} />
+          ))}
+          <Chip label="Just write" onPress={onWrite} />
+        </View>
+        {heavy && (
+          <>
+            <HeavyCard />
+            <Button small kind="ghost" icon="pencil" label="Write it down, just for me" onPress={() => onMoment('What’s weighing on you right now? You can write as much or as little as you like.')} />
+          </>
+        )}
+      </Card>
+    )}
+    </>
   )
 }
+
+// The real-life moment: open the app because something happened, not
+// because it's time. Each opens one fitting question in Reflect; heavy goes
+// to people and a helpline first.
+const MOMENTS = [
+  { label: 'I need clarity', prompt: 'What are you trying to decide, and what matters most to you in it?' },
+  { label: 'A difficult conversation', prompt: 'Who is the conversation with, and what do you most want them to understand?' },
+  { label: 'Something good happened', prompt: 'What happened? Tell me about it, so you can come back to it.' },
+]
 
 function HeroCard({ hero, now, onOpen }: { hero: Hero; now: number; onOpen: () => void }) {
   const p = useTheme()
