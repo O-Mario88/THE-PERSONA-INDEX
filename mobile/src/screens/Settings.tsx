@@ -13,6 +13,7 @@ import { Icon } from '../ui/Icon'
 import { BackupSettings } from './Backup'
 import { ReminderSettingsView } from './Reminders'
 import { CountrySelect } from './Country'
+import { WebLockSettings } from './Browser'
 
 const WORDS_NAMES: Record<WordsDays, string> = { 7: 'One week', 35: 'Five weeks', 90: 'Three months' }
 
@@ -125,6 +126,7 @@ export function Settings({
             </View>
           )}
           <ReminderSettingsView />
+          <WebLockSettings />
           <BackupSettings onRestored={onRestored} />
         </View>
       )}

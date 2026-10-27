@@ -44,6 +44,7 @@ import { Settings } from './screens/Settings'
 import { Mirror } from './screens/Mirror'
 import { ReadScreen } from './screens/ReadScreen'
 import { CountryAsk } from './screens/Country'
+import { InstallInvite } from './screens/Browser'
 
 type State = { kind: 'loading' } | { kind: 'ready'; set: DailySet; day: string; offline?: true } | { kind: 'empty' } | { kind: 'error' }
 type Tab = 'today' | 'notebook' | 'circle' | 'insights' | 'account'
@@ -562,6 +563,7 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
                 <T tone="muted">No new questions today. Fresh questions arrive tomorrow at 5 am.</T>
               </Tinted>
             )}
+            <InstallInvite today={set.date} />
             <PrivacyLine onKept={() => open('kept')} onSettings={() => open('settings')} />
           </Today>
         ) : state.kind === 'empty' ? (

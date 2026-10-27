@@ -14,6 +14,7 @@ import { hydrate } from './src/platform/setup'
 import './src/platform/gzip'
 import { light } from './src/theme'
 import { Shell } from './src/Shell'
+import { WebLockGate } from './src/screens/Browser'
 
 SplashScreen.preventAutoHideAsync().catch(() => {})
 
@@ -33,7 +34,9 @@ export default function App() {
   if (!fonts || !kept) return <View style={{ flex: 1, backgroundColor: light.bg }} />
   return (
     <SafeAreaProvider>
-      <Shell key={epoch} phoneDark={scheme === 'dark'} onRestart={() => setEpoch((n) => n + 1)} />
+      <WebLockGate>
+        <Shell key={epoch} phoneDark={scheme === 'dark'} onRestart={() => setEpoch((n) => n + 1)} />
+      </WebLockGate>
     </SafeAreaProvider>
   )
 }
