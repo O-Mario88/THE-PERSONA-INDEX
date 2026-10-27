@@ -4,6 +4,7 @@
 import { Pressable, Text, View } from 'react-native'
 import { font, radius, SIDE_W, useTheme } from '../theme'
 import { Icon, type IconName } from './Icon'
+import { tr } from '@shared/i18n'
 
 export type SideItem = { key: string; name: string; icon: IconName; on: boolean; onPress: () => void }
 
@@ -27,7 +28,7 @@ function Row({ item }: { item: SideItem }) {
       })}
     >
       <Icon name={item.icon} size={22} color={item.on ? p.brandLime : p.sideInk} width={item.on ? 2.2 : 1.8} />
-      <Text style={{ fontFamily: item.on ? font.bold : font.semibold, fontSize: 16, color: item.on ? p.sideOnInk : p.sideInk }}>{item.name}</Text>
+      <Text style={{ fontFamily: item.on ? font.bold : font.semibold, fontSize: 16, color: item.on ? p.sideOnInk : p.sideInk }}>{tr(item.name)}</Text>
     </Pressable>
   )
 }

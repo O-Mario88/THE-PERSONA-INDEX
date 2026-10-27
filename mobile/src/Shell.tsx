@@ -46,6 +46,7 @@ import { CountryAsk } from './screens/Country'
 import { themeName } from '@shared/themes'
 import { InstallInvite } from './screens/Browser'
 import { ReminderAsk } from './screens/Reminders'
+import { setLanguage, tr } from '@shared/i18n'
 import { backFromGoogle } from './platform/googleWeb'
 import { locale } from '@shared/locale'
 
@@ -136,6 +137,8 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
   const [back, setBack] = useState<Tab>('today')
   const [reading, setReading] = useState<Read | null>(null)
   const [prefs, setPrefs] = useState<Prefs>(loadPrefs)
+  // The app's language: the person's choice, or the phone's (i18n/index.ts).
+  setLanguage(prefs.lang ?? 'auto', locale())
   const [pickVersion, setPickVersion] = useState(0)
   const [flow, setFlow] = useState<OpenWindow | null>(null)
   const [, setFinished] = useState(0)
@@ -680,13 +683,13 @@ function TabBar({ tab, onTab, shown }: { tab: View_; onTab: (t: Tab) => void; sh
           <Pressable
             key={t.tab}
             accessibilityRole="tab"
-            accessibilityLabel={t.name}
+            accessibilityLabel={tr(t.name)}
             accessibilityState={{ selected: on }}
             onPress={() => onTab(t.tab)}
             style={{ flex: 1, alignItems: 'center', gap: 4, paddingVertical: 4 }}
           >
             <Icon name={t.icon} size={24} color={on ? p.lime : p.muted} width={on ? 2 : 1.6} />
-            <Text style={{ fontFamily: on ? font.bold : font.medium, fontSize: 12, color: on ? p.text : p.muted }}>{t.name}</Text>
+            <Text style={{ fontFamily: on ? font.bold : font.medium, fontSize: 12, color: on ? p.text : p.muted }}>{tr(t.name)}</Text>
           </Pressable>
         )
       })}

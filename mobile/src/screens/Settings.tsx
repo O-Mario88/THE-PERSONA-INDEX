@@ -14,6 +14,9 @@ import { BackupSettings } from './Backup'
 import { ReminderSettingsView } from './Reminders'
 import { CountrySelect } from './Country'
 import { WebLockSettings } from './Browser'
+import { LANGS } from '@shared/i18n'
+
+const withoutLang = ({ lang: _, ...rest }: Prefs): Prefs => rest
 
 const WORDS_NAMES: Record<WordsDays, string> = { 7: 'One week', 35: 'Five weeks', 90: 'Three months' }
 
@@ -60,6 +63,17 @@ export function Settings({
           onBlur={() => onName(draft.trim())}
           onSubmitEditing={() => onName(draft.trim())}
         />
+      </Card>
+
+      <Card style={{ gap: 10 }}>
+        <T v="eyebrow">Language</T>
+        <T v="small" tone="muted">
+          The language the app speaks to you in.
+        </T>
+        <Radio label="Same as my phone" checked={!prefs.lang} onPress={() => onChange(withoutLang(prefs))} />
+        {LANGS.map((l) => (
+          <Radio key={l.id} label={l.name} checked={prefs.lang === l.id} onPress={() => onChange({ ...prefs, lang: l.id })} />
+        ))}
       </Card>
 
       <Card style={{ gap: 10 }}>

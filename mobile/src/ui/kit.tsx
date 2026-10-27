@@ -19,6 +19,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { font, gutter, lift, radius, RAIL_AT, RAIL_W, useTheme, WIDE, type Palette } from '../theme'
 import { Icon, type IconName } from './Icon'
+import { tr } from '@shared/i18n'
 
 // ---- type ----
 
@@ -91,7 +92,7 @@ export function T({
       accessibilityRole={v === 'display' || v === 'title' || v === 'h2' ? 'header' : undefined}
       style={[VARIANTS[v], { color: toneColor(p, t) }, bold && { fontFamily: font.bold }, center && { textAlign: 'center' }, style]}
     >
-      {children}
+      {typeof children === 'string' ? tr(children) : children}
     </Text>
   )
 }
@@ -149,7 +150,7 @@ export function Button({
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ disabled: !!off }}
-      accessibilityLabel={label}
+      accessibilityLabel={tr(label)}
       disabled={off}
       onPress={onPress}
       style={(s) => [
@@ -172,7 +173,7 @@ export function Button({
       ) : (
         <>
           {icon && <Icon name={icon} size={18} color={fg} />}
-          <Text style={{ fontFamily: kind === 'text' ? font.semibold : font.bold, fontSize: small || kind === 'text' ? 14 : wide ? 17 : 16, color: fg }}>{label}</Text>
+          <Text style={{ fontFamily: kind === 'text' ? font.semibold : font.bold, fontSize: small || kind === 'text' ? 14 : wide ? 17 : 16, color: fg }}>{tr(label)}</Text>
           {iconAfter && <Icon name={iconAfter} size={18} color={fg} />}
         </>
       )}
@@ -191,8 +192,8 @@ export function RowLink({ label, sub, onPress, icon }: { label: string; sub?: st
     >
       {icon}
       <View style={{ flex: 1 }}>
-        <T v="h3">{label}</T>
-        {sub ? <T v="small" tone="muted">{sub}</T> : null}
+        <T v="h3">{tr(label)}</T>
+        {sub ? <T v="small" tone="muted">{tr(sub)}</T> : null}
       </View>
       <Icon name="chevron" size={20} color={p.muted} />
     </Pressable>
@@ -223,7 +224,7 @@ export function Option({ label, onPress, disabled, chosen, icon }: { label: stri
         {chosen && <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: p.onLime }} />}
       </View>
       {icon ? <Text style={{ fontSize: 16, color: p.text }}>{icon}</Text> : null}
-      <Text style={{ flex: 1, fontFamily: font.bold, fontSize: 17, lineHeight: 22, color: p.text }}>{label}</Text>
+      <Text style={{ flex: 1, fontFamily: font.bold, fontSize: 17, lineHeight: 22, color: p.text }}>{tr(label)}</Text>
     </Pressable>
   )
 }
@@ -241,7 +242,7 @@ export function Radio({ label, checked, onPress }: { label: string; checked: boo
       <View style={[styles.optionRing, { borderColor: checked ? p.lime : p.lineStrong }]}>
         {checked && <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: p.lime }} />}
       </View>
-      <Text style={{ flex: 1, fontFamily: font.semibold, fontSize: 16, lineHeight: 22, color: p.text }}>{label}</Text>
+      <Text style={{ flex: 1, fontFamily: font.semibold, fontSize: 16, lineHeight: 22, color: p.text }}>{tr(label)}</Text>
     </Pressable>
   )
 }
@@ -274,7 +275,7 @@ export function Chip({ label, on, onPress, icon }: { label: string; on?: boolean
   const body = (
     <View style={[styles.chip, { backgroundColor: on ? p.lime : p.surface2 }]}>
       {icon ? <Text style={{ fontSize: 14 }}>{icon}</Text> : null}
-      <Text style={{ fontFamily: on ? font.bold : font.semibold, fontSize: 14, color: on ? p.onLime : p.text }}>{label}</Text>
+      <Text style={{ fontFamily: on ? font.bold : font.semibold, fontSize: 14, color: on ? p.onLime : p.text }}>{tr(label)}</Text>
     </View>
   )
   if (!onPress) return body
@@ -302,6 +303,7 @@ export function Field(props: TextInputProps & { label?: string; note?: string })
         placeholderTextColor={p.muted}
         accessibilityLabel={label}
         {...rest}
+        placeholder={typeof rest.placeholder === 'string' ? tr(rest.placeholder) : rest.placeholder}
         style={[
           styles.field,
           { backgroundColor: p.surface, borderColor: p.line, color: p.text },

@@ -25,6 +25,7 @@ export type Prefs = {
   black?: false
   still?: true
   connect?: false
+  lang?: 'en' | 'es' // the app's language; absent follows the phone (i18n/index.ts)
 }
 export const NO_COUNTRY = 'none'
 
@@ -46,6 +47,7 @@ export function loadPrefs(): Prefs {
     const black = p.black === false ? { black: false as const } : {}
     const still = p.still === true ? { still: true as const } : {}
     const connect = p.connect === false ? { connect: false as const } : {}
+    const lang = p.lang === 'en' || p.lang === 'es' ? { lang: p.lang } : {}
     return {
       adult: typeof p.adult === 'boolean' ? p.adult : null,
       mild: !!p.mild,
@@ -56,6 +58,7 @@ export function loadPrefs(): Prefs {
       ...black,
       ...still,
       ...connect,
+      ...lang,
     }
   }
   return { adult: null, mild: false, wordsDays }
