@@ -10,6 +10,7 @@ import { evidenceLabel, forYou, getNotAlone, notAloneFor, type ForYouCard, type 
 import { NEED_NAMES } from '@shared/needs'
 import { intentions, keepIntention, keptCards } from '@shared/notebook'
 import { loadHistory } from '@shared/profile'
+import { acrossDays } from '@shared/firstWeek'
 import { count } from '@shared/pulse'
 import { rateAnswer } from '@shared/rating'
 import { splitReveal } from '@shared/reveal'
@@ -45,6 +46,9 @@ export function Insights({
     return forYou(loadHistory(), today, days, questions)
   }, [today, days, questions, version])
   const shown = days === WEEK ? cards.slice(0, FOR_YOU_MAX) : cards
+  const fresh = shown.filter((x) => x.date === today)
+  const earlier = shown.filter((x) => x.date !== today)
+  const [openToday, setOpenToday] = useState(false)
   const saved = keptCards().filter((c) => !c.private)
   const counted = cards.some((c) => !c.heavy && !c.regional)
   const answeredAny = loadHistory().answers.length > 0
@@ -85,6 +89,7 @@ export function Insights({
           {onOpenMirror && <Button kind="text" small label="Your Mirrors" iconAfter="arrow" onPress={onOpenMirror} />}
         </View>
       )}
+      <AcrossDays today={today} />
       <T v="h2">For You</T>
       {shown.length === 0 ? (
         <Card>
@@ -93,11 +98,17 @@ export function Insights({
           </T>
         </Card>
       ) : (
-        shown.map((c) => (
-          <Card key={c.questionId} style={{ gap: 20 }}>
-            <InsightCard card={c} today={today} onRated={() => setVersion((v) => v + 1)} onOpenReflect={onOpenReflect} onOpenMirror={onOpenMirror} />
-          </Card>
-        ))
+        <>
+          {/* Today's cards were just read in the sitting: folded, so Insights leads with something new. */}
+          {fresh.length > 0 && (
+            <Button kind="text" label={openToday ? 'Hide today’s cards' : `From today (${fresh.length})`} iconAfter="chevron" onPress={() => setOpenToday(!openToday)} />
+          )}
+          {[...(openToday ? fresh : []), ...earlier].map((c) => (
+            <Card key={c.questionId} style={{ gap: 20 }}>
+              <InsightCard card={c} today={today} onRated={() => setVersion((v) => v + 1)} onOpenReflect={onOpenReflect} onOpenMirror={onOpenMirror} />
+            </Card>
+          ))}
+        </>
       )}
     </Page>
   )
@@ -272,5 +283,25 @@ function NotAlone({ today, cards, pulse, onOpenSettings }: { today: string; card
         })
       )}
     </View>
+  )
+}
+
+// What keeps coming up across all the days you've answered, the thing a
+// single sitting can't show you (shared firstWeek.ts acrossDays).
+function AcrossDays({ today }: { today: string }) {
+  const { days, lean } = acrossDays(today)
+  if (days === 0) return null
+  return (
+    <Card style={{ gap: 8 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        <Disc icon="insights" tone="blue" size={40} />
+        <T v="h2">{lean ? 'What keeps coming up' : 'Building a picture of you'}</T>
+      </View>
+      <T tone="text2">
+        {lean
+          ? `Across your ${days} days of answers, you keep leaning towards ${lean}. I'll keep watching whether it holds.`
+          : 'Come back tomorrow and I can start showing you what links your answers across days, not just one sitting.'}
+      </T>
+    </Card>
   )
 }

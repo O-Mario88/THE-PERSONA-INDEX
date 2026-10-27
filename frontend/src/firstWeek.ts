@@ -1,6 +1,6 @@
 import { adviceFor } from './advice'
 import { heavyPause, isLowMood, loadHistory, pickedIds, type History } from './profile'
-import { daysBetween, load, save } from './storage'
+import { addDays, daysBetween, load, save } from './storage'
 
 // The first week (Edwin, 2026-10-26: "simple, healthy and focused"). A new
 // person starts with three light questions, gets a first glimpse of what
@@ -92,4 +92,27 @@ export function lastLeaning(today: string, h: History = loadHistory()): string |
   const day = h.answers.filter((a) => a.date === last && !a.heavy)
   const points = adviceFor(day, h, last, 'morning').points
   return points.length ? points.map((p) => p.lean).join(' and ') : null
+}
+
+// acrossDays is what keeps coming up across every day someone has answered,
+// not one day alone: the days counted, and the leanings their answers share
+// (Insights leads with it, so it shows something the sitting did not).
+export function acrossDays(today: string, h: History = loadHistory()): { days: number; lean: string | null } {
+  const answers = h.answers.filter((a) => a.date <= today && !a.heavy)
+  const days = new Set(answers.map((a) => a.date)).size
+  if (days < 2 || heavyPause(h, today)) return { days, lean: null }
+  const points = adviceFor(answers, h, today, 'morning').points
+  return { days, lean: points.length ? points.map((p) => p.lean).join(' and ') : null }
+}
+
+// firstMirrorIn counts the days to someone's first Sunday Mirror, and which
+// of the days since they started they answered on (no streak, nothing lost).
+export function firstMirrorIn(today: string, h: History = loadHistory()): { days: number; answered: boolean[] } {
+  const weekday = new Date(`${today}T00:00:00Z`).getUTCDay()
+  const days = (7 - weekday) % 7
+  const started = load(STARTED_KEY) ?? today
+  const answeredOn = new Set(h.answers.map((a) => a.date))
+  const answered: boolean[] = []
+  for (let d = started; d <= today; d = addDays(d, 1)) answered.push(answeredOn.has(d))
+  return { days, answered }
 }

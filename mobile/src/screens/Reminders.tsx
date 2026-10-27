@@ -6,6 +6,7 @@ import { clock } from '@shared/day'
 import { CHECK_IN_AT, SUNDAY_AT, eveningMinutes, morningMinutes, type ReminderSettings } from '@shared/reminders'
 import { reminderSettings, remindersAvailable, remindersDenied, updateReminders } from '../platform/reminders'
 import { load, save } from '@shared/storage'
+import { canPrompt, iosSafari, promptInstall } from '@shared/pwa/install'
 import { Button, Card, Chip, T, Toggle } from '../ui/kit'
 
 const MORNING_TIMES = [6 * 60, 7 * 60, 8 * 60, 9 * 60, 10 * 60, 12 * 60]
@@ -74,7 +75,8 @@ export const REMINDERS_ASKED = 'pi.reminders.asked'
 
 export function ReminderAsk() {
   const [answer, setAnswer] = useState<string | null>(() => load(REMINDERS_ASKED))
-  if (!remindersAvailable || (answer && answer !== 'yes-now')) return null
+  if (!remindersAvailable) return answer ? null : <ComeBackOnWeb onAnswer={(x) => (save(REMINDERS_ASKED, x), setAnswer(x))} />
+  if (answer && answer !== 'yes-now') return null
   if (answer === 'yes-now')
     return (
       <Card>
@@ -110,6 +112,37 @@ export function ReminderAsk() {
             setAnswer('no')
           }}
         />
+      </View>
+    </Card>
+  )
+}
+
+// On the website there are no reminders, so the next best thing: keep the
+// app one tap away. On a phone, add it to the home screen (shared
+// pwa/install.ts); on a computer, a bookmark.
+function ComeBackOnWeb({ onAnswer }: { onAnswer: (answer: string) => void }) {
+  const [done, setDone] = useState(false)
+  const phone = typeof navigator !== 'undefined' && /iPhone|iPad|Android/i.test(navigator.userAgent)
+  const ios = iosSafari()
+  if (done) return <Card><T bold>Good. See you when your next three open.</T></Card>
+  return (
+    <Card style={{ gap: 12 }}>
+      <T v="h3">Want to find me easily tomorrow?</T>
+      <T tone="text2">
+        Your next three open at {clock(5 * 60)} and {clock(17 * 60)}.{' '}
+        {phone
+          ? ios
+            ? 'In Safari, tap Share, then “Add to Home Screen”, and I’ll be one tap away.'
+            : 'Add me to your home screen and I’ll be one tap away, like an app.'
+          : 'Bookmark this page and I’ll be one click away.'}
+      </T>
+      <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
+        {phone && !ios && canPrompt() ? (
+          <Button small label="Add to home screen" onPress={async () => { const r = await promptInstall(); onAnswer(r === 'added' ? 'added' : 'later'); setDone(r === 'added') }} />
+        ) : (
+          <Button small label={phone ? "I've added it" : "I've bookmarked it"} onPress={() => { onAnswer('added'); setDone(true) }} />
+        )}
+        <Button small kind="ghost" label="Not now" onPress={() => onAnswer('no')} />
       </View>
     </Card>
   )

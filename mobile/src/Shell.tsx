@@ -17,7 +17,7 @@ import { cachedPack, fetchPack, regionalFor, regionalToday } from '@shared/regio
 import { keys, load as loadKey, remove as removeKey, save as saveKey } from '@shared/storage'
 import { NAME_KEY, WELCOMED } from '@shared/welcomeKeys'
 import { pruneCardTexts } from '@shared/insights'
-import { CONNECT_OPEN_KEY, dayWithYou, glimpseHere, inWeekOne, isNewcomer, lastLeaning, markStarted, needsAccount, SHOW_ALL_KEY } from '@shared/firstWeek'
+import { CONNECT_OPEN_KEY, dayWithYou, firstMirrorIn, glimpseHere, inWeekOne, isNewcomer, lastLeaning, markStarted, needsAccount, SHOW_ALL_KEY } from '@shared/firstWeek'
 import { signInMethods, type AccountView } from '@shared/social'
 import { pullSync } from '@shared/sync'
 import { useAccount } from '@shared/useAccount'
@@ -588,6 +588,7 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
               </Tinted>
             )}
             <InstallInvite today={set.date} />
+            {weekOne && !set.review && <FirstMirror today={set.date} />}
             {(evening === 'done' || (evening === null && morning === 'done')) && (set.tomorrowThemes?.length ?? 0) > 0 && (
               <Tinted tone="plain">
                 <T v="h3">Tomorrow</T>
@@ -752,6 +753,26 @@ function AdultGate({ again, onAnswer }: { again?: boolean; onAnswer: (adult: boo
       <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
         <Button small label="Yes, I'm 18 or older" onPress={() => onAnswer(true)} />
         <Button small kind="ghost" label="No" onPress={() => onAnswer(false)} />
+      </View>
+    </Tinted>
+  )
+}
+
+// Week one: how far it is to the first Sunday Mirror, and a dot for each day
+// so far, filled where you answered. Nothing is lost on a missed day.
+function FirstMirror({ today }: { today: string }) {
+  const p = useTheme()
+  const { days, answered } = firstMirrorIn(today)
+  return (
+    <Tinted tone="plain" style={{ gap: 10 }}>
+      <T v="h3">{days === 0 ? 'Your first Mirror is ready today' : days === 1 ? 'Your first Mirror is tomorrow' : `Your first Mirror in ${days} days`}</T>
+      <T v="small" tone="muted">
+        Each day you answer adds to it. A missed day takes nothing away.
+      </T>
+      <View style={{ flexDirection: 'row', gap: 6 }}>
+        {[...answered, ...Array(days).fill(null)].map((d, i) => (
+          <View key={i} style={{ flex: 1, height: 8, borderRadius: radius.pill, backgroundColor: d ? p.lime : p.surface3 }} />
+        ))}
       </View>
     </Tinted>
   )
