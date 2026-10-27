@@ -10,7 +10,8 @@ import { ApiError, cacheEdition, cachedEdition, getDay, pruneLocal, pruneWords, 
 import { clock, dayAt, nextTurn, WINDOW_INFO, type Day, type OpenWindow, type Sitting } from '@shared/day'
 import { heroFor, type Progress } from '@shared/homeHero'
 import { pruneNotebook } from '@shared/notebook'
-import { sendUnsent } from '@shared/moves'
+import { sendUnsent, setMoveStatus } from '@shared/moves'
+import { rememberLine, stepToFollow } from '@shared/continuity'
 import { forgetPick, isFirstDay, loadHistory, todaysPick, writeFirstOf, type Half } from '@shared/profile'
 import { blackOn, intimacyOn, loadPrefs, pulseOn, regionHere, savePrefs, type Prefs } from '@shared/prefs'
 import { cachedPack, fetchPack, regionalFor, regionalToday } from '@shared/regional'
@@ -431,6 +432,8 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
       const at = flowStep.at
       const closing = at >= steps.length
       const glimpse = closing && steps.length > 0 && glimpseHere(set.date, flow)
+      // The app shows it remembers: the sitting opens with an earlier answer.
+      const remember = rememberLine(set.date, loadHistory())
       body = (
         <Flow
           label={steps.length === 0 ? tr(name) : closing ? trf('{name} close', { name: tr(name) }) : trf('{name} · {n} of {m}', { name: tr(name), n: at + 1, m: steps.length })}
@@ -448,6 +451,11 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
         >
           {hasIntimate && prefs.adult === null && !isNewcomer() && !closing && !firstDay && <AdultGate onAnswer={(adult) => changePrefs({ ...prefs, adult })} />}
           {steps.length === 0 && <T tone="muted">{flow === 'evening' ? `Your evening three open at ${clock(17 * 60)}.` : `Your morning three open at ${clock(5 * 60)}.`}</T>}
+          {at === 0 && current && remember && (
+            <Tinted tone="plain">
+              <T tone="text2">{remember}</T>
+            </Tinted>
+          )}
           {current && (
             <QuestionCard
               key={current.id}
@@ -569,6 +577,7 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
             rail={rail}
             onWrite={write}
           >
+            <StepFollowUp today={set.date} />
             {!set.review && morning !== 'done' && win !== 'morning' && clockSitting === 'morning' && (
               <Tinted>
                 <T>Your morning three are still open until 17:00.</T>
@@ -773,6 +782,32 @@ function FirstMirror({ today }: { today: string }) {
         {[...answered, ...Array(days).fill(null)].map((d, i) => (
           <View key={i} style={{ flex: 1, height: 8, borderRadius: radius.pill, backgroundColor: d ? p.lime : p.surface3 }} />
         ))}
+      </View>
+    </Tinted>
+  )
+}
+
+// A step you said you'd try on an earlier day comes back to you here, one at
+// a time, so your answers lead somewhere.
+function StepFollowUp({ today }: { today: string }) {
+  const [move, setMove] = useState(() => stepToFollow(today))
+  const [said, setSaid] = useState<string | null>(null)
+  if (said) return <Tinted tone="plain"><T tone="text2">{said}</T></Tinted>
+  if (!move) return null
+  const answer = (status: 'helped' | 'no_change' | 'not_tried', reply: string) => {
+    setMoveStatus(move.questionId, status, today).catch(() => {})
+    setSaid(reply)
+    setMove(null)
+  }
+  return (
+    <Tinted style={{ gap: 10 }}>
+      <T v="h3">You said you'd try this</T>
+      <T>“{move.step}”</T>
+      <T tone="text2">How did it go?</T>
+      <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+        <Button small label="It helped" onPress={() => answer('helped', 'That’s worth knowing. I’ll remember it helped you.')} />
+        <Button small kind="ghost" label="No change yet" onPress={() => answer('no_change', 'Thanks for telling me. Not every step lands, and trying still counts.')} />
+        <Button small kind="ghost" label="Didn't get to it" onPress={() => answer('not_tried', 'That’s fine. Life gets in the way. It stays in your notebook.')} />
       </View>
     </Tinted>
   )

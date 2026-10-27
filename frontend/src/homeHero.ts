@@ -53,13 +53,13 @@ export function heroFor({
     return {
       eyebrow: 'Sunday · the day for looking back',
       title: 'Your Sunday Mirror is ready',
-      sub: 'Your week, what you reached for and what to try next. Fresh questions arrive tomorrow at 05:00.',
+      sub: `Your week, what you reached for and what to try next. Fresh questions arrive tomorrow at ${clock(5 * 60)}.`,
       action: 'Open',
       opens: 'mirror',
     }
   }
   if (w === 'rest') {
-    return { eyebrow: 'Rest', title: 'The night is yours', sub: 'Your morning three open at 05:00. Nothing to do until then but rest.', opens: null }
+    return { eyebrow: 'Rest', title: 'The night is yours', sub: `Your morning three open at ${clock(5 * 60)}. Nothing to do until then but rest.`, opens: null }
   }
   const info = WINDOW_INFO[w]
   const closes = windowCloses(date, w)
@@ -82,12 +82,12 @@ export function heroFor({
       return {
         ...timed,
         title: pulse ? 'The afternoon pulse' : 'A quiet afternoon',
-        sub: pulse ? 'How everyone else handled this morning’s questions.' : 'Today’s read, and nothing else until 17:00.',
+        sub: pulse ? 'How everyone else handled this morning’s questions.' : `Today’s read, and nothing else until ${clock(17 * 60)}.`,
         action: 'Open',
         opens: 'afternoon',
       }
     case 'evening':
-      if (!evening) return { ...timed, title: "That's today's questions", sub: 'Three good things open at 21:00.', opens: null }
+      if (!evening) return { ...timed, title: "That's today's questions", sub: `Three good things open at ${clock(21 * 60)}.`, opens: null }
       return evening === 'done'
         ? { eyebrow: 'Evening done', title: 'Your evening three are answered', sub: `The night wind-down opens at ${clock(WINDOW_INFO.night.opens)}.`, action: 'See your evening', opens: 'evening' }
         : { ...timed, title: 'Three evening questions', sub: 'One tap on this morning’s step, then three questions.', action: 'Open', opens: 'evening' }
