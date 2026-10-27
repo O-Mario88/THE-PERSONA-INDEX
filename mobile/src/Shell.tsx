@@ -27,7 +27,7 @@ import { startReminders, type Opens } from './platform/reminders'
 import { markWindow } from '@shared/windows'
 import type { Read } from '@shared/reads/types'
 import { dark as darkPalette, font, light as lightPalette, radius, RAIL_AT, RAIL_W, ThemeProvider, useTheme, WIDE } from './theme'
-import { Back, Button, Page, PrivacyLine, T, Tinted } from './ui/kit'
+import { Back, Button, Chip, Page, PrivacyLine, T, Tinted } from './ui/kit'
 import { Icon, type IconName } from './ui/Icon'
 import { Sidebar, type SideItem } from './ui/Sidebar'
 import { QuestionCard } from './screens/QuestionCard'
@@ -45,6 +45,9 @@ import { Mirror } from './screens/Mirror'
 import { ReadScreen } from './screens/ReadScreen'
 import { CountryAsk } from './screens/Country'
 import { themeName } from '@shared/themes'
+import { AREA_NAMES } from '@shared/reflect'
+import type { ReflectionArea } from '@shared/notebook'
+import { loadJSON, saveJSON } from '@shared/storage'
 import { InstallInvite } from './screens/Browser'
 import { ReminderAsk } from './screens/Reminders'
 import { setLanguage, tr, trf } from '@shared/i18n'
@@ -580,6 +583,7 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
             <StepFollowUp today={set.date} />
             <DayDiscovery today={set.date} onInsights={() => goTab('insights')} />
             <IdeaToTry today={set.date} />
+            {!weekOne && <SecondWeek today={set.date} onWrite={write} />}
             {!set.review && morning !== 'done' && win !== 'morning' && clockSitting === 'morning' && (
               <Tinted>
                 <T>Your morning three are still open until 17:00.</T>
@@ -856,6 +860,47 @@ function IdeaToTry({ today }: { today: string }) {
           }}
         />
       )}
+    </Tinted>
+  )
+}
+
+// After the first Mirror: pick one area of your life to look at together, so
+// week two has a direction of its own. Kept on this phone (pi.journey.v1).
+const JOURNEY = 'pi.journey.v1'
+const JOURNEY_AREAS: ReflectionArea[] = ['work', 'family', 'social', 'money', 'health', 'self']
+
+function SecondWeek({ today, onWrite }: { today: string; onWrite: () => void }) {
+  const [journey, setJourney] = useState(() => loadJSON(JOURNEY) as { area: ReflectionArea; since: string } | null)
+  if (!journey) {
+    return (
+      <Tinted style={{ gap: 10 }}>
+        <T v="h3">What would you like to understand better?</T>
+        <T tone="text2">Pick one part of your life and we’ll look at it together this week.</T>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          {JOURNEY_AREAS.map((a) => (
+            <Chip
+              key={a}
+              label={AREA_NAMES[a]}
+              onPress={() => {
+                const next = { area: a, since: today }
+                saveJSON(JOURNEY, next)
+                setJourney(next)
+              }}
+            />
+          ))}
+        </View>
+      </Tinted>
+    )
+  }
+  const name = AREA_NAMES[journey.area].toLowerCase()
+  return (
+    <Tinted tone="plain" style={{ gap: 8 }}>
+      <T v="h3">This week: {name}</T>
+      <T tone="text2">What’s one thing about {name} you’d like to see more clearly? Write it down, and your Mirror can bring your words back to you.</T>
+      <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+        <Button small label="Write about it" icon="pencil" onPress={onWrite} />
+        <Button small kind="ghost" label="Choose another" onPress={() => { removeKey(JOURNEY); setJourney(null) }} />
+      </View>
     </Tinted>
   )
 }
