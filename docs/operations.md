@@ -24,6 +24,8 @@ How the backend runs in production, and the decisions behind it.
 | `SIGNIN_CODE_KINDS` | `email,phone` (default), `email` or `phone`: which addresses the code sign-in accepts. |
 | `GOOGLE_CLIENT_ID` | Turns on "Continue with Google". ID tokens are checked against Google's published keys. |
 | `APPLE_CLIENT_ID` | Turns on "Continue with Apple" (the Services ID). |
+| `GOOGLE_APP_CLIENT_IDS` | The phone app's Google OAuth client IDs (iOS, Android), comma-separated. Turns on "Continue with Google" in the app. |
+| `APPLE_APP_IDS` | The phone app's bundle ID (`com.personaindex.app`). Turns on "Continue with Apple" in the iPhone app. |
 | `LOG_FORMAT` | `json` (the default with `DATABASE_URL`) or `text` (the default without). |
 | `ACCESS_LOG` | `errors` (default: 5xx and requests taking 1 s or more), `all` or `off`. Never logs a path, query, address or pass. |
 

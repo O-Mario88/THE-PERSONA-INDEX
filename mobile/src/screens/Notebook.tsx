@@ -10,6 +10,7 @@ import { TRAITS } from '@shared/traits'
 import { REVISIT_WORDS, VERDICT_WORDS } from '@shared/words'
 import { radius, useTheme } from '../theme'
 import { Button, Chip, T } from '../ui/kit'
+import { DownloadButtons } from './BookDownloads'
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
 const shortDay = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' })
@@ -152,6 +153,7 @@ export function Notebook({ mild, today }: { mild: boolean; today: string }) {
           ))}
         </View>
       )}
+      {!empty && <DownloadButtons today={today} mild={mild} />}
       <Muted>For self-reflection, not a diagnosis.</Muted>
     </View>
   )

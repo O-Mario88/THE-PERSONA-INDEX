@@ -2,7 +2,10 @@
   "expo": {
     "name": "The Persona Index",
     "slug": "persona-index",
-    "scheme": "personaindex",
+    "scheme": [
+      "personaindex",
+      "com.personaindex.app"
+    ],
     "version": "1.0.0",
     "orientation": "default",
     "icon": "./assets/icon.png",
@@ -16,7 +19,8 @@
       "supportsTablet": true,
       "config": {
         "usesNonExemptEncryption": false
-      }
+      },
+      "usesAppleSignIn": true
     },
     "android": {
       "package": "com.personaindex.app",
@@ -33,6 +37,7 @@
     },
     "plugins": [
       "expo-font",
+      "expo-apple-authentication",
       [
         "expo-splash-screen",
         {
@@ -43,6 +48,12 @@
             "image": "./assets/splash-icon-dark.png",
             "backgroundColor": "#0b1a24"
           }
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#013d5a"
         }
       ]
     ],

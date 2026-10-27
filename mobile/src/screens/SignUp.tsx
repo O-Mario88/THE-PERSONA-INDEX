@@ -1,17 +1,20 @@
 // The sign-up page after the first glimpse, and signing in from You (the
 // web app's SignIn.tsx, page mode). No password: a 6-digit code to an email
-// or a phone. Only the ways the server can really use are shown. Google and
-// Apple need their native sign-in kits and come in a later step.
+// or a phone, or Apple and Google through their own sheets (idSignIn.ts).
+// Only the ways the server can really use are shown.
 import { useEffect, useState } from 'react'
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ApiError } from '@shared/api'
-import { patchAccount, sendCode, signInMethods, verifyCode, type AccountView, type SignInMethods } from '@shared/social'
+import * as AppleAuthentication from 'expo-apple-authentication'
+import { patchAccount, sendCode, signInMethods, signInWithID, verifyCode, type AccountView, type SignInMethods } from '@shared/social'
+import { Cancelled, appProviders, appleToken, googleToken, type IdToken, type Providers } from '../platform/idSignIn'
 import { font, gutter, radius, useTheme } from '../theme'
 import { Button, Field, T } from '../ui/kit'
 import { Icon } from '../ui/Icon'
 
 const ERRORS: Record<string, string> = {
+  invalid_id_token: 'That sign-in didn’t go through. Try again, or use a code instead.',
   invalid_address: 'That doesn’t look like an email, or a phone number with its country code (+256…).',
   wrong_code: 'That code didn’t match. Check the newest message, or send a new code.',
   rate_limited: 'Too many tries. Wait a few minutes, then try again.',
@@ -32,6 +35,7 @@ export function SignUp({ page, onDone, onNotNow, notNow }: { page: SignUpPage; o
   const p = useTheme()
   const insets = useSafeAreaInsets()
   const [methods, setMethods] = useState<SignInMethods | null>(null)
+  const [providers, setProviders] = useState<Providers>({ google: false, apple: false })
   const [step, setStep] = useState<Step>({ at: 'start' })
   const [via, setVia] = useState<'email' | 'phone' | 'whatsapp'>('email')
   const [address, setAddress] = useState('')
@@ -44,7 +48,12 @@ export function SignUp({ page, onDone, onNotNow, notNow }: { page: SignUpPage; o
   useEffect(() => {
     let live = true
     signInMethods().then(
-      (m) => live && setMethods(m),
+      async (m) => {
+        const pr = await appProviders(m)
+        if (!live) return
+        setProviders(pr)
+        setMethods(m)
+      },
       () => live && setMethods({ email: false, phone: false, google: false, apple: false }),
     )
     return () => {
@@ -64,8 +73,21 @@ export function SignUp({ page, onDone, onNotNow, notNow }: { page: SignUpPage; o
     }
   }
   const finish = (me: AccountView) => (me.name ? onDone(me) : setStep({ at: 'name', me }))
+  const withID = (provider: 'google' | 'apple', get: () => Promise<IdToken>) =>
+    run(async () => {
+      let t: IdToken
+      try {
+        t = await get()
+      } catch (e) {
+        if (e instanceof Cancelled) return
+        throw new ApiError(400, 'invalid_id_token')
+      }
+      if (t.givenName) setName(t.givenName)
+      finish((await signInWithID(provider, t.token)).account)
+    })
   const codes = !!methods && (methods.email || methods.phone)
-  const none = !!methods && !codes
+  const oneTap = providers.apple || providers.google
+  const none = !!methods && !codes && !oneTap
   const kind = methods && !methods.email ? (via === 'email' ? 'phone' : via) : methods && !methods.phone ? 'email' : via
   const tabs: { id: 'email' | 'phone' | 'whatsapp'; name: string }[] = [
     { id: 'email', name: 'Email' },
@@ -118,6 +140,27 @@ export function SignUp({ page, onDone, onNotNow, notNow }: { page: SignUpPage; o
               </View>
               {!methods && <T tone="muted">One moment…</T>}
               {none && <T tone="text2">{ERRORS.sign_in_unavailable}</T>}
+              {methods && providers.apple && (
+                <AppleAuthentication.AppleAuthenticationButton
+                  buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
+                  buttonStyle={p.dark ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+                  cornerRadius={radius.md}
+                  style={{ height: 52, width: '100%', opacity: busy ? 0.6 : 1 }}
+                  onPress={() => !busy && withID('apple', appleToken)}
+                />
+              )}
+              {methods && providers.google && (
+                <Button wide kind="outline" label="Continue with Google" disabled={busy} onPress={() => withID('google', googleToken)} />
+              )}
+              {codes && oneTap && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                  <View style={{ flex: 1, height: 1, backgroundColor: p.line }} />
+                  <T v="small" tone="muted">
+                    or with a code
+                  </T>
+                  <View style={{ flex: 1, height: 1, backgroundColor: p.line }} />
+                </View>
+              )}
               {codes && (
                 <>
                   {methods.email && methods.phone && (

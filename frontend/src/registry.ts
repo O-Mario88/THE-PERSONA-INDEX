@@ -76,6 +76,7 @@ export const REGISTRY: Entry[] = [
   { key: 'pi.showall', what: 'That you asked to see every section before your first week was up', backup: 'never', merge: 'local', download: false },
   { key: 'pi.connect.open', what: 'That you asked for Connect from your first glimpse', backup: 'never', merge: 'local', download: false },
   { key: 'pi.glimpse', what: 'Which sitting showed your first glimpse', backup: 'always', merge: 'local', download: false },
+  { key: 'pi.reminders.v1', what: 'Which reminders you turned on in the phone app, and at what time', backup: 'never', merge: 'local', download: false },
   { key: 'pi.install.v1', what: 'Whether you were invited to add the app to your home screen', backup: 'never', merge: 'local', download: false },
 ]
 

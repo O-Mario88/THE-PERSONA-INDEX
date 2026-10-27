@@ -11,6 +11,7 @@ import { useTheme } from '../theme'
 import { Back, Button, Field, Hairline, Page, Radio, RowLink, T, Toggle } from '../ui/kit'
 import { Icon } from '../ui/Icon'
 import { BackupSettings } from './Backup'
+import { ReminderSettingsView } from './Reminders'
 import { CountrySelect } from './Country'
 
 const WORDS_NAMES: Record<WordsDays, string> = { 7: 'One week', 35: 'Five weeks', 90: 'Three months' }
@@ -123,6 +124,7 @@ export function Settings({
               <Button small kind="soft" label="Show every section now" onPress={onShowAll} />
             </View>
           )}
+          <ReminderSettingsView />
           <BackupSettings onRestored={onRestored} />
         </View>
       )}

@@ -65,8 +65,10 @@ type SignInConfig struct {
 	Codes          CodeSender // nil: no email or phone codes
 	CodeKinds      []string   // which of "email", "phone" the sender handles
 	IDs            IDVerifier // nil: no Google or Apple
-	GoogleClientID string
-	AppleClientID  string
+	GoogleClientID string     // the web's
+	AppleClientID  string     // the web's (a Services ID)
+	GoogleAppIDs   []string   // the phone app's Google client IDs
+	AppleAppIDs    []string   // the phone app's bundle IDs
 }
 
 // SignInMethods is GET /api/auth/methods: which buttons the app shows.
@@ -77,6 +79,9 @@ type SignInMethods struct {
 	Apple          bool   `json:"apple"`
 	GoogleClientID string `json:"googleClientId,omitempty"`
 	AppleClientID  string `json:"appleClientId,omitempty"`
+	// The phone app's buttons: on when the server accepts the app's tokens.
+	GoogleApp bool `json:"googleApp,omitempty"`
+	AppleApp  bool `json:"appleApp,omitempty"`
 }
 
 // AccountView is an account as its own phones see it.
@@ -292,6 +297,7 @@ func (s *Server) SignInMethods(w http.ResponseWriter, r *http.Request) {
 	if c.IDs != nil {
 		m.Google, m.GoogleClientID = c.GoogleClientID != "", c.GoogleClientID
 		m.Apple, m.AppleClientID = c.AppleClientID != "", c.AppleClientID
+		m.GoogleApp, m.AppleApp = len(c.GoogleAppIDs) > 0, len(c.AppleAppIDs) > 0
 	}
 	writeJSON(w, http.StatusOK, m)
 }
@@ -397,7 +403,7 @@ func (s *Server) SignInWithID(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid_request")
 		return
 	}
-	if s.signIn.IDs == nil || (req.Provider == "google" && s.signIn.GoogleClientID == "") || (req.Provider == "apple" && s.signIn.AppleClientID == "") {
+	if s.signIn.IDs == nil || (req.Provider == "google" && len(s.signIn.googleAudiences()) == 0) || (req.Provider == "apple" && len(s.signIn.appleAudiences()) == 0) {
 		writeError(w, http.StatusServiceUnavailable, "sign_in_unavailable")
 		return
 	}

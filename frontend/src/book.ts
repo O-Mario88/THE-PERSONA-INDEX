@@ -347,16 +347,29 @@ async function serverCopy(): Promise<Book['server']> {
 
 export type Made = 'saved' | 'phone-only' | 'failed'
 
+// What a download holds, made on this phone; phoneOnly says the server
+// couldn't be reached, so its copy is missing. The phone app saves these its
+// own way (as a PDF and a shared file); the browser saves them below.
+export type Download = { name: string; text: string; phoneOnly: boolean }
+
+export async function makeBook(today: string, mild: boolean): Promise<Download> {
+  const server = await serverCopy()
+  return { name: `my-notebook-${today}.html`, text: bookHTML(gatherBook(today, mild, server)), phoneOnly: server === 'unreachable' }
+}
+
+export async function makeData(today: string): Promise<Download> {
+  const server = await serverCopy()
+  return { name: `persona-index-data-${today}.json`, text: dataFile(today, server), phoneOnly: server === 'unreachable' }
+}
+
 // downloadBook makes the book and saves it.
 export async function downloadBook(today: string, mild: boolean): Promise<Made> {
-  const server = await serverCopy()
-  const ok = saveFile(`my-notebook-${today}.html`, bookHTML(gatherBook(today, mild, server)), 'text/html')
-  return !ok ? 'failed' : server === 'unreachable' ? 'phone-only' : 'saved'
+  const b = await makeBook(today, mild)
+  return !saveFile(b.name, b.text, 'text/html') ? 'failed' : b.phoneOnly ? 'phone-only' : 'saved'
 }
 
 // downloadData makes the data file and saves it.
 export async function downloadData(today: string): Promise<Made> {
-  const server = await serverCopy()
-  const ok = saveFile(`persona-index-data-${today}.json`, dataFile(today, server), 'application/json')
-  return !ok ? 'failed' : server === 'unreachable' ? 'phone-only' : 'saved'
+  const d = await makeData(today)
+  return !saveFile(d.name, d.text, 'application/json') ? 'failed' : d.phoneOnly ? 'phone-only' : 'saved'
 }

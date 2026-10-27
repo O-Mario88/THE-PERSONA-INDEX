@@ -23,6 +23,7 @@ import { signInMethods, type AccountView } from '@shared/social'
 import { pullSync } from '@shared/sync'
 import { useAccount } from '@shared/useAccount'
 import { startBackups } from '@shared/vault'
+import { startReminders, type Opens } from './platform/reminders'
 import { markWindow } from '@shared/windows'
 import type { Read } from '@shared/reads/types'
 import { dark as darkPalette, font, light as lightPalette, radius, ThemeProvider, useTheme } from './theme'
@@ -141,6 +142,9 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
   // The 12-word backup, when it is on: changes are sealed and sent a little
   // after they happen (vault.ts).
   useEffect(() => startBackups(), [])
+  // A tapped reminder opens where it said: the day's sitting, the Mirrors or Reflect.
+  const onReminder = useRef<(w: Opens) => void>(() => {})
+  useEffect(() => startReminders((w) => onReminder.current(w)), [])
   useEffect(() => {
     let live = true
     signInMethods().then(
@@ -252,6 +256,7 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
     if (tab === 'today' || tab === 'notebook' || tab === 'circle' || tab === 'insights' || tab === 'account') setBack(tab)
     setTab(v)
   }
+  onReminder.current = (w) => (w === 'mirrors' ? open('mirror') : setTab(w === 'reflect' ? 'notebook' : 'today'))
   function openRead(r: Read) {
     setReading(r)
     if (tab !== 'read' && tab !== 'settings' && tab !== 'kept' && tab !== 'signin' && tab !== 'mirror') setBack(tab)
@@ -356,7 +361,7 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
       />
     )
   } else if (tab === 'kept') {
-    body = <KeptScreen today={date} signedIn={!!me} onBack={() => setTab(back)} onDeleted={() => setFinished((n) => n + 1)} />
+    body = <KeptScreen today={date} mild={!intimacyOn(prefs)} signedIn={!!me} onBack={() => setTab(back)} onDeleted={() => setFinished((n) => n + 1)} />
   } else if (tab === 'read' && reading) {
     body = <ReadScreen read={reading} date={date} intimacy={intimacyOn(prefs)} onBack={() => setTab(back)} onOpen={openRead} />
   } else if (tab === 'mirror') {

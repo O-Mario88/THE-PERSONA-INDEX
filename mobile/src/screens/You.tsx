@@ -12,6 +12,7 @@ import { loadHistory } from '@shared/profile'
 import { forgetSession, patchAccount, signOut, type AccountView } from '@shared/social'
 import { Back, Button, Field, Hairline, Page, RowLink, T, Tinted, Toggle } from '../ui/kit'
 import { Avatar } from '../ui/parts'
+import { DownloadButtons } from './BookDownloads'
 
 const KEPT: [string, string][] = [
   ['Readings, plans, Notebook', 'Encrypted · until you delete'],
@@ -185,7 +186,7 @@ function confirm(title: string, body: string, yes: string, run: () => void) {
   ])
 }
 
-export function KeptScreen({ today, signedIn, onBack, onDeleted }: { today: string; signedIn: boolean; onBack: () => void; onDeleted: () => void }) {
+export function KeptScreen({ today, mild, signedIn, onBack, onDeleted }: { today: string; mild: boolean; signedIn: boolean; onBack: () => void; onDeleted: () => void }) {
   const [phone, setPhone] = useState(onPhone)
   const [server, setServer] = useState<Kept | null | 'error' | 'loading'>('loading')
   const [done, setDone] = useState('')
@@ -241,6 +242,11 @@ export function KeptScreen({ today, signedIn, onBack, onDeleted }: { today: stri
         ) : (
           <ServerList k={server} />
         )}
+      </View>
+      <View style={{ gap: 10 }}>
+        <T v="eyebrow">Take a copy</T>
+        <T tone="muted">Your book is {Platform.OS === 'web' ? 'a page' : 'a PDF'} with your notebook, answers and steps, to read or print. The data file holds everything above, as it is kept.</T>
+        <DownloadButtons today={today} mild={mild} data />
       </View>
       {done ? <T tone="leaf" bold>{done}</T> : null}
       <Button

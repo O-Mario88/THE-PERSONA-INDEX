@@ -15,7 +15,7 @@ const DEVICE_KEY = 'pi.device.v1'
 export const INVITE_KEY = 'pi.invite'
 
 export type AccountView = { id: string; name: string; handle: string; suggest: boolean; connect: boolean; sync: boolean }
-export type SignInMethods = { email: boolean; phone: boolean; google: boolean; apple: boolean; googleClientId?: string; appleClientId?: string }
+export type SignInMethods = { email: boolean; phone: boolean; google: boolean; apple: boolean; googleClientId?: string; appleClientId?: string; googleApp?: boolean; appleApp?: boolean }
 export type SignedIn = { account: AccountView; accountToken: string; deviceToken: string; created: boolean; merged: boolean }
 export type LoginView = { kind: 'email' | 'phone' | 'google' | 'apple'; hint: string }
 export type SessionView = { id: string; label: string; seenOn: string; current: boolean }
