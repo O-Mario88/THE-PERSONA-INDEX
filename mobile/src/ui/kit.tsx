@@ -9,6 +9,7 @@ import {
   Switch,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
   type StyleProp,
   type TextInputProps,
@@ -16,7 +17,7 @@ import {
   type ViewStyle,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { font, gutter, radius, useTheme, type Palette } from '../theme'
+import { font, gutter, radius, useTheme, WIDE, type Palette } from '../theme'
 import { Icon, type IconName } from './Icon'
 
 // ---- type ----
@@ -305,17 +306,27 @@ export function Field(props: TextInputProps & { label?: string; note?: string })
 
 // ---- layout ----
 
-// The page: the cream background, the gutter, room for the tab bar.
+// The page: the cream background, the gutter, room for the tab bar. Beside
+// the wide-screen sidebar it gets the web's roomier margins (shell.css .page).
 export function Page({ children, bottom = 32, refresh, scrollRef }: { children: ReactNode; bottom?: number; refresh?: number; scrollRef?: Ref<ComponentRef<typeof ScrollView>> }) {
   const p = useTheme()
   const insets = useSafeAreaInsets()
+  const wide = useWindowDimensions().width >= WIDE
   return (
     <View style={{ flex: 1, backgroundColor: p.bg }}>
       <ScrollView
         key={refresh}
         ref={scrollRef}
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingHorizontal: gutter, paddingTop: Math.max(insets.top, 20) + 8, paddingBottom: bottom, gap: 20, maxWidth: 640, width: '100%', alignSelf: 'center' }}
+        contentContainerStyle={{
+          paddingHorizontal: wide ? 40 : gutter,
+          paddingTop: wide ? 32 : Math.max(insets.top, 20) + 8,
+          paddingBottom: wide ? Math.max(bottom, 40) : bottom,
+          gap: 20,
+          maxWidth: wide ? 760 + 80 : 640,
+          width: '100%',
+          alignSelf: 'center',
+        }}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
       >

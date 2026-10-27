@@ -5,7 +5,7 @@
 // too.
 import { StatusBar } from 'expo-status-bar'
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentRef, type ReactNode } from 'react'
-import { AppState, Pressable, ScrollView, Text, View } from 'react-native'
+import { AppState, Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ApiError, cacheEdition, cachedEdition, getDay, pruneLocal, pruneWords, recalledChoice, sendPlanChecks, sendUnrated, type DailySet, type Question } from '@shared/api'
 import { dayAt, nextTurn, WINDOW_INFO, type Day, type OpenWindow, type Sitting } from '@shared/day'
@@ -26,9 +26,10 @@ import { startBackups } from '@shared/vault'
 import { startReminders, type Opens } from './platform/reminders'
 import { markWindow } from '@shared/windows'
 import type { Read } from '@shared/reads/types'
-import { dark as darkPalette, font, light as lightPalette, radius, ThemeProvider, useTheme } from './theme'
+import { dark as darkPalette, font, light as lightPalette, radius, ThemeProvider, useTheme, WIDE } from './theme'
 import { Back, Button, Page, PrivacyLine, T, Tinted } from './ui/kit'
 import { Icon, type IconName } from './ui/Icon'
+import { Sidebar, type SideItem } from './ui/Sidebar'
 import { QuestionCard } from './screens/QuestionCard'
 import { Close } from './screens/Close'
 import { Afternoon, Midday, Night } from './screens/Windows'
@@ -122,6 +123,7 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
   const [state, setState] = useState<State>({ kind: 'loading' })
   const [attempt, setAttempt] = useState(0)
   const [tab, setTab] = useState<View_>('today')
+  const wide = useWindowDimensions().width >= WIDE
   const mirrorScroll = useRef<ComponentRef<typeof ScrollView>>(null)
   const [back, setBack] = useState<Tab>('today')
   const [reading, setReading] = useState<Read | null>(null)
@@ -585,17 +587,51 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
     )
   }
 
-  const showTabs = !fullScreen
+  const shown = TABS.filter((t) => t.tab !== 'circle' || connectShown)
+  // A wide browser or Mac window keeps the sidebar through a sitting, as the
+  // web app does; the welcome and sign-up pages stand alone.
+  const sidebar = wide && !welcome && !(fullScreen && !flow)
+  const showTabs = !wide && !fullScreen
+  // As on the web: You reads "Profile" here, and after the first week the
+  // Mirrors and Saved get their own rows.
+  const sideItems = (ts: typeof TABS): SideItem[] =>
+    ts.map((t) => ({
+      key: t.tab,
+      name: t.tab === 'account' ? 'Profile' : t.name,
+      icon: t.icon,
+      on: tab === t.tab || (t.tab === 'insights' && tab === 'mirror'),
+      onPress: () => goTab(t.tab),
+    }))
+  const sideExtras: SideItem[] = weekOne
+    ? []
+    : [
+        { key: 'mirror', name: 'Mirrors', icon: 'mirror', on: tab === 'mirror', onPress: () => open('mirror') },
+        { key: 'kept', name: 'Saved', icon: 'bookmark', on: tab === 'kept', onPress: () => open('kept') },
+      ]
   return (
     <ThemeProvider palette={palette}>
       {/* Light clock and icons on midnight, dark ones on cream. */}
       <StatusBar style={dark ? 'light' : 'dark'} />
-      <View style={{ flex: 1, backgroundColor: palette.bg }}>
+      <View style={{ flex: 1, flexDirection: sidebar ? 'row' : 'column', backgroundColor: palette.bg }}>
+        {sidebar && (
+          <Sidebar
+            top={[...sideItems(shown.filter((t) => t.tab !== 'account')), ...sideExtras]}
+            foot={[
+              ...sideItems(shown.filter((t) => t.tab === 'account')),
+              { key: 'settings', name: 'Settings', icon: 'gear', on: tab === 'settings', onPress: () => open('settings') },
+            ]}
+          />
+        )}
         <View style={{ flex: 1 }}>{body}</View>
-        {showTabs && <TabBar tab={tab} onTab={goTab} shown={TABS.filter((t) => t.tab !== 'circle' || connectShown)} />}
+        {showTabs && <TabBar tab={tab} onTab={goTab} shown={shown} />}
       </View>
     </ThemeProvider>
   )
+}
+
+// Inner pages light the tab they belong under.
+function tabHome(tab: View_): View_ {
+  return tab === 'settings' || tab === 'kept' || tab === 'signin' ? 'account' : tab === 'mirror' ? 'insights' : tab
 }
 
 function TabBar({ tab, onTab, shown }: { tab: View_; onTab: (t: Tab) => void; shown: typeof TABS }) {
@@ -607,9 +643,7 @@ function TabBar({ tab, onTab, shown }: { tab: View_; onTab: (t: Tab) => void; sh
       style={{ flexDirection: 'row', backgroundColor: p.surface, borderTopWidth: 1, borderTopColor: p.line, paddingBottom: Math.max(insets.bottom, 8), paddingTop: 8 }}
     >
       {shown.map((t) => {
-        // Inner pages light the tab they belong under.
-        const home: View_ = tab === 'settings' || tab === 'kept' || tab === 'signin' ? 'account' : tab === 'mirror' ? 'insights' : tab
-        const on = home === t.tab
+        const on = tabHome(tab) === t.tab
         return (
           <Pressable
             key={t.tab}
