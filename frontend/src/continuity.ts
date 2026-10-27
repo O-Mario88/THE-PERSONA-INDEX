@@ -5,6 +5,7 @@
 
 import { cardTextOf, forYou } from './insights'
 import { loadMoves, type Move } from './moves'
+import type { Need } from './needs'
 import type { History } from './profile'
 import { splitReveal } from './reveal'
 import { addDays } from './storage'
@@ -42,4 +43,24 @@ export function ideaToTry(today: string, h: History, moves: Move[] = loadMoves()
   const tried = new Set(moves.map((m) => m.questionId))
   const card = forYou(h, today, 30).find((c) => c.step && !c.heavy && !tried.has(c.questionId))
   return card?.step ? { questionId: card.questionId, optionId: card.optionId, step: card.step, from: card.label } : null
+}
+
+// A question worth carrying: one thing to notice in the day ahead, from what
+// today's answers reached for. Not a task and not a notification; just
+// something that may come back to mind in an ordinary moment.
+export const CARRY: Record<Need, string> = {
+  freedom: 'Today, notice one moment when you chose something for yourself, however small.',
+  belonging: 'Today, notice who you feel most at ease with, and what they do that helps.',
+  respect: 'If you feel unseen today, notice what you wanted someone to see.',
+  competence: 'Notice one thing you did well today, even if nobody else saw it.',
+  security: 'When something feels uncertain today, notice what helps you feel steady.',
+  calm: 'Notice one moment today when your shoulders drop.',
+  understood: 'Notice when someone really gets what you mean today.',
+}
+
+export function carryLine(today: string, h: History): string | null {
+  const counts = new Map<Need, number>()
+  for (const a of h.answers) if (a.date === today && a.need && !a.heavy) counts.set(a.need, (counts.get(a.need) ?? 0) + 1)
+  const top = [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0]
+  return top ? CARRY[top] : null
 }

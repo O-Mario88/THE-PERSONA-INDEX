@@ -11,7 +11,7 @@ import { clock, dayAt, nextTurn, WINDOW_INFO, type Day, type OpenWindow, type Si
 import { heroFor, type Progress } from '@shared/homeHero'
 import { pruneNotebook } from '@shared/notebook'
 import { sendUnsent, setMoveStatus, startMove } from '@shared/moves'
-import { ideaToTry, rememberLine, stepToFollow } from '@shared/continuity'
+import { carryLine, ideaToTry, rememberLine, stepToFollow } from '@shared/continuity'
 import { forgetPick, isFirstDay, loadHistory, todaysPick, writeFirstOf, type Half } from '@shared/profile'
 import { blackOn, intimacyOn, loadPrefs, pulseOn, regionHere, savePrefs, type Prefs } from '@shared/prefs'
 import { cachedPack, fetchPack, regionalFor, regionalToday } from '@shared/regional'
@@ -437,6 +437,7 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
       const glimpse = closing && steps.length > 0 && glimpseHere(set.date, flow)
       // The app shows it remembers: the sitting opens with an earlier answer.
       const remember = rememberLine(set.date, loadHistory())
+      const carry = closing ? carryLine(set.date, loadHistory()) : null
       body = (
         <Flow
           label={steps.length === 0 ? tr(name) : closing ? trf('{name} close', { name: tr(name) }) : trf('{name} · {n} of {m}', { name: tr(name), n: at + 1, m: steps.length })}
@@ -496,6 +497,17 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
                 dayWithYou={weekOne ? dayN : undefined}
               />
             ))}
+          {closing && steps.length > 0 && carry && (
+            <Tinted style={{ gap: 6 }}>
+              <T v="eyebrow">One thing to carry into today</T>
+              <T v="quote" style={{ fontSize: 19, lineHeight: 26 }}>
+                {carry}
+              </T>
+              <T v="small" tone="muted">
+                You don’t need to change anything. Just notice.
+              </T>
+            </Tinted>
+          )}
           {closing && steps.length > 0 && glimpse && <ReminderAsk />}
           {closing && steps.length > 0 && !me && !askedSignIn && !glimpse && canSignIn && (
             <Tinted>

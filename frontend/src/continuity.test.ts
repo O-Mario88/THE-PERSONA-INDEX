@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { ideaToTry, rememberLine, stepToFollow } from './continuity'
+import { carryLine, ideaToTry, rememberLine, stepToFollow } from './continuity'
 import type { Move } from './moves'
 import { saveJSON } from './storage'
 
@@ -40,5 +40,13 @@ describe('something useful without answering', () => {
     const h = { answers: [{ ...answer('2026-10-27', 'q1'), optionId: 'o1' }], skips: [] }
     expect(ideaToTry('2026-10-28', h, [])).toMatchObject({ questionId: 'q1', step: 'Share your real pay with one person.' })
     expect(ideaToTry('2026-10-28', h, [{ date: '2026-10-27', questionId: 'q1', optionId: 'o1', step: 'x', status: 'started' }])).toBeNull()
+  })
+})
+
+describe('a question worth carrying', () => {
+  it('picks what today’s answers reached for most, and stays quiet after a heavy one', () => {
+    const h = { answers: [{ ...answer('2026-10-28', 'a'), need: 'calm' as const }, { ...answer('2026-10-28', 'b'), need: 'calm' as const }, { ...answer('2026-10-28', 'c'), need: 'respect' as const }], skips: [] }
+    expect(carryLine('2026-10-28', h)).toBe('Notice one moment today when your shoulders drop.')
+    expect(carryLine('2026-10-29', h)).toBeNull()
   })
 })
