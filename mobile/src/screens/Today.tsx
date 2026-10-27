@@ -10,8 +10,8 @@ import { season } from '@shared/tapestry'
 import { windowsDone } from '@shared/windows'
 import { minutes, todaysRead } from '@shared/reads/reads'
 import type { Read } from '@shared/reads/types'
-import { font, gutter, lift, radius, useTheme } from '../theme'
-import { Button, Hairline, RowLink, T } from '../ui/kit'
+import { font, gutter, lift, radius, RAIL_W, useTheme, WIDE } from '../theme'
+import { Button, Card, RowLink, T } from '../ui/kit'
 import { Avatar, Ring, Tapestry } from '../ui/parts'
 import { Icon } from '../ui/Icon'
 
@@ -30,6 +30,7 @@ export function Today({
   themes,
   intimacy,
   onRead,
+  rail,
   children,
 }: {
   date: string
@@ -44,6 +45,7 @@ export function Today({
   themes: string[]
   intimacy: boolean
   onRead: (r: Read) => void
+  rail?: boolean // a right-hand column beside the feed, on a very wide screen
   children?: ReactNode
 }) {
   const { width } = useWindowDimensions()
@@ -52,12 +54,14 @@ export function Today({
   const items = dayItems(date, w, morning, evening, nowMin)
   const doneCount = items.filter((i) => i.state === 'done').length
   const s = season(date)
-  const inner = Math.min(width, 640) - gutter * 2
-  return (
+  // The tapestry's width inside its card (the card's padding and hairline).
+  const inner = (rail ? RAIL_W : Math.min(width, 640) - gutter * 2) - 42
+  const top = (
     <>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        {/* Beside the sidebar the brand is already on screen. */}
         <T v="label" tone="text">
-          The Persona Index
+          {width >= WIDE ? '' : 'The Persona Index'}
         </T>
         <Pressable accessibilityRole="button" accessibilityLabel="You and settings" onPress={onAccount} hitSlop={8}>
           <Avatar name={name || 'You'} size={36} />
@@ -77,25 +81,47 @@ export function Today({
       </View>
 
       <HeroCard hero={hero} now={now} onOpen={onOpen} />
-
-      <Hairline />
-      <View style={{ gap: 12 }}>
-        <T v="label">Season tapestry · day {s.day} of 90</T>
-        <Tapestry s={s} cols={18} width={inner} />
+    </>
+  )
+  const tapestry = (
+    <Card style={{ gap: 12 }}>
+      <T v="label">Season tapestry · day {s.day} of 90</T>
+      <Tapestry s={s} cols={rail ? 12 : 18} width={inner} />
+    </Card>
+  )
+  const ritual = (
+    <Card style={{ gap: 16 }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
+        <T v="h2">Today’s ritual</T>
+        <T v="small" tone="muted">
+          {doneCount} of {items.length} complete
+        </T>
       </View>
-      <Hairline />
-
-      <View style={{ gap: 16 }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
-          <T v="h2">Today’s ritual</T>
-          <T v="small" tone="muted">
-            {doneCount} of {items.length} complete
-          </T>
+      <DayLine items={items} />
+    </Card>
+  )
+  const read = <TodaysRead date={date} themes={themes} intimacy={intimacy} onRead={onRead} />
+  if (rail) {
+    return (
+      <View style={{ flexDirection: 'row', gap: 24, alignItems: 'flex-start' }}>
+        <View style={{ flex: 1, gap: 20 }}>
+          {top}
+          {ritual}
+          {children}
         </View>
-        <DayLine items={items} />
+        <View style={{ width: RAIL_W, gap: 20 }}>
+          {tapestry}
+          {read}
+        </View>
       </View>
-
-      <TodaysRead date={date} themes={themes} intimacy={intimacy} onRead={onRead} />
+    )
+  }
+  return (
+    <>
+      {top}
+      {tapestry}
+      {ritual}
+      {read}
       {children}
     </>
   )
@@ -199,15 +225,14 @@ function TodaysRead({ date, themes, intimacy, onRead }: { date: string; themes: 
   if (!read) return null
   return (
     <>
-      <Hairline />
-      <View style={{ gap: 10 }}>
+      <Card style={{ gap: 10 }}>
         <T v="eyebrow">Today's read · {minutes(read)} min</T>
         <T v="h2" style={{ fontSize: 22, lineHeight: 28 }}>
           {read.title}
         </T>
         <T tone="muted">{read.summary}</T>
         <RowLink label={load(OPENED + read.slug) === date ? 'Read it again' : 'Read it'} onPress={() => onRead(read)} />
-      </View>
+      </Card>
     </>
   )
 }

@@ -15,7 +15,7 @@ import { rateAnswer } from '@shared/rating'
 import { splitReveal } from '@shared/reveal'
 import { NOT_ME_REPLY, VERDICT_REPLIES } from '@shared/words'
 import { radius, useTheme } from '../theme'
-import { Button, Chip, Hairline, Page, T, Tinted } from '../ui/kit'
+import { Button, Card, Chip, Page, T, Tinted } from '../ui/kit'
 import { Disc } from '../ui/parts'
 import { HeavyCard, VerdictRow } from './QuestionCard'
 
@@ -62,27 +62,26 @@ export function Insights({
       )}
       <T v="h2">For You</T>
       {shown.length === 0 ? (
-        <T tone="muted">
-          {days === WEEK ? 'Answer a few questions and what they may say about you shows here, card by card.' : 'Nothing from the last 30 days yet. Your cards show here as you answer.'}
-        </T>
+        <Card>
+          <T tone="muted">
+            {days === WEEK ? 'Answer a few questions and what they may say about you shows here, card by card.' : 'Nothing from the last 30 days yet. Your cards show here as you answer.'}
+          </T>
+        </Card>
       ) : (
-        shown.map((c, i) => (
-          <View key={c.questionId} style={{ gap: 20 }}>
-            {i > 0 && <Hairline />}
+        shown.map((c) => (
+          <Card key={c.questionId} style={{ gap: 20 }}>
             <InsightCard card={c} today={today} onRated={() => setVersion((v) => v + 1)} onOpenReflect={onOpenReflect} onOpenMirror={onOpenMirror} />
-          </View>
+          </Card>
         ))
       )}
       {counted && (
-        <>
-          <Hairline />
+        <Card>
           <NotAlone today={today} cards={cards} pulse={pulse} onOpenSettings={onOpenSettings} />
-        </>
+        </Card>
       )}
       {saved.length > 0 && (
         <>
-          <Hairline />
-          <View style={{ gap: 10 }}>
+          <Card style={{ gap: 10 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
               <Disc icon="bookmark" tone="purple" size={40} />
               <T v="h2">Saved insights</T>
@@ -90,7 +89,7 @@ export function Insights({
             {saved.slice(0, 3).map((c) => (
               <T key={c.questionId}>• {c.headline}</T>
             ))}
-          </View>
+          </Card>
         </>
       )}
     </Page>

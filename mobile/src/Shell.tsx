@@ -25,7 +25,7 @@ import { startBackups } from '@shared/vault'
 import { startReminders, type Opens } from './platform/reminders'
 import { markWindow } from '@shared/windows'
 import type { Read } from '@shared/reads/types'
-import { dark as darkPalette, font, light as lightPalette, radius, ThemeProvider, useTheme, WIDE } from './theme'
+import { dark as darkPalette, font, light as lightPalette, radius, RAIL_AT, RAIL_W, ThemeProvider, useTheme, WIDE } from './theme'
 import { Back, Button, Page, PrivacyLine, T, Tinted } from './ui/kit'
 import { Icon, type IconName } from './ui/Icon'
 import { Sidebar, type SideItem } from './ui/Sidebar'
@@ -125,7 +125,9 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
   const [attempt, setAttempt] = useState(0)
   // Back from Google's sign-in on the website: open on sign-in to finish it.
   const [tab, setTab] = useState<View_>(() => (backFromGoogle() ? 'signin' : 'today'))
-  const wide = useWindowDimensions().width >= WIDE
+  const { width: windowWidth } = useWindowDimensions()
+  const wide = windowWidth >= WIDE
+  const rail = windowWidth >= RAIL_AT
   const mirrorScroll = useRef<ComponentRef<typeof ScrollView>>(null)
   const [back, setBack] = useState<Tab>('today')
   const [reading, setReading] = useState<Read | null>(null)
@@ -526,7 +528,7 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
   } else {
     // Today itself.
     body = (
-      <Page>
+      <Page wideMax={rail ? RAIL_W + 24 : 0}>
         {offline && <T tone="muted">You're offline, so I opened what this phone already had. Answers go through once you're back.</T>}
         {set && hero ? (
           <Today
@@ -545,6 +547,7 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
             themes={themesOf([...morningQs, ...eveningQs])}
             intimacy={intimacyOn(prefs)}
             onRead={openRead}
+            rail={rail}
           >
             {!set.review && morning !== 'done' && win !== 'morning' && clockSitting === 'morning' && (
               <Tinted>

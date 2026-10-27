@@ -140,6 +140,9 @@ export const gutter = 24
 // From this width a browser or a Mac window gets the sidebar instead of the
 // tab bar.
 export const WIDE = 900
+// From this width Today adds a right-hand column, as Facebook's home does.
+export const RAIL_AT = 1340
+export const RAIL_W = 300
 export const SIDE_W = 248
 export const radius = { sm: 10, md: 14, lg: 18, xl: 24, pill: 999 } as const
 

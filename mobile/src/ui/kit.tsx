@@ -17,7 +17,7 @@ import {
   type ViewStyle,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { font, gutter, radius, useTheme, WIDE, type Palette } from '../theme'
+import { font, gutter, lift, radius, useTheme, WIDE, type Palette } from '../theme'
 import { Icon, type IconName } from './Icon'
 
 // ---- type ----
@@ -25,16 +25,19 @@ import { Icon, type IconName } from './Icon'
 type Variant = 'display' | 'title' | 'h2' | 'h3' | 'body' | 'small' | 'tiny' | 'label' | 'eyebrow' | 'serif'
 type Tone = 'text' | 'text2' | 'muted' | 'accent' | 'onNavy' | 'onNavy2' | 'danger' | 'leaf' | 'warm'
 
+// X-style type (Edwin, 2026-10-27): one face, few sizes, heavy headings with
+// tight tracking, compact body lines, and labels in sentence case rather
+// than spaced capitals.
 const VARIANTS: Record<Variant, TextStyle> = {
-  display: { fontFamily: font.heavy, fontSize: 34, lineHeight: 38, letterSpacing: -0.85 },
-  title: { fontFamily: font.heavy, fontSize: 28, lineHeight: 32, letterSpacing: -0.7 },
-  h2: { fontFamily: font.heavy, fontSize: 20, lineHeight: 25, letterSpacing: -0.3 },
-  h3: { fontFamily: font.bold, fontSize: 17, lineHeight: 22 },
-  body: { fontFamily: font.regular, fontSize: 16, lineHeight: 24 },
-  small: { fontFamily: font.regular, fontSize: 14, lineHeight: 20 },
-  tiny: { fontFamily: font.medium, fontSize: 12, lineHeight: 16 },
-  label: { fontFamily: font.bold, fontSize: 12, lineHeight: 16, letterSpacing: 2.4, textTransform: 'uppercase' },
-  eyebrow: { fontFamily: font.bold, fontSize: 12, lineHeight: 16, letterSpacing: 2.4, textTransform: 'uppercase' },
+  display: { fontFamily: font.heavy, fontSize: 31, lineHeight: 36, letterSpacing: -0.6 },
+  title: { fontFamily: font.heavy, fontSize: 23, lineHeight: 28, letterSpacing: -0.35 },
+  h2: { fontFamily: font.heavy, fontSize: 20, lineHeight: 24, letterSpacing: -0.2 },
+  h3: { fontFamily: font.bold, fontSize: 17, lineHeight: 22, letterSpacing: -0.1 },
+  body: { fontFamily: font.regular, fontSize: 16, lineHeight: 22 },
+  small: { fontFamily: font.regular, fontSize: 14, lineHeight: 19 },
+  tiny: { fontFamily: font.medium, fontSize: 13, lineHeight: 16 },
+  label: { fontFamily: font.bold, fontSize: 13, lineHeight: 16 },
+  eyebrow: { fontFamily: font.bold, fontSize: 13, lineHeight: 16 },
   serif: { fontFamily: 'Georgia', fontSize: 26, lineHeight: 32 },
 }
 
@@ -306,9 +309,25 @@ export function Field(props: TextInputProps & { label?: string; note?: string })
 
 // ---- layout ----
 
+// The column of a page beside the sidebar: Facebook's feed width.
+export const FEED = 680
+
 // The page: the cream background, the gutter, room for the tab bar. Beside
-// the wide-screen sidebar it gets roomier margins and a 760px measure.
-export function Page({ children, bottom = 32, refresh, scrollRef }: { children: ReactNode; bottom?: number; refresh?: number; scrollRef?: Ref<ComponentRef<typeof ScrollView>> }) {
+// the wide-screen sidebar it gets roomier margins and the feed's width, plus
+// wideMax for a page that adds a right-hand column.
+export function Page({
+  children,
+  bottom = 32,
+  refresh,
+  scrollRef,
+  wideMax,
+}: {
+  children: ReactNode
+  bottom?: number
+  refresh?: number
+  scrollRef?: Ref<ComponentRef<typeof ScrollView>>
+  wideMax?: number
+}) {
   const p = useTheme()
   const insets = useSafeAreaInsets()
   const wide = useWindowDimensions().width >= WIDE
@@ -323,7 +342,7 @@ export function Page({ children, bottom = 32, refresh, scrollRef }: { children: 
           paddingTop: wide ? 32 : Math.max(insets.top, 20) + 8,
           paddingBottom: wide ? Math.max(bottom, 40) : bottom,
           gap: 20,
-          maxWidth: wide ? 760 + 80 : 640,
+          maxWidth: (wide ? FEED : 640) + (wide ? 80 : 0) + (wideMax ?? 0),
           width: '100%',
           alignSelf: 'center',
         }}
@@ -336,6 +355,13 @@ export function Page({ children, bottom = 32, refresh, scrollRef }: { children: 
       <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: insets.top, backgroundColor: p.bg }} />
     </View>
   )
+}
+
+// A Facebook-style card: one section of a page, white on the cream page with
+// a hairline and the soft lift. Pages are a column of these.
+export function Card({ children, style, pad = 20 }: { children: ReactNode; style?: StyleProp<ViewStyle>; pad?: number }) {
+  const p = useTheme()
+  return <View style={[{ backgroundColor: p.surface, borderColor: p.line, borderWidth: 1, borderRadius: radius.lg, padding: pad, gap: 12 }, lift(p), style]}>{children}</View>
 }
 
 export function Hairline({ style }: { style?: StyleProp<ViewStyle> }) {

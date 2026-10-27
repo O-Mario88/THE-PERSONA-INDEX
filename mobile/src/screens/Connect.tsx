@@ -11,7 +11,7 @@ import type { Question } from '@shared/api'
 import { createInvite, getCircle, inviteLink, TAG_NAMES, TAGS, type AccountView, type CircleView, type Tag } from '@shared/social'
 import { dayMonth } from '@shared/reflect'
 import { radius } from '../theme'
-import { Button, Chip, Hairline, Page, T, Tinted } from '../ui/kit'
+import { Button, Card, Chip, Page, T, Tinted } from '../ui/kit'
 import { Avatar, Disc, Ring as Progress } from '../ui/parts'
 import { CloserTogether, CommonGround, Growing, SupportCelebrate, WhatHelped } from './ConnectMore'
 
@@ -67,7 +67,7 @@ export function Connect({ me, onSignIn, today, questions = [] }: { me: AccountVi
       {error ? <T tone="danger">{error}</T> : null}
       {friends.length > 0 && <CloserTogether friends={friends} rings={rings} />}
 
-      <View style={{ gap: 14 }}>
+      <Card style={{ gap: 14 }}>
         <T v="h2">Your Circle</T>
         <View style={{ flexDirection: 'row', gap: 24 }}>
           <Stat n={friends.length} label="People in your circle" />
@@ -89,25 +89,28 @@ export function Connect({ me, onSignIn, today, questions = [] }: { me: AccountVi
         {friends.map((f) => (
           <Friend key={f.id} name={f.name} sub={`${TAG_NAMES[f.tag]}${f.active ? ' · active this week' : ''}`} ring={ringOf(rings, f.id)} onPlace={(r) => setRings(placeIn(f.id, r))} />
         ))}
-      </View>
+      </Card>
 
-      <Hairline />
-      <Invite circle={circle} />
+      <Card>
+        <Invite circle={circle} />
+      </Card>
 
       {today && (
-        <>
-          <Hairline />
+        <Card>
           <Growing date={today} questions={questions} circle={circle} />
-        </>
+        </Card>
       )}
       {friends.length > 0 && (
         <>
-          <Hairline />
-          <CommonGround friends={friends} />
-          <Hairline />
-          <WhatHelped />
-          <Hairline />
-          <SupportCelebrate today={today} />
+          <Card>
+            <CommonGround friends={friends} />
+          </Card>
+          <Card>
+            <WhatHelped />
+          </Card>
+          <Card>
+            <SupportCelebrate today={today} />
+          </Card>
         </>
       )}
 

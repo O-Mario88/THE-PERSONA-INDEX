@@ -18,7 +18,7 @@ import { thoughtsFor, type Answered, type Thought } from '@shared/thoughts'
 import { BringBack } from './Backup'
 import { Notebook } from './Notebook'
 import { font, radius, useTheme } from '../theme'
-import { Button, Hairline, Page, T, Tinted, Toggle } from '../ui/kit'
+import { Button, Card, Page, T, Tinted, Toggle } from '../ui/kit'
 import { Disc, type Tone } from '../ui/parts'
 import { Icon, type IconName } from '../ui/Icon'
 
@@ -154,8 +154,7 @@ export function Reflect({ today, questions, mild = false }: { today: string; que
       </View>
 
       {past.length > 0 && (
-        <View style={{ gap: 12 }}>
-          <Hairline />
+        <Card style={{ gap: 12 }}>
           <T v="h2">Your recent reflections</T>
           {past.slice(0, 4).map((r) => (
             <View key={r.id} style={{ flexDirection: 'row', gap: 12, alignItems: 'flex-start' }}>
@@ -170,7 +169,7 @@ export function Reflect({ today, questions, mild = false }: { today: string; que
               </View>
             </View>
           ))}
-        </View>
+        </Card>
       )}
 
       {consider && (
@@ -184,8 +183,7 @@ export function Reflect({ today, questions, mild = false }: { today: string; que
         </View>
       )}
 
-      <Hairline />
-      <View style={{ gap: 14 }}>
+      <Card style={{ gap: 14 }}>
         <View style={{ gap: 4 }}>
           <T v="h2">What you’ve noticed</T>
           <T v="small" tone="muted">
@@ -223,10 +221,9 @@ export function Reflect({ today, questions, mild = false }: { today: string; que
             )
           })}
         </View>
-      </View>
+      </Card>
 
-      <Hairline />
-      <View style={{ gap: 4 }}>
+      <Card style={{ gap: 4 }}>
         <T v="h2">Your choices</T>
         <Toggle
           label="Use my reflections in What you’ve noticed"
@@ -249,9 +246,10 @@ export function Reflect({ today, questions, mild = false }: { today: string; que
         <T v="small" tone="muted" style={{ marginTop: 8 }}>
           🔒 {PRIVACY_LINE}
         </T>
-      </View>
-      <Hairline />
-      <Notebook mild={mild} today={today} />
+      </Card>
+      <Card>
+        <Notebook mild={mild} today={today} />
+      </Card>
     </Page>
   )
 }

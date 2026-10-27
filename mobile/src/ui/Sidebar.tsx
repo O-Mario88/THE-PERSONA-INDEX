@@ -38,7 +38,7 @@ export function Sidebar({ top, foot }: { top: SideItem[]; foot: SideItem[] }) {
     <View accessibilityRole="tablist" style={{ width: SIDE_W, backgroundColor: p.side, paddingVertical: 24, paddingHorizontal: 16, gap: 4 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: 8, marginBottom: 32 }}>
         <Icon name="leaf" size={26} color={p.brandLime} width={2} />
-        <Text style={{ maxWidth: 136, color: p.onNavy, fontFamily: font.heavy, fontSize: 13, lineHeight: 15, letterSpacing: 1, textTransform: 'uppercase' }}>The Persona Index</Text>
+        <Text style={{ maxWidth: 150, color: p.onNavy, fontFamily: font.heavy, fontSize: 17, lineHeight: 20, letterSpacing: -0.2 }}>The Persona Index</Text>
       </View>
       {top.map((item) => (
         <Row key={item.key} item={item} />

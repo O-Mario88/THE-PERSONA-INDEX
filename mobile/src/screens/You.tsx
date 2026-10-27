@@ -10,7 +10,7 @@ import { notebookCount } from '@shared/notebook'
 import { blackOn, loadPrefs, pulseOn, type Prefs } from '@shared/prefs'
 import { loadHistory } from '@shared/profile'
 import { forgetSession, patchAccount, signOut, type AccountView } from '@shared/social'
-import { Back, Button, Field, Hairline, Page, RowLink, T, Tinted, Toggle } from '../ui/kit'
+import { Back, Button, Card, Field, Page, RowLink, T, Tinted, Toggle } from '../ui/kit'
 import { Avatar } from '../ui/parts'
 import { DownloadButtons } from './BookDownloads'
 
@@ -112,8 +112,7 @@ export function You({
         </View>
       )}
 
-      <Hairline />
-      <View style={{ gap: 4 }}>
+      <Card style={{ gap: 4 }}>
         <T v="label">Choices</T>
         <Toggle
           label="Dark mode"
@@ -135,9 +134,8 @@ export function You({
             onChange={(on) => onChange({ ...prefs, mild: on })}
           />
         )}
-      </View>
+      </Card>
 
-      <Hairline />
       <RowLink label="Settings" sub="Your name, intimacy questions, where you live" onPress={onOpenSettings} />
       <RowLink label="What I keep, and how to delete it" onPress={onOpenKept} />
 

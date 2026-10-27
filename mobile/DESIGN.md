@@ -43,10 +43,12 @@ The key names `lime` and `navy` are kept from earlier palettes. Read them as
 
 ## Type
 
-Figtree, bundled (400 to 800). `T` variants: `display` 34 at 800 with tight
-tracking, `title` 28, `h2` 20 at 800, `h3` 17 at 700, `body` 16 at 1.5,
-`small` 14, `tiny` 12, and `label`/`eyebrow` 12 at 700, uppercase, tracked
-0.2em ("THE PERSONA INDEX", "MORNING · 1 OF 3"). A question is 30 at 800.
+X-style (Edwin, 2026-10-27): one face, few sizes, heavy headings with tight
+tracking, compact body lines, labels in sentence case. Figtree, bundled (400
+to 800). `T` variants: `display` 31/36 at 800 (-0.6), `title` 23/28, `h2`
+20/24 at 800, `h3` 17/22 at 700, `body` 16/22, `small` 14/19, `tiny` 13, and
+`label`/`eyebrow` 13 at 700 in sentence case ("Morning · 1 of 3"). A
+question is 30 at 800.
 
 ## Shape and space
 
@@ -65,17 +67,20 @@ in dark.
 - **Chips** (`Chip`): 40px pills on `surface2`; a chosen one takes the
   filled accent.
 - **Fields** (`Field`): white with a 1.5px hairline, regular weight.
-- **Cards**: white on a hairline with `lift()`; most of a page sits on the
-  background between hairlines, and only a few highlights keep a `Tinted` box.
+- **Cards** (`Card`): Facebook-style. Every section of a page is a white card
+  on the cream page, with a hairline and `lift()`; `Tinted` boxes are for the
+  few highlights.
 - **Progress**: segments under a sitting, the five-dot "Today's ritual",
   rings for the day and countdowns.
 
 ## Layout
 
-Below 900px wide: a tab bar (Today, Reflect, Connect, Insights, You). From
-900px (a browser or a Mac window): the midnight sidebar with Today, Reflect,
-Connect, Insights, Mirrors and Saved, then Profile and Settings at the foot,
-and pages capped at 760px.
+Facebook-style (Edwin, 2026-10-27). Below 900px wide: a tab bar (Today,
+Reflect, Connect, Insights, You). From 900px (a browser or a Mac window): the
+midnight sidebar with Today, Reflect, Connect, Insights, Mirrors and Saved,
+then Profile and Settings at the foot, and a 680px feed column (`FEED`). From
+1340px Today adds a 300px right-hand column with the season tapestry and
+today's read.
 
 ## On the website
 
