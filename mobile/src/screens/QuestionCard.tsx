@@ -40,7 +40,7 @@ import { moveFor, startMove } from '@shared/moves'
 import { focusPlan, keepCard, keptCard, makePlan, unkeepCard } from '@shared/notebook'
 import { inOrder } from '@shared/order'
 import { loadPeople, namesLine } from '@shared/people'
-import { DEFAULT_WORDS_DAYS, helplineHere } from '@shared/prefs'
+import { crisisHere, DEFAULT_WORDS_DAYS, helplineHere } from '@shared/prefs'
 import { isLowMood, loadHistory, recalledAnswer, recordAnswer, recordSkip, recordVerdict, threadLine } from '@shared/profile'
 import { isNeed, NEED_PHRASES } from '@shared/needs'
 import { splitReveal } from '@shared/reveal'
@@ -385,6 +385,7 @@ function Helpline() {
 }
 
 export function HeavyCard() {
+  const crisis = crisisHere()
   const people = loadPeople()
   const names = people?.names ?? []
   const draft = names[0] ? `Hey ${names[0]}, had a heavy day. Free for a 5-minute call later?` : ''
@@ -408,6 +409,7 @@ export function HeavyCard() {
           Talk to someone now
         </Text>
       </T>
+      {crisis && <Button small kind="danger" icon="chat" label={crisis.label} onPress={() => Linking.openURL(`tel:${crisis.tel}`)} />}
       <T v="tiny">Something to think about, never a diagnosis.</T>
     </Tinted>
   )

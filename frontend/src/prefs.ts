@@ -79,6 +79,18 @@ export const regionHere = (p: Prefs): Region | null => (p.regional === false ? n
 // know nothing about the reader, use HELPLINE_URL (Helpline.tsx).
 export const helplineHere = () => helplineFor(countryOf(loadPrefs()))
 
+// A crisis line someone in that country already knows, to call or text in one
+// tap: 988 in the US and Canada, Samaritans in the UK and Ireland. Elsewhere
+// the helpline directory above is the way.
+const CRISIS_NUMBERS: Record<string, { label: string; tel: string; sms?: string }> = {
+  US: { label: 'Call or text 988', tel: '988', sms: '988' },
+  CA: { label: 'Call or text 988', tel: '988', sms: '988' },
+  GB: { label: 'Call Samaritans, 116 123', tel: '116123' },
+  IE: { label: 'Call Samaritans, 116 123', tel: '116123' },
+}
+export const crisisNumber = (country: string | null) => (country ? (CRISIS_NUMBERS[country] ?? null) : null)
+export const crisisHere = () => crisisNumber(countryOf(loadPrefs()))
+
 // The Human Pulse shows only once the person has said yes to it.
 export const pulseOn = (p: Prefs) => p.pulse === true
 // Evening and night on pure black, unless switched off.

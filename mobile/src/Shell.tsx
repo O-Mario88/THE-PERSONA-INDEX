@@ -43,6 +43,7 @@ import { Settings } from './screens/Settings'
 import { Mirror } from './screens/Mirror'
 import { ReadScreen } from './screens/ReadScreen'
 import { CountryAsk } from './screens/Country'
+import { themeName } from '@shared/themes'
 import { InstallInvite } from './screens/Browser'
 import { ReminderAsk } from './screens/Reminders'
 import { backFromGoogle } from './platform/googleWeb'
@@ -584,6 +585,15 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
               </Tinted>
             )}
             <InstallInvite today={set.date} />
+            {(evening === 'done' || (evening === null && morning === 'done')) && (set.tomorrowThemes?.length ?? 0) > 0 && (
+              <Tinted tone="plain">
+                <T v="h3">Tomorrow</T>
+                <T tone="text2">
+                  Your morning three open at {clock(5 * 60)}, with questions about {(set.tomorrowThemes ?? []).slice(0, 2).map((t) => themeName(t).toLowerCase()).join(' and ')}.
+                  {weekOne ? ' On Sunday, your first Mirror.' : ''}
+                </T>
+              </Tinted>
+            )}
             <PrivacyLine onKept={() => open('kept')} onSettings={() => open('settings')} />
           </Today>
         ) : state.kind === 'empty' ? (
