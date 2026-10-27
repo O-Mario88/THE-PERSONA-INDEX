@@ -17,7 +17,7 @@ import {
   type ViewStyle,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { font, gutter, lift, radius, useTheme, WIDE, type Palette } from '../theme'
+import { font, gutter, lift, radius, RAIL_AT, RAIL_W, useTheme, WIDE, type Palette } from '../theme'
 import { Icon, type IconName } from './Icon'
 
 // ---- type ----
@@ -99,6 +99,10 @@ export function B({ children }: { children: ReactNode }) {
   return <Text style={{ fontFamily: font.bold }}>{children}</Text>
 }
 
+// React Native for Web adds `hovered` to a Pressable's state on a computer;
+// a phone never sets it.
+const hovered = (s: { pressed: boolean }) => !!(s as { hovered?: boolean }).hovered
+
 // ---- buttons ----
 
 type Kind = 'primary' | 'soft' | 'ghost' | 'outline' | 'text' | 'danger' | 'light'
@@ -146,17 +150,17 @@ export function Button({
       accessibilityLabel={label}
       disabled={off}
       onPress={onPress}
-      style={({ pressed }) => [
+      style={(s) => [
         styles.btn,
         {
-          backgroundColor: off && kind === 'primary' ? p.surface3 : l.bg,
+          backgroundColor: off && kind === 'primary' ? p.surface3 : hovered(s) && !off && (kind === 'outline' || kind === 'light' || kind === 'ghost') ? p.surface2 : l.bg,
           borderColor: l.border ?? 'transparent',
           borderWidth: l.border ? 1 : 0,
           minHeight: small ? 40 : kind === 'text' ? 36 : wide ? 56 : 48,
           paddingHorizontal: kind === 'text' ? 0 : small ? 16 : 24,
           alignSelf: wide ? 'stretch' : 'flex-start',
           borderRadius: small ? radius.pill : radius.md,
-          opacity: pressed ? 0.85 : 1,
+          opacity: s.pressed ? 0.85 : hovered(s) && !off && (kind === 'primary' || kind === 'soft') ? 0.92 : 1,
         },
         style,
       ]}
@@ -181,7 +185,7 @@ export function RowLink({ label, sub, onPress, icon }: { label: string; sub?: st
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
-      style={({ pressed }) => [styles.rowLink, { borderColor: p.line, backgroundColor: p.surface, opacity: pressed ? 0.8 : 1 }]}
+      style={(s) => [styles.rowLink, { borderColor: hovered(s) ? p.lineStrong : p.line, backgroundColor: hovered(s) ? p.surface2 : p.surface, opacity: s.pressed ? 0.8 : 1 }]}
     >
       {icon}
       <View style={{ flex: 1 }}>
@@ -208,10 +212,10 @@ export function Option({ label, onPress, disabled, chosen, icon }: { label: stri
       onPress={onPress}
       onPressIn={() => setDown(true)}
       onPressOut={() => setDown(false)}
-      style={[
-        styles.option,
-        { backgroundColor: on ? p.accentWash : p.surface, borderColor: on ? p.accentLine : p.line, opacity: disabled ? 0.6 : 1 },
-      ]}
+      style={(s) => {
+        const lit = on || (hovered(s) && !disabled)
+        return [styles.option, { backgroundColor: lit ? p.accentWash : p.surface, borderColor: lit ? p.accentLine : p.line, opacity: disabled ? 0.6 : 1 }]
+      }}
     >
       <View style={[styles.optionRing, { borderColor: chosen ? p.lime : p.lineStrong, backgroundColor: chosen ? p.lime : p.surface }]}>
         {chosen && <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: p.onLime }} />}
@@ -314,15 +318,19 @@ export const FEED = 680
 
 // The page: the cream background, the gutter, room for the tab bar. Beside
 // the wide-screen sidebar it gets roomier margins and the feed's width, plus
-// wideMax for a page that adds a right-hand column.
+// wideMax for a page that draws its own right-hand column. A page can hand
+// its side cards over as `aside`: from RAIL_AT they stand in a right-hand
+// column, as on Facebook's home; narrower, they follow the page.
 export function Page({
   children,
+  aside,
   bottom = 32,
   refresh,
   scrollRef,
   wideMax,
 }: {
   children: ReactNode
+  aside?: ReactNode
   bottom?: number
   refresh?: number
   scrollRef?: Ref<ComponentRef<typeof ScrollView>>
@@ -330,7 +338,10 @@ export function Page({
 }) {
   const p = useTheme()
   const insets = useSafeAreaInsets()
-  const wide = useWindowDimensions().width >= WIDE
+  const { width } = useWindowDimensions()
+  const wide = width >= WIDE
+  const rail = !!aside && width >= RAIL_AT
+  const extra = rail ? RAIL_W + 24 : (wideMax ?? 0)
   return (
     <View style={{ flex: 1, backgroundColor: p.bg }}>
       <ScrollView
@@ -342,14 +353,24 @@ export function Page({
           paddingTop: wide ? 32 : Math.max(insets.top, 20) + 8,
           paddingBottom: wide ? Math.max(bottom, 40) : bottom,
           gap: 20,
-          maxWidth: (wide ? FEED : 640) + (wide ? 80 : 0) + (wideMax ?? 0),
+          maxWidth: (wide ? FEED : 640) + (wide ? 80 : 0) + extra,
           width: '100%',
           alignSelf: 'center',
         }}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
       >
-        {children}
+        {rail ? (
+          <View style={{ flexDirection: 'row', gap: 24, alignItems: 'flex-start' }}>
+            <View style={{ flex: 1, gap: 20 }}>{children}</View>
+            <View style={{ width: RAIL_W, gap: 20 }}>{aside}</View>
+          </View>
+        ) : (
+          <>
+            {children}
+            {aside}
+          </>
+        )}
       </ScrollView>
       {/* The page colour behind the status bar, so words don't scroll under the clock. */}
       <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: insets.top, backgroundColor: p.bg }} />

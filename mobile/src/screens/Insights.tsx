@@ -49,7 +49,32 @@ export function Insights({
   const counted = cards.some((c) => !c.heavy && !c.regional)
   const answeredAny = loadHistory().answers.length > 0
   return (
-    <Page>
+    <Page
+      aside={
+        counted || saved.length > 0 ? (
+        <>
+          {counted && (
+            <Card>
+              <NotAlone today={today} cards={cards} pulse={pulse} onOpenSettings={onOpenSettings} />
+            </Card>
+          )}
+          {saved.length > 0 && (
+            <>
+              <Card style={{ gap: 10 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                  <Disc icon="bookmark" tone="purple" size={40} />
+                  <T v="h2">Saved insights</T>
+                </View>
+                {saved.slice(0, 3).map((c) => (
+                  <T key={c.questionId}>• {c.headline}</T>
+                ))}
+              </Card>
+            </>
+          )}
+        </>
+        ) : undefined
+      }
+    >
       <View style={{ gap: 4 }}>
         <T v="display">Insights</T>
         <T tone="text2">Understand yourself. Find what helps.</T>
@@ -73,24 +98,6 @@ export function Insights({
             <InsightCard card={c} today={today} onRated={() => setVersion((v) => v + 1)} onOpenReflect={onOpenReflect} onOpenMirror={onOpenMirror} />
           </Card>
         ))
-      )}
-      {counted && (
-        <Card>
-          <NotAlone today={today} cards={cards} pulse={pulse} onOpenSettings={onOpenSettings} />
-        </Card>
-      )}
-      {saved.length > 0 && (
-        <>
-          <Card style={{ gap: 10 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-              <Disc icon="bookmark" tone="purple" size={40} />
-              <T v="h2">Saved insights</T>
-            </View>
-            {saved.slice(0, 3).map((c) => (
-              <T key={c.questionId}>• {c.headline}</T>
-            ))}
-          </Card>
-        </>
       )}
     </Page>
   )

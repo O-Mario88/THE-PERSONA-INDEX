@@ -61,10 +61,22 @@ function fromNoticed(n: Noticed, period: ReflectionPeriod): Thought {
 
 const countWords = (s: string) => s.trim().split(/\s+/).filter(Boolean).length
 
-export function Reflect({ today, questions, mild = false }: { today: string; questions: Question[]; mild?: boolean }) {
+export function Reflect({
+  today,
+  questions,
+  mild = false,
+  startFree = false,
+  name = null,
+}: {
+  today: string
+  questions: Question[]
+  mild?: boolean
+  startFree?: boolean
+  name?: string | null
+}) {
   const p = useTheme()
   const [period, setPeriod] = useState<ReflectionPeriod>('day')
-  const [free, setFree] = useState(false)
+  const [free, setFree] = useState(startFree)
   const [at, setAt] = useState(0)
   const [chosen, setChosen] = useState<Thought | null>(null)
   const [mirror, setMirror] = useState<Mirror | null>(null)
@@ -103,10 +115,75 @@ export function Reflect({ today, questions, mild = false }: { today: string; que
   }
 
   return (
-    <Page>
+    <Page
+      aside={
+        <>
+          <Card style={{ flexDirection: 'row', gap: 14 }}>
+            <Disc icon="leaf" tone="amber" size={44} />
+            <View style={{ flex: 1, gap: 4 }}>
+              <T v="h3">A gentle reminder</T>
+              <T tone="muted">{reminderFor(today)}</T>
+            </View>
+          </Card>
+          {past.length > 0 && (
+            <Card style={{ gap: 12 }}>
+              <T v="h2">Your recent reflections</T>
+              {past.slice(0, 4).map((r) => (
+                <View key={r.id} style={{ flexDirection: 'row', gap: 12, alignItems: 'flex-start' }}>
+                  <Icon name="doc" size={20} color={p.text2} />
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <T v="small" tone="muted">
+                      {dayMonth(r.date)}
+                    </T>
+                    <T bold lines={2}>
+                      {r.answer}
+                    </T>
+                  </View>
+                </View>
+              ))}
+            </Card>
+          )}
+
+          {consider && (
+            <View style={{ flexDirection: 'row', gap: 14 }}>
+              <Disc icon="pin" tone="rose" size={44} />
+              <View style={{ flex: 1, gap: 8 }}>
+                <T v="h3">Something to consider</T>
+                <T tone="muted">{consider.text}</T>
+                <Button small kind="soft" label="Reflect on this" iconAfter="arrow" onPress={() => setChosen(fromNoticed(consider, period))} />
+              </View>
+            </View>
+          )}
+          <Card style={{ gap: 4 }}>
+            <T v="h2">Your choices</T>
+            <Toggle
+              label="Use my reflections in What you’ve noticed"
+              note="Only counts of what you wrote about, worked out on this phone. Off unless you turn it on."
+              value={settings.reflectionsInNoticed}
+              onChange={(on) => changeSettings({ reflectionsInNoticed: on })}
+            />
+            <Toggle
+              label="Show my reflections in Your Growth"
+              note="Insights sets an earlier and a more recent reflection side by side, on this phone only. Off unless you turn it on."
+              value={settings.reflectionsInGrowth}
+              onChange={(on) => changeSettings({ reflectionsInGrowth: on })}
+            />
+            <Toggle
+              label="Let my threads add to the longer Mirrors"
+              note="Your month, quarter and year Mirrors show which threads you kept going. Off unless you turn it on."
+              value={settings.threadsInMirror}
+              onChange={(on) => changeSettings({ threadsInMirror: on })}
+            />
+            <T v="small" tone="muted" style={{ marginTop: 8 }}>
+              🔒 {PRIVACY_LINE}
+            </T>
+          </Card>
+        </>
+      }
+    >
       <View style={{ gap: 4 }}>
         <T v="display">Reflect</T>
-        <T tone="text2">A quiet space for your thoughts.</T>
+        <T tone="text2">{name ? `A quiet space for your thoughts, ${name}.` : 'A quiet space for your thoughts.'}</T>
       </View>
 
       <View style={{ flexDirection: 'row', backgroundColor: p.surface, borderColor: p.line, borderWidth: 1, borderRadius: radius.md, padding: 4 }}>
@@ -144,44 +221,6 @@ export function Reflect({ today, questions, mild = false }: { today: string; que
         onSaved={() => setVersion((v) => v + 1)}
         onDone={() => setChosen(null)}
       />
-
-      <View style={{ flexDirection: 'row', gap: 14 }}>
-        <Disc icon="leaf" tone="amber" size={44} />
-        <View style={{ flex: 1, gap: 4 }}>
-          <T v="h3">A gentle reminder</T>
-          <T tone="muted">{reminderFor(today)}</T>
-        </View>
-      </View>
-
-      {past.length > 0 && (
-        <Card style={{ gap: 12 }}>
-          <T v="h2">Your recent reflections</T>
-          {past.slice(0, 4).map((r) => (
-            <View key={r.id} style={{ flexDirection: 'row', gap: 12, alignItems: 'flex-start' }}>
-              <Icon name="doc" size={20} color={p.text2} />
-              <View style={{ flex: 1, gap: 2 }}>
-                <T v="small" tone="muted">
-                  {dayMonth(r.date)}
-                </T>
-                <T bold lines={2}>
-                  {r.answer}
-                </T>
-              </View>
-            </View>
-          ))}
-        </Card>
-      )}
-
-      {consider && (
-        <View style={{ flexDirection: 'row', gap: 14 }}>
-          <Disc icon="pin" tone="rose" size={44} />
-          <View style={{ flex: 1, gap: 8 }}>
-            <T v="h3">Something to consider</T>
-            <T tone="muted">{consider.text}</T>
-            <Button small kind="soft" label="Reflect on this" iconAfter="arrow" onPress={() => setChosen(fromNoticed(consider, period))} />
-          </View>
-        </View>
-      )}
 
       <Card style={{ gap: 14 }}>
         <View style={{ gap: 4 }}>
@@ -223,30 +262,6 @@ export function Reflect({ today, questions, mild = false }: { today: string; que
         </View>
       </Card>
 
-      <Card style={{ gap: 4 }}>
-        <T v="h2">Your choices</T>
-        <Toggle
-          label="Use my reflections in What you’ve noticed"
-          note="Only counts of what you wrote about, worked out on this phone. Off unless you turn it on."
-          value={settings.reflectionsInNoticed}
-          onChange={(on) => changeSettings({ reflectionsInNoticed: on })}
-        />
-        <Toggle
-          label="Show my reflections in Your Growth"
-          note="Insights sets an earlier and a more recent reflection side by side, on this phone only. Off unless you turn it on."
-          value={settings.reflectionsInGrowth}
-          onChange={(on) => changeSettings({ reflectionsInGrowth: on })}
-        />
-        <Toggle
-          label="Let my threads add to the longer Mirrors"
-          note="Your month, quarter and year Mirrors show which threads you kept going. Off unless you turn it on."
-          value={settings.threadsInMirror}
-          onChange={(on) => changeSettings({ threadsInMirror: on })}
-        />
-        <T v="small" tone="muted" style={{ marginTop: 8 }}>
-          🔒 {PRIVACY_LINE}
-        </T>
-      </Card>
       <Card>
         <Notebook mild={mild} today={today} />
       </Card>

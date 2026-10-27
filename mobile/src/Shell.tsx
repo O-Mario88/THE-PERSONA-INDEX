@@ -128,6 +128,7 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
   const { width: windowWidth } = useWindowDimensions()
   const wide = windowWidth >= WIDE
   const rail = windowWidth >= RAIL_AT
+  const [writeFree, setWriteFree] = useState(false)
   const mirrorScroll = useRef<ComponentRef<typeof ScrollView>>(null)
   const [back, setBack] = useState<Tab>('today')
   const [reading, setReading] = useState<Read | null>(null)
@@ -256,7 +257,13 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
 
   function goTab(t: Tab) {
     setTab(t)
+    setWriteFree(false)
     if (t === 'today' && tab === 'today') setFlow(null)
+  }
+  // Today's "What's on your mind?" opens Reflect on a blank page.
+  function write() {
+    setTab('notebook')
+    setWriteFree(true)
   }
   function open(v: 'settings' | 'kept' | 'signin' | 'mirror') {
     if (tab === 'today' || tab === 'notebook' || tab === 'circle' || tab === 'insights' || tab === 'account') setBack(tab)
@@ -389,7 +396,7 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
       </Page>
     )
   } else if (tab === 'notebook') {
-    body = <Reflect today={date} questions={[...morningQs, ...eveningQs]} mild={!intimacyOn(prefs)} />
+    body = <Reflect today={date} questions={[...morningQs, ...eveningQs]} mild={!intimacyOn(prefs)} startFree={writeFree} name={me?.name || localName || null} />
   } else if (tab === 'insights') {
     body = <Insights today={date} questions={[...morningQs, ...eveningQs]} pulse={pulseOn(prefs)} onOpenReflect={() => goTab('notebook')} onOpenSettings={() => goTab('account')} onOpenMirror={() => open('mirror')} />
   } else if (tab === 'circle') {
@@ -548,6 +555,7 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
             intimacy={intimacyOn(prefs)}
             onRead={openRead}
             rail={rail}
+            onWrite={write}
           >
             {!set.review && morning !== 'done' && win !== 'morning' && clockSitting === 'morning' && (
               <Tinted>

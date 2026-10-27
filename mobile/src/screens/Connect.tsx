@@ -58,7 +58,13 @@ export function Connect({ me, onSignIn, today, questions = [] }: { me: AccountVi
   const friends = circle?.friends ?? []
   const counts = RINGS.map((r) => friends.filter((f) => ringOf(rings, f.id) === r).length)
   return (
-    <Page>
+    <Page
+      aside={
+        <Card>
+          <Invite circle={circle} />
+        </Card>
+      }
+    >
       <View style={{ gap: 4 }}>
         <T v="label">Connect{me.handle ? ` · @${me.handle}` : ''}</T>
         <T v="display">Connect</T>
@@ -89,10 +95,6 @@ export function Connect({ me, onSignIn, today, questions = [] }: { me: AccountVi
         {friends.map((f) => (
           <Friend key={f.id} name={f.name} sub={`${TAG_NAMES[f.tag]}${f.active ? ' · active this week' : ''}`} ring={ringOf(rings, f.id)} onPlace={(r) => setRings(placeIn(f.id, r))} />
         ))}
-      </Card>
-
-      <Card>
-        <Invite circle={circle} />
       </Card>
 
       {today && (

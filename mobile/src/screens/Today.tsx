@@ -31,6 +31,7 @@ export function Today({
   intimacy,
   onRead,
   rail,
+  onWrite,
   children,
 }: {
   date: string
@@ -46,6 +47,7 @@ export function Today({
   intimacy: boolean
   onRead: (r: Read) => void
   rail?: boolean // a right-hand column beside the feed, on a very wide screen
+  onWrite: () => void
   children?: ReactNode
 }) {
   const { width } = useWindowDimensions()
@@ -81,6 +83,7 @@ export function Today({
       </View>
 
       <HeroCard hero={hero} now={now} onOpen={onOpen} />
+      <Composer name={name} window={w} onWrite={onWrite} />
     </>
   )
   const tapestry = (
@@ -124,6 +127,43 @@ export function Today({
       {read}
       {children}
     </>
+  )
+}
+
+// A blank page, always one tap away, the way Facebook asks what's on your
+// mind. The words follow the hour, and nothing written here leaves the phone.
+const COMPOSER: Record<Window, string> = {
+  morning: "What's on your mind",
+  midday: "What's on your mind",
+  afternoon: "What's on your mind",
+  evening: 'How was today',
+  night: 'Anything you want to put down before sleep',
+  rest: 'Still up',
+}
+
+function Composer({ name, window: w, onWrite }: { name?: string | null; window: Window; onWrite: () => void }) {
+  const p = useTheme()
+  const ask = `${COMPOSER[w]}${name ? `, ${name}` : ''}?`
+  return (
+    <Card pad={16} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+      <Avatar name={name || 'You'} size={40} />
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={ask}
+        accessibilityHint="Opens a blank page in Reflect. Only you can read it."
+        onPress={onWrite}
+        style={(s) => ({
+          flex: 1,
+          minHeight: 44,
+          justifyContent: 'center',
+          paddingHorizontal: 16,
+          borderRadius: radius.pill,
+          backgroundColor: (s as { hovered?: boolean }).hovered ? p.surface3 : p.surface2,
+        })}
+      >
+        <T tone="muted">{ask}</T>
+      </Pressable>
+    </Card>
   )
 }
 
