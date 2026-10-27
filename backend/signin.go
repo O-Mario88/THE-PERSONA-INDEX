@@ -31,6 +31,11 @@ import (
 //	SIGNIN_CODE_KINDS          "email,phone" (default), or one of them
 //	GOOGLE_CLIENT_ID           turns on "Continue with Google"
 //	APPLE_CLIENT_ID            turns on "Continue with Apple" (the Services ID)
+//	GOOGLE_APP_CLIENT_IDS      the phone app's Google client IDs (iOS, Android), comma-separated
+//	APPLE_APP_IDS              the phone app's bundle ID(s), for Apple sign-in on iPhone
+//
+// The web's IDs are what the browser buttons use; a phone app's token is made
+// for the app instead, so its IDs are accepted as well.
 //
 // With none of them set the sign-in sheet shows nothing it cannot do. A
 // local run with no database prints codes to the log instead.
@@ -84,9 +89,9 @@ type jwksVerifier struct {
 }
 
 type idIssuer struct {
-	jwksURL  string
-	issuers  []string
-	audience string
+	jwksURL   string
+	issuers   []string
+	audiences []string
 }
 
 type cachedKeys struct {
@@ -94,14 +99,14 @@ type cachedKeys struct {
 	fetched time.Time
 }
 
-func newJWKSVerifier(google, apple string, client *http.Client, clock func() time.Time) *jwksVerifier {
+func newJWKSVerifier(google, apple []string, client *http.Client, clock func() time.Time) *jwksVerifier {
 	v := &jwksVerifier{client: client, clock: clock, issuers: map[string]idIssuer{}, keys: map[string]cachedKeys{}}
-	if google != "" {
+	if len(google) > 0 {
 		v.issuers["google"] = idIssuer{jwksURL: "https://www.googleapis.com/oauth2/v3/certs",
-			issuers: []string{"https://accounts.google.com", "accounts.google.com"}, audience: google}
+			issuers: []string{"https://accounts.google.com", "accounts.google.com"}, audiences: google}
 	}
-	if apple != "" {
-		v.issuers["apple"] = idIssuer{jwksURL: "https://appleid.apple.com/auth/keys", issuers: []string{"https://appleid.apple.com"}, audience: apple}
+	if len(apple) > 0 {
+		v.issuers["apple"] = idIssuer{jwksURL: "https://appleid.apple.com/auth/keys", issuers: []string{"https://appleid.apple.com"}, audiences: apple}
 	}
 	return v
 }
@@ -156,7 +161,7 @@ func (v *jwksVerifier) Verify(ctx context.Context, provider, token string) (stri
 		auds = []string{one}
 	}
 	now := v.clock().Unix()
-	if !slices.Contains(iss.issuers, claims.Iss) || !slices.Contains(auds, iss.audience) || claims.Sub == "" || claims.Exp < now-60 {
+	if !slices.Contains(iss.issuers, claims.Iss) || !slices.ContainsFunc(auds, func(a string) bool { return slices.Contains(iss.audiences, a) }) || claims.Sub == "" || claims.Exp < now-60 {
 		return "", "", errBadIDToken
 	}
 	return claims.Sub, claims.Email, nil
@@ -222,7 +227,8 @@ func (v *jwksVerifier) key(ctx context.Context, provider, url, kid string) (*rsa
 // signInFromEnv builds the sign-in settings. local is true for a run with no
 // database, where codes go to the log.
 func signInFromEnv(getenv func(string) string, local bool, clock func() time.Time) SignInConfig {
-	c := SignInConfig{GoogleClientID: strings.TrimSpace(getenv("GOOGLE_CLIENT_ID")), AppleClientID: strings.TrimSpace(getenv("APPLE_CLIENT_ID"))}
+	c := SignInConfig{GoogleClientID: strings.TrimSpace(getenv("GOOGLE_CLIENT_ID")), AppleClientID: strings.TrimSpace(getenv("APPLE_CLIENT_ID")),
+		GoogleAppIDs: idList(getenv("GOOGLE_APP_CLIENT_IDS")), AppleAppIDs: idList(getenv("APPLE_APP_IDS"))}
 	client := &http.Client{Timeout: 10 * time.Second}
 	kinds := []string{"email", "phone"}
 	if k := strings.TrimSpace(getenv("SIGNIN_CODE_KINDS")); k != "" {
@@ -238,8 +244,32 @@ func signInFromEnv(getenv func(string) string, local bool, clock func() time.Tim
 	} else if local {
 		c.Codes, c.CodeKinds = logSender{}, kinds
 	}
-	if c.GoogleClientID != "" || c.AppleClientID != "" {
-		c.IDs = newJWKSVerifier(c.GoogleClientID, c.AppleClientID, client, clock)
+	google, apple := c.googleAudiences(), c.appleAudiences()
+	if len(google) > 0 || len(apple) > 0 {
+		c.IDs = newJWKSVerifier(google, apple, client, clock)
 	}
 	return c
 }
+
+// idList reads a comma-separated list of IDs.
+func idList(s string) []string {
+	var out []string
+	for _, x := range strings.Split(s, ",") {
+		if x = strings.TrimSpace(x); x != "" && !slices.Contains(out, x) {
+			out = append(out, x)
+		}
+	}
+	return out
+}
+
+func withOne(one string, more []string) []string {
+	if one == "" {
+		return more
+	}
+	return append([]string{one}, more...)
+}
+
+// The audiences a Google or Apple token may be made for: the web's ID and
+// the phone app's.
+func (c SignInConfig) googleAudiences() []string { return withOne(c.GoogleClientID, c.GoogleAppIDs) }
+func (c SignInConfig) appleAudiences() []string  { return withOne(c.AppleClientID, c.AppleAppIDs) }

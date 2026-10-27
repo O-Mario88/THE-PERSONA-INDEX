@@ -9,6 +9,7 @@ import (
 	"math"
 	"net/http"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -235,6 +236,28 @@ func (s *Server) isOpenDate(date string) bool {
 	return err == nil && d.Format("2006-01-02") == date && slices.Contains(s.openDates(editionWindow), date)
 }
 
+// How far back the mirrors may look (?back=N, Edwin's Mirrors of
+// 2026-10-26: "Week of … ‹ ›"). A week's answers are kept five weeks
+// (mirrorRetention), and the mirror reads the weeks before it too, so the
+// last three weeks can still be read whole. The longer mirrors are built from
+// the weekly notes kept thirteen months (weekSummaryRetention).
+const mirrorWeeksBack = 3
+
+var periodsBack = map[string]int{"month": 12, "quarter": 4, "year": 1}
+
+// backParam reads ?back=N: absent is 0, and anything but 0..most is refused.
+func backParam(r *http.Request, most int) (int, bool) {
+	v := r.URL.Query().Get("back")
+	if v == "" {
+		return 0, true
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil || n < 0 || n > most || strconv.Itoa(n) != v {
+		return 0, false
+	}
+	return n, true
+}
+
 func (s *Server) MirrorWeek(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "private, no-store")
 	deviceID, ok := s.deviceFromHeader(r)
@@ -250,6 +273,16 @@ func (s *Server) MirrorWeek(w http.ResponseWriter, r *http.Request) {
 	if ok, retry := s.voteLimit.Allow(deviceID, s.clock()); !ok {
 		rateLimited(w, retry)
 		return
+	}
+	back, ok := backParam(r, mirrorWeeksBack)
+	if !ok {
+		writeError(w, http.StatusBadRequest, "invalid_request")
+		return
+	}
+	if back > 0 {
+		// An earlier week, read whole: its Sunday stands in for the date.
+		_, sunday := weekOf(date)
+		date = sunday.AddDate(0, 0, -7*back).Format(dateLayout)
 	}
 	m, err := s.buildMirror(r.Context(), s.devices.mirrorKey(deviceID), date)
 	if err != nil {

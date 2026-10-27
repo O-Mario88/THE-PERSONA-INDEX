@@ -1,0 +1,17 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "lib": ["DOM", "ESNext"],
+    "resolveJsonModule": true,
+    "paths": {
+      "@shared/*": ["../frontend/src/*"],
+      "react": ["./node_modules/@types/react"],
+      "react/*": ["./node_modules/@types/react/*"],
+      "@scure/bip39": ["./node_modules/@scure/bip39"],
+      "@scure/bip39/*": ["./node_modules/@scure/bip39/*"]
+    }
+  },
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules", "../frontend/src/**/*.test.ts", "../frontend/src/**/*.test.tsx"]
+}
