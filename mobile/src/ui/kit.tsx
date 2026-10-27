@@ -130,7 +130,7 @@ export function Button({
     outline: { bg: 'transparent', fg: p.text, border: p.lineStrong },
     text: { bg: 'transparent', fg: p.accentInk },
     danger: { bg: 'transparent', fg: p.danger, border: p.danger },
-    light: { bg: p.surface, fg: p.text, border: p.line },
+    light: { bg: p.surface, fg: p.text, border: p.lineStrong },
   }
   const l = look[kind]
   const off = disabled || busy
@@ -148,8 +148,8 @@ export function Button({
           backgroundColor: off && kind === 'primary' ? p.surface3 : l.bg,
           borderColor: l.border ?? 'transparent',
           borderWidth: l.border ? 1 : 0,
-          minHeight: small ? 40 : kind === 'text' ? 36 : 52,
-          paddingHorizontal: kind === 'text' ? 0 : small ? 16 : 22,
+          minHeight: small ? 40 : kind === 'text' ? 36 : wide ? 56 : 48,
+          paddingHorizontal: kind === 'text' ? 0 : small ? 16 : 24,
           alignSelf: wide ? 'stretch' : 'flex-start',
           borderRadius: small ? radius.pill : radius.md,
           opacity: pressed ? 0.85 : 1,
@@ -162,7 +162,7 @@ export function Button({
       ) : (
         <>
           {icon && <Icon name={icon} size={18} color={fg} />}
-          <Text style={{ fontFamily: font.bold, fontSize: small || kind === 'text' ? 15 : 17, color: fg }}>{label}</Text>
+          <Text style={{ fontFamily: kind === 'text' ? font.semibold : font.bold, fontSize: small || kind === 'text' ? 14 : wide ? 17 : 16, color: fg }}>{label}</Text>
           {iconAfter && <Icon name={iconAfter} size={18} color={fg} />}
         </>
       )}
@@ -209,7 +209,9 @@ export function Option({ label, onPress, disabled, chosen, icon }: { label: stri
         { backgroundColor: on ? p.accentWash : p.surface, borderColor: on ? p.accentLine : p.line, opacity: disabled ? 0.6 : 1 },
       ]}
     >
-      <View style={[styles.optionRing, { borderColor: chosen ? p.lime : p.lineStrong, backgroundColor: chosen ? p.lime : 'transparent' }]} />
+      <View style={[styles.optionRing, { borderColor: chosen ? p.lime : p.lineStrong, backgroundColor: chosen ? p.lime : p.surface }]}>
+        {chosen && <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: p.onLime }} />}
+      </View>
       {icon ? <Text style={{ fontSize: 16, color: p.text }}>{icon}</Text> : null}
       <Text style={{ flex: 1, fontFamily: font.bold, fontSize: 17, lineHeight: 22, color: p.text }}>{label}</Text>
     </Pressable>
@@ -226,7 +228,7 @@ export function Radio({ label, checked, onPress }: { label: string; checked: boo
       onPress={onPress}
       style={[styles.option, { backgroundColor: checked ? p.accentWash : p.surface, borderColor: checked ? p.accentLine : p.line }]}
     >
-      <View style={[styles.optionRing, { borderColor: checked ? p.lime : p.lineStrong, alignItems: 'center', justifyContent: 'center' }]}>
+      <View style={[styles.optionRing, { borderColor: checked ? p.lime : p.lineStrong }]}>
         {checked && <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: p.lime }} />}
       </View>
       <Text style={{ flex: 1, fontFamily: font.semibold, fontSize: 16, lineHeight: 22, color: p.text }}>{label}</Text>
@@ -260,9 +262,9 @@ export function Toggle({ label, note, value, onChange }: { label: string; note?:
 export function Chip({ label, on, onPress, icon }: { label: string; on?: boolean; onPress?: () => void; icon?: string }) {
   const p = useTheme()
   const body = (
-    <View style={[styles.chip, { backgroundColor: on ? p.lime : p.surface2, borderColor: on ? p.lime : p.line }]}>
+    <View style={[styles.chip, { backgroundColor: on ? p.lime : p.surface2 }]}>
       {icon ? <Text style={{ fontSize: 14 }}>{icon}</Text> : null}
-      <Text style={{ fontFamily: font.bold, fontSize: 14, color: on ? p.onLime : p.text }}>{label}</Text>
+      <Text style={{ fontFamily: on ? font.bold : font.semibold, fontSize: 14, color: on ? p.onLime : p.text }}>{label}</Text>
     </View>
   )
   if (!onPress) return body
@@ -292,8 +294,8 @@ export function Field(props: TextInputProps & { label?: string; note?: string })
         {...rest}
         style={[
           styles.field,
-          { backgroundColor: p.surface2, borderColor: p.line, color: p.text },
-          rest.multiline && { minHeight: 120, textAlignVertical: 'top', paddingTop: 14 },
+          { backgroundColor: p.surface, borderColor: p.line, color: p.text },
+          rest.multiline && { minHeight: 112, lineHeight: 24, textAlignVertical: 'top', paddingTop: 12 },
           style,
         ]}
       />
@@ -368,9 +370,9 @@ export function PrivacyLine({ onKept, onSettings }: { onKept?: () => void; onSet
 const styles = StyleSheet.create({
   btn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   rowLink: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderRadius: radius.lg, paddingHorizontal: 20, paddingVertical: 18 },
-  option: { flexDirection: 'row', alignItems: 'center', gap: 14, borderWidth: 1, borderRadius: radius.md, paddingHorizontal: 20, paddingVertical: 18 },
-  optionRing: { width: 22, height: 22, borderRadius: 11, borderWidth: 2 },
+  option: { flexDirection: 'row', alignItems: 'center', gap: 16, minHeight: 64, borderWidth: 1.5, borderRadius: radius.md, paddingHorizontal: 20, paddingVertical: 16 },
+  optionRing: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   toggle: { flexDirection: 'row', alignItems: 'center', gap: 16, paddingVertical: 16, borderTopWidth: StyleSheet.hairlineWidth },
-  chip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: radius.pill, borderWidth: 1 },
-  field: { borderWidth: 1, borderRadius: radius.md, paddingHorizontal: 16, paddingVertical: 14, fontFamily: font.medium, fontSize: 16 },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 40, paddingHorizontal: 16, borderRadius: radius.pill },
+  field: { minHeight: 52, borderWidth: 1.5, borderRadius: radius.md, paddingHorizontal: 16, paddingVertical: 12, fontFamily: font.regular, fontSize: 16 },
 })

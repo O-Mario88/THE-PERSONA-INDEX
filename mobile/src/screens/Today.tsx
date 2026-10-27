@@ -10,7 +10,7 @@ import { season } from '@shared/tapestry'
 import { windowsDone } from '@shared/windows'
 import { minutes, todaysRead } from '@shared/reads/reads'
 import type { Read } from '@shared/reads/types'
-import { font, gutter, radius, useTheme } from '../theme'
+import { font, gutter, lift, radius, useTheme } from '../theme'
 import { Button, Hairline, RowLink, T } from '../ui/kit'
 import { Avatar, Ring, Tapestry } from '../ui/parts'
 import { Icon } from '../ui/Icon'
@@ -46,7 +46,6 @@ export function Today({
   onRead: (r: Read) => void
   children?: ReactNode
 }) {
-  const p = useTheme()
   const { width } = useWindowDimensions()
   const now = useNow()
   const nowMin = new Date(now).getHours() * 60 + new Date(now).getMinutes()
@@ -111,7 +110,7 @@ function HeroCard({ hero, now, onOpen }: { hero: Hero; now: number; onOpen: () =
     ring = <Ring part={part} label={`${l.text} left`} big={l.hours > 0 ? `${l.hours}h` : `${l.minutes}m`} small={l.hours > 0 ? `${l.minutes}m` : undefined} size={60} />
   }
   return (
-    <View style={{ backgroundColor: p.surface, borderColor: p.line, borderWidth: 1, borderRadius: radius.lg, padding: 20, gap: 16 }}>
+    <View style={[{ backgroundColor: p.surface, borderColor: p.line, borderWidth: 1, borderRadius: radius.lg, padding: 20, gap: 16 }, lift(p)]}>
       <View style={{ flexDirection: 'row', gap: 12 }}>
         <View style={{ flex: 1, gap: 6 }}>
           <T v="eyebrow">{hero.eyebrow}</T>

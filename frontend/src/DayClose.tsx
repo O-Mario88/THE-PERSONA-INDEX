@@ -15,7 +15,7 @@ import { season } from './tapestry'
 import { routeToAsk } from './reaching'
 import { loadJSON, saveJSON } from './storage'
 import { Upcoming } from './Sittings'
-import { themeName, themeStyle, themeVars } from './themes'
+import { themeName, themeStyle } from './themes'
 import { splitReveal } from './reveal'
 import {
   NO_STEP,
@@ -215,7 +215,7 @@ function Tiles({ label, questions }: { label: string; questions: Question[] }) {
         const c = recalledChoice(q.id)
         const status = !c || c === SKIPPED ? 'skipped' : q.care === 'intimate' ? 'private' : 'answered'
         return (
-          <li key={q.id} className={status === 'skipped' ? 'tile' : 'tile on'} style={themeVars(q.theme)}>
+          <li key={q.id} className={status === 'skipped' ? 'tile' : 'tile on'}>
             <span className="tile-icon" aria-hidden="true">
               {themeStyle(q.theme).icon}
             </span>

@@ -1,8 +1,9 @@
 /* Design tokens: the one place colours, type, spacing, radii and shadows are
-   set (frontend/DESIGN.md explains each choice). Light is white with ink
-   text; dark is navy. Lime is the one accent: it fills primary buttons,
-   selected choices and progress, always under dark ink, never as text on
-   white. Every text colour here is at least 4.5:1 on the surface it sits on. */
+   set (frontend/DESIGN.md explains each choice). Midnight & Cream: light is
+   a cream page with midnight ink; dark is deep midnight. --lime is the
+   filled accent (midnight in light, marigold in dark): it fills primary
+   buttons, chosen options and progress, always under --on-lime. Every text
+   colour here is at least 4.5:1 on the surface it sits on. */
 
 :root {
   /* Surfaces and lines: a warm cream page with white cards. */
@@ -13,30 +14,30 @@
   --line: #ece3d4;
   --line-strong: #ddd1bd;
 
-  /* Text: a deep green-black, never pure black. */
+  /* Text: a deep midnight ink, never pure black. */
   --text: #12283a;
   --text-2: #3d4f5c; /* secondary copy */
   --muted: #69737c; /* captions, 4.7:1 on white */
 
   /* Midnight and cream (Edwin, 2026-10-26). Forest is midnight #013d5a, the primary (buttons, chosen tabs, the sidebar);
-     leaf is for icons, checks and progress; lime is the bright accent. */
+     leaf (herb) is for icons, checks and progress. */
   --forest: #013d5a;
   --forest-2: #0d5275; /* hover, and the sidebar's chosen row */
   --on-forest: #ffffff;
   --leaf: #5f7d58;
   --leaf-soft: #b5c7ae; /* progress fills */
-  /* The brand lime shows on the forest sidebar. On a light page the
-     filled actions that are lime in dark mode turn forest, as on the
-     reference designs, so --lime there means "the filled accent". */
+  /* Marigold (--brand-lime) shows on the midnight sidebar. On a light page
+     the filled actions that are marigold in dark mode turn midnight, so
+     --lime means "the filled accent", whatever its colour. */
   --brand-lime: #f4a258;
   --lime: #013d5a;
   --lime-strong: #0d5275;
   --on-lime: #ffffff;
-  --accent-ink: #0b4f70; /* links and green text, 5.4:1 on white */
+  --accent-ink: #0b4f70; /* links and accent text, 5.4:1 on white */
   --accent-wash: #e7f0ed; /* mint: a chosen option, a soft card */
   --accent-line: #bdd3ce;
 
-  /* The primary button: forest in light, lime in dark. */
+  /* The primary button: midnight in light, marigold in dark. */
   --btn: var(--forest);
   --btn-hover: var(--forest-2);
   --on-btn: var(--on-forest);

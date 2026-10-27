@@ -11,8 +11,11 @@ export type ShareContent = { eyebrow: string; name: string; line?: string }
 
 type Shape = 'story' | 'square'
 const SIZE: Record<Shape, [number, number]> = { story: [1080, 1920], square: [1080, 1080] }
-const NAVY = '#0e1b26' // the card is navy with lime, as the app's heroes
-const LIME = '#c6f24e'
+// Midnight & Cream, as the app's heroes: a midnight card on cream, marigold accents.
+const CREAM = '#fbf7f0'
+const MIDNIGHT = '#013d5a'
+const MARIGOLD = '#f4a258'
+const ON_MIDNIGHT_2 = '#c7d8e2'
 const SITE = 'personaindex.com'
 
 function wrap(ctx: CanvasRenderingContext2D, text: string, width: number): string[] {
@@ -37,15 +40,15 @@ function draw(c: ShareContent, shape: Shape): HTMLCanvasElement | null {
   canvas.height = h
   const ctx = canvas.getContext?.('2d')
   if (!ctx) return null
-  ctx.fillStyle = '#ffffff'
+  ctx.fillStyle = CREAM
   ctx.fillRect(0, 0, w, h)
   const pad = 90
   const top = shape === 'story' ? 360 : 110
-  ctx.fillStyle = NAVY
+  ctx.fillStyle = MIDNIGHT
   ctx.beginPath()
   ctx.roundRect(pad - 30, top - 80, w - 2 * (pad - 30), h - top - (shape === 'story' ? 280 : 80), 48)
   ctx.fill()
-  ctx.fillStyle = LIME
+  ctx.fillStyle = MARIGOLD
   ctx.font = '700 34px Figtree, system-ui, sans-serif'
   ctx.fillText(c.eyebrow.toUpperCase(), pad + 20, top + 10)
   ctx.fillStyle = '#ffffff'
@@ -57,7 +60,7 @@ function draw(c: ShareContent, shape: Shape): HTMLCanvasElement | null {
   }
   if (c.line) {
     ctx.font = '400 42px Figtree, system-ui, sans-serif'
-    ctx.fillStyle = '#c3cdd6'
+    ctx.fillStyle = ON_MIDNIGHT_2
     y += 20
     for (const l of wrap(ctx, c.line, w - 2 * pad - 40)) {
       ctx.fillText(l, pad + 20, y)
@@ -66,9 +69,9 @@ function draw(c: ShareContent, shape: Shape): HTMLCanvasElement | null {
   }
   const foot = shape === 'story' ? h - 380 : h - 150
   ctx.font = '600 34px Figtree, system-ui, sans-serif'
-  ctx.fillStyle = '#c3cdd6'
+  ctx.fillStyle = ON_MIDNIGHT_2
   ctx.fillText('The Persona Index · 3 questions a morning, 3 an evening', pad + 20, foot)
-  ctx.fillStyle = LIME
+  ctx.fillStyle = MARIGOLD
   ctx.fillText(SITE, pad + 20, foot + 52)
   return canvas
 }

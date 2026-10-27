@@ -1,7 +1,7 @@
 /* The reference designs (Edwin, 2026-10-26): Connect, Insights, Your Circle
-   and Reflect. Soft green-white pages, white cards on a hairline with a soft
-   lift, forest-green primary actions and chosen tabs, mint cards, and
-   pastel discs behind line icons. This file comes last, so it sets the
+   and Reflect, in Midnight & Cream. Cream pages, white cards on a hairline
+   with a soft lift, midnight primary actions and chosen tabs, celeste boxes,
+   and pastel discs behind line icons. This file comes last, so it sets the
    shared look the screens share; each screen file keeps its own layout. */
 
 /* Page titles */
@@ -155,7 +155,7 @@
   color: var(--on-lime);
 }
 
-/* Tags: a mint pill with green words (Shared values, Peace & calm). */
+/* Tags: a celeste pill with accent words (Shared values, Peace & calm). */
 .tag {
   display: inline-flex;
   align-items: center;
@@ -191,8 +191,7 @@
   color: var(--muted);
 }
 
-.link-button,
-.see-all {
+.link-button {
   color: var(--accent-ink);
   font-weight: 700;
 }
@@ -823,7 +822,6 @@
 
 .insights-layout > section.insights-not-alone,
 .insights-layout > section.insights-saved,
-.insights-layout > section.insights-helped,
 .insights-layout > section.insights-growth {
   padding: var(--s-5);
   border: 1px solid var(--line);
@@ -1032,10 +1030,9 @@
 @media (min-width: 1100px) {
   .insights-layout {
     grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr);
-    grid-template-rows: auto auto auto 1fr auto;
+    grid-template-rows: auto auto 1fr auto;
     grid-template-areas:
       'for-you not-alone'
-      'for-you helped'
       'for-you nudge'
       'for-you saved'
       'growth growth';
@@ -1103,7 +1100,6 @@
 fieldset.notice,
 .insights-layout > section.insights-not-alone,
 .insights-layout > section.insights-saved,
-.insights-layout > section.insights-helped,
 .insights-layout > section.insights-growth,
 .connect-nudge {
   padding-right: 0;

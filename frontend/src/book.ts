@@ -102,11 +102,10 @@ function revisitsHTML(revisits: Revisit[] = []): string {
 }
 
 function cardHTML(c: KeptCard): string {
-  const color = THEMES[c.theme]?.from ?? '#6d5dfc'
   const answer = c.words
     ? `<p class="answer">In your words: “${esc(c.words)}” <span class="meta">· closest to ${esc(c.answer)}</span></p>`
     : `<p class="answer">You chose: ${esc(c.answer)}</p>`
-  return `<article class="card" style="border-color:${esc(color)}">
+  return `<article class="card">
 <p class="meta">${esc(fullDate(c.date))}${c.private ? ' · private' : ''}</p>
 <p class="prompt">${esc(c.prompt)}</p>
 ${answer}
@@ -260,8 +259,9 @@ ${notes.map((n) => `<p class="meta">${esc(n)}</p>`).join('\n')}
 }
 
 const BOOK_CSS = `
-:root{--bg:#fbfaf7;--fg:#1f2430;--muted:#5d6475;--rule:#e4e1d8;--card:#fff;--accent:#5b4bd6;color-scheme:light}
-@media (prefers-color-scheme:dark){:root{--bg:#0f1424;--fg:#ebe9f3;--muted:#a8adc0;--rule:#283050;--card:#161c31;--accent:#a99cff;color-scheme:dark}}
+/* Midnight & Cream, as in styles/tokens.css. */
+:root{--bg:#fbf7f0;--fg:#12283a;--muted:#69737c;--rule:#ece3d4;--card:#fffdf9;--accent:#013d5a;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#0b1a24;--fg:#f6efe3;--muted:#9eaab3;--rule:#1d3545;--card:#102330;--accent:#f4a258;color-scheme:dark}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);font:17px/1.6 Georgia,'Times New Roman',serif}
 main{max-width:40rem;margin:0 auto;padding:2.5rem max(16px,env(safe-area-inset-right)) 3rem max(16px,env(safe-area-inset-left))}
@@ -275,7 +275,7 @@ ol{margin:.3rem 0;padding-left:1.4rem}
 .brand,.meta,.label{font:.85rem/1.5 system-ui,sans-serif;color:var(--muted)}
 .brand{letter-spacing:.06em;text-transform:uppercase}
 .label{font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-right:.3rem}
-.card{background:var(--card);border-left:4px solid var(--accent);border-radius:6px;padding:1rem 1.1rem;margin:0 0 1rem;break-inside:avoid}
+.card{background:var(--card);border:1px solid var(--rule);border-left:4px solid var(--accent);border-radius:10px;padding:1rem 1.1rem;margin:0 0 1rem;break-inside:avoid}
 .prompt{font-weight:600}
 .headline{font-size:1.1rem;margin-top:.6rem}
 .answer{font-style:italic}

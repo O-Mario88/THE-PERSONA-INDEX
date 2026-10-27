@@ -319,7 +319,7 @@ function Writing({
               maxLength={140}
               placeholder="Ask for help earlier"
               placeholderTextColor={p.muted}
-              style={{ borderWidth: 1, borderColor: p.line, backgroundColor: p.surface, borderRadius: radius.md, padding: 14, fontFamily: font.medium, fontSize: 16, color: p.text }}
+              style={{ borderWidth: 1.5, borderColor: p.line, backgroundColor: p.surface, borderRadius: radius.md, padding: 14, fontFamily: font.regular, fontSize: 16, color: p.text }}
             />
             <T v="small" tone="muted">
               In a week, a gentle check-in asks how it went. No goals and no scores.

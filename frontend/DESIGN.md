@@ -10,7 +10,7 @@ never in a screen file.
 
 Since 2026-10-26 the app copies Edwin's second set of references (Connect,
 Your Circle, Insights and Reflect, light and dark). A warm cream page,
-white cards on a hairline with a soft lift, a deep forest sidebar on a wide
+white cards on a hairline with a soft lift, a deep midnight sidebar on a wide
 screen, midnight primary buttons and chosen tabs, soft celeste boxes, and pastel
 discs (green, blue, purple, rose, amber) behind line icons. Dark mode is a
 deep midnight, where the filled accent turns marigold. Three rules stay
@@ -56,14 +56,14 @@ plus a soft 4% lift in light, and none in dark.
 
 ## Parts
 
-- **Buttons**: `.btn` is the forest primary (lime in dark); `.btn.soft` is mint; `.btn.wide` and `.next` fill the
+- **Buttons**: `.btn` is the midnight primary (marigold in dark), 48px tall; `.btn.soft` is celeste; `.btn.wide` and `.next` fill the
   width at 56px; `.ghost`, `.outline` and `.danger` are quieter.
 - **Options**: a card per answer with an empty ring that fills on choice
   (`.options .option`). Plain `.option` rows elsewhere end in a chevron.
-- **Chips**: white pills on a hairline; pressed ones turn forest (lime in dark).
+- **Chips**: quiet 40px pills on `--surface-2`; pressed ones take the filled accent (midnight, marigold in dark).
 - **Progress**: segments under a sitting, the five-dot "Today's ritual", the
   three-step unlock track, rings for the day and countdowns.
-- **Insight mark**: three rising bars in lime before an insight, a thread or
+- **Insight mark**: three rising bars in the accent before an insight, a thread or
   a quick read.
 
 ## What the references show that the app does not
@@ -77,3 +77,10 @@ on a tint, and suggestions from shared circles only.
 
 
 Most of the page sits on the background with hairlines; only a few highlights keep a tinted box. Settings shows three everyday choices and folds the rest under "More settings".
+
+## The phone and Mac app
+
+The Expo app (`mobile/`) draws the same parts from `mobile/src/theme.tsx`
+(the same colours, type sizes, radii and lift as `tokens.css`) and
+`mobile/src/ui/kit.tsx` (buttons, options, chips, fields). Change a token or
+a part in both places together.

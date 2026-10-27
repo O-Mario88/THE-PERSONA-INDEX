@@ -188,11 +188,7 @@
   font-weight: 600;
 }
 
-.m-support {
-  border-color: var(--line-strong);
-}
-
-/* A quote from the week: a big lime quote mark beside it. */
+/* A quote from the week: a big accent quote mark beside it. */
 .m-oneline,
 .m-sentence,
 .m-revisit {
@@ -409,17 +405,6 @@
   font-weight: 800;
 }
 
-.m-trait-score {
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-
-.m-change {
-  margin-left: var(--s-1);
-  color: var(--accent-ink);
-  font-size: var(--fs-small);
-}
-
 .m-scale {
   position: relative;
   display: block;
@@ -574,7 +559,7 @@
   font-style: italic;
 }
 
-/* Needs reached: round lime icons in a row. */
+/* Needs reached: round accent icons in a row. */
 .m-reached {
   display: flex;
   flex-direction: column;
@@ -587,7 +572,7 @@
   background: var(--surface-2);
 }
 
-/* How you've moved: one short column per week, the latest in lime. */
+/* How you've moved: one short column per week, the latest in the accent. */
 .m-moved {
   display: flex;
   flex-direction: column;
@@ -867,13 +852,13 @@
   gap: var(--s-3);
 }
 
-/* In navy, "you" is white beside the circle's lime. */
+/* On midnight, "you" is white beside the circle's accent. */
 .app.is-dark .m-scale-dot.you,
 .app.is-dark .dot-key.you {
   background: #ffffff;
 }
 
-/* Shared ground: the circle's clearest agreement, edged in lime. */
+/* Shared ground: the circle's clearest agreement, edged in the accent. */
 .m-section .m-card:not(.outside-miss):has(> .label) {
   border: 1.5px solid var(--accent-line);
   background: var(--accent-wash);

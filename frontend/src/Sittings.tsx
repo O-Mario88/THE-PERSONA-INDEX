@@ -3,7 +3,7 @@ import { opensAt } from './day'
 import { GoodThings } from './Keep'
 import { goodThings } from './notebook'
 import { addDays } from './storage'
-import { themeName, themeStyle, themeVars } from './themes'
+import { themeName, themeStyle } from './themes'
 
 // The shape of the day around the questions: what comes next and when, the
 // quiet screens between sittings and the plan of the day. It keeps people
@@ -21,7 +21,7 @@ export function Upcoming({ label, themes, note }: { label: string; themes: strin
       {themes.length > 0 && (
         <ul className="upcoming-themes">
           {themes.map((t) => (
-            <li key={t} className="upcoming-theme" style={themeVars(t)}>
+            <li key={t} className="upcoming-theme">
               <span aria-hidden="true">{themeStyle(t).icon}</span> {themeName(t)}
             </li>
           ))}

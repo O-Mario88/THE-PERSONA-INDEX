@@ -69,7 +69,6 @@ type Props = {
 type Mode = 'options' | 'writing' | 'closest'
 
 export function QuestionCard({ question, date, sitting, wordsDays = DEFAULT_WORDS_DAYS, writeFirst = false, index, of, onDone, onNext }: Props) {
-  const p = useTheme()
   const [choice, setChoice] = useState<string | null>(() => recalledChoice(question.id))
   const [recalled] = useState(() => !!recalledChoice(question.id))
   const [words, setWords] = useState<OwnWords | null>(() => recalledWords(question.id))

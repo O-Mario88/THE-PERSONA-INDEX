@@ -26,7 +26,6 @@ import { ReadScreen, TodaysRead } from './Read'
 import { OpenRead } from './readContext'
 import type { Read } from './reads/types'
 import type { Practice } from './practices'
-import { themeVars } from './themes'
 import { openThisWeek, sendUnsent } from './moves'
 import { forgetPick, isFirstDay, loadHistory, todaysPick, writeFirstOf, type Half } from './profile'
 import { CountryAsk } from './CountryViews'
@@ -582,7 +581,6 @@ function App() {
                       key={q.id}
                       type="button"
                       className={`dash ${done ?? ''}`}
-                      style={themeVars(q.theme)}
                       aria-label={`Question ${i + 1} of ${steps.length}`}
                       aria-current={at === i ? 'step' : undefined}
                       disabled={!done && at !== i}

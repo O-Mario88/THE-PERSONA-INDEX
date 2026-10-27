@@ -3,7 +3,6 @@ import { Helpline } from './Helpline'
 import { OpenRead, useReads } from './readContext'
 import type { Read } from './reads/types'
 import { load, save } from './storage'
-import { themeVars } from './themes'
 
 // Reads in the app (Phase 3 of the review of 2026-10-15): one short read
 // offered each day, about one of the day's life areas, and a read under
@@ -37,7 +36,7 @@ export function ReadScreen({
   const more = reads ? reads.related(read, 2).filter((r) => intimacy || !reads.appOnly(r)) : []
 
   return (
-    <article className="screen read" aria-labelledby="read-title" style={read.kind === 'theme' ? themeVars(read.key) : undefined}>
+    <article className="screen read" aria-labelledby="read-title">
       <button type="button" className="text-button back" onClick={onBack}>
         ← Back
       </button>
@@ -111,7 +110,7 @@ export function TodaysRead({
     )
   }
   return (
-    <section className="notice read-offer" aria-labelledby="read-offer-title" style={read.kind === 'theme' ? themeVars(read.key) : undefined}>
+    <section className="notice read-offer" aria-labelledby="read-offer-title">
       <p className="eyebrow">Today's read · {reads.minutes(read)} min</p>
       <h3 id="read-offer-title" className="read-offer-title">
         {read.title}

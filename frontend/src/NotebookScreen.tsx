@@ -13,7 +13,7 @@ import {
   type Plan,
   type Revisit,
 } from './notebook'
-import { themeName, themeVars } from './themes'
+import { themeName } from './themes'
 import { TRAITS } from './traits'
 import { REVISIT_WORDS, VERDICT_WORDS } from './words'
 
@@ -201,7 +201,7 @@ function CardEntry({ card: c, onRemove }: { card: KeptCard; onRemove: () => void
   const [asking, setAsking] = useState(false)
   const [more, setMore] = useState(false)
   return (
-    <article className="nb-entry nb-card" style={themeVars(c.theme)} aria-label={c.prompt}>
+    <article className="nb-entry nb-card" aria-label={c.prompt}>
       <p className="nb-meta row-between">
         <span className="nb-card-area">{c.theme ? themeName(c.theme) : 'Today'}</span>
         <span>

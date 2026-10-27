@@ -17,7 +17,7 @@
 
 .insights-layout {
   display: grid;
-  grid-template-areas: 'for-you' 'not-alone' 'nudge' 'helped' 'growth' 'saved';
+  grid-template-areas: 'for-you' 'not-alone' 'nudge' 'growth' 'saved';
   gap: var(--s-6);
   align-items: start;
 }
@@ -25,7 +25,6 @@
 .insights-for-you { grid-area: for-you; }
 .insights-not-alone { grid-area: not-alone; }
 .connect-nudge { grid-area: nudge; }
-.insights-helped { grid-area: helped; }
 .insights-growth { grid-area: growth; }
 .insights-saved { grid-area: saved; }
 
@@ -144,16 +143,6 @@
 }
 
 @media (min-width: 1100px) {
-  .insights-layout {
-    grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
-    grid-template-areas:
-      'for-you not-alone'
-      'for-you nudge'
-      'for-you saved'
-      'helped saved'
-      'growth saved';
-  }
-
   .page.page-insights {
     max-width: 1240px;
   }
