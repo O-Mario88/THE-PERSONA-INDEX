@@ -9,6 +9,7 @@ import { recalledVerdict, type Question, type Verdict } from '@shared/api'
 import { evidenceLabel, forYou, getNotAlone, notAloneFor, type ForYouCard, type NotAloneQuestion } from '@shared/insights'
 import { NEED_NAMES } from '@shared/needs'
 import { intentions, keepIntention, keptCards } from '@shared/notebook'
+import { loadMoves } from '@shared/moves'
 import { loadHistory } from '@shared/profile'
 import { acrossDays } from '@shared/firstWeek'
 import { count } from '@shared/pulse'
@@ -90,6 +91,7 @@ export function Insights({
         </View>
       )}
       <AcrossDays today={today} />
+      <WhatHelpedYou />
       <T v="h2">For You</T>
       {shown.length === 0 ? (
         <Card>
@@ -302,6 +304,29 @@ function AcrossDays({ today }: { today: string }) {
           ? `Across your ${days} days of answers, you keep leaning towards ${lean}. I'll keep watching whether it holds.`
           : 'Come back tomorrow and I can start showing you what links your answers across days, not just one sitting.'}
       </T>
+    </Card>
+  )
+}
+
+// What has helped you: the steps you tried and said helped, newest first, so
+// Insights grows with what you learn, not just what you answered.
+function WhatHelpedYou() {
+  const helped = loadMoves()
+    .filter((m) => m.status === 'helped')
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, 5)
+  if (helped.length === 0) return null
+  return (
+    <Card style={{ gap: 8 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        <Disc icon="leaf" tone="green" size={40} />
+        <T v="h2">What has helped you</T>
+      </View>
+      {helped.map((m) => (
+        <T key={m.questionId} tone="text2">
+          • {m.step}
+        </T>
+      ))}
     </Card>
   )
 }
