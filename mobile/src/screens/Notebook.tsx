@@ -154,7 +154,7 @@ export function Notebook({ mild, today }: { mild: boolean; today: string }) {
         </View>
       )}
       {!empty && <DownloadButtons today={today} mild={mild} />}
-      <Muted>For self-reflection, not a diagnosis.</Muted>
+      <Muted>Something to think about, never a diagnosis.</Muted>
     </View>
   )
 }

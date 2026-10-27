@@ -47,21 +47,21 @@ export function readWriting(text: string): Reading | null {
 }
 
 export const KINDER_TITLE = 'A kinder look'
-export const KINDER_ACK = 'Thank you for writing this down. It sounds heavy, and it makes sense that it hurts.'
+export const KINDER_ACK = "Thank you for telling me this. It sounds heavy, and I'm glad you didn't keep it to yourself."
 export const KINDER_TRAPS: Record<Trap, string> = {
-  label: 'You used one hard word for the whole of you. A hard moment is part of your story, not all of it. What else is true about you today?',
-  always: 'Words like "always" and "never" can make one hard day feel like the whole story. Can you think of one time it went differently?',
-  blame: "It's easy to put all of it on yourself. What else played a part that wasn't yours to carry?",
-  future: 'A heavy day can make the future look fixed. What is one small thing that could be a little different this week?',
-  mind: 'We rarely know what other people think of us. What has someone actually said or done?',
+  label: "You used one hard word for all of you. From everything you've shared with me, there's a lot more to you than that. What else is true about you today?",
+  always: 'You wrote "always" or "never". One hard day can feel like the whole story. Can you think of one time it went differently for you?',
+  blame: "You're putting all of this on yourself. What else played a part that wasn't yours to carry?",
+  future: "Right now the future looks fixed to you. What's one small thing that could be a little different for you this week?",
+  mind: "You can't really know what they think of you. What has someone actually said or done?",
 }
 export const KINDER_AREAS: Record<Area, string> = {
-  work: 'Work can take up so much room that it starts to feel like who you are. It is one part of your life, and you are more than how today went there.',
-  friends: 'Friendships have quiet patches and misunderstandings, and they can come back. One short message can open a door again.',
-  family: 'Family can hurt most because it matters most. Caring this much says something good about you.',
-  world: 'When the world feels heavy, the people and places close to you are still within reach, and small kindnesses there still count.',
+  work: "Work is taking up a lot of room for you right now. It's one part of your life, and you're more than how today went there.",
+  friends: "Your friendships can have quiet patches and misunderstandings, and they come back. Is there one person you'd like to send a short message to?",
+  family: 'Family can hurt you most because it matters so much to you. That you care this much says something good about you.',
+  world: "When the world feels heavy, the people close to you are still within reach. Who's one person near you today?",
 }
-export const KINDER_FRIEND = 'If a good friend wrote this about themselves, what would you want them to hear? Try writing it to yourself.'
+export const KINDER_FRIEND = 'If a good friend wrote this about themselves, what would you want them to hear? Do you want to try writing it to yourself?'
 export const KINDER_WRITE = 'Write it the kinder way'
 
 export type OwnRecord = { goodThings: { date: string; text: string }[]; kept: { date: string; text: string }[] }

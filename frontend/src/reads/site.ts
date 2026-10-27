@@ -49,7 +49,7 @@ ${body}
 </main>
 <footer>
 <p class="app">${esc(APP_LINE)} <a href="/">Open the app</a></p>
-<p class="note">For self-reflection, not a diagnosis.</p>
+<p class="note">Something to think about, never a diagnosis.</p>
 </footer>
 </body>
 </html>

@@ -66,8 +66,8 @@ export function Afternoon({ questions, pulse, onPulse }: { questions: Question[]
   return (
     <View style={{ gap: 20 }}>
       <T v="display">The afternoon pulse.</T>
-      <T tone="muted">How everyone else handled this morning's questions. Anonymous totals, never who.</T>
-      {answered.length === 0 && <T tone="muted">Answer this morning's questions and their totals show here.</T>}
+      <T tone="muted">How everyone else answered this morning's questions. Only totals, never who.</T>
+      {answered.length === 0 && <T tone="muted">Answer this morning's questions and I'll show you how others answered.</T>}
       {answered.map((q) => (
         <PulseCard key={q.id} question={q} />
       ))}

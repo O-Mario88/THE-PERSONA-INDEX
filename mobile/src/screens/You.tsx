@@ -232,9 +232,9 @@ export function KeptScreen({ today, mild, signedIn, onBack, onDeleted }: { today
       <View style={{ gap: 10 }}>
         <T v="eyebrow">On the server</T>
         {server === 'loading' ? (
-          <T tone="muted">Asking the server…</T>
+          <T tone="muted">Just a moment…</T>
         ) : server === 'error' ? (
-          <T tone="muted">I couldn’t reach the server just now.</T>
+          <T tone="muted">I couldn't get that just now. Try again in a moment.</T>
         ) : !server ? (
           <T tone="muted">Nothing from this phone yet.</T>
         ) : (

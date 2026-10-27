@@ -118,7 +118,7 @@ export function Reflect({
           <Card style={{ flexDirection: 'row', gap: 14 }}>
             <Disc icon="leaf" tone="amber" size={44} />
             <View style={{ flex: 1, gap: 4 }}>
-              <T v="h3">A gentle reminder</T>
+              <T v="h3">Remember</T>
               <T tone="muted">{reminderFor(today)}</T>
             </View>
           </Card>
@@ -145,7 +145,7 @@ export function Reflect({
             <View style={{ flexDirection: 'row', gap: 14 }}>
               <Disc icon="pin" tone="rose" size={44} />
               <View style={{ flex: 1, gap: 8 }}>
-                <T v="h3">Something to consider</T>
+                <T v="h3">Something I noticed</T>
                 <T tone="muted">{consider.text}</T>
                 <Button small kind="soft" label="Reflect on this" iconAfter="arrow" onPress={() => setChosen(fromNoticed(consider, period))} />
               </View>
@@ -202,9 +202,9 @@ export function Reflect({
 
       <Card style={{ gap: 14 }}>
         <View style={{ gap: 4 }}>
-          <T v="h2">What you’ve noticed</T>
+          <T v="h2">What I've noticed about you</T>
           <T v="small" tone="muted">
-            Insights from your answers, your Circle and your reflections.
+            From your answers, your Circle and what you write to me.
           </T>
         </View>
         <View style={{ flexDirection: 'row', gap: 20, borderBottomWidth: 1, borderBottomColor: p.line }}>

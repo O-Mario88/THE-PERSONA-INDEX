@@ -1330,7 +1330,7 @@ function Forward({
   function copy() {
     const parts = [`My year in perspective · ${y.label}`, '', ...chapters.map((c) => `${c.months}: ${c.title}`), '', ...lines]
     if (withWords && remembered.length) parts.push('', ...remembered.map((r) => `${whenSaid(r.date, 'year')}: “${r.answer}”`))
-    parts.push('', 'For self-reflection, not a diagnosis.')
+    parts.push('', 'Something to think about, never a diagnosis.')
     Share.share({ message: parts.join('\n') }).catch(() => {})
   }
 

@@ -113,9 +113,9 @@ export function journeyFor(today: string): { reflection: Reflection; when: strin
 // A gentle reminder: one line a day, never a nudge to do more.
 const REMINDERS = [
   'You don’t need to have everything figured out to make progress.',
-  'A few honest words are enough. There is no right length.',
+  'A few honest words from you are enough. There is no right length.',
   'Missing a day undoes nothing. Come back whenever you like.',
-  'Noticing is already a kind of change.',
+  'Just noticing this about yourself is already a change.',
   'You can write about a small thing. Small things count.',
 ]
 

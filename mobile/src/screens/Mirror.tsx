@@ -995,7 +995,7 @@ function Footer({ onOpenKept }: { onOpenKept: () => void }) {
   return (
     <View style={{ gap: 10 }}>
       <Hairline />
-      <T bold>For self-reflection, not a diagnosis.</T>
+      <T bold>Something to think about, never a diagnosis.</T>
       <Eyebrow>What leaves my phone</Eyebrow>
       <Note>
         {signedIn

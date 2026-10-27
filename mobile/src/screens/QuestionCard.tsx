@@ -218,7 +218,7 @@ export function QuestionCard({ question, date, sitting, wordsDays = DEFAULT_WORD
       {!choice && mode === 'closest' && (
         <View style={{ gap: 12 }}>
           <Quote text={typed} />
-          <T tone="text2">Which of these comes closest? Your insight comes from that one.</T>
+          <T tone="text2">Which of these is closest to what you meant? I'll read your answer from that one.</T>
           {options.map((o) => (
             <Option key={o.id} label={o.label} disabled={sending} onPress={() => vote(o, typed)} />
           ))}
@@ -408,7 +408,7 @@ export function HeavyCard() {
           Talk to someone now
         </Text>
       </T>
-      <T v="tiny">For self-reflection, not a diagnosis.</T>
+      <T v="tiny">Something to think about, never a diagnosis.</T>
     </Tinted>
   )
 }
@@ -457,10 +457,10 @@ function InsightPanel({
         </T>
       ) : null}
       {otherSide ? <Side label="The other side" color={p.rose} text={otherSide} /> : null}
-      {reach && <Side label="What it reached for" color={p.accentInk} text={reach} />}
+      {reach && <Side label="What you were reaching for" color={p.accentInk} text={reach} />}
       {thread && <T tone="text2">↺ {thread}</T>}
       {focus && <T tone="text2">→ {focus}</T>}
-      <T v="tiny">For self-reflection, not a diagnosis.</T>
+      <T v="tiny">Something to think about, never a diagnosis.</T>
     </View>
   )
 }

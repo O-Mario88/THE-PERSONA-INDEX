@@ -30,7 +30,7 @@ describe('the public read pages', () => {
       if (!name.endsWith('.html')) continue
       for (const r of READS) for (const s of r.sources) expect(html, `${name} cites ${s.url}`).not.toContain(s.url)
       expect(html).not.toMatch(/<script/i)
-      expect(html).toContain('For self-reflection, not a diagnosis.')
+      expect(html).toContain('Something to think about, never a diagnosis.')
     }
   })
 

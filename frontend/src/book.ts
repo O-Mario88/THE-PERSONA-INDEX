@@ -249,7 +249,7 @@ export function bookHTML(b: Book): string {
 ${empty ? '<p>Nothing kept yet. Tap “Keep this” under any card in the app and it will be here next time.</p>' : body}
 <footer>
 ${notes.map((n) => `<p class="meta">${esc(n)}</p>`).join('\n')}
-<p class="note">For self-reflection, not a diagnosis.</p>
+<p class="note">Something to think about, never a diagnosis.</p>
 <p class="meta">${esc(HELPLINE_LINE)} ${esc(helplineHere().replace(/^https:\/\//, ''))}</p>
 </footer>
 </main>

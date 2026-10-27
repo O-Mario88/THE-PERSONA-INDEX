@@ -38,7 +38,7 @@ export function Connect({ me, onSignIn, today, questions = [] }: { me: AccountVi
         <View style={{ gap: 4 }}>
           <T v="label">Connect</T>
           <T v="display">Your circle</T>
-          <T tone="text2">A private space for understanding, encouragement and meaningful connection.</T>
+          <T tone="text2">The people who matter to you, and a quiet way to stay close to them.</T>
         </View>
         <T tone="muted">
           Three friends unlock your Outside Mirror: how the people around you experience you, blended so no one answer can be traced. Friends never see your
@@ -68,7 +68,7 @@ export function Connect({ me, onSignIn, today, questions = [] }: { me: AccountVi
       <View style={{ gap: 4 }}>
         <T v="label">Connect{me.handle ? ` · @${me.handle}` : ''}</T>
         <T v="display">Connect</T>
-        <T tone="text2">A private space for understanding, encouragement and meaningful connection.</T>
+        <T tone="text2">The people who matter to you, and a quiet way to stay close to them.</T>
       </View>
       {error ? <T tone="danger">{error}</T> : null}
       {friends.length > 0 && <CloserTogether friends={friends} rings={rings} />}

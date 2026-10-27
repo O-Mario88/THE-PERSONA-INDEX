@@ -49,7 +49,7 @@ export function ReadScreen({ read, date, intimacy, onBack, onOpen }: { read: Rea
           ))}
         </View>
       )}
-      <T v="tiny">For self-reflection, not a diagnosis.</T>
+      <T v="tiny">Something to think about, never a diagnosis.</T>
     </Page>
   )
 }

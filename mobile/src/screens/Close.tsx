@@ -124,7 +124,7 @@ export function Close(props: Props) {
           </T>
         </>
       )}
-      <T v="tiny">For self-reflection, not a diagnosis.</T>
+      <T v="tiny">Something to think about, never a diagnosis.</T>
     </View>
   )
 }

@@ -81,21 +81,26 @@ export function Today({
         </View>
         <Ring part={doneCount / items.length} label={`${doneCount} of ${items.length} windows done today`} big={String(doneCount)} small={`of ${items.length} today`} size={92} />
       </View>
-
+    </>
+  )
+  // The first cards. On a very wide screen they start level with the
+  // right-hand column, under the greeting that spans both.
+  const lead = (
+    <>
       <HeroCard hero={hero} now={now} onOpen={onOpen} />
       <Composer name={name} window={w} onWrite={onWrite} />
     </>
   )
   const tapestry = (
     <Card style={{ gap: 12 }}>
-      <T v="label">Season tapestry · day {s.day} of 90</T>
+      <T v="label">Your season · day {s.day} of 90</T>
       <Tapestry s={s} cols={rail ? 12 : 18} width={inner} />
     </Card>
   )
   const ritual = (
     <Card style={{ gap: 16 }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
-        <T v="h2">Today’s ritual</T>
+        <T v="h2">Your day so far</T>
         <T v="small" tone="muted">
           {doneCount} of {items.length} complete
         </T>
@@ -106,15 +111,18 @@ export function Today({
   const read = <TodaysRead date={date} themes={themes} intimacy={intimacy} onRead={onRead} />
   if (rail) {
     return (
-      <View style={{ flexDirection: 'row', gap: 24, alignItems: 'flex-start' }}>
-        <View style={{ flex: 1, gap: 20 }}>
-          {top}
-          {ritual}
-          {children}
-        </View>
-        <View style={{ width: RAIL_W, gap: 20 }}>
-          {tapestry}
-          {read}
+      <View style={{ gap: 20 }}>
+        {top}
+        <View style={{ flexDirection: 'row', gap: 24, alignItems: 'flex-start' }}>
+          <View style={{ flex: 1, gap: 20 }}>
+            {lead}
+            {ritual}
+            {children}
+          </View>
+          <View style={{ width: RAIL_W, gap: 20 }}>
+            {tapestry}
+            {read}
+          </View>
         </View>
       </View>
     )
@@ -122,6 +130,7 @@ export function Today({
   return (
     <>
       {top}
+      {lead}
       {tapestry}
       {ritual}
       {read}
@@ -266,7 +275,7 @@ function TodaysRead({ date, themes, intimacy, onRead }: { date: string; themes: 
   return (
     <>
       <Card style={{ gap: 10 }}>
-        <T v="eyebrow">Today's read · {minutes(read)} min</T>
+        <T v="eyebrow">Something for you to read · {minutes(read)} min</T>
         <T v="h2" style={{ fontSize: 22, lineHeight: 28 }}>
           {read.title}
         </T>
