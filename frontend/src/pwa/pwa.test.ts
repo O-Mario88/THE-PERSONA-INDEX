@@ -63,7 +63,6 @@ describe('the service worker', () => {
       '/_expo/static/js/web/index-9bdcdbe5f9584522a138355c67028d4f.js',
       '/app.css',
       '/assets/node_modules/@expo-google-fonts/figtree/400Regular/Figtree_400Regular.fde4a0ff.ttf',
-      '/assets/node_modules/@expo-google-fonts/figtree/800ExtraBold/Figtree_800ExtraBold.2960d6e0.ttf',
       '/favicon.svg',
       '/manifest.webmanifest',
     ])

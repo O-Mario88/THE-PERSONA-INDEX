@@ -8,7 +8,6 @@ import {
   Figtree_500Medium,
   Figtree_600SemiBold,
   Figtree_700Bold,
-  Figtree_800ExtraBold,
 } from '@expo-google-fonts/figtree'
 import { hydrate } from './src/platform/setup'
 import './src/platform/gzip'
@@ -21,7 +20,7 @@ SplashScreen.preventAutoHideAsync().catch(() => {})
 // The root: Figtree and what this device kept are loaded before the first
 // screen, so nothing flashes or jumps.
 export default function App() {
-  const [fonts] = useFonts({ Figtree_400Regular, Figtree_500Medium, Figtree_600SemiBold, Figtree_700Bold, Figtree_800ExtraBold })
+  const [fonts] = useFonts({ Figtree_400Regular, Figtree_500Medium, Figtree_600SemiBold, Figtree_700Bold })
   const [kept, setKept] = useState(false)
   const [epoch, setEpoch] = useState(0)
   const scheme = useColorScheme()

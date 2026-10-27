@@ -83,7 +83,7 @@ export function precacheList(files: string[]): string[] {
       /^assets\/[\w-]*-latin-wght-normal-[\w-]+\.woff2$/.test(f) ||
       f === 'app.css' ||
       /^_expo\/static\/js\/web\/index-[\w-]+\.js$/.test(f) ||
-      /^assets\/node_modules\/@expo-google-fonts\/figtree\/[45678]00[A-Za-z]+\/Figtree_[45678]00[A-Za-z]+\.[\w]+\.ttf$/.test(f) ||
+      /^assets\/node_modules\/@expo-google-fonts\/figtree\/[4567]00[A-Za-z]+\/Figtree_[4567]00[A-Za-z]+\.[\w]+\.ttf$/.test(f) ||
       /^(manifest\.webmanifest|favicon\.svg|icon-192\.png|apple-touch-icon\.png)$/.test(f),
   )
   return ['/', ...keep.filter((f) => f !== 'index.html').map((f) => `/${f}`)].sort()

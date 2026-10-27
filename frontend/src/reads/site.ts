@@ -109,7 +109,7 @@ export function readSite(): { problems: string[]; files: Record<string, string> 
 }
 
 // The app's one typeface, Figtree, from the site itself (mobile/scripts/build-web.mjs copies it to /fonts/).
-const FONT_FACES = [400, 600, 700, 800].map((w) => `@font-face{font-family:Figtree;src:url(/fonts/figtree-${w}.ttf) format('truetype');font-weight:${w};font-display:swap}`).join('\n')
+const FONT_FACES = [400, 600, 700].map((w) => `@font-face{font-family:Figtree;src:url(/fonts/figtree-${w}.ttf) format('truetype');font-weight:${w};font-display:swap}`).join('\n')
 const SANS = "Figtree,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif"
 
 const CSS = `

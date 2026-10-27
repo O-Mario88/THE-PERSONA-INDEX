@@ -111,7 +111,7 @@ export function SignUp({ page, onDone, onNotNow, notNow }: { page: SignUpPage; o
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 40 }}>
         <View style={{ backgroundColor: p.navy, paddingHorizontal: gutter, paddingTop: Math.max(insets.top, 20) + 16, paddingBottom: 28, gap: 18 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <Text style={{ fontFamily: font.heavy, fontSize: 16, color: p.onNavy }}>P</Text>
+            <Text style={{ fontFamily: font.bold, fontSize: 16, color: p.onNavy }}>P</Text>
             <T v="label" tone="onNavy">
               The Persona Index
             </T>

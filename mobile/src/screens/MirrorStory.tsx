@@ -186,7 +186,7 @@ function Section({ id, icon, tone = 'green', title, note, children }: { id: stri
       <View style={{ flexDirection: 'row', gap: 12, alignItems: 'flex-start' }}>
         <Disc icon={icon} tone={tone} size={40} />
         <View style={{ flex: 1, gap: 2 }}>
-          <T v="h3" style={{ fontFamily: font.heavy }}>
+          <T v="h3">
             {title}
           </T>
           {note ? (
@@ -518,7 +518,7 @@ function DirectionBox({ span, from, today, direction, title, allowOwn = false }:
         <View style={{ flexDirection: 'row', gap: 12 }}>
           <Disc icon="arrow" tone="amber" size={40} />
           <View style={{ flex: 1, gap: 4 }}>
-            <T v="h3" style={{ fontFamily: font.heavy }}>
+            <T v="h3">
               {title}
             </T>
             {direction && <T v="quote" style={{ fontSize: 20, lineHeight: 27 }}>{direction.text}</T>}
@@ -1055,7 +1055,7 @@ function ThemeBox({ noun, from, today, themes, back }: { noun: 'month' | 'quarte
           <View style={{ flexDirection: 'row', gap: 12 }}>
             <Disc icon="arrow" tone="amber" size={40} />
             <View style={{ flex: 1, gap: 2 }}>
-              <T v="h3" style={{ fontFamily: font.heavy }}>
+              <T v="h3">
                 One direction for the coming {noun}
               </T>
               <T v="small" tone="muted">
@@ -1291,7 +1291,7 @@ function Proud({ year }: { year: string }) {
   const [saved, setSaved] = useState(false)
   return (
     <View style={{ gap: 10 }}>
-      <T v="h3" style={{ fontFamily: font.heavy }}>
+      <T v="h3">
         What you’re proud of
       </T>
       <T v="small" tone="text2">
@@ -1360,7 +1360,7 @@ function Forward({
 
   return (
     <View ref={ref} collapsable={false} style={{ gap: 12 }}>
-      <T v="h3" style={{ fontFamily: font.heavy }}>
+      <T v="h3">
         What you’re carrying forward
       </T>
       {lines.length > 0 ? lines.map((l) => <T key={l}>• {l}</T>) : <Quiet>As the year fills in, what you learned and what still matters gathers here.</Quiet>}

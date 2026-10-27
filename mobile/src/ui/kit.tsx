@@ -25,13 +25,13 @@ import { Icon, type IconName } from './Icon'
 type Variant = 'display' | 'title' | 'h2' | 'h3' | 'body' | 'small' | 'tiny' | 'label' | 'eyebrow' | 'quote'
 type Tone = 'text' | 'text2' | 'muted' | 'accent' | 'onNavy' | 'onNavy2' | 'danger' | 'leaf' | 'warm'
 
-// X-style type (Edwin, 2026-10-27): one face, few sizes, heavy headings with
-// tight tracking, compact body lines, and labels in sentence case rather
+// X-style type (Edwin, 2026-10-27): one face, few sizes, Bold headings (never
+// extra bold) with tight tracking, compact body lines, and labels in sentence case rather
 // than spaced capitals.
 const VARIANTS: Record<Variant, TextStyle> = {
-  display: { fontFamily: font.heavy, fontSize: 31, lineHeight: 36, letterSpacing: -0.6 },
-  title: { fontFamily: font.heavy, fontSize: 23, lineHeight: 28, letterSpacing: -0.35 },
-  h2: { fontFamily: font.heavy, fontSize: 20, lineHeight: 24, letterSpacing: -0.2 },
+  display: { fontFamily: font.bold, fontSize: 31, lineHeight: 36, letterSpacing: -0.6 },
+  title: { fontFamily: font.bold, fontSize: 23, lineHeight: 28, letterSpacing: -0.35 },
+  h2: { fontFamily: font.bold, fontSize: 20, lineHeight: 24, letterSpacing: -0.2 },
   h3: { fontFamily: font.bold, fontSize: 17, lineHeight: 22, letterSpacing: -0.1 },
   body: { fontFamily: font.regular, fontSize: 16, lineHeight: 22 },
   small: { fontFamily: font.regular, fontSize: 14, lineHeight: 19 },

@@ -130,7 +130,6 @@ export const font = {
   medium: 'Figtree_500Medium',
   semibold: 'Figtree_600SemiBold',
   bold: 'Figtree_700Bold',
-  heavy: 'Figtree_800ExtraBold',
 }
 
 // A 4px grid, a 24px gutter, and the radii of the web app.

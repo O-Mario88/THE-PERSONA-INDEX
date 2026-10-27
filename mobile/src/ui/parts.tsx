@@ -60,7 +60,7 @@ export function Ring({ part, big, small, size = 64, label, onDark }: { part: num
           />
         )}
       </Svg>
-      <Text style={{ fontFamily: font.heavy, fontSize: size * 0.3, lineHeight: size * 0.34, color: onDark ? p.onNavy : p.text }}>{big}</Text>
+      <Text style={{ fontFamily: font.bold, fontSize: size * 0.3, lineHeight: size * 0.34, color: onDark ? p.onNavy : p.text }}>{big}</Text>
       {small ? (
         <Text style={{ fontFamily: font.bold, fontSize: Math.max(8, size * 0.09), color: onDark ? p.onNavy2 : p.muted }}>
           {small}
