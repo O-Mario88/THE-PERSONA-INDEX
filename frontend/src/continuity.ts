@@ -3,7 +3,7 @@
 // open with a line tied to an earlier answer, and a step someone said they'd
 // try comes back to them on Today, instead of waiting in a list.
 
-import { cardTextOf } from './insights'
+import { cardTextOf, forYou } from './insights'
 import { loadMoves, type Move } from './moves'
 import type { History } from './profile'
 import { splitReveal } from './reveal'
@@ -34,4 +34,12 @@ export function rememberLine(today: string, h: History): string | null {
 export function stepToFollow(today: string, moves: Move[] = loadMoves()): Move | null {
   const from = addDays(today, -7)
   return [...moves].filter((m) => m.status === 'started' && m.date < today && m.date >= from).sort((a, b) => a.date.localeCompare(b.date))[0] ?? null
+}
+
+// ideaToTry is something useful for a day someone doesn't feel like answering:
+// a small step from one of their own recent cards that they haven't tried yet.
+export function ideaToTry(today: string, h: History, moves: Move[] = loadMoves()): { questionId: string; optionId: string; step: string; from: string } | null {
+  const tried = new Set(moves.map((m) => m.questionId))
+  const card = forYou(h, today, 30).find((c) => c.step && !c.heavy && !tried.has(c.questionId))
+  return card?.step ? { questionId: card.questionId, optionId: card.optionId, step: card.step, from: card.label } : null
 }

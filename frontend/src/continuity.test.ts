@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { rememberLine, stepToFollow } from './continuity'
+import { ideaToTry, rememberLine, stepToFollow } from './continuity'
 import type { Move } from './moves'
 import { saveJSON } from './storage'
 
@@ -31,5 +31,14 @@ describe('following up on a step', () => {
     expect(stepToFollow('2026-10-28', moves)?.step).toBe('Step from 2026-10-26')
     expect(stepToFollow('2026-11-10', moves)).toBeNull()
     expect(stepToFollow('2026-10-28', [move('2026-10-28', 'started')])).toBeNull()
+  })
+})
+
+describe('something useful without answering', () => {
+  it('offers a step from your own recent cards that you have not tried yet', () => {
+    saveJSON('pi.insight.q1', { date: '2026-10-27', questionId: 'q1', prompt: 'P', label: 'Give a vague answer', reveal: 'R.', step: 'Share your real pay with one person.' })
+    const h = { answers: [{ ...answer('2026-10-27', 'q1'), optionId: 'o1' }], skips: [] }
+    expect(ideaToTry('2026-10-28', h, [])).toMatchObject({ questionId: 'q1', step: 'Share your real pay with one person.' })
+    expect(ideaToTry('2026-10-28', h, [{ date: '2026-10-27', questionId: 'q1', optionId: 'o1', step: 'x', status: 'started' }])).toBeNull()
   })
 })

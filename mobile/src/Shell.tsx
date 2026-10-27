@@ -10,15 +10,15 @@ import { ApiError, cacheEdition, cachedEdition, getDay, pruneLocal, pruneWords, 
 import { clock, dayAt, nextTurn, WINDOW_INFO, type Day, type OpenWindow, type Sitting } from '@shared/day'
 import { heroFor, type Progress } from '@shared/homeHero'
 import { pruneNotebook } from '@shared/notebook'
-import { sendUnsent, setMoveStatus } from '@shared/moves'
-import { rememberLine, stepToFollow } from '@shared/continuity'
+import { sendUnsent, setMoveStatus, startMove } from '@shared/moves'
+import { ideaToTry, rememberLine, stepToFollow } from '@shared/continuity'
 import { forgetPick, isFirstDay, loadHistory, todaysPick, writeFirstOf, type Half } from '@shared/profile'
 import { blackOn, intimacyOn, loadPrefs, pulseOn, regionHere, savePrefs, type Prefs } from '@shared/prefs'
 import { cachedPack, fetchPack, regionalFor, regionalToday } from '@shared/regional'
 import { keys, load as loadKey, remove as removeKey, save as saveKey } from '@shared/storage'
 import { NAME_KEY, WELCOMED } from '@shared/welcomeKeys'
 import { pruneCardTexts } from '@shared/insights'
-import { CONNECT_OPEN_KEY, dayWithYou, firstMirrorIn, glimpseHere, inWeekOne, isNewcomer, lastLeaning, markStarted, needsAccount, SHOW_ALL_KEY } from '@shared/firstWeek'
+import { acrossDays, CONNECT_OPEN_KEY, dayWithYou, firstMirrorIn, glimpseHere, inWeekOne, isNewcomer, lastLeaning, markStarted, needsAccount, SHOW_ALL_KEY } from '@shared/firstWeek'
 import { signInMethods, type AccountView } from '@shared/social'
 import { pullSync } from '@shared/sync'
 import { useAccount } from '@shared/useAccount'
@@ -578,6 +578,8 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
             onWrite={write}
           >
             <StepFollowUp today={set.date} />
+            <DayDiscovery today={set.date} onInsights={() => goTab('insights')} />
+            <IdeaToTry today={set.date} />
             {!set.review && morning !== 'done' && win !== 'morning' && clockSitting === 'morning' && (
               <Tinted>
                 <T>Your morning three are still open until 17:00.</T>
@@ -809,6 +811,51 @@ function StepFollowUp({ today }: { today: string }) {
         <Button small kind="ghost" label="No change yet" onPress={() => answer('no_change', 'Thanks for telling me. Not every step lands, and trying still counts.')} />
         <Button small kind="ghost" label="Didn't get to it" onPress={() => answer('not_tried', 'That’s fine. Life gets in the way. It stays in your notebook.')} />
       </View>
+    </Tinted>
+  )
+}
+
+// From day 2: something noticed across all your days, the thing one sitting
+// can't show (shared firstWeek.ts acrossDays), so value doesn't wait for Sunday.
+function DayDiscovery({ today, onInsights }: { today: string; onInsights: () => void }) {
+  const { days, lean } = acrossDays(today)
+  if (!lean) return null
+  return (
+    <Tinted tone="blue" style={{ gap: 8 }}>
+      <T v="h3">Something I noticed across your {days} days</T>
+      <T tone="text2">Your answers keep leaning towards {lean}. Does that feel true?</T>
+      <Button kind="text" label="See it in Insights" iconAfter="arrow" onPress={onInsights} />
+    </Tinted>
+  )
+}
+
+// For a day you don't feel like answering: a small step from one of your own
+// recent cards that you haven't tried yet. Trying it brings it back tomorrow.
+function IdeaToTry({ today }: { today: string }) {
+  const [idea] = useState(() => ideaToTry(today, loadHistory()))
+  const [kept, setKept] = useState(false)
+  if (!idea) return null
+  return (
+    <Tinted tone="plain" style={{ gap: 8 }}>
+      <T v="h3">A small idea, if you want one</T>
+      <T>“{idea.step}”</T>
+      <T v="small" tone="muted">
+        From when you chose “{idea.from}”.
+      </T>
+      {kept ? (
+        <T v="small" tone="muted">
+          I’ll ask you how it went.
+        </T>
+      ) : (
+        <Button
+          small
+          label="I'll try it"
+          onPress={() => {
+            startMove(today, idea.questionId, idea.optionId, idea.step).catch(() => {})
+            setKept(true)
+          }}
+        />
+      )}
     </Tinted>
   )
 }
