@@ -416,7 +416,7 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
   } else if (tab === 'notebook') {
     body = <Reflect today={date} questions={[...morningQs, ...eveningQs]} mild={!intimacyOn(prefs)} startFree={writeFree} startPrompt={writePrompt} name={me?.name || localName || null} />
   } else if (tab === 'insights') {
-    body = <Insights today={date} questions={[...morningQs, ...eveningQs]} pulse={pulseOn(prefs)} onOpenReflect={() => goTab('notebook')} onOpenSettings={() => goTab('account')} onOpenMirror={() => open('mirror')} />
+    body = <Insights today={date} questions={[...morningQs, ...eveningQs]} pulse={pulseOn(prefs)} onOpenSettings={() => goTab('account')} onOpenMirror={() => open('mirror')} />
   } else if (tab === 'circle') {
     body = <Connect me={me} onSignIn={() => open('signin')} today={date} questions={[...morningQs, ...eveningQs]} />
   } else if (tab === 'account') {

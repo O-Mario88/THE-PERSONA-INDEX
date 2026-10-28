@@ -178,8 +178,6 @@ export function Reflect({
           )
         })}
       </View>
-      <Button kind={free ? 'primary' : 'outline'} small icon="reflect" label="Write freely" onPress={() => setFree(!free)} />
-
       {writingWaits() && <BringBack onBack={() => setVersion((v) => v + 1)} />}
 
       <Writing
@@ -197,7 +195,9 @@ export function Reflect({
           setVersion((v) => v + 1)
         }}
       />
+      <Button kind="text" small icon={free ? 'leaf' : 'pencil'} label={free ? 'Back to a question' : 'Or write freely, with no question'} onPress={() => setFree(!free)} style={{ alignSelf: 'flex-start' }} />
 
+      {noticed.length > 0 && (
       <Card style={{ gap: 14 }}>
         <View style={{ gap: 4 }}>
           <T v="h2">What I've noticed about you</T>
@@ -213,7 +213,11 @@ export function Reflect({
           ))}
         </View>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', rowGap: 18 }}>
-          {AREAS.map((area) => {
+          {/* Only the parts of life with something in them, never a grid of empty boxes. */}
+          {!AREAS.some((area) => noticed.some((n) => n.area === area && n.group === group)) && (
+            <T tone="muted">{group === 'strength' ? 'Nothing here yet. Your strengths show up as you answer and write.' : 'Nothing here yet. Areas to grow show up as you answer and write.'}</T>
+          )}
+          {AREAS.filter((area) => noticed.some((n) => n.area === area && n.group === group)).map((area) => {
             const item = noticed.find((n) => n.area === area && n.group === group)
             return (
               <Pressable
@@ -237,10 +241,9 @@ export function Reflect({
           })}
         </View>
       </Card>
+      )}
 
-      <Card>
-        <Notebook mild={mild} today={today} />
-      </Card>
+      <Notebook mild={mild} today={today} hideWhenEmpty />
     </Page>
   )
 }

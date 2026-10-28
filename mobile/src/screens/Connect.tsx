@@ -40,16 +40,22 @@ export function Connect({ me, onSignIn, today, questions = [] }: { me: AccountVi
           <T v="display">Your circle</T>
           <T tone="text2">The people who matter to you, and a quiet way to stay close to them.</T>
         </View>
-        <T tone="muted">
-          Three friends unlock your Outside Mirror: how the people around you experience you, blended so no one answer can be traced. Friends never see your
-          answers or your readings.
-        </T>
+        {/* One card, one button, like Today (Edwin, 2026-10-28). */}
         <Tinted>
-          <T v="h2">Sign in to start your circle.</T>
-          <T tone="text2">No password: a 6-digit code. Your answers stay as private as they are now.</T>
-          <Button label="Sign in" onPress={onSignIn} />
+          <T v="h2">Start your circle</T>
+          <T tone="text2">
+            Three friends unlock your Outside Mirror: how the people around you experience you, blended so no one answer can be traced. Friends never see your answers.
+          </T>
+          <Button wide label="Sign in to start" iconAfter="chevron" onPress={onSignIn} />
+          <T v="small" tone="muted">
+            No password: a 6-digit code.
+          </T>
         </Tinted>
-        {today && <Growing date={today} questions={questions} circle={null} />}
+        {today && (
+          <Card>
+            <Growing date={today} questions={questions} circle={null} />
+          </Card>
+        )}
         <Tagline />
       </Page>
     )

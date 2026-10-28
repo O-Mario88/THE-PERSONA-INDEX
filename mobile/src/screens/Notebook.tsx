@@ -9,7 +9,7 @@ import { themeName } from '@shared/themes'
 import { TRAITS } from '@shared/traits'
 import { REVISIT_WORDS, VERDICT_WORDS } from '@shared/words'
 import { useTheme } from '../theme'
-import { Button, Chip, T } from '../ui/kit'
+import { Button, Card, Chip, T } from '../ui/kit'
 import { DownloadButtons } from './BookDownloads'
 import { locale } from '@shared/locale'
 
@@ -30,7 +30,9 @@ function Muted({ children }: { children: React.ReactNode }) {
   )
 }
 
-export function Notebook({ mild, today }: { mild: boolean; today: string }) {
+// Reflect shows the Notebook only once something is in it (Edwin,
+// 2026-10-28: every page as calm and focused as Today).
+export function Notebook({ mild, today, hideWhenEmpty }: { mild: boolean; today: string; hideWhenEmpty?: boolean }) {
   const [, setVersion] = useState(0)
   const refresh = () => setVersion((v) => v + 1)
   const cards = keptCards()
@@ -59,8 +61,9 @@ export function Notebook({ mild, today }: { mild: boolean; today: string }) {
     ['Earlier', shown.filter((c) => c.date < monday)],
   ]
 
+  if (empty && hideWhenEmpty) return null
   return (
-    <View style={{ gap: 16 }}>
+    <Card style={{ gap: 16 }}>
       <View style={{ gap: 4 }}>
         <T v="label" tone="muted">
           On this phone only, until you remove it
@@ -156,7 +159,7 @@ export function Notebook({ mild, today }: { mild: boolean; today: string }) {
       )}
       {!empty && <DownloadButtons today={today} mild={mild} />}
       <Muted>Something to think about, never a diagnosis.</Muted>
-    </View>
+    </Card>
   )
 }
 

@@ -17,7 +17,7 @@ import { rateAnswer } from '@shared/rating'
 import { splitReveal } from '@shared/reveal'
 import { NOT_ME_REPLY, VERDICT_REPLIES } from '@shared/words'
 import { radius, useTheme } from '../theme'
-import { Button, Card, Chip, Page, T, Tinted } from '../ui/kit'
+import { Button, Card, Chip, Page, T } from '../ui/kit'
 import { CardHead } from '../ui/parts'
 import { HeavyCard, VerdictRow } from './QuestionCard'
 
@@ -29,14 +29,12 @@ export function Insights({
   today,
   questions,
   pulse,
-  onOpenReflect,
   onOpenSettings,
   onOpenMirror,
 }: {
   today: string
   questions: Question[]
   pulse: boolean
-  onOpenReflect: () => void
   onOpenSettings: () => void
   onOpenMirror?: () => void
 }) {
@@ -56,9 +54,10 @@ export function Insights({
   return (
     <Page
       aside={
-        counted || saved.length > 0 ? (
+        (counted && pulse) || saved.length > 0 ? (
         <>
-          {counted && (
+          {/* Only with the Human Pulse on; off, there is nothing to show and no nudge to turn it on. */}
+          {counted && pulse && (
             <Card>
               <NotAlone today={today} cards={cards} pulse={pulse} onOpenSettings={onOpenSettings} />
             </Card>
@@ -104,7 +103,7 @@ export function Insights({
           )}
           {[...(openToday ? fresh : []), ...earlier].map((c) => (
             <Card key={c.questionId} style={{ gap: 20 }}>
-              <InsightCard card={c} today={today} onRated={() => setVersion((v) => v + 1)} onOpenReflect={onOpenReflect} onOpenMirror={onOpenMirror} />
+              <InsightCard card={c} today={today} onRated={() => setVersion((v) => v + 1)} />
             </Card>
           ))}
         </>
@@ -113,7 +112,7 @@ export function Insights({
   )
 }
 
-function InsightCard({ card, today, onRated, onOpenReflect, onOpenMirror }: { card: ForYouCard; today: string; onRated: () => void; onOpenReflect: () => void; onOpenMirror?: () => void }) {
+function InsightCard({ card, today, onRated }: { card: ForYouCard; today: string; onRated: () => void }) {
   const p = useTheme()
   const reading = card.reveal ? splitReveal(card.reveal) : null
   return (
@@ -158,10 +157,6 @@ function InsightCard({ card, today, onRated, onOpenReflect, onOpenMirror }: { ca
           )}
           {card.step && <TryThis card={card} today={today} />}
           <RateCard card={card} onRated={onRated} />
-          <View style={{ flexDirection: 'row' }}>
-            <Chip label="Reflect on this" onPress={onOpenReflect} />
-            {onOpenMirror && <Chip label="Weekly Mirror" onPress={onOpenMirror} />}
-          </View>
           <T v="tiny">Something to think about, never a diagnosis.</T>
         </>
       )}
@@ -173,7 +168,7 @@ function TryThis({ card, today }: { card: ForYouCard; today: string }) {
   const id = `insight-${card.questionId}`
   const [saved, setSaved] = useState(() => intentions().some((i) => i.id === id))
   return (
-    <Tinted tone="blue">
+    <View style={{ gap: 10 }}>
       <CardHead icon="bulb" tone="amber" title="Something you could try" />
       <T>{card.step}</T>
       {saved ? (
@@ -190,7 +185,7 @@ function TryThis({ card, today }: { card: ForYouCard; today: string }) {
           }}
         />
       )}
-    </Tinted>
+    </View>
   )
 }
 
