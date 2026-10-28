@@ -7,7 +7,10 @@ import { deleteBackup, vaultState } from '@shared/vault'
 import { ApiError, deleteEverywhere, forgetLocal, getKept, insteadCount, wordsBetween, type Kept } from '@shared/api'
 import { loadMoves } from '@shared/moves'
 import { notebookCount } from '@shared/notebook'
-import { blackOn, loadPrefs, pulseOn, type Prefs } from '@shared/prefs'
+import { blackOn, countryOf, loadPrefs, pulseOn, type Prefs } from '@shared/prefs'
+import { regionOf } from '@shared/regions'
+import { REGIONAL_SWITCH } from '@shared/words'
+import { ReminderSettingsView } from './Reminders'
 import { loadHistory } from '@shared/profile'
 import { forgetSession, patchAccount, signOut, type AccountView } from '@shared/social'
 import { Back, Button, Card, Field, Page, RowLink, T, Tinted, Toggle } from '../ui/kit'
@@ -112,20 +115,27 @@ export function You({
         </View>
       )}
 
+      {/* Every on/off choice in the app lives here, and all start on (Edwin,
+          2026-10-28). No other page asks you to switch anything. */}
       <Card style={{ gap: 4 }}>
-        <T v="label">Choices</T>
+        <T v="h2">Privacy and choices</T>
+        <T v="small" tone="muted">
+          Everything starts on. Switch off anything you’d rather not have.
+        </T>
         <Toggle
-          label="Dark mode"
-          note="Midnight through the evening and night, and whenever your phone is set to dark."
-          value={blackOn(prefs)}
-          onChange={(on) => onChange(on ? without('black') : { ...prefs, black: false })}
-        />
-        <Toggle
-          label="Show me the Human Pulse"
-          note="Anonymous totals of how others answered. Off hides every number."
+          label="The Human Pulse"
+          note="See how many people chose the same answers as you: anonymous totals only, never who. Off hides every number, everywhere."
           value={pulseOn(prefs)}
-          onChange={(on) => onChange({ ...prefs, pulse: on })}
+          onChange={(on) => onChange(on ? without('pulse') : { ...prefs, pulse: false })}
         />
+        {regionOf(countryOf(prefs)) && (
+          <Toggle
+            label={REGIONAL_SWITCH}
+            note="Asked and kept on this phone only. Nothing about them is ever sent."
+            value={prefs.regional !== false}
+            onChange={(on) => onChange(on ? without('regional') : { ...prefs, regional: false })}
+          />
+        )}
         {prefs.adult === true && (
           <Toggle
             label="Keep it mild (no intimacy questions)"
@@ -134,9 +144,16 @@ export function You({
             onChange={(on) => onChange({ ...prefs, mild: on })}
           />
         )}
+        <Toggle
+          label="Dark mode"
+          note="Midnight through the evening and night, and whenever your phone is set to dark."
+          value={blackOn(prefs)}
+          onChange={(on) => onChange(on ? without('black') : { ...prefs, black: false })}
+        />
+        <ReminderSettingsView />
       </Card>
 
-      <RowLink label="Settings" sub="Your name, intimacy questions, where you live" onPress={onOpenSettings} />
+      <RowLink label="Settings" sub="Your name, language, age and where you live" onPress={onOpenSettings} />
       <RowLink label="What I keep, and how to delete it" onPress={onOpenKept} />
 
       {me && (

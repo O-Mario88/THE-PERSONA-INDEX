@@ -34,28 +34,13 @@ export function Midday({ date, morningOpen, onMorning }: { date: string; morning
 }
 
 // The Human Pulse: off until the person says yes once.
-export function Afternoon({ questions, pulse, onPulse }: { questions: Question[]; pulse: boolean | undefined; onPulse: (on: boolean) => void }) {
-  if (pulse === undefined) {
-    return (
-      <View style={{ gap: 16 }}>
-        <T v="display">The afternoon pulse.</T>
-        <Tinted>
-          <T>
-            <T bold>See how others answered?</T> Anonymous totals only. Never who, and never a score.
-          </T>
-          <View style={{ flexDirection: 'row', gap: 10 }}>
-            <Button small label="Show me" onPress={() => onPulse(true)} />
-            <Button small kind="ghost" label="Not for me" onPress={() => onPulse(false)} />
-          </View>
-        </Tinted>
-      </View>
-    )
-  }
+// The Human Pulse is on unless switched off in You (no prompt here).
+export function Afternoon({ questions, pulse }: { questions: Question[]; pulse: boolean }) {
   if (!pulse) {
     return (
       <View style={{ gap: 12 }}>
         <T v="display">A quiet afternoon.</T>
-        <T tone="muted">Nothing else until 17:00. The Human Pulse is off; you can turn it on in You.</T>
+        <T tone="muted">Nothing else until 17:00. The Human Pulse is off; you can turn it back on in You, under Privacy and choices.</T>
       </View>
     )
   }

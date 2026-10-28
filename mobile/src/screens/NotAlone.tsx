@@ -6,18 +6,17 @@ import { View } from 'react-native'
 import { pulseWords, sharedMoments, type PulseCounts } from '@shared/humanPulse'
 import { cardTextOf } from '@shared/insights'
 import { loadHistory } from '@shared/profile'
-import { Button, Card, Hairline, T } from '../ui/kit'
+import { Card, Hairline, T } from '../ui/kit'
 import { CardHead } from '../ui/parts'
 
 const SHOWN = 3
 
-export function NotAloneSection({ pulse, focus, onPulseOn }: { pulse: PulseCounts | null | false; focus: string | null; onPulseOn: () => void }) {
+export function NotAloneSection({ pulse, focus }: { pulse: PulseCounts | null | false; focus: string | null }) {
   if (pulse === false) {
     return (
       <Card style={{ gap: 10 }}>
         <CardHead icon="people" tone="blue" v="h2" title="You’re not alone" />
-        <T tone="text2">See how many people chose the same answers as you. Anonymous totals only: nobody sees who chose what.</T>
-        <Button label="Show me" iconAfter="chevron" onPress={onPulseOn} style={{ alignSelf: 'flex-start' }} />
+        <T tone="text2">The Human Pulse is switched off. You can turn it back on in You, under Privacy and choices.</T>
       </Card>
     )
   }

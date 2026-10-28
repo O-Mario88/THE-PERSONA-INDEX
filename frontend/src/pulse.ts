@@ -1,6 +1,6 @@
 // The Human Pulse (Stage 5 proposal, 2026-10-24): the anonymous totals the
 // server already counts for every question (GET /api/questions/{id}/results),
-// shown quietly, only to a person who said yes to seeing them.
+// shown quietly, unless the person switched them off in You.
 //
 // The rules: every number is the server's count, never an estimate. Under
 // PULSE_MIN answers no split is shown, since with a handful of answers a

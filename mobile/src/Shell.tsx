@@ -440,7 +440,6 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
         questions={[...morningQs, ...eveningQs]}
         pulse={pulseOn(prefs) ? pulseCounts : false}
         focus={connectFocus}
-        onPulseOn={() => changePrefs({ ...prefs, pulse: true })}
       />
     )
   } else if (tab === 'account') {
@@ -597,7 +596,7 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
     } else if (flow === 'afternoon') {
       body = (
         <Flow label={pulseOn(prefs) ? 'Live · afternoon pulse' : 'Afternoon'} onClose={closeFlow}>
-          <Afternoon questions={morningQs} pulse={prefs.pulse} onPulse={(on) => changePrefs({ ...prefs, pulse: on })} />
+          <Afternoon questions={morningQs} pulse={pulseOn(prefs)} />
         </Flow>
       )
     } else if (flow === 'night') {

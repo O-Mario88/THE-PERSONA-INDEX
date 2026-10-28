@@ -10,9 +10,9 @@ import { loadJSON, saveJSON } from './storage'
 // sealed in the backup.
 // regional: false turns off the questions about everyday life where the
 // person lives (regional.ts); they are on whenever a country is given.
-// The choices on the Account screen (Stage 5, 2026-10-24): pulse is whether
-// the Human Pulse totals show (absent until the person is asked once; false
-// hides every number); black: false keeps the evening and night windows off
+// The choices, all in one place on the You page and all on by default
+// (Edwin, 2026-10-28: "everything should be on by default and turned off from
+// the You page"): pulse: false hides every Human Pulse number; black: false keeps the evening and night windows off
 // pure black; still: true shows cards at once instead of unfolding them;
 // connect: false turns quiet nods and Answer Together off both ways.
 export type Prefs = {
@@ -94,8 +94,8 @@ const CRISIS_NUMBERS: Record<string, { label: string; tel: string; sms?: string 
 export const crisisNumber = (country: string | null) => (country ? (CRISIS_NUMBERS[country] ?? null) : null)
 export const crisisHere = () => crisisNumber(countryOf(loadPrefs()))
 
-// The Human Pulse shows only once the person has said yes to it.
-export const pulseOn = (p: Prefs) => p.pulse === true
+// The Human Pulse shows unless switched off in You.
+export const pulseOn = (p: Prefs) => p.pulse !== false
 // Evening and night on pure black, unless switched off.
 export const blackOn = (p: Prefs) => p.black !== false
 // Cards unfold in three beats unless the person or the phone asks for less motion.

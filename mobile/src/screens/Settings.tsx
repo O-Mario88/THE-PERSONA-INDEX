@@ -1,17 +1,15 @@
-// Settings: three everyday choices, your name,
-// intimacy questions and where you live, and the rest folded under "More
-// settings", so it never feels like paperwork.
+// Settings: facts about you (your name, language, age and where you live) and
+// the rest folded under "More settings". Every on/off choice lives on the You
+// page instead (Privacy and choices, Edwin 2026-10-28).
 import { useState } from 'react'
 import { Pressable, View } from 'react-native'
-import { countryOf, WORDS_DAYS, type Prefs, type WordsDays } from '@shared/prefs'
-import { regionOf } from '@shared/regions'
+import { WORDS_DAYS, type Prefs, type WordsDays } from '@shared/prefs'
 import { MAX_NAME } from '@shared/welcomeKeys'
-import { COUNTRY_SETTING, REGIONAL_SWITCH } from '@shared/words'
+import { COUNTRY_SETTING } from '@shared/words'
 import { useTheme } from '../theme'
-import { Back, Button, Card, Field, Page, Radio, RowLink, T, Toggle } from '../ui/kit'
+import { Back, Button, Card, Field, Page, Radio, RowLink, T } from '../ui/kit'
 import { Icon } from '../ui/Icon'
 import { BackupSettings } from './Backup'
-import { ReminderSettingsView } from './Reminders'
 import { CountrySelect } from './Country'
 import { WebLockSettings } from './Browser'
 import { LANGS } from '@shared/i18n'
@@ -83,7 +81,6 @@ export function Settings({
         </T>
         <Radio label="I'm 18 or older" checked={prefs.adult === true} onPress={() => onChange({ ...prefs, adult: true })} />
         <Radio label="I'm under 18, or I'd rather not have them" checked={prefs.adult === false} onPress={() => onChange({ ...prefs, adult: false })} />
-        {prefs.adult === true && <Toggle label="Keep it mild (no intimacy questions)" value={prefs.mild} onChange={(on) => onChange({ ...prefs, mild: on })} />}
       </Card>
 
       <Card style={{ gap: 10 }}>
@@ -92,16 +89,6 @@ export function Settings({
           {COUNTRY_SETTING}
         </T>
         <CountrySelect value={prefs.country ?? ''} withNone onChange={(country) => onChange({ ...prefs, country })} />
-        {regionOf(countryOf(prefs)) && (
-          <Toggle
-            label={REGIONAL_SWITCH}
-            value={prefs.regional !== false}
-            onChange={(on) => {
-              const { regional: _, ...rest } = prefs
-              onChange(on ? rest : { ...rest, regional: false })
-            }}
-          />
-        )}
       </Card>
 
       <Card>
@@ -136,7 +123,6 @@ export function Settings({
                 <Button small kind="soft" label="Show every section now" onPress={onShowAll} />
               </View>
             )}
-            <ReminderSettingsView />
             <WebLockSettings />
             <BackupSettings onRestored={onRestored} />
           </View>
