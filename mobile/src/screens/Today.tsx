@@ -127,8 +127,8 @@ function Wash() {
           </Defs>
           <Rect x="0" y="0" width="400" height="200" fill="url(#todaySky)" />
           <Circle cx="330" cy="58" r="96" fill="url(#todaySun)" />
-          <Path d="M0 158 C 80 122, 160 152, 240 132 S 360 112, 400 126 L400 200 L0 200 Z" fill={p.lime} opacity={0.03} />
-          <Path d="M0 182 C 100 152, 200 176, 300 162 S 380 152, 400 160 L400 200 L0 200 Z" fill={p.lime} opacity={0.045} />
+          <Path d="M0 158 C 80 122, 160 152, 240 132 S 360 112, 400 126 L400 200 L0 200 Z" fill={p.brandLime} opacity={p.dark ? 0.06 : 0.1} />
+          <Path d="M0 182 C 100 152, 200 176, 300 162 S 380 152, 400 160 L400 200 L0 200 Z" fill={p.brandLime} opacity={p.dark ? 0.09 : 0.14} />
         </Svg>
       )}
     </View>

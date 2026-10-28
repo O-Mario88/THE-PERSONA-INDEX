@@ -199,8 +199,8 @@ export const es: Record<string, string> = {
   Afternoon: 'Tarde',
   morning: 'mañana',
   evening: 'tarde',
-  '🔒 Private to you. I never show your answers to anyone, and the words you type stay on this phone.':
-    '🔒 Solo para ti. Nunca muestro tus respuestas a nadie, y lo que escribes se queda en este teléfono.',
+  'Private to you. I never show your answers to anyone, and the words you type stay on this phone.':
+    'Solo para ti. Nunca muestro tus respuestas a nadie, y lo que escribes se queda en este teléfono.',
   'Keep going': 'Seguir',
   'Not today': 'Hoy no',
   'Yes, it helped': 'Sí, me ayudó',

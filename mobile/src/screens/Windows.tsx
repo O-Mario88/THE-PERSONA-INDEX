@@ -12,7 +12,7 @@ import { count, getPulse, PULSE_MIN, sameAs, shareOf, showsSplit, type Pulse } f
 import { themeName } from '@shared/themes'
 import { SUNDAY_LINE } from '@shared/words'
 import { font, radius, useTheme } from '../theme'
-import { Button, Chip, T, Tinted } from '../ui/kit'
+import { Button, Chip, T, Tinted, Private } from '../ui/kit'
 import { Upcoming } from './Close'
 import { Steps } from './Steps'
 
@@ -178,9 +178,7 @@ export function Night({ date, tomorrowThemes, onClose }: { date: string; tomorro
           />
         </View>
       )}
-      <T v="small" tone="muted">
-        🔒 Kept in your notebook, on this phone only.
-      </T>
+      <Private>Kept in your notebook, on this phone only.</Private>
       <Button
         wide
         kind="outline"

@@ -8,6 +8,7 @@ import type { Season } from '@shared/tapestry'
 import { font, useTheme } from '../theme'
 import { Icon, type IconName } from './Icon'
 import { T } from './kit'
+import { THEMES } from '@shared/themes'
 
 export type Tone = 'green' | 'blue' | 'purple' | 'rose' | 'amber'
 
@@ -41,6 +42,31 @@ export function CardHead({ icon, tone, title, v = 'h3', right }: { icon: IconNam
       {right}
     </View>
   )
+}
+
+// A line icon for a question's topic, in place of the old emoji (Edwin,
+// 2026-10-28: one icon set only). A few topics have their own; the rest take
+// their area's.
+const TOPIC_ICONS: Record<string, IconName> = {
+  'work-career': 'briefcase',
+  colleagues: 'briefcase',
+  'sleep-health': 'moon',
+  rest: 'moon',
+  learning: 'bulb',
+  school: 'bulb',
+  money: 'insights',
+  'wealth-luxury': 'insights',
+  faith: 'leaf',
+  plans: 'pin',
+  'getting-around': 'pin',
+  phone: 'chat',
+  celebrations: 'star',
+}
+const AREA_ICONS: Record<string, IconName> = { everyday: 'sun', people: 'people', inner: 'heart', desire: 'star' }
+
+export function themeIcon(slug?: string): IconName {
+  if (!slug) return 'today'
+  return TOPIC_ICONS[slug] ?? AREA_ICONS[THEMES[slug]?.area ?? ''] ?? 'today'
 }
 
 // Initials on a pastel picked from the name. No photos.

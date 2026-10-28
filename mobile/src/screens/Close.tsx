@@ -13,12 +13,12 @@ import { heavyPause, isLowMood, loadHistory, recordRoute, type AnswerRecord, typ
 import { NEED_PHRASES, type Need } from '@shared/needs'
 import { routeToAsk } from '@shared/reaching'
 import { season } from '@shared/tapestry'
-import { themeName, themeStyle } from '@shared/themes'
+import { themeName } from '@shared/themes'
 import { sideOf, TRAITS } from '@shared/traits'
 import { GLIMPSE_BALANCED, GLIMPSE_NEXT, QUIET_DAY, ROUTE_ASK, ROUTE_REPLIES, ROUTE_WORDS, routeLead, SUNDAY_LINE } from '@shared/words'
 import { font, gutter, radius, useTheme } from '../theme'
 import { B, Chip, Option, T, Tinted } from '../ui/kit'
-import { Tapestry } from '../ui/parts'
+import { Tapestry, themeIcon } from '../ui/parts'
 import { Steps } from './Steps'
 
 type Props = {
@@ -260,7 +260,7 @@ export function Upcoming({ label, themes, note }: { label: string; themes: strin
       {themes.length > 0 && (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           {themes.map((t) => (
-            <Chip key={t} icon={themeStyle(t).icon} label={themeName(t)} />
+            <Chip key={t} icon={themeIcon(t)} label={themeName(t)} />
           ))}
         </View>
       )}

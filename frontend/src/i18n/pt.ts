@@ -139,8 +139,8 @@ export const pt: Record<string, string> = {
   Afternoon: 'Tarde',
   morning: 'manhã',
   evening: 'noite',
-  '🔒 Private to you. I never show your answers to anyone, and the words you type stay on this phone.':
-    '🔒 Só para você. Nunca mostro suas respostas a ninguém, e o que você escreve fica neste celular.',
+  'Private to you. I never show your answers to anyone, and the words you type stay on this phone.':
+    'Só para você. Nunca mostro suas respostas a ninguém, e o que você escreve fica neste celular.',
   'Keep going': 'Continuar',
   'Not today': 'Hoje não',
   // Focused Today

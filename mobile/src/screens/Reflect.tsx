@@ -20,7 +20,7 @@ import { BringBack } from './Backup'
 import { Notebook } from './Notebook'
 import { HeavyCard } from './QuestionCard'
 import { font, radius, useTheme } from '../theme'
-import { Button, Card, Page, T, Tinted } from '../ui/kit'
+import { Button, Card, Page, T, Tinted, Private } from '../ui/kit'
 import { CardHead, Disc, type Tone } from '../ui/parts'
 import { Icon, type IconName } from '../ui/Icon'
 
@@ -408,9 +408,7 @@ function Writing({
           </T>
         </View>
       </View>
-      <T v="small" tone="muted">
-        🔒 {PRIVACY_LINE}
-      </T>
+      <Private>{PRIVACY_LINE}</Private>
       <Button label="Save reflection" iconAfter="arrow" disabled={!text.trim()} onPress={save} />
     </Tinted>
   )

@@ -66,7 +66,7 @@ import { readFor } from '@shared/reads/reads'
 import type { Read } from '@shared/reads/types'
 import { outsideMirror, type OutsideMirror as OutsideMirrorData } from '@shared/social'
 import { addDays } from '@shared/storage'
-import { THEMES, themeName, themeStyle } from '@shared/themes'
+import { THEMES, themeName } from '@shared/themes'
 import { honestLine, sideOf, TRAITS } from '@shared/traits'
 import { useAccount } from '@shared/useAccount'
 import {
@@ -299,10 +299,10 @@ function Legend({ items }: { items: [Depth | 'missed', string][] }) {
   )
 }
 
-function ThemeMeta({ theme, children }: { theme?: string; children: ReactNode }) {
+function ThemeMeta({ children }: { theme?: string; children: ReactNode }) {
   return (
     <T v="small" tone="muted">
-      {themeStyle(theme).icon} {children}
+      {children}
     </T>
   )
 }
@@ -1554,7 +1554,7 @@ function PlanOffer({ trait, high, date }: { trait: string; high: boolean; date: 
       )}
       <Field label="When" value={when} maxLength={MAX_PLAN} placeholder={side.plan.when} onChangeText={setWhen} />
       <Field label="I will" value={will} maxLength={MAX_PLAN} placeholder={side.plan.will} onChangeText={setWill} />
-      <Note>🔒 Your plan stays on this phone. I only ever send whether you did it.</Note>
+      <Note>Your plan stays on this phone. I only ever send whether you did it.</Note>
       <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
         <Button
           small

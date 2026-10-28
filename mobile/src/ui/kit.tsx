@@ -1,8 +1,11 @@
 // The parts every screen is built from (mobile/DESIGN.md): type, buttons,
 // fields, choices, chips, hairlines and the page itself.
-import { useState, type ComponentRef, type ReactNode, type Ref } from 'react'
+import { useEffect, useRef, useState, type ComponentRef, type ReactNode, type Ref } from 'react'
 import {
+  AccessibilityInfo,
   ActivityIndicator,
+  Animated,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -165,6 +168,8 @@ export function Button({
           alignSelf: wide ? 'stretch' : 'flex-start',
           borderRadius: small ? radius.pill : radius.md,
           opacity: s.pressed ? 0.85 : hovered(s) && !off && (kind === 'primary' || kind === 'soft') ? 0.92 : 1,
+          // A small press-down, the way the big apps answer a tap.
+          transform: [{ scale: s.pressed && !off && kind !== 'text' ? 0.97 : 1 }],
         },
         style,
       ]}
@@ -174,7 +179,7 @@ export function Button({
       ) : (
         <>
           {icon && <Icon name={icon} size={18} color={fg} />}
-          <Text style={{ fontFamily: kind === 'text' ? font.semibold : font.bold, fontSize: small || kind === 'text' ? 14 : wide ? 17 : 16, color: fg }}>{tr(label)}</Text>
+          <Text style={{ fontFamily: kind === 'text' ? font.semibold : font.bold, fontSize: small || kind === 'text' ? 14 : wide ? 16 : 15, color: fg }}>{tr(label)}</Text>
           {iconAfter && <Icon name={iconAfter} size={18} color={fg} />}
         </>
       )}
@@ -204,7 +209,7 @@ export function RowLink({ label, sub, onPress, icon }: { label: string; sub?: st
 // ---- choices ----
 
 // A card per answer, with an empty ring that fills on choice.
-export function Option({ label, onPress, disabled, chosen, icon }: { label: string; onPress: () => void; disabled?: boolean; chosen?: boolean; icon?: string }) {
+export function Option({ label, onPress, disabled, chosen, icon }: { label: string; onPress: () => void; disabled?: boolean; chosen?: boolean; icon?: IconName }) {
   const p = useTheme()
   const [down, setDown] = useState(false)
   const on = chosen || down
@@ -224,7 +229,7 @@ export function Option({ label, onPress, disabled, chosen, icon }: { label: stri
       <View style={[styles.optionRing, { borderColor: chosen ? p.lime : p.lineStrong, backgroundColor: chosen ? p.lime : p.surface }]}>
         {chosen && <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: p.onLime }} />}
       </View>
-      {icon ? <Text style={{ fontSize: 15, color: p.text }}>{icon}</Text> : null}
+      {icon ? <Icon name={icon} size={18} color={p.text2} /> : null}
       <Text style={{ flex: 1, fontFamily: font.bold, fontSize: 16, lineHeight: 20, color: p.text }}>{tr(label)}</Text>
     </Pressable>
   )
@@ -271,11 +276,11 @@ export function Toggle({ label, note, value, onChange }: { label: string; note?:
   )
 }
 
-export function Chip({ label, on, onPress, icon }: { label: string; on?: boolean; onPress?: () => void; icon?: string }) {
+export function Chip({ label, on, onPress, icon }: { label: string; on?: boolean; onPress?: () => void; icon?: IconName }) {
   const p = useTheme()
   const body = (
     <View style={[styles.chip, { backgroundColor: on ? p.lime : p.surface2 }]}>
-      {icon ? <Text style={{ fontSize: 14 }}>{icon}</Text> : null}
+      {icon ? <Icon name={icon} size={16} color={on ? p.onLime : p.text2} /> : null}
       <Text style={{ fontFamily: on ? font.bold : font.semibold, fontSize: 14, color: on ? p.onLime : p.text }}>{tr(label)}</Text>
     </View>
   )
@@ -385,9 +390,28 @@ export function Page({
 
 // A Facebook-style card: one section of a page, white on the cream page with
 // a hairline and the soft lift. Pages are a column of these.
+// Cards ease in when they first appear (a short fade and lift), unless the
+// phone asks for reduced motion (Edwin, 2026-10-28: motion like the big apps).
+let calm = false
+AccessibilityInfo.isReduceMotionEnabled?.().then((on) => (calm = on), () => {})
+const EASE_MS = 220
+
+function useEaseIn() {
+  const v = useRef(new Animated.Value(calm ? 1 : 0)).current
+  useEffect(() => {
+    if (calm) return
+    Animated.timing(v, { toValue: 1, duration: EASE_MS, useNativeDriver: Platform.OS !== 'web' }).start()
+    // A card must never stay hidden, even if an animation can't run.
+    const done = setTimeout(() => v.setValue(1), EASE_MS + 200)
+    return () => clearTimeout(done)
+  }, [v])
+  return { opacity: v, transform: [{ translateY: v.interpolate({ inputRange: [0, 1], outputRange: [8, 0] }) }] }
+}
+
 export function Card({ children, style, pad = 20 }: { children: ReactNode; style?: StyleProp<ViewStyle>; pad?: number }) {
   const p = useTheme()
-  return <View style={[{ backgroundColor: p.surface, borderColor: p.line, borderWidth: 1, borderRadius: radius.lg, padding: pad, gap: 12 }, lift(p), style]}>{children}</View>
+  const ease = useEaseIn()
+  return <Animated.View style={[{ backgroundColor: p.surface, borderColor: p.line, borderWidth: 1, borderRadius: radius.lg, padding: pad, gap: 12 }, lift(p), style, ease]}>{children}</Animated.View>
 }
 
 export function Hairline({ style }: { style?: StyleProp<ViewStyle> }) {
@@ -416,12 +440,25 @@ export function Back({ onPress, label = 'Back' }: { onPress: () => void; label?:
   )
 }
 
+// A privacy note with the lock icon, the same everywhere (no emoji).
+export function Private({ children }: { children: string }) {
+  const p = useTheme()
+  return (
+    <View style={{ flexDirection: 'row', gap: 8, alignItems: 'flex-start' }}>
+      <View style={{ paddingTop: 2 }}>
+        <Icon name="lock" size={14} color={p.muted} />
+      </View>
+      <T v="small" tone="muted" style={{ flex: 1 }}>
+        {children}
+      </T>
+    </View>
+  )
+}
+
 export function PrivacyLine({ onKept, onSettings }: { onKept?: () => void; onSettings?: () => void }) {
   return (
     <View style={{ gap: 10, marginTop: 8 }}>
-      <T v="small" tone="muted">
-        🔒 Private to you. I never show your answers to anyone, and the words you type stay on this phone.
-      </T>
+      <Private>Private to you. I never show your answers to anyone, and the words you type stay on this phone.</Private>
       <View style={{ flexDirection: 'row', gap: 20 }}>
         {onKept && <Button kind="text" small label="What I keep" onPress={onKept} />}
         {onSettings && <Button kind="text" small label="Settings" onPress={onSettings} />}

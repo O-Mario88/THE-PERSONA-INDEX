@@ -121,6 +121,7 @@ function InsightCard({
 }) {
   const p = useTheme()
   const reading = card.reveal ? splitReveal(card.reveal) : null
+  const [more, setMore] = useState(false)
   return (
     <View style={{ gap: 14 }}>
       <View style={{ gap: 6 }}>
@@ -150,9 +151,13 @@ function InsightCard({
               onExplore={() => onExplore(card.questionId)}
             />
           )}
-          {card.need && (
-            <View style={{ gap: 8 }}>
-              <CardHead icon="leaf" title="What this could mean for you" />
+          {/* The deeper parts fold away, so the card reads as one thought and one step. */}
+          {(card.need || card.otherSide) && (
+            <Button small kind="text" label={more ? 'Less' : 'More about this'} iconAfter="chevron" onPress={() => setMore(!more)} style={{ alignSelf: 'flex-start' }} />
+          )}
+          {more && card.need && (
+            <View style={{ gap: 6 }}>
+              <T v="label">What you were reaching for</T>
               <View style={{ flexDirection: 'row' }}>
                 <View style={{ backgroundColor: p.accentWash, borderRadius: radius.pill, paddingHorizontal: 12, paddingVertical: 4 }}>
                   <T v="small" tone="accent" bold>
@@ -162,9 +167,11 @@ function InsightCard({
               </View>
             </View>
           )}
-          {card.otherSide && (
-            <View style={{ gap: 8 }}>
-              <CardHead icon="pin" tone="rose" title="The other side of it" />
+          {more && card.otherSide && (
+            <View style={{ gap: 6, borderLeftWidth: 3, borderLeftColor: p.rose, paddingLeft: 12 }}>
+              <T v="label" style={{ color: p.rose }}>
+                The other side of it
+              </T>
               <T v="small" tone="text2">
                 {card.otherSide}
               </T>

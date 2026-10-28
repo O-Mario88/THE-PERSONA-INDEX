@@ -47,12 +47,13 @@ import { crisisHere, DEFAULT_WORDS_DAYS, helplineHere } from '@shared/prefs'
 import { isLowMood, loadHistory, recalledAnswer, recordAnswer, recordSkip, recordVerdict, threadLine } from '@shared/profile'
 import { isNeed, NEED_PHRASES } from '@shared/needs'
 import { splitReveal } from '@shared/reveal'
-import { themeName, themeStyle } from '@shared/themes'
+import { themeName } from '@shared/themes'
+import { themeIcon } from '../ui/parts'
 import { keepCardText } from '@shared/insights'
 import { rateAnswer } from '@shared/rating'
 import { CRISIS_LINE, focusTouch, HEAVY_HEADLINE, HEAVY_THANKS, LOCAL_NOTE, NO_PEOPLE, NOT_ME_REPLY, peopleAsk, SWAP_NOTE, VERDICT_REPLIES } from '@shared/words'
 import { font, lift, radius, useTheme } from '../theme'
-import { B, Button, Chip, Field, Option, T, Tinted } from '../ui/kit'
+import { B, Button, Chip, Field, Option, T, Tinted, Private } from '../ui/kit'
 
 export type Done = 'answered' | 'skipped'
 
@@ -81,7 +82,6 @@ export function QuestionCard({ question, date, sitting, wordsDays = DEFAULT_WORD
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [kept, setKept] = useState(false)
-  const theme = themeStyle(question.theme)
   const intimate = question.care === 'intimate'
   const options = useMemo(() => inOrder(question), [question])
 
@@ -170,7 +170,7 @@ export function QuestionCard({ question, date, sitting, wordsDays = DEFAULT_WORD
   return (
     <View style={{ gap: 18 }}>
       <View style={{ flexDirection: 'row' }}>
-        <Chip icon={theme.icon} label={question.theme ? themeName(question.theme) : 'Today'} />
+        <Chip icon={themeIcon(question.theme)} label={question.theme ? themeName(question.theme) : 'Today'} />
       </View>
       <T v="title" style={{ fontSize: 26, lineHeight: 31 }}>
         {question.prompt}
@@ -182,7 +182,7 @@ export function QuestionCard({ question, date, sitting, wordsDays = DEFAULT_WORD
           {options.map((o) => (
             <Option key={o.id} label={o.label} disabled={sending} onPress={() => vote(o)} />
           ))}
-          <Option icon="✎" label="In my own words" disabled={sending} onPress={() => setMode('writing')} />
+          <Option icon="pencil" label="In my own words" disabled={sending} onPress={() => setMode('writing')} />
           <Button kind="text" label="Skip" disabled={sending} onPress={skip} style={{ alignSelf: 'center' }} />
         </View>
       )}
@@ -199,9 +199,9 @@ export function QuestionCard({ question, date, sitting, wordsDays = DEFAULT_WORD
             onChangeText={editDraft}
           />
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
-            <T v="small" tone="muted" style={{ flex: 1 }}>
-              🔒 Kept on this phone. The app never sends it.
-            </T>
+            <View style={{ flex: 1 }}>
+              <Private>Kept on this phone. The app never sends it.</Private>
+            </View>
             <T v="small" tone="muted">
               {max - draft.length} left
             </T>
@@ -603,9 +603,7 @@ function OwnIdea({ option, date, onMade, onCancel }: { option: Opt; date: string
       {focus && <T tone="muted">{SWAP_NOTE}</T>}
       <Field label="When" value={when} maxLength={80} onChangeText={setWhen} />
       <Field label="I will" value={will} maxLength={80} onChangeText={setWill} />
-      <T v="small" tone="muted">
-        🔒 Your plan stays on this phone. I only ever send whether you did it.
-      </T>
+      <Private>Your plan stays on this phone. I only ever send whether you did it.</Private>
       <View style={{ flexDirection: 'row', gap: 16, alignItems: 'center' }}>
         <Button
           small
@@ -699,9 +697,7 @@ function Closer({ question, option, date, wordsDays }: { question: Question; opt
             />
           ))}
           <Field label="Or in a line of your own" value={line} maxLength={140} onChangeText={setLine} />
-          <T v="small" tone="muted">
-            🔒 Kept on this phone. The app never sends it.
-          </T>
+          <Private>Kept on this phone. The app never sends it.</Private>
           <View style={{ flexDirection: 'row', gap: 16, alignItems: 'center' }}>
             <Button
               small
