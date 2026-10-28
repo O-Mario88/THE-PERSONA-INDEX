@@ -12,7 +12,9 @@ Midnight & Cream (Edwin, 2026-10-26): a warm cream page, white cards on a
 hairline with a soft lift, midnight primary buttons and chosen tabs, soft
 celeste boxes, and pastel discs (herb, blue, lavender, terracotta, marigold)
 behind line icons. Dark mode is a deep midnight, where the filled accent
-turns marigold. Three rules hold everywhere: initials instead of photos, no
+turns marigold. Light or dark is one choice in Settings (Appearance:
+Automatic, Light or Dark) that covers every page; Automatic is dark in the
+evening and at night, and whenever the phone is set to dark. Three rules hold everywhere: initials instead of photos, no
 feed of shared moments, and only real counts (no invented numbers or
 percentages).
 

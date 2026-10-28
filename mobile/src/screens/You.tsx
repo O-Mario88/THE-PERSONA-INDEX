@@ -7,7 +7,7 @@ import { deleteBackup, vaultState } from '@shared/vault'
 import { ApiError, deleteEverywhere, forgetLocal, getKept, insteadCount, wordsBetween, type Kept } from '@shared/api'
 import { loadMoves } from '@shared/moves'
 import { notebookCount } from '@shared/notebook'
-import { blackOn, countryOf, loadPrefs, pulseOn, type Prefs } from '@shared/prefs'
+import { countryOf, loadPrefs, pulseOn, type Prefs } from '@shared/prefs'
 import { regionOf } from '@shared/regions'
 import { REGIONAL_SWITCH } from '@shared/words'
 import { ReminderSettingsView } from './Reminders'
@@ -144,16 +144,10 @@ export function You({
             onChange={(on) => onChange({ ...prefs, mild: on })}
           />
         )}
-        <Toggle
-          label="Dark mode"
-          note="Midnight through the evening and night, and whenever your phone is set to dark."
-          value={blackOn(prefs)}
-          onChange={(on) => onChange(on ? without('black') : { ...prefs, black: false })}
-        />
         <ReminderSettingsView />
       </Card>
 
-      <RowLink label="Settings" sub="Your name, language, age and where you live" onPress={onOpenSettings} />
+      <RowLink label="Settings" sub="Your name, language, light or dark, and where you live" onPress={onOpenSettings} />
       <RowLink label="What I keep, and how to delete it" onPress={onOpenKept} />
 
       {me && (

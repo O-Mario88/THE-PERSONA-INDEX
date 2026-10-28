@@ -1,9 +1,10 @@
-// Settings: facts about you (your name, language, age and where you live) and
-// the rest folded under "More settings". Every on/off choice lives on the You
-// page instead (Privacy and choices, Edwin 2026-10-28).
+// Settings: facts about you (your name, language, age and where you live),
+// light or dark for every page, and the rest folded under "More settings".
+// Every on/off choice lives on the You page (Privacy and choices, Edwin
+// 2026-10-28).
 import { useState } from 'react'
 import { Pressable, View } from 'react-native'
-import { WORDS_DAYS, type Prefs, type WordsDays } from '@shared/prefs'
+import { appearanceOf, withAppearance, WORDS_DAYS, type Prefs, type WordsDays } from '@shared/prefs'
 import { MAX_NAME } from '@shared/welcomeKeys'
 import { COUNTRY_SETTING } from '@shared/words'
 import { useTheme } from '../theme'
@@ -72,6 +73,17 @@ export function Settings({
         {LANGS.map((l) => (
           <Radio key={l.id} label={l.name} checked={prefs.lang === l.id} onPress={() => onChange({ ...prefs, lang: l.id })} />
         ))}
+      </Card>
+
+      {/* Light or dark for every page (Edwin, 2026-10-28). */}
+      <Card style={{ gap: 10 }}>
+        <T v="eyebrow">Appearance</T>
+        <T v="small" tone="muted">
+          Light or dark, on every page. Automatic is dark in the evening and at night, and whenever your phone is set to dark.
+        </T>
+        <Radio label="Automatic" checked={appearanceOf(prefs) === 'auto'} onPress={() => onChange(withAppearance(prefs, 'auto'))} />
+        <Radio label="Light" checked={appearanceOf(prefs) === 'light'} onPress={() => onChange(withAppearance(prefs, 'light'))} />
+        <Radio label="Dark" checked={appearanceOf(prefs) === 'dark'} onPress={() => onChange(withAppearance(prefs, 'dark'))} />
       </Card>
 
       <Card style={{ gap: 10 }}>

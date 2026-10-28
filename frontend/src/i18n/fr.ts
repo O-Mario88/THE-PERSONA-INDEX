@@ -193,4 +193,11 @@ export const fr: Record<string, string> = {
   'Who is the conversation with, and what do you most want them to understand?': "Avec qui est cette conversation, et que veux-tu surtout qu'on comprenne ?",
   'What happened? Tell me about it, so you can come back to it.': "Que s'est-il passé ? Raconte-moi, pour pouvoir y revenir.",
   'What’s weighing on you right now? You can write as much or as little as you like.': "Qu'est-ce qui te pèse en ce moment ? Écris autant ou aussi peu que tu veux.",
+  // Appearance
+  Appearance: 'Apparence',
+  'Light or dark, on every page. Automatic is dark in the evening and at night, and whenever your phone is set to dark.': "Clair ou sombre, sur toutes les pages. Automatique passe en sombre le soir et la nuit, et dès que ton téléphone est en mode sombre.",
+  Automatic: 'Automatique',
+  Light: 'Clair',
+  Dark: 'Sombre',
+  'Your name, language, light or dark, and where you live': 'Ton prénom, ta langue, clair ou sombre, et où tu vis',
 }

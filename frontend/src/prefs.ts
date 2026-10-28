@@ -12,7 +12,8 @@ import { loadJSON, saveJSON } from './storage'
 // person lives (regional.ts); they are on whenever a country is given.
 // The choices, all in one place on the You page and all on by default
 // (Edwin, 2026-10-28: "everything should be on by default and turned off from
-// the You page"): pulse: false hides every Human Pulse number; black: false keeps the evening and night windows off
+// the You page"): pulse: false hides every Human Pulse number; appearance is
+// light or dark on every page (Settings; absent is automatic); black: false (older) keeps the evening and night windows off
 // pure black; still: true shows cards at once instead of unfolding them;
 // connect: false turns quiet nods and Answer Together off both ways.
 export type Prefs = {
@@ -22,7 +23,8 @@ export type Prefs = {
   country?: string
   regional?: false
   pulse?: boolean
-  black?: false
+  black?: false // before 2026-10-28: dark mode switched off, read now as appearance 'light'
+  appearance?: 'light' | 'dark' // light or dark on every page; absent is automatic
   still?: true
   connect?: false
   lang?: 'en' | 'es' | 'pt' | 'fr' // the app's language; absent follows the phone (i18n/index.ts)
@@ -45,6 +47,7 @@ export function loadPrefs(): Prefs {
     const regional = p.regional === false ? { regional: false as const } : {}
     const pulse = typeof p.pulse === 'boolean' ? { pulse: p.pulse } : {}
     const black = p.black === false ? { black: false as const } : {}
+    const appearance = p.appearance === 'light' || p.appearance === 'dark' ? { appearance: p.appearance } : {}
     const still = p.still === true ? { still: true as const } : {}
     const connect = p.connect === false ? { connect: false as const } : {}
     const lang = p.lang === 'en' || p.lang === 'es' || p.lang === 'pt' || p.lang === 'fr' ? { lang: p.lang } : {}
@@ -56,6 +59,7 @@ export function loadPrefs(): Prefs {
       ...regional,
       ...pulse,
       ...black,
+      ...appearance,
       ...still,
       ...connect,
       ...lang,
@@ -96,8 +100,28 @@ export const crisisHere = () => crisisNumber(countryOf(loadPrefs()))
 
 // The Human Pulse shows unless switched off in You.
 export const pulseOn = (p: Prefs) => p.pulse !== false
-// Evening and night on pure black, unless switched off.
-export const blackOn = (p: Prefs) => p.black !== false
+// Light or dark, one choice in Settings for every page (Edwin, 2026-10-28:
+// dark mode only reached Today). Automatic is dark in the evening and at
+// night, and whenever the phone is set to dark.
+export type Appearance = 'auto' | 'light' | 'dark'
+
+export function appearanceOf(p: Prefs): Appearance {
+  if (p.appearance === 'light' || p.appearance === 'dark') return p.appearance
+  return p.black === false ? 'light' : 'auto'
+}
+
+// darkNow says whether the whole app draws dark right now.
+export function darkNow(p: Prefs, phoneDark: boolean, evening: boolean): boolean {
+  const a = appearanceOf(p)
+  return a === 'dark' || (a === 'auto' && (phoneDark || evening))
+}
+
+// withAppearance is the prefs with a new choice; automatic leaves no trace of
+// an earlier one.
+export function withAppearance(p: Prefs, a: Appearance): Prefs {
+  const { black: _b, appearance: _a, ...rest } = p
+  return a === 'auto' ? rest : { ...rest, appearance: a }
+}
 // Cards unfold in three beats unless the person or the phone asks for less motion.
 export const stillOn = (p: Prefs) =>
   p.still === true || (typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches)

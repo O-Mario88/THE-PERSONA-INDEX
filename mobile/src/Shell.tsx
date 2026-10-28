@@ -14,7 +14,7 @@ import { sendUnsent } from '@shared/moves'
 import { carryLine, rememberLine } from '@shared/continuity'
 import { lastMemory, linkLine, personalLine } from '@shared/todayFocus'
 import { forgetPick, isFirstDay, loadHistory, todaysPick, writeFirstOf, type Half } from '@shared/profile'
-import { blackOn, intimacyOn, loadPrefs, pulseOn, regionHere, savePrefs, type Prefs } from '@shared/prefs'
+import { darkNow, intimacyOn, loadPrefs, pulseOn, regionHere, savePrefs, type Prefs } from '@shared/prefs'
 import { cachedPack, fetchPack, regionalFor, regionalToday } from '@shared/regional'
 import { addDays, keys, load as loadKey, remove as removeKey, save as saveKey } from '@shared/storage'
 import { NAME_KEY, WELCOMED } from '@shared/welcomeKeys'
@@ -303,9 +303,9 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
     pullSync(acc.sync).catch(() => {})
   }
 
-  // Same rule as the web: midnight when the phone asks for dark, and on Today
-  // through the evening and night; the Dark mode switch turns both off.
-  const dark = blackOn(prefs) && (phoneDark || ((win === 'evening' || win === 'night' || win === 'rest') && tab === 'today'))
+  // Light or dark for every page, chosen in Settings (prefs.ts darkNow).
+  // Automatic is dark in the evening and at night, and when the phone is dark.
+  const dark = darkNow(prefs, phoneDark, win === 'evening' || win === 'night' || win === 'rest')
   const palette = dark ? darkPalette : lightPalette
 
   const hero = set
