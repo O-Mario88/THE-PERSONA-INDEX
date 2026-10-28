@@ -32,11 +32,12 @@ interface TodayProps {
   intimacy: boolean
   onRead: (r: Read) => void
   rail?: boolean // a right-hand column beside the feed, on a very wide screen
-  onWrite: (prompt?: string) => void
+  onWrite: (prompt?: string, followsUp?: string) => void
+  onInsights: () => void
   children?: ReactNode
 }
 
-export function Today({ date, window: w, name, note, hero, memory, link, tomorrow, onOpen, onAccount, themes, intimacy, onRead, rail, onWrite, children }: TodayProps) {
+export function Today({ date, window: w, name, note, hero, memory, link, tomorrow, onOpen, onAccount, themes, intimacy, onRead, rail, onWrite, onInsights, children }: TodayProps) {
   const { width } = useWindowDimensions()
   const header = (
     <View style={styles.header}>
@@ -58,10 +59,10 @@ export function Today({ date, window: w, name, note, hero, memory, link, tomorro
       </View>
     </View>
   )
-  const main = <MainCard hero={hero} memory={memory} link={link} tomorrow={tomorrow} onOpen={onOpen} />
+  const main = <MainCard hero={hero} memory={memory} link={link} tomorrow={tomorrow} onOpen={onOpen} onWrite={onWrite} />
   const step = <QuietStepCard today={date} />
   const moment = <NeedAMoment onWrite={onWrite} />
-  const mirror = <MirrorCard today={date} onWrite={onWrite} />
+  const mirror = <MirrorCard today={date} onWrite={onWrite} onInsights={onInsights} />
   if (rail) {
     return (
       <View style={{ gap: 20 }}>
@@ -136,14 +137,28 @@ function Wash() {
 
 // The one card that matters: what you said last time (kept behind a tap, so
 // nobody glancing at your phone reads it), and today's questions tied to it.
-function MainCard({ hero, memory, link, tomorrow, onOpen }: { hero: Hero; memory: Memory | null; link: string | null; tomorrow: string | null; onOpen: () => void }) {
+function MainCard({
+  hero,
+  memory,
+  link,
+  tomorrow,
+  onOpen,
+  onWrite,
+}: {
+  hero: Hero
+  memory: Memory | null
+  link: string | null
+  tomorrow: string | null
+  onOpen: () => void
+  onWrite: (prompt?: string, followsUp?: string) => void
+}) {
   // Smaller on a narrow phone, so the title sits on one line.
   const narrow = useWindowDimensions().width < 400
   return (
     <Card style={{ gap: 16 }}>
       {memory && (
         <>
-          <MemoryRow memory={memory} />
+          <MemoryRow memory={memory} onWrite={onWrite} />
           <Hairline />
         </>
       )}
@@ -164,7 +179,7 @@ function MainCard({ hero, memory, link, tomorrow, onOpen }: { hero: Hero; memory
   )
 }
 
-function MemoryRow({ memory }: { memory: Memory }) {
+function MemoryRow({ memory, onWrite }: { memory: Memory; onWrite: (prompt?: string, followsUp?: string) => void }) {
   const p = useTheme()
   const [open, setOpen] = useState(false)
   const label = tr(memory.kind === 'writing' ? 'Your last reflection' : 'Your last answers')
@@ -227,6 +242,21 @@ function MemoryRow({ memory }: { memory: Memory }) {
             <T tone="text2">I noticed: {memory.noticed}</T>
           </View>
         ))}
+      {/* Remembering leads somewhere: carry on from it in Reflect. */}
+      {open && (
+        <Button
+          small
+          kind="text"
+          icon="pencil"
+          label={memory.kind === 'writing' ? 'Write more about this' : 'Reflect on this'}
+          onPress={() =>
+            memory.kind === 'writing'
+              ? onWrite('Looking back at what you wrote, what’s changed since then, or what would you add?', memory.id)
+              : onWrite(`You chose “${memory.label}”. What do you make of it now?`)
+          }
+          style={{ alignSelf: 'flex-start' }}
+        />
+      )}
     </View>
   )
 }

@@ -68,7 +68,7 @@ function StepBody({ today, step, onSaid }: { today: string; step: QuietStep; onS
       <T v="h3">“{step.move.step}”</T>
       <T tone="text2">You said you’d try this. How did it go?</T>
       <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-        <Button small label="It helped" onPress={() => answer('helped', 'That’s worth knowing. I’ll remember it helped you.')} />
+        <Button small label="It helped" onPress={() => answer('helped', 'That’s worth knowing. I’ll remember it helped you. You’ll find it in Insights, under What has helped you.')} />
         <Button small kind="ghost" label="No change yet" onPress={() => answer('no_change', 'Thanks for telling me. Not every step lands, and trying still counts.')} />
         <Button small kind="ghost" label="Didn't get to it" onPress={() => answer('not_tried', 'That’s fine. Life gets in the way. It stays in your notebook.')} />
       </View>
@@ -79,7 +79,7 @@ function StepBody({ today, step, onSaid }: { today: string; step: QuietStep; onS
 // The Mirror that's coming: how far away, a dot for each day this week
 // (filled where you answered, nothing lost on a missed day), and what your
 // answers lean towards so far.
-export function MirrorCard({ today, onWrite }: { today: string; onWrite: (prompt?: string) => void }) {
+export function MirrorCard({ today, onWrite, onInsights }: { today: string; onWrite: (prompt?: string) => void; onInsights: () => void }) {
   const p = useTheme()
   const [m] = useState(() => nextMirror(today, loadHistory()))
   if (!m) return null
@@ -95,6 +95,7 @@ export function MirrorCard({ today, onWrite }: { today: string; onWrite: (prompt
       </View>
       <T tone="text2">{m.lean ? `So far, your answers lean towards ${m.lean}.` : 'Each day you answer adds to it. A missed day takes nothing away.'}</T>
       {!m.first && <JourneyLine today={today} onWrite={onWrite} />}
+      <Button small kind="text" label="See what I’ve noticed" iconAfter="arrow" onPress={onInsights} style={{ alignSelf: 'flex-start' }} />
     </Card>
   )
 }

@@ -16,7 +16,7 @@ import { themeName } from './themes'
 const MEMORY_DAYS = 7
 
 export type Memory =
-  | { kind: 'writing'; date: string; when: string; text: string; area: ReflectionArea }
+  | { kind: 'writing'; id: string; date: string; when: string; text: string; area: ReflectionArea }
   | { kind: 'answer'; date: string; when: string; label: string; noticed: string; theme?: string }
 
 // lastMemory is the most recent thing from the past week, before today: your
@@ -31,7 +31,7 @@ export function lastMemory(today: string, h: History, written: Reflection[] = re
     .sort((a, b) => b.date.localeCompare(a.date) || b.at - a.at)[0]
   const card = lastCard(today, h)
   if (words && (!card || words.date >= card.date)) {
-    return { kind: 'writing', date: words.date, when: whenWas(words.date, today), text: words.answer.trim(), area: words.area }
+    return { kind: 'writing', id: words.id, date: words.date, when: whenWas(words.date, today), text: words.answer.trim(), area: words.area }
   }
   return card ? { kind: 'answer', when: whenWas(card.date, today), ...card } : null
 }

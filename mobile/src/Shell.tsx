@@ -16,7 +16,7 @@ import { lastMemory, linkLine, personalLine } from '@shared/todayFocus'
 import { forgetPick, isFirstDay, loadHistory, todaysPick, writeFirstOf, type Half } from '@shared/profile'
 import { blackOn, intimacyOn, loadPrefs, pulseOn, regionHere, savePrefs, type Prefs } from '@shared/prefs'
 import { cachedPack, fetchPack, regionalFor, regionalToday } from '@shared/regional'
-import { keys, load as loadKey, remove as removeKey, save as saveKey } from '@shared/storage'
+import { addDays, keys, load as loadKey, remove as removeKey, save as saveKey } from '@shared/storage'
 import { NAME_KEY, WELCOMED } from '@shared/welcomeKeys'
 import { pruneCardTexts } from '@shared/insights'
 import { CONNECT_OPEN_KEY, dayWithYou, glimpseHere, inWeekOne, isNewcomer, markStarted, needsAccount, SHOW_ALL_KEY } from '@shared/firstWeek'
@@ -30,6 +30,7 @@ import type { Read } from '@shared/reads/types'
 import { dark as darkPalette, font, light as lightPalette, radius, RAIL_AT, RAIL_W, ThemeProvider, useTheme, WIDE } from './theme'
 import { Back, Button, Page, PrivacyLine, T, Tinted } from './ui/kit'
 import { Icon, type IconName } from './ui/Icon'
+import { CardHead } from './ui/parts'
 import { Sidebar, type SideItem } from './ui/Sidebar'
 import { QuestionCard } from './screens/QuestionCard'
 import { Close } from './screens/Close'
@@ -129,6 +130,7 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
   const rail = windowWidth >= RAIL_AT
   const [writeFree, setWriteFree] = useState(false)
   const [writePrompt, setWritePrompt] = useState<string | null>(null)
+  const [writeFollows, setWriteFollows] = useState<string | null>(null)
   const mirrorScroll = useRef<ComponentRef<typeof ScrollView>>(null)
   const [back, setBack] = useState<Tab>('today')
   const [reading, setReading] = useState<Read | null>(null)
@@ -261,12 +263,14 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
     setTab(t)
     setWriteFree(false)
     setWritePrompt(null)
+    setWriteFollows(null)
     if (t === 'today' && tab === 'today') setFlow(null)
   }
   // Today's "What's on your mind?" opens Reflect on a blank page.
-  function write(prompt?: string) {
+  function write(prompt?: string, followsUp?: string) {
     setTab('notebook')
     setWritePrompt(prompt ?? null)
+    setWriteFollows(followsUp ?? null)
     setWriteFree(!prompt)
   }
   function open(v: 'settings' | 'kept' | 'signin' | 'mirror') {
@@ -414,7 +418,7 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
       </Page>
     )
   } else if (tab === 'notebook') {
-    body = <Reflect today={date} questions={[...morningQs, ...eveningQs]} mild={!intimacyOn(prefs)} startFree={writeFree} startPrompt={writePrompt} name={me?.name || localName || null} />
+    body = <Reflect today={date} questions={[...morningQs, ...eveningQs]} mild={!intimacyOn(prefs)} startFree={writeFree} startPrompt={writePrompt} startFollowsUp={writeFollows} name={me?.name || localName || null} />
   } else if (tab === 'insights') {
     body = <Insights today={date} questions={[...morningQs, ...eveningQs]} pulse={pulseOn(prefs)} onOpenSettings={() => goTab('account')} onOpenMirror={() => open('mirror')} />
   } else if (tab === 'circle') {
@@ -511,6 +515,18 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
               </T>
             </Tinted>
           )}
+          {/* The questions lead somewhere: everything they add up to lives in Insights. */}
+          {closing && steps.length > 0 && (
+            <Button
+              kind="text"
+              label="See what your answers add up to"
+              iconAfter="arrow"
+              onPress={() => {
+                setFlow(null)
+                goTab('insights')
+              }}
+            />
+          )}
           {closing && steps.length > 0 && glimpse && <ReminderAsk />}
           {closing && steps.length > 0 && !me && !askedSignIn && !glimpse && canSignIn && (
             <Tinted>
@@ -595,7 +611,9 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
             onRead={openRead}
             rail={rail}
             onWrite={write}
+            onInsights={() => goTab('insights')}
           >
+            {!weekOne && <InviteNudge today={set.date} signedIn={!!me} onOpen={() => goTab('circle')} />}
             <InstallInvite today={set.date} />
             <PrivacyLine onKept={() => open('kept')} onSettings={() => open('settings')} />
           </Today>
@@ -752,6 +770,33 @@ function AdultGate({ again, onAnswer }: { again?: boolean; onAnswer: (adult: boo
       <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
         <Button small label="Yes, I'm 18 or older" onPress={() => onAnswer(true)} />
         <Button small kind="ghost" label="No" onPress={() => onAnswer(false)} />
+      </View>
+    </Tinted>
+  )
+}
+
+// After the first Mirror: one gentle invitation to bring in someone who knows
+// you, since Connect is otherwise easy to miss. "Not now" waits a week.
+const INVITE_LATER = 'pi.invite.later'
+
+function InviteNudge({ today, signedIn, onOpen }: { today: string; signedIn: boolean; onOpen: () => void }) {
+  const [later, setLater] = useState(() => loadKey(INVITE_LATER))
+  if (later && addDays(later, 7) > today) return null
+  return (
+    <Tinted style={{ gap: 10 }}>
+      <CardHead icon="people" tone="purple" title="Invite someone who knows you" />
+      <T tone="text2">Three friends unlock your Outside Mirror: how the people around you experience you. They never see your answers.</T>
+      <View style={{ flexDirection: 'row', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+        <Button small kind="outline" label={signedIn ? 'Invite a friend' : 'Start your circle'} iconAfter="chevron" onPress={onOpen} />
+        <Button
+          small
+          kind="text"
+          label="Not now"
+          onPress={() => {
+            saveKey(INVITE_LATER, today)
+            setLater(today)
+          }}
+        />
       </View>
     </Tinted>
   )

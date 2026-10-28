@@ -27,7 +27,7 @@ const card = (date: string, questionId: string, theme = 'rest') =>
 describe('the remembered reflection', () => {
   it('brings back the most recent thing you wrote in the past week', () => {
     const m = lastMemory('2026-10-28', { answers: [], skips: [] }, [writing('2026-10-27', 'I want to stop feeling guilty for resting.')])
-    expect(m).toEqual({ kind: 'writing', date: '2026-10-27', when: 'Yesterday', text: 'I want to stop feeling guilty for resting.', area: 'self' })
+    expect(m).toEqual({ kind: 'writing', id: 'r-2026-10-27', date: '2026-10-27', when: 'Yesterday', text: 'I want to stop feeling guilty for resting.', area: 'self' })
   })
 
   it('falls back to your last card, with what I noticed', () => {
@@ -58,11 +58,11 @@ describe('the remembered reflection', () => {
 describe('tying today’s questions to it', () => {
   it('says so when one of today’s questions comes back to the same part of life', () => {
     expect(linkLine({ kind: 'answer', date: '', when: '', label: '', noticed: '', theme: 'rest' }, ['money', 'rest'])).toBe('One of today’s questions comes back to rest and free time.')
-    expect(linkLine({ kind: 'writing', date: '', when: '', text: '', area: 'family' }, ['relatives'])).toBe('One of today’s questions comes back to relatives.')
+    expect(linkLine({ kind: 'writing', id: 'r', date: '', when: '', text: '', area: 'family' }, ['relatives'])).toBe('One of today’s questions comes back to relatives.')
   })
 
   it('never claims a link that is not there', () => {
-    expect(linkLine({ kind: 'writing', date: '', when: '', text: '', area: 'money' }, ['family'])).toBe('Let’s see what today adds to it.')
+    expect(linkLine({ kind: 'writing', id: 'r', date: '', when: '', text: '', area: 'money' }, ['family'])).toBe('Let’s see what today adds to it.')
   })
 })
 
@@ -109,13 +109,13 @@ describe('the coming Mirror', () => {
 
 describe('the line under the greeting', () => {
   it('names the day and what you were thinking about, never your words themselves', () => {
-    expect(personalLine(3, { kind: 'writing', date: '', when: 'Yesterday', text: 'Private words.', area: 'self' })).toBe('Day 3 with you. Yesterday, you wrote about yourself.')
+    expect(personalLine(3, { kind: 'writing', id: 'r', date: '', when: 'Yesterday', text: 'Private words.', area: 'self' })).toBe('Day 3 with you. Yesterday, you wrote about yourself.')
     expect(personalLine(5, { kind: 'answer', date: '', when: 'On Monday', label: 'L', noticed: 'N', theme: 'rest' })).toBe('Day 5 with you. On Monday, your answers touched on rest and free time.')
   })
 
   it('keeps to the day alone when there is nothing to bring back, and says nothing on the first day', () => {
     expect(personalLine(4, null)).toBe('Day 4 with you.')
     expect(personalLine(1, null)).toBeNull()
-    expect(personalLine(null, { kind: 'writing', date: '', when: 'Yesterday', text: 'x', area: 'work' })).toBe('Yesterday, you wrote about work.')
+    expect(personalLine(null, { kind: 'writing', id: 'r', date: '', when: 'Yesterday', text: 'x', area: 'work' })).toBe('Yesterday, you wrote about work.')
   })
 })

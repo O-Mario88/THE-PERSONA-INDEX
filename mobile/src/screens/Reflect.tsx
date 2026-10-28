@@ -69,6 +69,7 @@ export function Reflect({
   mild = false,
   startFree = false,
   startPrompt = null,
+  startFollowsUp = null,
   name = null,
 }: {
   today: string
@@ -76,6 +77,7 @@ export function Reflect({
   mild?: boolean
   startFree?: boolean
   startPrompt?: string | null
+  startFollowsUp?: string | null // carrying on from an earlier reflection (Today's remembered one)
   name?: string | null
 }) {
   const p = useTheme()
@@ -83,7 +85,17 @@ export function Reflect({
   const [free, setFree] = useState(startFree)
   const [at, setAt] = useState(0)
   const [chosen, setChosen] = useState<Thought | null>(() =>
-    startPrompt ? { id: `moment-${Date.now().toString(36)}`, question: startPrompt, lead: '', why: 'Something on your mind', source: 'general', area: 'self' } : null,
+    startPrompt
+      ? {
+          id: `moment-${Date.now().toString(36)}`,
+          question: startPrompt,
+          lead: '',
+          why: startFollowsUp ? 'Carrying on from what you wrote' : 'Something on your mind',
+          source: 'general',
+          area: 'self',
+          ...(startFollowsUp ? { followsUp: startFollowsUp } : {}),
+        }
+      : null,
   )
   const [mirror, setMirror] = useState<Mirror | null>(null)
   const [version, setVersion] = useState(0)
@@ -305,7 +317,7 @@ function Writing({
       {reading?.kind === 'hard' && <KinderCard reading={reading} onWrite={() => onKinder(saved)} />}
       <Tinted>
         <T tone="leaf" bold>
-          ✓ Saved, on this phone.
+          ✓ Saved, on this phone. It comes back on Today, and in your Sunday Mirror.
         </T>
         {!kept ? (
           <>
