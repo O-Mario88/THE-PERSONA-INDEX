@@ -367,7 +367,7 @@ function Writing({
       <T tone="text2">{free ? 'No question, no shape to fill. Just your words.' : thought?.lead}</T>
       {!free && thought && (
         <View style={{ flexDirection: 'row' }}>
-          <View style={{ backgroundColor: p.surface, borderRadius: radius.pill, paddingHorizontal: 12, paddingVertical: 4 }}>
+          <View style={{ backgroundColor: p.accentWash, borderRadius: radius.pill, paddingHorizontal: 12, paddingVertical: 4 }}>
             <T v="tiny" tone="accent" bold>
               {thought.why}
             </T>

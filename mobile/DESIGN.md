@@ -71,8 +71,10 @@ in dark.
   filled accent.
 - **Fields** (`Field`): white with a 1.5px hairline, regular weight.
 - **Cards** (`Card`): Facebook-style. Every section of a page is a white card
-  on the cream page, with a hairline and `lift()`; `Tinted` boxes are for the
-  few highlights.
+  on the cream page, with a hairline and `lift()`, the same as Today's cards
+  on every page. `Tinted` draws the same card (no coloured fills since
+  2026-10-28); colour lives in the small icon disc of `CardHead`, which puts
+  the icon beside the title and the words full width below.
 - **Progress**: segments under a sitting, and the dots towards Sunday's
   Mirror on Today (filled where you answered; a missed day takes nothing away).
 

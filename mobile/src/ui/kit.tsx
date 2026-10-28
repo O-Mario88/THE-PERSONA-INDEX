@@ -394,12 +394,12 @@ export function Hairline({ style }: { style?: StyleProp<ViewStyle> }) {
   return <View style={[{ height: StyleSheet.hairlineWidth, backgroundColor: p.lineStrong }, style]} />
 }
 
-// One of the few tinted boxes the redesign keeps.
-export function Tinted({ tone = 'accent', children, style }: { tone?: 'accent' | 'amber' | 'rose' | 'blue' | 'purple' | 'plain'; children: ReactNode; style?: StyleProp<ViewStyle> }) {
-  const p = useTheme()
-  const bg = { accent: p.accentWash, amber: p.amberWash, rose: p.roseWash, blue: p.blueWash, purple: p.purpleWash, plain: p.surface }[tone]
-  const border = tone === 'accent' ? p.accentLine : p.line
-  return <View style={[{ backgroundColor: bg, borderColor: border, borderWidth: 1, borderRadius: radius.lg, padding: 20, gap: 12 }, style]}>{children}</View>
+// A highlighted box. Since 2026-10-28 (Edwin: "it should look more like
+// today cards") every page uses Today's card: cream-white with a hairline and
+// the soft lift, never a coloured fill. The tone stays in the signature so
+// callers read as before; colour now lives only in the small icon discs.
+export function Tinted({ children, style }: { tone?: 'accent' | 'amber' | 'rose' | 'blue' | 'purple' | 'plain'; children: ReactNode; style?: StyleProp<ViewStyle> }) {
+  return <Card style={style}>{children}</Card>
 }
 
 // The "Back" link at the top of an inner page.
