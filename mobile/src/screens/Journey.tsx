@@ -92,7 +92,7 @@ export function Journey({ today, onBack, onWrite }: { today: string; onBack: () 
                 {AREA_NAMES[a.area]}
               </T>
               <T v="small" tone={a.line ? 'text2' : 'muted'}>
-                {a.line ?? 'Nothing you’ve chosen to explore here recently.'}
+                {a.line ?? 'Not explored yet.'}
               </T>
             </View>
           </View>

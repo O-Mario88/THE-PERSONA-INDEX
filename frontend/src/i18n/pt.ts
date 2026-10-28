@@ -238,7 +238,7 @@ export const pt: Record<string, string> = {
   'What you’ve been learning': 'O que você tem aprendido',
   'When you try a step and tell me how it went, it shows here, the ones that didn’t help included.': 'Quando você tentar um passo e me contar como foi, ele aparece aqui, inclusive os que não ajudaram.',
   'Your life areas': 'As áreas da sua vida',
-  'Nothing you’ve chosen to explore here recently.': 'Nada que você tenha escolhido explorar aqui recentemente.',
+  'Not explored yet.': 'Ainda não explorado.',
   'Your history': 'Sua história',
   'Your history starts with the first step you choose.': 'Sua história começa com o primeiro passo que você escolher.',
   'An idea you’re still exploring.': 'Uma ideia que você ainda está explorando.',
