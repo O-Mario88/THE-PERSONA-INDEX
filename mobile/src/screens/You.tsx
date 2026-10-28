@@ -14,7 +14,7 @@ import { REGIONAL_SWITCH } from '@shared/words'
 import { ReminderSettingsView } from './Reminders'
 import { loadHistory } from '@shared/profile'
 import { forgetSession, patchAccount, signOut, type AccountView } from '@shared/social'
-import { Back, Button, Card, Chip, Field, Page, RowLink, T, Tinted, Toggle } from '../ui/kit'
+import { Back, Button, Card, Chip, Field, Page, RowGroup, RowLink, T, Tinted, Toggle } from '../ui/kit'
 import { Avatar } from '../ui/parts'
 import { DownloadButtons } from './BookDownloads'
 
@@ -114,7 +114,11 @@ export function You({
           <T v="label">What friends see</T>
           <Field label="Display name" value={name} onChangeText={setName} maxLength={40} onBlur={saveProfile} />
           <Field label="Handle" value={handle} onChangeText={setHandle} maxLength={21} autoCapitalize="none" onBlur={saveProfile} />
-          {note ? <T v="small" tone="muted">{note}</T> : null}
+          {note ? (
+            <T v="small" tone="muted">
+              {note}
+            </T>
+          ) : null}
           <Button
             small
             kind="outline"
@@ -197,8 +201,10 @@ export function You({
         <ReminderSettingsView />
       </Card>
 
-      <RowLink label="Settings" sub="Your name, language, light or dark, and where you live" onPress={onOpenSettings} />
-      <RowLink label="What I keep, and how to delete it" onPress={onOpenKept} />
+      <RowGroup>
+        <RowLink inGroup label="Settings" sub="Your name, language, light or dark, and where you live" onPress={onOpenSettings} />
+        <RowLink inGroup label="What I keep, and how to delete it" onPress={onOpenKept} />
+      </RowGroup>
 
       {me && (
         <View style={{ gap: 10 }}>
@@ -280,8 +286,7 @@ export function KeptScreen({ today, mild, signedIn, onBack, onDeleted }: { today
           </T>
         )}
         <T>
-          <T bold>{plural(phone.notebook, 'entry', 'entries')} in your notebook.</T> The cards you kept, your good things, reflections and plans, until you remove
-          them.
+          <T bold>{plural(phone.notebook, 'entry', 'entries')} in your notebook.</T> The cards you kept, your good things, reflections and plans, until you remove them.
         </T>
         <T>
           <T bold>{plural(phone.answers, 'answer')} in your history.</T> Which answer you chose, its theme and depth, and whether its card was you. Kept 60 days.
@@ -307,7 +312,11 @@ export function KeptScreen({ today, mild, signedIn, onBack, onDeleted }: { today
         <T tone="muted">Your book is {Platform.OS === 'web' ? 'a page' : 'a PDF'} with your notebook, answers and steps, to read or print. The data file holds everything above, as it is kept.</T>
         <DownloadButtons today={today} mild={mild} data />
       </View>
-      {done ? <T tone="leaf" bold>{done}</T> : null}
+      {done ? (
+        <T tone="leaf" bold>
+          {done}
+        </T>
+      ) : null}
       <Button
         wide
         kind="outline"
@@ -329,17 +338,17 @@ export function KeptScreen({ today, mild, signedIn, onBack, onDeleted }: { today
           confirm('Delete everywhere?', 'Everything on this phone and everything the server holds from it goes, for good.', 'Delete everywhere', () => {
             // The backup goes first: once this phone's pass is gone, only the
             // 12 words could find it again. If it can't go, nothing goes.
-            (vaultState() ? deleteBackup() : Promise.resolve())
+            ;(vaultState() ? deleteBackup() : Promise.resolve())
               .then(() => deleteEverywhere(today))
               .then(
-              () => {
-                setPhone(onPhone())
-                setServer(null)
-                setDone('Deleted everywhere.')
-                onDeleted()
-              },
-              () => setDone('I couldn’t reach the server, so nothing was deleted. Try again soon.'),
-            )
+                () => {
+                  setPhone(onPhone())
+                  setServer(null)
+                  setDone('Deleted everywhere.')
+                  onDeleted()
+                },
+                () => setDone('I couldn’t reach the server, so nothing was deleted. Try again soon.'),
+              )
           })
         }
       />
@@ -354,8 +363,8 @@ function ServerList({ k }: { k: Kept }) {
     <>
       <T>
         <T bold>{plural(kept.answers, 'answer')}</T>
-        {kept.privateAnswers > 0 ? `, ${kept.privateAnswers} of them private` : ''}, under an anonymous key, for your mirror. For a private one I keep only that you
-        answered. Kept {weeks(keptFor.answersDays)}.
+        {kept.privateAnswers > 0 ? `, ${kept.privateAnswers} of them private` : ''}, under an anonymous key, for your mirror. For a private one I keep only that you answered. Kept{' '}
+        {weeks(keptFor.answersDays)}.
       </T>
       <T>
         <T bold>{plural(kept.steps, 'small step')}</T> you started. Kept {weeks(keptFor.answersDays)}.
@@ -375,8 +384,7 @@ function ServerList({ k }: { k: Kept }) {
         </T>
       )}
       <T>
-        <T bold>{plural(kept.votes, 'vote')}</T> with no key that links them to each other, only there so you can't be counted twice. Kept {weeks(keptFor.votesDays)}, to
-        the hour they came in.
+        <T bold>{plural(kept.votes, 'vote')}</T> with no key that links them to each other, only there so you can't be counted twice. Kept {weeks(keptFor.votesDays)}, to the hour they came in.
       </T>
     </>
   )

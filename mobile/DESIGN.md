@@ -26,15 +26,15 @@ for real warnings only. Every text pair is at least 4.5:1.
 
 | Palette key | Light | Dark | Use |
 |---|---|---|---|
-| `bg`, `surface` | `#fbf7f0`, `#fffdf9` | `#0b1a24`, `#102330` | page, cards |
-| `surface2`, `surface3` | `#f4ede1`, `#ebe2d3` | `#16303f`, `#1d3a4b` | chips, tracks, quiet buttons |
-| `line`, `lineStrong` | `#ece3d4`, `#ddd1bd` | `#1d3545`, `#2a4759` | hairlines, empty rings |
+| `bg`, `surface` | `#f6f1e8`, `#ffffff` | `#08131b`, `#132a3b` | page, cards (white on a deeper cream, and clear steps in dark, since the review of 2026-10-28) |
+| `surface2`, `surface3` | `#f4ede1`, `#ebe2d3` | `#1a3548`, `#22425a` | chips, tracks, quiet buttons |
+| `line`, `lineStrong` | `#ece3d4`, `#ddd1bd` | `#1f3a4e`, `#2e4d63` | hairlines, empty rings |
 | `text`, `text2`, `muted` | `#12283a`, `#3d4f5c`, `#69737c` | `#f6efe3`, `#d6d2c9`, `#9eaab3` | words |
 | `lime` / `onLime` | midnight `#013d5a` / white | marigold `#f4a258` / `#1d1206` | the filled accent: chosen options, chips, progress |
 | `btn` / `onBtn` | midnight / white | marigold / dark ink | primary buttons |
 | `brandLime` | `#f4a258` | same | the leaf and active icon on the sidebar |
 | `leaf`, `leafSoft` | `#5f7d58`, `#b5c7ae` | `#a9c3a1`, `#7c9a74` | icons, checks, progress |
-| `accentInk`, `accentWash`, `accentLine` | `#0b4f70`, `#e7f0ed`, `#bdd3ce` | marigold, `#183242`, `#2a4a5c` | links, celeste boxes |
+| `accentInk`, `accentWash`, `accentLine` | `#0b4f70`, `#e7f0ed`, `#bdd3ce` | `#8cc4da`, `#1b3a4d`, `#2e5266` | links, labels, celeste boxes. In dark, marigold is kept for buttons, choices and the open tab, and links and labels take a calm blue, so the two never compete |
 | `amber`, `rose`, `blue`, `purple` + `Wash` | ink on a pale wash | darker washes | discs and tinted boxes |
 | `navy`, `onNavy`, `onNavy2` | midnight, white, `#c7d8e2` | `#133246`, white, `#c2d2dc` | hero cards, the close |
 | `side`, `sideInk`, `sideOn`, `sideOnInk` | midnight, `#d7e4ec`, `#0d5275`, white | `#08151d`, `#cdd7de`, `#15303f`, marigold | the wide-screen sidebar |
@@ -69,16 +69,33 @@ in dark.
   `danger` is outlined red, `text` is a 14px link. `small` is a 40px pill.
 - **Options** (`Option`): a card per answer, 64px tall with a 1.5px
   hairline, and an empty ring that fills with the accent and a dot when chosen.
+- **Settings choices** (`Radio`): plain rows with a hairline above and a tick
+  on the chosen one, as the phone's own settings do; a choice of two or three
+  side by side is a `Segmented` control (Appearance).
 - **Chips** (`Chip`): 40px pills on `surface2`; a chosen one takes the
   filled accent.
 - **Fields** (`Field`): white with a 1.5px hairline, regular weight.
 - **Cards** (`Card`): Facebook-style. Every section of a page is a white card
-  on the cream page, with a hairline and `lift()`, the same as Today's cards
-  on every page. `Tinted` draws the same card (no coloured fills since
+  on the cream page with `lift()` and no outline in light mode; in dark mode
+  a hairline marks the edge, where a shadow can't. Links that belong together
+  sit in one `RowGroup` with hairlines between them, not a card each. `Tinted` draws the same card (no coloured fills since
   2026-10-28); colour lives in the small icon disc of `CardHead`, which puts
   the icon beside the title and the words full width below.
 - **Progress**: segments under a sitting, and the dots towards Sunday's
   Mirror on Today (filled where you answered; a missed day takes nothing away).
+
+## Moving around
+
+Pages move the way the phone's own do (review, 2026-10-28). An inner page
+(Settings, What I keep, a reading, My journey, the Mirrors, sign-in) slides
+in over the tab it opened from, which stays where it was, scroll and all
+(`src/ui/Stack.tsx`). Back slides it away: the Back link, a swipe from the
+left edge on iPhone, or the back button and gesture on Android, which also
+closes a sitting and then returns to Today. A sitting rises into place as it
+opens. In a wide window pages fade instead, and with reduced motion they just
+appear. The open tab sits in a soft capsule. Taps answer under the finger on
+a phone (`feel` in `src/ui/kit.tsx`): picking a choice, a switch, a chip or a
+tab; the main buttons; and finishing a sitting, unless it was a heavy one.
 
 ## Layout
 

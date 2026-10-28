@@ -6,7 +6,7 @@ html,
 body {
   height: 100%;
   margin: 0;
-  background: #fbf7f0;
+  background: #f6f1e8;
 }
 body {
   overflow: hidden;
@@ -19,7 +19,7 @@ body {
 @media (prefers-color-scheme: dark) {
   html,
   body {
-    background: #0b1a24;
+    background: #08131b;
   }
 }
 

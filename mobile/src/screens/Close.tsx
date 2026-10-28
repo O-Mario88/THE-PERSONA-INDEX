@@ -4,7 +4,7 @@
 // went (the same check-in as everywhere), one thing worth trying from the
 // sitting's own answers, and what comes next. Nothing is scored, shared or
 // set against anyone else.
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { View } from 'react-native'
 import { recalledChoice, SKIPPED, type Question } from '@shared/api'
 import { adviceFor, levelLine } from '@shared/advice'
@@ -23,7 +23,7 @@ import { themeName } from '@shared/themes'
 import { sideOf, TRAITS } from '@shared/traits'
 import { GLIMPSE_BALANCED, GLIMPSE_NEXT, QUIET_DAY, ROUTE_ASK, ROUTE_REPLIES, ROUTE_WORDS, routeLead, SUNDAY_LINE } from '@shared/words'
 import { font, radius, useTheme } from '../theme'
-import { B, Button, Chip, Option, T, Tinted } from '../ui/kit'
+import { B, Button, Chip, feel, Option, T, Tinted } from '../ui/kit'
 import { themeIcon, WeekTiles } from '../ui/parts'
 import { CheckIn } from './CheckIn'
 import { OwnIdea } from './QuestionCard'
@@ -64,8 +64,7 @@ function summaryLine(answers: AnswerRecord[], sitting: 'morning' | 'evening'): s
   if (n === 0) return `Nothing woven ${when}, and that's fine.`
   const head = `${COUNT[n] ?? n} new ${n === 1 ? 'thread' : 'threads'}`
   const needs = answers.map((a) => a.need).filter((x): x is Need => !!x)
-  if (needs.length === n && needs.every((x) => x === needs[0]))
-    return n === 1 ? `${head}, reaching for ${NEED_PHRASES[needs[0]]}.` : `${head}, all reaching for ${NEED_PHRASES[needs[0]]}.`
+  if (needs.length === n && needs.every((x) => x === needs[0])) return n === 1 ? `${head}, reaching for ${NEED_PHRASES[needs[0]]}.` : `${head}, all reaching for ${NEED_PHRASES[needs[0]]}.`
   return `${head} woven in ${when}.`
 }
 
@@ -78,6 +77,10 @@ export function Close(props: Props) {
   const endsDay = !eveningThemes
   const heavy = mine.some((a) => a.heavy || isLowMood(a.theme, a.depth))
   const [paused] = useState(() => heavyPause(history, date))
+  // Finishing a sitting gets a small "done" under the finger, unless it was a heavy one.
+  useEffect(() => {
+    if (!heavy) feel('done')
+  }, [heavy])
   const dayAnswers = props.sitting === 'evening' ? [...answersIn(history, props.morning, date), ...mine] : mine
   const glimpseFor = glimpse && !heavy ? glimpse : null
   const [thisWeek] = useState(() => week(date))
@@ -139,9 +142,7 @@ export function Close(props: Props) {
         <>
           {isSaturday(date) ? <T>{SUNDAY_LINE}</T> : <Upcoming label="Tomorrow" themes={tomorrowThemes} />}
           <T style={{ fontFamily: font.semibold, fontSize: 18, lineHeight: 25 }}>
-            {isSaturday(date)
-              ? 'Sleep well. Tomorrow is for looking back: your week will be waiting in your mirror.'
-              : `Sleep well. Your next three open at ${opensAt('morning')}.`}
+            {isSaturday(date) ? 'Sleep well. Tomorrow is for looking back: your week will be waiting in your mirror.' : `Sleep well. Your next three open at ${opensAt('morning')}.`}
           </T>
         </>
       )}

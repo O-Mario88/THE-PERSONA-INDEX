@@ -10,7 +10,7 @@
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
-    "backgroundColor": "#fbf7f0",
+    "backgroundColor": "#f6f1e8",
     "splash": {
       "backgroundColor": "#0b1c2c"
     },

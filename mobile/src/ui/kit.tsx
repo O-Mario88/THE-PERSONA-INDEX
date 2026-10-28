@@ -1,6 +1,7 @@
 // The parts every screen is built from (mobile/DESIGN.md): type, buttons,
 // fields, choices, chips, hairlines and the page itself.
-import { useEffect, useRef, useState, type ComponentRef, type ReactNode, type Ref } from 'react'
+import { Children, useEffect, useRef, useState, type ComponentRef, type ReactNode, type Ref } from 'react'
+import * as Haptics from 'expo-haptics'
 import {
   AccessibilityInfo,
   ActivityIndicator,
@@ -169,7 +170,10 @@ export function Button({
       accessibilityState={{ disabled: !!off }}
       accessibilityLabel={tr(label)}
       disabled={off}
-      onPress={onPress}
+      onPress={() => {
+        if (kind === 'primary' || kind === 'sprout') feel('tap')
+        onPress()
+      }}
       hitSlop={small ? 4 : undefined}
       style={(s) => [
         styles.btn,
@@ -202,22 +206,81 @@ export function Button({
   )
 }
 
-// A row that opens something: words, then a chevron.
-export function RowLink({ label, sub, onPress, icon }: { label: string; sub?: string; onPress: () => void; icon?: ReactNode }) {
+// A row that opens something: words, then a chevron. In a RowGroup it is a
+// plain row of the group, the way settings lists look on the phone.
+export function RowLink({ label, sub, onPress, icon, inGroup }: { label: string; sub?: string; onPress: () => void; icon?: ReactNode; inGroup?: boolean }) {
   const p = useTheme()
   return (
     <Pressable
       accessibilityRole="button"
-      onPress={onPress}
-      style={(s) => [styles.rowLink, { borderColor: hovered(s) ? p.lineStrong : p.line, backgroundColor: hovered(s) ? p.surface2 : p.surface, opacity: s.pressed ? 0.8 : 1 }]}
+      onPress={() => {
+        feel('tap')
+        onPress()
+      }}
+      style={(s) => [
+        styles.rowLink,
+        inGroup
+          ? { borderWidth: 0, borderRadius: 0, backgroundColor: hovered(s) || s.pressed ? p.surface2 : 'transparent' }
+          : { borderColor: hovered(s) ? p.lineStrong : p.line, backgroundColor: hovered(s) ? p.surface2 : p.surface, opacity: s.pressed ? 0.8 : 1 },
+      ]}
     >
       {icon}
       <View style={{ flex: 1 }}>
         <T v="h3">{tr(label)}</T>
-        {sub ? <T v="small" tone="muted">{tr(sub)}</T> : null}
+        {sub ? (
+          <T v="small" tone="muted">
+            {tr(sub)}
+          </T>
+        ) : null}
       </View>
       <Icon name="chevron" size={20} color={p.muted} />
     </Pressable>
+  )
+}
+
+// Rows that belong together in one group, with hairlines between them,
+// instead of a card for every row (review, 2026-10-28).
+export function RowGroup({ children }: { children: ReactNode }) {
+  const p = useTheme()
+  const rows = Children.toArray(children).filter(Boolean)
+  return (
+    <View style={[styles.group, { backgroundColor: p.surface, borderColor: p.line, borderWidth: p.dark ? 1 : 0 }, lift(p)]}>
+      {rows.map((row, i) => (
+        <View key={i}>
+          {i > 0 && <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: p.lineStrong, marginLeft: 20 }} />}
+          {row}
+        </View>
+      ))}
+    </View>
+  )
+}
+
+// One choice out of a few, side by side, as the phone's own segmented control.
+export function Segmented<V extends string>({ options, value, onChange, label }: { options: { value: V; label: string }[]; value: V; onChange: (v: V) => void; label: string }) {
+  const p = useTheme()
+  return (
+    <View accessibilityRole="radiogroup" accessibilityLabel={tr(label)} style={[styles.segmented, { backgroundColor: p.surface2 }]}>
+      {options.map((o) => {
+        const on = o.value === value
+        return (
+          <Pressable
+            key={o.value}
+            accessibilityRole="radio"
+            accessibilityState={{ checked: on }}
+            onPress={() => {
+              feel('select')
+              onChange(o.value)
+            }}
+            style={styles.segment}
+          >
+            {/* The chosen one sits raised: white in light, a lighter step in dark. Always drawn and shown by
+                opacity, so Android keeps its round corners. */}
+            <View style={[styles.segmentFill, { backgroundColor: p.dark ? p.surface3 : p.surface, opacity: on ? 1 : 0 }, on && lift(p)]} />
+            <Text style={{ fontFamily: on ? font.bold : font.semibold, fontSize: 14, color: on ? p.text : p.text2 }}>{tr(o.label)}</Text>
+          </Pressable>
+        )
+      })}
+    </View>
   )
 }
 
@@ -233,7 +296,10 @@ export function Option({ label, onPress, disabled, chosen, icon }: { label: stri
       accessibilityRole="button"
       accessibilityState={{ disabled: !!disabled, selected: !!chosen }}
       disabled={disabled}
-      onPress={onPress}
+      onPress={() => {
+        feel('select')
+        onPress()
+      }}
       onPressIn={() => setDown(true)}
       onPressOut={() => setDown(false)}
       style={(s) => {
@@ -250,20 +316,23 @@ export function Option({ label, onPress, disabled, chosen, icon }: { label: stri
   )
 }
 
-// A radio row, as in Settings.
+// A choice in a settings list: a plain row with a hairline above it and a
+// tick on the chosen one, as the phone's own settings do (review,
+// 2026-10-28: a box for every choice made Settings heavy).
 export function Radio({ label, checked, onPress }: { label: string; checked: boolean; onPress: () => void }) {
   const p = useTheme()
   return (
     <Pressable
       accessibilityRole="radio"
       accessibilityState={{ checked }}
-      onPress={onPress}
-      style={[styles.option, { backgroundColor: checked ? p.accentWash : p.surface, borderColor: checked ? p.accentLine : p.line }]}
+      onPress={() => {
+        feel('select')
+        onPress()
+      }}
+      style={(s) => [styles.radio, { borderTopColor: p.line, backgroundColor: hovered(s) || s.pressed ? p.surface2 : 'transparent' }]}
     >
-      <View style={[styles.optionRing, { borderColor: checked ? p.lime : p.lineStrong }]}>
-        {checked && <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: p.lime }} />}
-      </View>
-      <Text style={{ flex: 1, fontFamily: font.semibold, fontSize: 15, lineHeight: 20, color: p.text }}>{tr(label)}</Text>
+      <Text style={{ flex: 1, fontFamily: checked ? font.bold : font.medium, fontSize: 15, lineHeight: 20, color: p.text }}>{tr(label)}</Text>
+      {checked ? <Icon name="check" size={20} color={p.lime} width={2.4} /> : null}
     </Pressable>
   )
 }
@@ -277,12 +346,19 @@ export function Toggle({ label, note, value, onChange }: { label: string; note?:
         <T v="h3" style={{ fontSize: 15 }}>
           {label}
         </T>
-        {note ? <T v="small" tone="muted">{note}</T> : null}
+        {note ? (
+          <T v="small" tone="muted">
+            {note}
+          </T>
+        ) : null}
       </View>
       <Switch
         accessibilityLabel={label}
         value={value}
-        onValueChange={onChange}
+        onValueChange={(on) => {
+          feel('select')
+          onChange(on)
+        }}
         trackColor={{ true: p.lime, false: p.surface3 }}
         thumbColor="#ffffff"
         ios_backgroundColor={p.surface3}
@@ -301,7 +377,14 @@ export function Chip({ label, on, onPress, icon }: { label: string; on?: boolean
   )
   if (!onPress) return body
   return (
-    <Pressable accessibilityRole="button" accessibilityState={{ selected: !!on }} onPress={onPress}>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected: !!on }}
+      onPress={() => {
+        feel('select')
+        onPress()
+      }}
+    >
       {body}
     </Pressable>
   )
@@ -319,7 +402,11 @@ export function Field(props: TextInputProps & { label?: string; note?: string })
           {label}
         </T>
       ) : null}
-      {note ? <T v="small" tone="muted">{note}</T> : null}
+      {note ? (
+        <T v="small" tone="muted">
+          {note}
+        </T>
+      ) : null}
       <TextInput
         placeholderTextColor={p.muted}
         accessibilityLabel={label}
@@ -408,11 +495,24 @@ export function Page({
 // Cards ease in when they first appear (a short fade and lift), unless the
 // phone asks for reduced motion (Edwin, 2026-10-28: motion like the big apps).
 let calm = false
-AccessibilityInfo.isReduceMotionEnabled?.().then((on) => (calm = on), () => {})
+AccessibilityInfo.isReduceMotionEnabled?.().then(
+  (on) => (calm = on),
+  () => {},
+)
 // And when it changes while the app is open.
 AccessibilityInfo.addEventListener?.('reduceMotionChanged', (on) => (calm = on))
 // Whether the phone asks for reduced motion, for the launch (Launch.tsx).
 export const calmNow = () => calm
+
+// A small tap of feedback under the finger on a phone, as the big apps give:
+// 'select' for picking among choices, 'tap' for opening something, 'done'
+// for finishing. Nothing on the web.
+export function feel(kind: 'select' | 'tap' | 'done') {
+  if (Platform.OS === 'web') return
+  const go =
+    kind === 'select' ? Haptics.selectionAsync() : kind === 'tap' ? Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light) : Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+  go.catch(() => {})
+}
 const EASE_MS = 220
 
 function useEaseIn() {
@@ -427,10 +527,17 @@ function useEaseIn() {
   return { opacity: v, transform: [{ translateY: v.interpolate({ inputRange: [0, 1], outputRange: [8, 0] }) }] }
 }
 
+// In light mode a card is white on the cream page with only its soft lift, no
+// outline; in dark mode a hairline marks its edge, where a shadow can't
+// (review, 2026-10-28).
 export function Card({ children, style, pad = 20 }: { children: ReactNode; style?: StyleProp<ViewStyle>; pad?: number }) {
   const p = useTheme()
   const ease = useEaseIn()
-  return <Animated.View style={[{ backgroundColor: p.surface, borderColor: p.line, borderWidth: 1, borderRadius: radius.lg, padding: pad, gap: 12 }, lift(p), style, ease]}>{children}</Animated.View>
+  return (
+    <Animated.View style={[{ backgroundColor: p.surface, borderColor: p.line, borderWidth: p.dark ? 1 : 0, borderRadius: radius.lg, padding: pad, gap: 12 }, lift(p), style, ease]}>
+      {children}
+    </Animated.View>
+  )
 }
 
 export function Hairline({ style }: { style?: StyleProp<ViewStyle> }) {
@@ -489,6 +596,11 @@ export function PrivacyLine({ onKept, onSettings }: { onKept?: () => void; onSet
 const styles = StyleSheet.create({
   btn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   rowLink: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderRadius: radius.lg, paddingHorizontal: 20, paddingVertical: 18 },
+  group: { borderRadius: radius.lg, overflow: 'hidden' },
+  segmented: { flexDirection: 'row', padding: 3, borderRadius: radius.sm, gap: 3 },
+  segment: { flex: 1, minHeight: 36, alignItems: 'center', justifyContent: 'center', borderRadius: 8, paddingHorizontal: 8 },
+  segmentFill: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 8 },
+  radio: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 48, paddingVertical: 12, paddingHorizontal: 4, borderTopWidth: StyleSheet.hairlineWidth },
   option: { flexDirection: 'row', alignItems: 'center', gap: 16, minHeight: 64, borderWidth: 1.5, borderRadius: radius.md, paddingHorizontal: 20, paddingVertical: 16 },
   optionRing: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   toggle: { flexDirection: 'row', alignItems: 'center', gap: 16, paddingVertical: 16, borderTopWidth: StyleSheet.hairlineWidth },

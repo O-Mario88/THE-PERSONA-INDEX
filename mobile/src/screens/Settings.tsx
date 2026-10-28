@@ -8,7 +8,7 @@ import { appearanceOf, withAppearance, WORDS_DAYS, type Prefs, type WordsDays } 
 import { MAX_NAME } from '@shared/welcomeKeys'
 import { COUNTRY_SETTING } from '@shared/words'
 import { useTheme } from '../theme'
-import { Back, Button, Card, Field, Page, Radio, RowLink, T } from '../ui/kit'
+import { Back, Button, Card, Field, Page, Radio, RowLink, Segmented, T } from '../ui/kit'
 import { Icon } from '../ui/Icon'
 import { BackupSettings } from './Backup'
 import { CountrySelect } from './Country'
@@ -81,9 +81,16 @@ export function Settings({
         <T v="small" tone="muted">
           Light or dark, on every page. Automatic is dark in the evening and at night, and whenever your phone is set to dark.
         </T>
-        <Radio label="Automatic" checked={appearanceOf(prefs) === 'auto'} onPress={() => onChange(withAppearance(prefs, 'auto'))} />
-        <Radio label="Light" checked={appearanceOf(prefs) === 'light'} onPress={() => onChange(withAppearance(prefs, 'light'))} />
-        <Radio label="Dark" checked={appearanceOf(prefs) === 'dark'} onPress={() => onChange(withAppearance(prefs, 'dark'))} />
+        <Segmented
+          label="Appearance"
+          value={appearanceOf(prefs)}
+          onChange={(a) => onChange(withAppearance(prefs, a))}
+          options={[
+            { value: 'auto', label: 'Automatic' },
+            { value: 'light', label: 'Light' },
+            { value: 'dark', label: 'Dark' },
+          ]}
+        />
       </Card>
 
       <Card style={{ gap: 10 }}>
@@ -139,7 +146,6 @@ export function Settings({
             <BackupSettings onRestored={onRestored} />
           </View>
         )}
-
       </Card>
 
       <RowLink label="What I keep, and how to delete it" onPress={onOpenKept} />
