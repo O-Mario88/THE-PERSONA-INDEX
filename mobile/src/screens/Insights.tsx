@@ -48,7 +48,6 @@ export function Insights({
   const shown = days === WEEK ? cards.slice(0, FOR_YOU_MAX) : cards
   const fresh = shown.filter((x) => x.date === today)
   const earlier = shown.filter((x) => x.date !== today)
-  const [openToday, setOpenToday] = useState(false)
   const saved = keptCards().filter((c) => !c.private)
   const answeredAny = loadHistory().answers.length > 0
   return (
@@ -91,11 +90,8 @@ export function Insights({
         </Card>
       ) : (
         <>
-          {/* Today's cards were just read in the sitting: folded, so Insights leads with something new. */}
-          {fresh.length > 0 && (
-            <Button kind="text" label={openToday ? 'Hide today’s cards' : `From today (${fresh.length})`} iconAfter="chevron" onPress={() => setOpenToday(!openToday)} />
-          )}
-          {[...(openToday ? fresh : []), ...earlier].map((c) => (
+          {/* Nothing on Insights is folded away (Edwin, 2026-10-28): today's cards first, then earlier ones. */}
+          {[...fresh, ...earlier].map((c) => (
             <Card key={c.questionId} style={{ gap: 20 }}>
               <InsightCard card={c} today={today} onRated={() => setVersion((v) => v + 1)} pulseCounts={pulseCounts} onExplore={onExplore} />
             </Card>
@@ -121,7 +117,6 @@ function InsightCard({
 }) {
   const p = useTheme()
   const reading = card.reveal ? splitReveal(card.reveal) : null
-  const [more, setMore] = useState(false)
   return (
     <View style={{ gap: 14 }}>
       <View style={{ gap: 6 }}>
@@ -151,11 +146,7 @@ function InsightCard({
               onExplore={() => onExplore(card.questionId)}
             />
           )}
-          {/* The deeper parts fold away, so the card reads as one thought and one step. */}
-          {(card.need || card.otherSide) && (
-            <Button small kind="text" label={more ? 'Less' : 'More about this'} iconAfter="chevron" onPress={() => setMore(!more)} style={{ alignSelf: 'flex-start' }} />
-          )}
-          {more && card.need && (
+          {card.need && (
             <View style={{ gap: 6 }}>
               <T v="label">What you were reaching for</T>
               <View style={{ flexDirection: 'row' }}>
@@ -167,7 +158,7 @@ function InsightCard({
               </View>
             </View>
           )}
-          {more && card.otherSide && (
+          {card.otherSide && (
             <View style={{ gap: 6, borderLeftWidth: 3, borderLeftColor: p.rose, paddingLeft: 12 }}>
               <T v="label" style={{ color: p.rose }}>
                 The other side of it
