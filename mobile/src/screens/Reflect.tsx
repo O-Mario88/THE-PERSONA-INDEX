@@ -18,6 +18,7 @@ import { addDays } from '@shared/storage'
 import { thoughtsFor, type Answered, type Thought } from '@shared/thoughts'
 import { BringBack } from './Backup'
 import { Notebook } from './Notebook'
+import { KeepMoment } from './KeepMoment'
 import { HeavyCard } from './QuestionCard'
 import { font, radius, useTheme } from '../theme'
 import { Button, Card, Page, T, Tinted, Private } from '../ui/kit'
@@ -83,6 +84,7 @@ export function Reflect({
   const p = useTheme()
   const [period, setPeriod] = useState<ReflectionPeriod>('day')
   const [free, setFree] = useState(startFree)
+  const [keeping, setKeeping] = useState(false)
   const [at, setAt] = useState(0)
   const [chosen, setChosen] = useState<Thought | null>(() =>
     startPrompt
@@ -208,6 +210,13 @@ export function Reflect({
         }}
       />
       <Button kind="text" small icon={free ? 'leaf' : 'pencil'} label={free ? 'Back to a question' : 'Or write freely, with no question'} onPress={() => setFree(!free)} style={{ alignSelf: 'flex-start' }} />
+      {keeping ? (
+        <Card>
+          <KeepMoment today={today} />
+        </Card>
+      ) : (
+        <Button kind="text" small icon="bookmark" label="Or keep a moment, in a sentence or two" onPress={() => setKeeping(true)} style={{ alignSelf: 'flex-start' }} />
+      )}
 
       {noticed.length > 0 && (
       <Card style={{ gap: 14 }}>

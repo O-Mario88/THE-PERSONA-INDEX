@@ -4,7 +4,7 @@
 // "I decided not to" are answers like any other, never a failure.
 import { useState } from 'react'
 import { View } from 'react-native'
-import { reportHelped } from '@shared/api'
+import { recalledDraft, reportHelped, saveDraft } from '@shared/api'
 import { helpedReport, saveCheckIn, type CheckIn as Check, type Feeling, type Outcome, type Tried } from '@shared/growthJourney'
 import { setMoveStatus, type Move } from '@shared/moves'
 import { loadPrefs, whatHelpedOn } from '@shared/prefs'
@@ -57,12 +57,19 @@ export function CheckIn({ move, today, onDone, from }: { move: Step; today: stri
   const [tried, setTried] = useState<Tried | null>(null)
   const [outcome, setOutcome] = useState<Outcome | null>(null)
   const [feeling, setFeeling] = useState<Feeling | null>(null)
-  const [note, setNote] = useState('')
+  // The note is kept as a draft while it's typed, so closing the app loses nothing.
+  const draftKey = `note-${move.questionId}`
+  const [note, setNote] = useState(() => recalledDraft(draftKey))
+  const writeNote = (t: string) => {
+    setNote(t)
+    saveDraft(draftKey, t)
+  }
 
   const [counting] = useState(() => whatHelpedOn(loadPrefs()) && !move.local)
   const finish = (c: Omit<Check, 'questionId' | 'date'>, reply: string) => {
     const check = { questionId: move.questionId, date: today, ...c }
     const status = saveCheckIn(check, note)
+    saveDraft(draftKey, '')
     if (status) setMoveStatus(move.questionId, status, today, from).catch(() => {})
     const report = helpedReport(check)
     const optionId = move.optionId ?? from?.optionId
@@ -113,7 +120,7 @@ export function CheckIn({ move, today, onDone, from }: { move: Step; today: stri
       )}
       {tried && outcome && feeling && (
         <>
-          <Field label="Anything you’d like to remember? (optional)" placeholder="What happened, or what did you notice?" value={note} onChangeText={setNote} maxLength={280} multiline />
+          <Field label="Anything you’d like to remember? (optional)" placeholder="What happened, or what did you notice?" value={note} onChangeText={writeNote} maxLength={280} multiline />
           <Private>Only on this phone. Never shared.</Private>
           <Button label="Save" onPress={() => finish({ tried, outcome, feeling }, REPLIES[outcome])} style={{ alignSelf: 'flex-start' }} />
         </>

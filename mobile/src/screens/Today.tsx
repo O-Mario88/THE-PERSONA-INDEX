@@ -14,6 +14,7 @@ import { radius, RAIL_W, useTheme, WIDE } from '../theme'
 import { Button, Card, Chip, Hairline, T } from '../ui/kit'
 import { Avatar } from '../ui/parts'
 import { Icon } from '../ui/Icon'
+import { KeepMoment } from './KeepMoment'
 import { HeavyCard } from './QuestionCard'
 import { MirrorCard, QuietStepCard, TodaysRead } from './TodayCards'
 
@@ -63,7 +64,7 @@ export function Today({ date, window: w, name, note, hero, memory, journey, link
   )
   const main = <MainCard hero={hero} memory={memory} journey={journey} link={link} tomorrow={tomorrow} onOpen={onOpen} onWrite={onWrite} />
   const step = <QuietStepCard today={date} onJourney={onJourney} />
-  const moment = <NeedAMoment onWrite={onWrite} />
+  const moment = <NeedAMoment today={date} onWrite={onWrite} />
   const mirror = <MirrorCard today={date} onWrite={onWrite} onInsights={onInsights} />
   if (rail) {
     return (
@@ -309,10 +310,11 @@ const MOMENTS = [
   },
 ]
 
-function NeedAMoment({ onWrite }: { onWrite: (prompt?: string) => void }) {
+function NeedAMoment({ today, onWrite }: { today: string; onWrite: (prompt?: string) => void }) {
   const p = useTheme()
   const [open, setOpen] = useState(false)
   const [heavy, setHeavy] = useState(false)
+  const [keeping, setKeeping] = useState(false)
   return (
     <View style={{ gap: 12 }}>
       <Pressable
@@ -342,11 +344,13 @@ function NeedAMoment({ onWrite }: { onWrite: (prompt?: string) => void }) {
           <T v="h3">What's going on?</T>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             <Chip label="Something feels heavy" on={heavy} onPress={() => setHeavy(true)} />
+            <Chip label="Keep a moment" on={keeping} onPress={() => setKeeping(true)} />
             {MOMENTS.map((m) => (
               <Chip key={m.label} label={m.label} onPress={() => onWrite(m.prompt)} />
             ))}
             <Chip label="Just write" onPress={() => onWrite()} />
           </View>
+          {keeping && <KeepMoment today={today} />}
           {heavy && (
             <>
               <HeavyCard />

@@ -67,7 +67,7 @@ export type Practised = Stamp & { kind: 'practice'; date: string; practice: stri
 // kept with what it was about, and brought back later.
 export type ReflectionArea = 'work' | 'school' | 'family' | 'culture' | 'social' | 'health' | 'money' | 'self'
 export type ReflectionGroup = 'learnt' | 'strength' | 'grow'
-export type ReflectionSource = 'answers' | 'week' | 'circle'
+export type ReflectionSource = 'answers' | 'week' | 'circle' | 'moment' // moment: kept in a sentence or two (moments.ts)
 export type ReflectionPeriod = 'day' | 'week' | 'month'
 export type Reflection = Stamp & {
   kind: 'reflection'
