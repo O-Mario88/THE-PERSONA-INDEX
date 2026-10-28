@@ -1,11 +1,15 @@
-// My Journey (Edwin, 2026-10-28): what you're exploring now, what you've
-// learned from the steps you tried (the ones that didn't help included), your
-// eight parts of life and your history. Built only from your own steps,
-// check-ins and reflections, on this phone. Nothing is scored, and a part of
-// life you haven't explored says so instead of guessing.
+// My Journey (Edwin, 2026-10-28), progress told in words, never a score:
+// what you're exploring now, what you've discovered (the readings you said
+// sound like you), what you've tried and how it went (the ones that didn't
+// help included), what's changed between your earlier and more recent
+// answers, your eight parts of life and a quiet dated timeline. Built only
+// from your own answers, steps, check-ins and reflections, on this phone. A
+// part of life or a change with nothing behind it says so instead of guessing.
 import { useState } from 'react'
 import { View } from 'react-native'
-import { checkInFor, checkIns, journeyHistory, lifeAreas, noteFor, outcomeLine } from '@shared/growthJourney'
+import { growthPairs } from '@shared/growth'
+import { checkInFor, checkIns, discoveries, journeyHistory, lifeAreas, noteFor, outcomeLine } from '@shared/growthJourney'
+import { reflectSettings } from '@shared/journal'
 import { loadMoves } from '@shared/moves'
 import { reflections } from '@shared/notebook'
 import { loadHistory } from '@shared/profile'
@@ -15,11 +19,8 @@ import { Back, Card, Page, T } from '../ui/kit'
 import { AREA_ICON, AREA_TONE, CardHead, Disc } from '../ui/parts'
 import { JourneyLine } from './TodayCards'
 
-const LEARNED_SHOWN = 6
-const HISTORY_SHOWN = 20
-// Essential: the focus, the latest few things learned and the last few days.
-const LEARNED_ESSENTIAL = 3
-const HISTORY_ESSENTIAL = 5
+// Explore deeper shows more of each; Essential the latest few.
+const SHOWN = { deeper: { found: 6, tried: 6, changed: 3, timeline: 20 }, essential: { found: 2, tried: 3, changed: 1, timeline: 5 } }
 
 export function Journey({ today, onBack, onWrite }: { today: string; onBack: () => void; onWrite: (prompt?: string) => void }) {
   const [moves] = useState(loadMoves)
@@ -27,15 +28,19 @@ export function Journey({ today, onBack, onWrite }: { today: string; onBack: () 
   const [h] = useState(loadHistory)
   const [written] = useState(reflections)
   const [deeper, setDeeper] = useDeeper('journey')
+  const shown = deeper ? SHOWN.deeper : SHOWN.essential
   const newest = [...moves].sort((a, b) => b.date.localeCompare(a.date))
   // The open step: not checked in on yet, or kept for later.
   const active = newest.find((m) => {
     const c = checkInFor(m.questionId, checks)
     return m.status === 'started' && (!c?.tried || !!c.later)
   })
-  const learned = newest.filter((m) => m.status !== 'started' || checkInFor(m.questionId, checks)).slice(0, deeper ? LEARNED_SHOWN : LEARNED_ESSENTIAL)
+  const tried = newest.filter((m) => m.status !== 'started' || checkInFor(m.questionId, checks)).slice(0, shown.tried)
+  const found = discoveries(h)
+  // What's changed: your own words come in only if you let your reflections into your Mirrors.
+  const changed = growthPairs(h, written, today, undefined, { reflections: reflectSettings().reflectionsInMirror }).slice(0, shown.changed)
   const areas = lifeAreas(moves, h, written, today, checks)
-  const history = journeyHistory(moves, written, checks, deeper ? HISTORY_SHOWN : HISTORY_ESSENTIAL)
+  const timeline = journeyHistory(moves, written, checks, shown.timeline, found)
 
   return (
     <Page>
@@ -65,11 +70,27 @@ export function Journey({ today, onBack, onWrite }: { today: string; onBack: () 
       </Card>
 
       <Card style={{ gap: 12 }}>
-        <CardHead icon="bulb" tone="amber" title="What you’ve been learning" />
-        {learned.length === 0 ? (
+        <CardHead icon="leaf" tone="green" title="What you’ve discovered" />
+        {found.length === 0 ? (
+          <T tone="text2">When a reading sounds like you, tap “That’s me” under it, and it’s kept here.</T>
+        ) : (
+          found.slice(0, shown.found).map((d) => (
+            <View key={d.questionId} style={{ gap: 2 }}>
+              <T bold>{d.headline}</T>
+              <T v="small" tone="muted">
+                {`${dayMonth(d.date)} · ${d.verdict === 'me' ? 'You said: That’s me' : 'You said: Partly'}`}
+              </T>
+            </View>
+          ))
+        )}
+      </Card>
+
+      <Card style={{ gap: 12 }}>
+        <CardHead icon="bulb" tone="amber" title="What you’ve tried" />
+        {tried.length === 0 ? (
           <T tone="text2">When you try a step and tell me how it went, it shows here, the ones that didn’t help included.</T>
         ) : (
-          learned.map((m) => {
+          tried.map((m) => {
             const note = noteFor(m.questionId)
             return (
               <View key={m.questionId} style={{ gap: 2 }}>
@@ -86,6 +107,28 @@ export function Journey({ today, onBack, onWrite }: { today: string; onBack: () 
             )
           })
         )}
+      </Card>
+
+      <Card style={{ gap: 12 }}>
+        <CardHead icon="refresh" tone="blue" title="What’s changed" />
+        {changed.length === 0 ? (
+          <T tone="text2">Nothing to say yet. Once your answers about the same part of life differ over time, the earlier and the more recent show here side by side.</T>
+        ) : (
+          changed.map((g) => (
+            <View key={`${g.kind}.${g.area}`} style={{ gap: 6 }}>
+              <T v="label">{AREA_NAMES[g.area]}</T>
+              <T v="small" tone="muted">
+                {`Earlier, ${dayMonth(g.earlier.date)}`}
+              </T>
+              <T tone="text2">{g.kind === 'answers' ? `${g.earlier.asked} You chose “${g.earlier.words}”.` : `“${g.earlier.words}”`}</T>
+              <T v="small" tone="muted">
+                {`More recently, ${dayMonth(g.recent.date)}`}
+              </T>
+              <T tone="text2">{g.kind === 'answers' ? `${g.recent.asked} You chose “${g.recent.words}”.` : `“${g.recent.words}”`}</T>
+            </View>
+          ))
+        )}
+        <T v="tiny">A different answer isn’t better or worse. It’s a sign of how things have moved.</T>
       </Card>
 
       {deeper && (
@@ -108,11 +151,11 @@ export function Journey({ today, onBack, onWrite }: { today: string; onBack: () 
       )}
 
       <Card style={{ gap: 12 }}>
-        <CardHead icon="calendar" tone="blue" title="Your history" />
-        {history.length === 0 ? (
-          <T tone="text2">Your history starts with the first step you choose.</T>
+        <CardHead icon="calendar" tone="blue" title="Your timeline" />
+        {timeline.length === 0 ? (
+          <T tone="text2">Your timeline starts with the first reading you keep or the first step you choose.</T>
         ) : (
-          history.map((i, n) => (
+          timeline.map((i, n) => (
             <View key={`${i.date}-${n}`} style={{ gap: 2 }}>
               <T v="tiny">{dayMonth(i.date)}</T>
               <T bold>{i.title}</T>

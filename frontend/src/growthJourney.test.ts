@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { checkInFor, dueStep, heldBack, helpedReport, journeyHistory, lifeAreas, noteFor, outcomeLine, revisitFor, saveCheckIn, statusFor, stepWords, tryAgain } from './growthJourney'
+import { checkInFor, discoveries, dueStep, heldBack, helpedReport, journeyHistory, lifeAreas, noteFor, outcomeLine, revisitFor, saveCheckIn, statusFor, stepWords, tryAgain } from './growthJourney'
 import { loadMoves } from './moves'
 import { saveJSON } from './storage'
 import type { Move } from './moves'
@@ -113,6 +113,31 @@ describe('what the journey says back', () => {
     expect(items.map((i) => i.date)).toEqual(['2026-10-27', '2026-10-26', '2026-10-25'])
     expect(items[1].title).toBe('You chose to try “Ask for help”')
     expect(JSON.stringify(items)).not.toContain('Private words')
+  })
+})
+
+describe('what you have discovered', () => {
+  const text = (id: string) => ({ date: '2026-10-20', questionId: id, prompt: `P ${id}?`, label: 'L', reveal: `Headline for ${id}. And more words.` })
+  it('keeps the readings you said sound like you, newest first, and never one you said was not you', () => {
+    const h = {
+      answers: [
+        { ...answer('2026-10-20', 'q1', 'work-career'), verdict: 'me' as const },
+        { ...answer('2026-10-22', 'q2', 'family'), verdict: 'partly' as const },
+        { ...answer('2026-10-23', 'q3', 'family'), verdict: 'not_me' as const },
+        { ...answer('2026-10-24', 'q4', 'intimacy'), verdict: 'me' as const },
+        answer('2026-10-25', 'q5', 'money'),
+      ],
+      skips: [],
+    }
+    expect(discoveries(h, text)).toEqual([
+      { date: '2026-10-22', questionId: 'q2', headline: 'Headline for q2.', verdict: 'partly' },
+      { date: '2026-10-20', questionId: 'q1', headline: 'Headline for q1.', verdict: 'me' },
+    ])
+  })
+
+  it('puts discoveries on the timeline with the steps', () => {
+    const items = journeyHistory([move('2026-10-26', 'q9', 'Ask for help')], [], [], 30, [{ date: '2026-10-27', questionId: 'q1', headline: 'You protect your rest.', verdict: 'me' }])
+    expect(items[0]).toEqual({ date: '2026-10-27', title: 'You said “You protect your rest” sounds like you' })
   })
 })
 

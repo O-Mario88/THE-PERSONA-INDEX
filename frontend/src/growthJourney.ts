@@ -9,11 +9,12 @@
 // Nothing is scored, compared or made up.
 
 import type { StepStatus } from './api'
-import { cardTextOf } from './insights'
+import { cardTextOf, type CardText } from './insights'
 import { loadMoves, restartMove, type Move } from './moves'
 import type { Reflection, ReflectionArea } from './notebook'
 import type { History } from './profile'
 import { AREA_NAMES, areaOf } from './reflect'
+import { splitReveal } from './reveal'
 import { addDays, load, loadJSON, save, saveJSON } from './storage'
 
 export type Tried = 'yes' | 'little' | 'not_yet' | 'decided_not'
@@ -162,12 +163,32 @@ export function lifeAreas(moves: Move[], h: History, written: Reflection[], toda
   })
 }
 
+// "What you've discovered" (Edwin's brief, 2026-10-28): the readings you
+// said sound like you, or partly, newest first; never one you said wasn't
+// you, a heavy one or an intimate one.
+export type Discovery = { date: string; questionId: string; headline: string; verdict: 'me' | 'partly' }
+
+export function discoveries(h: History, textOf: (questionId: string) => CardText | null = cardTextOf, limit = 30): Discovery[] {
+  return h.answers
+    .flatMap((a) => {
+      if ((a.verdict !== 'me' && a.verdict !== 'partly') || a.heavy || a.theme === 'intimacy') return []
+      const reveal = textOf(a.questionId)?.reveal
+      return reveal ? [{ date: a.date, questionId: a.questionId, headline: splitReveal(reveal).headline, verdict: a.verdict }] : []
+    })
+    .sort((x, y) => y.date.localeCompare(x.date))
+    .slice(0, limit)
+}
+
 export type JourneyItem = { date: string; title: string; detail?: string }
 
-// journeyHistory is what you chose, how it went and when you reflected,
-// newest first. It names a reflection's part of life, never its words.
-export function journeyHistory(moves: Move[], written: Reflection[], checks: CheckIn[] = all(), limit = 30): JourneyItem[] {
-  const items: JourneyItem[] = []
+// journeyHistory is the timeline: what you discovered, what you chose, how
+// it went and when you reflected, newest first. It names a reflection's part
+// of life, never its words.
+export function journeyHistory(moves: Move[], written: Reflection[], checks: CheckIn[] = all(), limit = 30, found: Discovery[] = []): JourneyItem[] {
+  const items: JourneyItem[] = found.map((d) => ({
+    date: d.date,
+    title: `You said “${stepWords(d.headline)}” ${d.verdict === 'me' ? 'sounds like you' : 'partly sounds like you'}`,
+  }))
   for (const m of moves) {
     items.push({ date: m.date, title: `You chose to try “${stepWords(m.step)}”` })
     const c = checkInFor(m.questionId, checks)
