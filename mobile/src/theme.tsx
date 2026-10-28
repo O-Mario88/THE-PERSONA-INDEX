@@ -89,7 +89,7 @@ export const dark: Palette = {
   ...light,
   dark: true,
   lime: '#f4a258',
-  onLime: '#1d1206',
+  onLime: '#013d5a', // navy words on marigold (Edwin, 2026-10-28)
   bg: '#0b1a24',
   surface: '#102330',
   surface2: '#16303f',
@@ -105,7 +105,7 @@ export const dark: Palette = {
   accentWash: '#183242',
   accentLine: '#2a4a5c',
   btn: '#f4a258',
-  onBtn: '#1d1206',
+  onBtn: '#013d5a',
   blue: '#8db1f5',
   blueWash: '#17233a',
   purple: '#b9a4f5',

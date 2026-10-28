@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { KeyboardAvoidingView, Platform, View } from 'react-native'
 import { MAX_NAME } from '@shared/welcomeKeys'
 import { Button, Field, Page, T } from '../ui/kit'
+import { Logo } from '../ui/Logo'
 
 export function Welcome({ onBegin }: { onBegin: (name: string) => void }) {
   const [name, setName] = useState('')
@@ -11,9 +12,7 @@ export function Welcome({ onBegin }: { onBegin: (name: string) => void }) {
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <Page>
-        <T v="label" tone="text">
-          Welcome to The Persona Index
-        </T>
+        <Logo size={48} line />
         <View style={{ gap: 16, marginTop: 24 }}>
           <T v="display" style={{ fontSize: 35, lineHeight: 40 }}>
             Discover yourself. Find what works. Live a little better every day.

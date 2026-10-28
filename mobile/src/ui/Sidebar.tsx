@@ -4,6 +4,7 @@
 import { Pressable, Text, View } from 'react-native'
 import { font, radius, SIDE_W, useTheme } from '../theme'
 import { Icon, type IconName } from './Icon'
+import { Logo } from './Logo'
 import { tr } from '@shared/i18n'
 
 export type SideItem = { key: string; name: string; icon: IconName; on: boolean; onPress: () => void }
@@ -37,9 +38,8 @@ export function Sidebar({ top, foot }: { top: SideItem[]; foot: SideItem[] }) {
   const p = useTheme()
   return (
     <View accessibilityRole="tablist" style={{ width: SIDE_W, backgroundColor: p.side, paddingVertical: 24, paddingHorizontal: 16, gap: 4 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: 8, marginBottom: 32 }}>
-        <Icon name="leaf" size={26} color={p.brandLime} width={2} />
-        <Text style={{ maxWidth: 150, color: p.onNavy, fontFamily: font.bold, fontSize: 16, lineHeight: 18, letterSpacing: -0.2 }}>The Persona Index</Text>
+      <View style={{ marginHorizontal: 8, marginBottom: 32 }}>
+        <Logo size={34} tone="onNavy" />
       </View>
       {top.map((item) => (
         <Row key={item.key} item={item} />

@@ -121,6 +121,17 @@ far as they said it went.
 
 A sitting's close shows this week's seven tiles, Monday to Sunday, ending at the Sunday Mirror. No ninety-day grid anywhere: a long count makes people give up.
 
+## The logo and the icon
+
+Edwin's sprout (2026-10-28): a dark-green and a lime leaf on a slim stem,
+with the vein cut out of the lime leaf so it sits on any background. The
+source is `assets/brand/mark.svg`; the app draws the same paths
+(`src/ui/Logo.tsx`: `Mark`, and `Logo` with THE / PERSONA INDEX and the line
+"Understand. Grow. Be more you."). The app icon is the sprout on deep navy
+(`assets/icon.png`, the Android layers, the splash, and the web icons in
+`frontend/public`), all rendered from that one file. Words on marigold (the
+dark theme's buttons and chosen chips) are navy, never black.
+
 ## On the website
 
 React Native for Web writes the app's styles into the page as it draws, so

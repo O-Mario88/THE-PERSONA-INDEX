@@ -13,6 +13,7 @@ import type { JourneyNote, Memory } from '@shared/todayFocus'
 import { radius, RAIL_W, useTheme, WIDE } from '../theme'
 import { Button, Card, Chip, Hairline, T } from '../ui/kit'
 import { Avatar } from '../ui/parts'
+import { Logo } from '../ui/Logo'
 import { Icon } from '../ui/Icon'
 import { KeepMoment } from './KeepMoment'
 import { HeavyCard } from './QuestionCard'
@@ -47,9 +48,7 @@ export function Today({ date, window: w, name, note, hero, memory, journey, link
       <Wash />
       <View style={styles.headerTop}>
         {/* Beside the sidebar the brand is already on screen. */}
-        <T v="label" tone="text">
-          {width >= WIDE ? '' : 'The Persona Index'}
-        </T>
+        {width >= WIDE ? <View /> : <Logo size={30} />}
         <Pressable accessibilityRole="button" accessibilityLabel={tr('You and settings')} onPress={onAccount} hitSlop={8}>
           <Avatar name={name || 'You'} size={36} />
         </Pressable>

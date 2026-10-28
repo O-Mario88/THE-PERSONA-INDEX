@@ -25,7 +25,7 @@
     "android": {
       "package": "com.personaindex.app",
       "adaptiveIcon": {
-        "backgroundColor": "#013d5a",
+        "backgroundColor": "#0f1e2e",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"

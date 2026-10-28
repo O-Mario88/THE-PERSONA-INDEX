@@ -11,6 +11,7 @@ import { canPrompt, inviteDue, iosSafari, noteInstall, onInstallChange, promptIn
 import { lockAvailable, locked, RELOCK_MS, removeLock, setUpLock, unlock } from '@shared/pwa/lock'
 import { useTheme } from '../theme'
 import { Button, Page, T, Tinted } from '../ui/kit'
+import { Logo } from '../ui/Logo'
 
 const web = Platform.OS === 'web'
 
@@ -59,9 +60,7 @@ function LockScreen({ onOpen }: { onOpen: () => void }) {
   return (
     <View style={{ flex: 1, backgroundColor: p.bg }}>
       <Page>
-        <T v="eyebrow" tone="muted">
-          The Persona Index
-        </T>
+        <Logo size={36} />
         <T v="display">Locked</T>
         <T tone="muted">Use your fingerprint, face or phone PIN to open it.</T>
         <Button wide label="Unlock" busy={busy} onPress={tryUnlock} />
