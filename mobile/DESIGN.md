@@ -112,6 +112,13 @@ person's own.
 - **The coming Mirror**: how far away, a dot a day this week, and what the
   answers lean towards so far.
 
+Every step someone chooses goes into one system: "I'll try it" on an answer
+card, on Today's idea or under "Something you could try" in Insights (which
+also offers "Save for later"). Today asks how it went (three taps and a private
+note), My Journey remembers it, and the Weekly Mirror tells it back in their
+own terms, with "The moments we share" naming a move towards someone only as
+far as they said it went.
+
 A sitting's close shows this week's seven tiles, Monday to Sunday, ending at the Sunday Mirror. No ninety-day grid anywhere: a long count makes people give up.
 
 ## On the website

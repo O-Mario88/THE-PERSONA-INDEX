@@ -9,6 +9,8 @@ import { Linking, Pressable, Share, TextInput, View } from 'react-native'
 import Svg, { Circle, Path } from 'react-native-svg'
 import { getPeriodMirror, PERIODS_BACK, type Mirror as MirrorData, type PeriodMirror } from '@shared/api'
 import { connectionBetween } from '@shared/connection'
+import { checkIns, heldBack, stepKey, stepWords } from '@shared/growthJourney'
+import { loadMoves } from '@shared/moves'
 import { getNotAlone, type NotAloneQuestion } from '@shared/insights'
 import { reflectSettings, threadsBetween } from '@shared/journal'
 import {
@@ -48,6 +50,7 @@ import {
   periodNeeds,
   periodStory,
   say,
+  sharedMoment,
   weekDirection,
   weekStory,
   whenSaid,
@@ -63,6 +66,7 @@ import {
   type Observation,
   type OthersPick,
   type OthersStep,
+  type SharedMoment,
   type Span,
   type Story,
 } from '@shared/mirrorStory'
@@ -385,6 +389,19 @@ function NotAloneView({ picks }: { picks: NotAlonePick[] }) {
   )
 }
 
+// The moments we share: a move towards someone that the person recorded, in
+// their words, and what it taught them, written privately in Reflect.
+function MomentView({ moment, onWrite }: { moment: SharedMoment; onWrite?: (prompt: string) => void }) {
+  const prompt = moment.prompt
+  return (
+    <View style={{ gap: 6 }}>
+      <T>{moment.line}</T>
+      {moment.ask ? <T bold>{moment.ask}</T> : null}
+      {prompt && onWrite ? <Button kind="text" small label="Write about it, privately" iconAfter="arrow" onPress={() => onWrite(prompt)} style={{ alignSelf: 'flex-start' }} /> : null}
+    </View>
+  )
+}
+
 function OthersView({ picks }: { picks: OthersPick[] }) {
   return (
     <View style={{ gap: 16 }}>
@@ -648,7 +665,8 @@ export function SundayMirror({
   m,
   today,
   back,
-  onOpenSettings,
+  onOpenChoices,
+  onWrite,
   jumpTo,
   deeper,
   footer,
@@ -656,7 +674,8 @@ export function SundayMirror({
   m: MirrorData
   today: string
   back: number
-  onOpenSettings?: () => void
+  onOpenChoices?: () => void
+  onWrite?: (prompt: string) => void
   jumpTo?: (v: Host) => void
   deeper: ReactNode
   footer: ReactNode
@@ -667,16 +686,13 @@ export function SundayMirror({
   const history = useMemo(loadHistory, [m])
   const notMe = notMeSides(today)
   const leans = leanings(m.traits, notMe)
-  const helped = useMemo(
-    () =>
-      helpedFor(m.from, m.to, {
-        // A step marked this week counts this week, whenever it was saved.
-        steps: m.steps.map((s) => ({ step: s.step, started: s.started < m.from ? m.from : s.started, status: s.status })),
-        intentions: intentions(),
-      }),
-    [m],
-  )
+  // A step marked this week counts this week, whenever it was saved; its
+  // check-in, when there is one, says how it went.
+  const steps = useMemo(() => m.steps.map((s) => ({ ...s, started: s.started < m.from ? m.from : s.started })), [m])
+  const checks = useMemo(checkIns, [m])
+  const helped = useMemo(() => helpedFor(m.from, m.to, { steps, intentions: intentions(), checks }), [m, steps, checks])
   const connection = connectionBetween(m.from, m.to)
+  const moment = sharedMoment({ from: m.from, to: m.to, history, steps, checks, connection })
   const story = weekStory({
     from: m.from,
     to: m.to,
@@ -702,14 +718,16 @@ export function SundayMirror({
   const alone = notAlonePicks(history, m.from, m.to, counts)
   const othersPicks = othersHelped(history, m.from, m.to, others)
   const words = reflectSettings().reflectionsInMirror ? ownWordsPick(reflections(), m.from, m.to) : null
-  const direction = weekDirection({ from: m.from, history, helped, nextStep: m.nextSteps[0]?.step })
+  // Never a step they said made things harder, unless they choose it again.
+  const held = heldBack(loadMoves(), checks)
+  const direction = weekDirection({ from: m.from, history, helped, nextStep: m.nextSteps.find((s) => !held.has(stepKey(s.step)))?.step })
   const helpedLine = helpedSentence(helped)
   const connected = showConnection(m.from, m.to)
   const revealed = `${found.length === 1 ? 'One thing' : `${cap(say(found.length))} things`}`
 
   const jumpList = [
     found.length > 0 && { id: 'ms-revealed', icon: 'leaf', tone: 'green', title: `${revealed} revealed`, note: 'What stood out this week' },
-    pulse && alone.length > 0 && { id: 'ms-alone', icon: 'people', tone: 'blue', title: 'You’re not alone', note: 'Shared experiences' },
+    ((pulse && alone.length > 0) || moment) && { id: 'ms-alone', icon: 'people', tone: 'blue', title: 'The moments we share', note: 'Shared experiences' },
     (helped.length > 0 || othersPicks.length > 0) && { id: 'ms-helped', icon: 'bulb', tone: 'amber', title: 'What helped', note: othersPicks.length ? 'For you and others' : 'What you tried' },
     connected && { id: 'ms-connection', icon: 'heart', tone: 'rose', title: 'Your connections', note: 'Support and encouragement' },
   ].filter(Boolean) as Jump[]
@@ -749,20 +767,22 @@ export function SundayMirror({
         <OwnWordsView pick={words} span="week" />
       </Section>
 
-      <Section id="ms-alone" icon="people" tone="blue" title="You’re not alone">
-        {!pulse ? (
-          <>
-            <Quiet>With the Human Pulse on, this shows how many people chose the same answer as you. Off unless you turn it on.</Quiet>
-            {onOpenSettings && <Button kind="text" small label="Human Pulse in Settings" onPress={onOpenSettings} style={{ alignSelf: 'flex-start' }} />}
-          </>
-        ) : alone.length > 0 ? (
+      <Section id="ms-alone" icon="people" tone="blue" title="The moments we share">
+        {pulse && alone.length > 0 && (
           <>
             <NotAloneView picks={alone} />
             <Fine>Real counts, shown only once enough people have answered. Shared, not a sign that one answer is right.</Fine>
           </>
-        ) : (
-          <Quiet>The picture is still forming for this week’s questions.</Quiet>
         )}
+        {moment && <MomentView moment={moment} onWrite={onWrite} />}
+        {!pulse ? (
+          <>
+            <Quiet>The Human Pulse is switched off, so no numbers show here. You can turn it back on in You, under Privacy and choices.</Quiet>
+            {onOpenChoices && <Button kind="text" small label="Privacy and choices" onPress={onOpenChoices} style={{ alignSelf: 'flex-start' }} />}
+          </>
+        ) : alone.length === 0 && !moment ? (
+          <Quiet>The picture is still forming for this week’s questions.</Quiet>
+        ) : null}
       </Section>
 
       {othersPicks.length > 0 && (
@@ -1310,8 +1330,8 @@ function Forward({
   const lastTold = [...chapters].reverse().find((c) => c.state === 'told')
   const lines: string[] = []
   if (lastTold) lines.push(`What still matters, by your latest answers: ${NEED_PHRASES[lastTold.needs[0].need]}.`)
-  if (helped[0]) lines.push(`What you learned helps you: “${helped[0]}”${helped[1] ? ` and “${helped[1]}”` : ''}.`)
-  if (y.noChange && y.noChange[0]) lines.push(`What made little difference, and is fine to leave: “${y.noChange[0].step}”.`)
+  if (helped[0]) lines.push(`What you learned helps you: “${stepWords(helped[0])}”${helped[1] ? ` and “${stepWords(helped[1])}”` : ''}.`)
+  if (y.noChange && y.noChange[0]) lines.push(`What made little difference, and is fine to leave: “${stepWords(y.noChange[0].step)}”.`)
 
   function copy() {
     const parts = [`My year in perspective · ${y.label}`, '', ...chapters.map((c) => `${c.months}: ${c.title}`), '', ...lines]

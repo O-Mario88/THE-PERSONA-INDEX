@@ -421,7 +421,8 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
           onOpenKept={() => setTab('kept')}
           onCircle={() => goTab('circle')}
           onRead={openRead}
-          onOpenSettings={() => open('settings')}
+          onOpenChoices={() => goTab('account')}
+          onWrite={(prompt) => write(prompt)}
           jumpTo={(v) => {
             const sv = mirrorScroll.current
             const inner = sv?.getInnerViewRef()

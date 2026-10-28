@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { checkInFor, dueStep, journeyHistory, lifeAreas, noteFor, outcomeLine, revisitFor, saveCheckIn, statusFor } from './growthJourney'
+import { checkInFor, dueStep, heldBack, journeyHistory, lifeAreas, noteFor, outcomeLine, revisitFor, saveCheckIn, statusFor } from './growthJourney'
 import type { Move } from './moves'
 import type { Reflection } from './notebook'
 
@@ -47,6 +47,15 @@ describe('closing the loop on a step', () => {
   })
 })
 
+describe('steps held back', () => {
+  it('keeps back a step you said made things harder, whatever card it comes from', () => {
+    const moves = [move('2026-10-20', 'q1', 'Say no to one request', 'no_change'), move('2026-10-21', 'q2', 'Take a walk', 'helped')]
+    saveCheckIn({ questionId: 'q1', date: '2026-10-22', tried: 'yes', outcome: 'harder' })
+    saveCheckIn({ questionId: 'q2', date: '2026-10-22', tried: 'yes', outcome: 'helped' })
+    expect([...heldBack(moves)]).toEqual(['say no to one request'])
+  })
+})
+
 describe('what the journey says back', () => {
   it('puts each outcome in plain words, including the ones that did not help', () => {
     expect(outcomeLine({ questionId: 'q', date: 'd', tried: 'yes', outcome: 'helped', feeling: 'lighter' }, 'helped')).toBe('You said it helped, and you felt a little lighter.')
@@ -80,6 +89,14 @@ describe('bringing back what helped', () => {
     saveCheckIn({ questionId: 'q1', date: '2026-10-21', tried: 'yes', outcome: 'helped', feeling: 'lighter' })
     const r = revisitFor('2026-10-28', h, [move('2026-10-20', 'q1', 'Ask for help with one small task', 'helped')])
     expect(r?.line).toBe('Last time you tried “Ask for help with one small task”, you said it helped and you felt a little lighter. Would you like to try it again?')
+  })
+
+  it('quotes a step without its closing full stop, so a sentence reads cleanly', () => {
+    const h = { answers: [answer('2026-10-20', 'q1', 'work-career'), answer('2026-10-28', 'q2', 'colleagues')], skips: [] }
+    saveCheckIn({ questionId: 'q1', date: '2026-10-21', tried: 'yes', outcome: 'helped' })
+    const moves = [move('2026-10-20', 'q1', 'Ask one person for help with something small.', 'helped')]
+    expect(revisitFor('2026-10-28', h, moves)?.line).toBe('Last time you tried “Ask one person for help with something small”, you said it helped. Would you like to try it again?')
+    expect(journeyHistory(moves, [])[0].title).toBe('How “Ask one person for help with something small” went')
   })
 
   it('stays quiet when today is about something else, or the step did not help', () => {

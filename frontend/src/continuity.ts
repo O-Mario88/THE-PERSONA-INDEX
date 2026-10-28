@@ -3,6 +3,7 @@
 // open with a line tied to an earlier answer, and a step someone said they'd
 // try comes back to them on Today, instead of waiting in a list.
 
+import { heldBack, stepKey } from './growthJourney'
 import { cardTextOf, forYou } from './insights'
 import { loadMoves, type Move } from './moves'
 import type { Need } from './needs'
@@ -41,7 +42,8 @@ export function rememberLine(today: string, h: History): string | null {
 // a small step from one of their own recent cards that they haven't tried yet.
 export function ideaToTry(today: string, h: History, moves: Move[] = loadMoves()): { questionId: string; optionId: string; step: string; from: string } | null {
   const tried = new Set(moves.map((m) => m.questionId))
-  const card = forYou(h, today, 30).find((c) => c.step && !c.heavy && !tried.has(c.questionId))
+  const held = heldBack(moves)
+  const card = forYou(h, today, 30).find((c) => c.step && !c.heavy && !tried.has(c.questionId) && !held.has(stepKey(c.step)))
   return card?.step ? { questionId: card.questionId, optionId: card.optionId, step: card.step, from: card.label } : null
 }
 

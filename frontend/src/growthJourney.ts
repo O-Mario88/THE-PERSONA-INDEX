@@ -69,7 +69,7 @@ export function dueStep(today: string, moves: Move[] = loadMoves(), checks: Chec
   )
 }
 
-const FEELS: Record<Feeling, string> = {
+export const FEELS: Record<Feeling, string> = {
   lighter: 'you felt a little lighter',
   same: 'you felt about the same',
   unsettled: 'you felt more unsettled',
@@ -94,6 +94,21 @@ export function outcomeLine(c: CheckIn | null, status: StepStatus): string {
   return 'An idea you’re still exploring.'
 }
 
+// A step's words for quoting inside a sentence, without its closing full
+// stop: “Ask one person for help”, you said…
+export const stepWords = (step: string): string => step.trim().replace(/\.+$/, '')
+
+// A step's words as one key, so the same step from two cards is one step.
+export const stepKey = (step: string): string => step.trim().toLowerCase()
+
+// heldBack is every step someone said made things harder, by its words: it
+// is not suggested to them again, whatever card it comes from, unless they
+// choose it themselves.
+export function heldBack(moves: Move[] = loadMoves(), checks: CheckIn[] = all()): Set<string> {
+  const harder = new Set(checks.filter((c) => c.outcome === 'harder').map((c) => c.questionId))
+  return new Set(moves.filter((m) => harder.has(m.questionId)).map((m) => stepKey(m.step)))
+}
+
 // The part of life a step belongs to, from the answer it came from; null
 // when that answer is no longer kept here.
 function areaOfMove(m: Move, h: History): ReflectionArea | null {
@@ -105,11 +120,11 @@ export const LIFE_AREAS: ReflectionArea[] = ['work', 'school', 'family', 'cultur
 export type AreaLine = { area: ReflectionArea; line: string | null }
 
 function areaLine(m: Move, c: CheckIn | null): string {
-  if (helpedBy(m, c)) return `“${m.step}” helped you.`
-  if (m.status === 'started') return `Exploring “${m.step}”.`
-  if (c?.outcome === 'harder') return `You tried “${m.step}”; it made things harder.`
-  if (m.status === 'no_change') return `You tried “${m.step}”; it didn’t make a difference yet.`
-  return `You thought about “${m.step}”, and let it be.`
+  if (helpedBy(m, c)) return `“${stepWords(m.step)}” helped you.`
+  if (m.status === 'started') return `Exploring “${stepWords(m.step)}”.`
+  if (c?.outcome === 'harder') return `You tried “${stepWords(m.step)}”; it made things harder.`
+  if (m.status === 'no_change') return `You tried “${stepWords(m.step)}”; it didn’t make a difference yet.`
+  return `You thought about “${stepWords(m.step)}”, and let it be.`
 }
 
 // lifeAreas is each of the eight parts of life with what you've explored
@@ -130,9 +145,9 @@ export type JourneyItem = { date: string; title: string; detail?: string }
 export function journeyHistory(moves: Move[], written: Reflection[], checks: CheckIn[] = all(), limit = 30): JourneyItem[] {
   const items: JourneyItem[] = []
   for (const m of moves) {
-    items.push({ date: m.date, title: `You chose to try “${m.step}”` })
+    items.push({ date: m.date, title: `You chose to try “${stepWords(m.step)}”` })
     const c = checkInFor(m.questionId, checks)
-    if (c) items.push({ date: c.date, title: `How “${m.step}” went`, detail: outcomeLine(c, m.status) })
+    if (c) items.push({ date: c.date, title: `How “${stepWords(m.step)}” went`, detail: outcomeLine(c, m.status) })
   }
   for (const r of written) items.push({ date: r.date, title: `You reflected on ${AREA_NAMES[r.area].toLowerCase()}` })
   return items.sort((a, b) => b.date.localeCompare(a.date)).slice(0, limit)
@@ -154,5 +169,5 @@ export function revisitFor(today: string, h: History, moves: Move[] = loadMoves(
   const c = checkInFor(m.questionId, checks)
   const how = c?.outcome === 'helped_little' ? 'it helped a little' : 'it helped'
   const feel = c?.feeling === 'lighter' ? ' and you felt a little lighter' : ''
-  return { move: m, line: `Last time you tried “${m.step}”, you said ${how}${feel}. Would you like to try it again?` }
+  return { move: m, line: `Last time you tried “${stepWords(m.step)}”, you said ${how}${feel}. Would you like to try it again?` }
 }

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { PeriodMirror } from './api'
+import type { CheckIn } from './growthJourney'
 import type { CardText, NotAloneQuestion } from './insights'
 import { NEEDS } from './needs'
 import type { Intention, Reflection } from './notebook'
@@ -25,6 +26,7 @@ import {
   othersHelped,
   ownWordsPick,
   periodStory,
+  sharedMoment,
   weekDirection,
   weekStory,
   yearStory,
@@ -138,7 +140,7 @@ describe('what helped', () => {
       ['Set a clearer boundary', 'no_change', 1],
       ['Ask for help', 'testing', 1],
     ])
-    expect(helpedSentence(items)).toBe('“Take a short pause” helped you twice, by your own account. “Ask for help” is something you are still exploring.')
+    expect(helpedSentence(items)).toBe('“Take a short pause” helped you twice, by your own account. “Ask for help” is something you are still exploring, and that is fine.')
     expect(helpedSentence([])).toBeNull()
   })
 })
@@ -263,6 +265,105 @@ describe('the year', () => {
   })
 })
 
+// Living Mirrors (Edwin, 2026-10-28): the Mirror tells what you tried from
+// your own check-ins, how you felt afterwards in your words, and never a
+// story of improvement the record does not hold.
+describe('what you tried, from your own check-ins', () => {
+  const steps = [
+    { questionId: 'q-a', step: 'Ask for help with one small task', started: '2026-10-13', status: 'helped' as const },
+    { questionId: 'q-b', step: 'Say no to one request', started: '2026-10-14', status: 'no_change' as const },
+    { questionId: 'q-c', step: 'Take a walk at lunch', started: '2026-10-15', status: 'started' as const },
+    { questionId: 'q-d', step: 'Call your sister', started: '2026-10-15', status: 'not_tried' as const },
+  ]
+  const checks: CheckIn[] = [
+    { questionId: 'q-a', date: '2026-10-16', tried: 'yes', outcome: 'helped_little', feeling: 'lighter' },
+    { questionId: 'q-b', date: '2026-10-16', tried: 'yes', outcome: 'harder', feeling: 'unsettled' },
+    { questionId: 'q-c', date: '2026-10-17', tried: 'not_yet', later: '2026-10-20' },
+    { questionId: 'q-d', date: '2026-10-17', tried: 'decided_not' },
+  ]
+
+  it('takes how a step went from your check-in, a little, harder and let go included', () => {
+    const items = helpedFor(from, to, { steps, checks })
+    expect(items.map((i) => [i.text, i.outcome, i.feeling ?? null])).toEqual([
+      ['Ask for help with one small task', 'some', 'lighter'],
+      ['Say no to one request', 'harder', 'unsettled'],
+      ['Take a walk at lunch', 'testing', null],
+      ['Call your sister', 'let_go', null],
+    ])
+    // Without a check-in, the saved status still speaks.
+    expect(helpedFor(from, to, { steps }).map((i) => i.outcome)).toEqual(['helped', 'no_change', 'testing', 'not_tried'])
+  })
+
+  it('tells what you tried and how you felt afterwards, and that still exploring is fine', () => {
+    expect(helpedSentence(helpedFor(from, to, { steps, checks }))).toBe(
+      'You tried “Ask for help with one small task”. When you checked in afterwards, you said it helped a little, and you felt a little lighter. “Take a walk at lunch” is something you are still exploring, and that is fine.',
+    )
+    expect(helpedSentence(helpedFor(from, to, { steps: [steps[1]], checks }))).toBe('“Say no to one request” made things harder, by your own account. That is worth knowing too.')
+  })
+})
+
+describe('the moments we share', () => {
+  const people = history(answer('2026-10-13', { questionId: 'q-p', theme: 'friendship', need: 'belonging' }), answer('2026-10-13', { questionId: 'q-w', theme: 'colleagues', need: 'competence' }))
+  const reach = { questionId: 'q-p', theme: 'friendship', step: 'Send one short message to someone you miss', started: '2026-10-13' }
+
+  it('names a move towards someone you recorded, with what you said about it, and asks what it taught you', () => {
+    const m = sharedMoment({ from, to, history: people, steps: [reach], checks: [{ questionId: 'q-p', date: '2026-10-15', tried: 'yes', outcome: 'helped', feeling: 'lighter' }] })
+    expect(m).toEqual({
+      line: 'You chose to try “Send one short message to someone you miss”, and you said it helped.',
+      ask: 'What did that experience teach you?',
+      prompt: 'What did trying “Send one short message to someone you miss” teach you?',
+    })
+  })
+
+  it('never says a reach-out worked unless you said so', () => {
+    expect(sharedMoment({ from, to, history: people, steps: [reach], checks: [] })).toEqual({
+      line: 'You chose to try “Send one short message to someone you miss”. It is still there whenever you are ready.',
+      ask: null,
+      prompt: null,
+    })
+    expect(sharedMoment({ from, to, history: people, steps: [reach], checks: [{ questionId: 'q-p', date: '2026-10-15', tried: 'decided_not' }] })).toBeNull()
+  })
+
+  it('uses what you said before check-ins existed, and leaves out a step you did not get to', () => {
+    expect(sharedMoment({ from, to, history: people, steps: [{ ...reach, status: 'helped' }] })?.line).toBe('You chose to try “Send one short message to someone you miss”, and you said it helped.')
+    expect(sharedMoment({ from, to, history: people, steps: [{ ...reach, status: 'not_tried' }] })).toBeNull()
+  })
+
+  it('counts a move in your Circle without saying how it went', () => {
+    expect(sharedMoment({ from, to, history: history(), steps: [], connection: { nod: 0, share: 0, support: 1, celebrate: 0, days: 1 } })).toEqual({
+      line: 'You asked someone in your Circle for support.',
+      ask: 'What did that experience teach you?',
+      prompt: 'What did asking for support teach you?',
+    })
+  })
+
+  it('quotes a step without its closing full stop', () => {
+    const m = sharedMoment({ from, to, history: people, steps: [{ ...reach, step: 'Call a friend.' }], checks: [{ questionId: 'q-p', date: '2026-10-15', tried: 'yes', outcome: 'helped' }] })
+    expect(m?.line).toBe('You chose to try “Call a friend”, and you said it helped.')
+    const items = helpedFor(from, to, { steps: [{ questionId: 'q-p', step: 'Call a friend.', started: '2026-10-13', status: 'helped' }], checks: [{ questionId: 'q-p', date: '2026-10-15', tried: 'yes', outcome: 'helped' }] })
+    expect(helpedSentence(items)).toBe('You tried “Call a friend”. When you checked in afterwards, you said it helped.')
+    expect(weekDirection({ from, history: history(), helped: items })?.text).toBe('Keep “Call a friend” going, once or twice this week.')
+  })
+
+  it('stays out of the way when nothing like that was recorded', () => {
+    const work = { questionId: 'q-w', theme: 'colleagues', step: 'Finish one task before lunch', started: '2026-10-13' }
+    expect(sharedMoment({ from, to, history: people, steps: [work], checks: [] })).toBeNull()
+    expect(sharedMoment({ from, to, history: history(), steps: [] })).toBeNull()
+  })
+})
+
+describe('the longer Mirrors and what helped again', () => {
+  it('names a step that helped more than once in the month, by your own account', () => {
+    const helped = helpedFor('2026-09-28', '2026-11-01', {
+      helped: [
+        { step: 'Take a short pause', started: '2026-10-03' },
+        { step: 'Take a short pause', started: '2026-10-17' },
+      ],
+    })
+    expect(periodStory(period(), history(), helped).paragraphs).toContain('“Take a short pause” helped you twice this month, by your own account.')
+  })
+})
+
 describe('the voice of the Mirrors', () => {
   it('keeps every fixed line to the voice rules', () => {
     const lines: [string, string][] = []
@@ -278,7 +379,11 @@ describe('the voice of the Mirrors', () => {
     const h = history(...NEEDS.flatMap((need, i) => [answer(`2026-10-1${i % 6}`, { need }), answer(`2026-10-1${(i + 1) % 6}`, { need })]))
     const stories = NEEDS.map((need) => weekStory({ from, to, history: history(answer('2026-10-12', { need }), answer('2026-10-13', { need })), answers: 2, heavy: false, helped: [] }))
     stories.push(weekStory({ from, to, history: h, answers: 14, heavy: true, helped: [] }))
-    const problems = stories.flatMap((s) => [s.headline, ...s.paragraphs]).flatMap((line) => voiceProblems(line).map((p) => `${line}: ${p}`))
+    const moments = (['helped', 'helped_little', 'no_difference', 'harder'] as const).map((outcome) =>
+      sharedMoment({ from, to, history: history(), steps: [{ questionId: 'q', theme: 'friendship', step: 'Call a friend', started: from }], checks: [{ questionId: 'q', date: to, tried: 'yes', outcome }] }),
+    )
+    const told = moments.flatMap((m) => [m?.line ?? '', m?.ask ?? '', m?.prompt ?? ''])
+    const problems = [...stories.flatMap((s) => [s.headline, ...s.paragraphs]), ...told].flatMap((line) => voiceProblems(line).map((p) => `${line}: ${p}`))
     expect(problems).toEqual([])
   })
 })

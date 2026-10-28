@@ -115,7 +115,7 @@ const MAX_PLAN = 80
 
 type Nav = { onOpenKept: () => void; onCircle?: () => void; onRead?: (r: Read) => void }
 
-export function Mirror({ today, onOpenKept, onCircle, onRead, onOpenSettings, jumpTo }: { today: string; onOpenSettings?: () => void; jumpTo?: (v: Host) => void } & Nav) {
+export function Mirror({ today, onOpenKept, onCircle, onRead, onOpenChoices, onWrite, jumpTo }: { today: string; onOpenChoices?: () => void; onWrite?: (prompt: string) => void; jumpTo?: (v: Host) => void } & Nav) {
   const p = useTheme()
   const [span, setSpan] = useState<Span>('week')
   const [back, setBack] = useState(0)
@@ -206,7 +206,8 @@ export function Mirror({ today, onOpenKept, onCircle, onRead, onOpenSettings, ju
           m={state.m}
           today={today}
           back={back}
-          onOpenSettings={onOpenSettings}
+          onOpenChoices={onOpenChoices}
+          onWrite={onWrite}
           jumpTo={jumpTo}
           footer={footer}
           deeper={<MirrorPage m={state.m} today={today} reload={reload} onCircle={onCircle} onRead={onRead} />}

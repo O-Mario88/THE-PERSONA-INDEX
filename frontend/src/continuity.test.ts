@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { carryLine, ideaToTry, rememberLine } from './continuity'
+import { saveCheckIn } from './growthJourney'
 import { saveJSON } from './storage'
 
 beforeEach(() => localStorage.clear())
@@ -28,6 +29,14 @@ describe('something useful without answering', () => {
     const h = { answers: [{ ...answer('2026-10-27', 'q1'), optionId: 'o1' }], skips: [] }
     expect(ideaToTry('2026-10-28', h, [])).toMatchObject({ questionId: 'q1', step: 'Share your real pay with one person.' })
     expect(ideaToTry('2026-10-28', h, [{ date: '2026-10-27', questionId: 'q1', optionId: 'o1', step: 'x', status: 'started' }])).toBeNull()
+  })
+
+  it('does not suggest again a step you said made things harder, even from another card', () => {
+    saveJSON('pi.insight.q2', { date: '2026-10-27', questionId: 'q2', prompt: 'P', label: 'Say yes', reveal: 'R.', step: 'Say no to one request this week.' })
+    const h = { answers: [{ ...answer('2026-10-27', 'q2'), optionId: 'o2' }], skips: [] }
+    const before = [{ date: '2026-10-20', questionId: 'q0', optionId: 'o0', step: 'Say no to one request this week.', status: 'no_change' as const }]
+    saveCheckIn({ questionId: 'q0', date: '2026-10-22', tried: 'yes', outcome: 'harder', feeling: 'unsettled' })
+    expect(ideaToTry('2026-10-28', h, before)).toBeNull()
   })
 })
 

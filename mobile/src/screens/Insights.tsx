@@ -10,7 +10,7 @@ import { evidenceLabel, forYou, notAloneFor, type ForYouCard } from '@shared/ins
 import type { PulseCounts } from '@shared/humanPulse'
 import { NEED_NAMES } from '@shared/needs'
 import { intentions, keepIntention, keptCards } from '@shared/notebook'
-import { loadMoves } from '@shared/moves'
+import { loadMoves, startMove } from '@shared/moves'
 import { loadHistory } from '@shared/profile'
 import { acrossDays } from '@shared/firstWeek'
 import { rateAnswer } from '@shared/rating'
@@ -177,26 +177,47 @@ function InsightCard({
   )
 }
 
+// TryThis offers the card's small step as the one you're trying, so Today
+// can ask how it went and My Journey and the Mirror can remember it (one
+// system for every step, Edwin, 2026-10-28), or keeps it for later in Reflect.
 function TryThis({ card, today }: { card: ForYouCard; today: string }) {
   const id = `insight-${card.questionId}`
-  const [saved, setSaved] = useState(() => intentions().some((i) => i.id === id))
+  const step = card.step ?? ''
+  const [state, setState] = useState<'open' | 'trying' | 'later'>(() =>
+    loadMoves().some((m) => m.questionId === card.questionId) ? 'trying' : intentions().some((i) => i.id === id) ? 'later' : 'open',
+  )
   return (
     <View style={{ gap: 10 }}>
       <CardHead icon="bulb" tone="amber" title="Something you could try" />
-      <T>{card.step}</T>
-      {saved ? (
+      <T>{step}</T>
+      {state === 'trying' ? (
         <T v="small" tone="muted">
-          Saved as an intention in Reflect.
+          You’re trying this. I’ll ask you how it went on Today.
+        </T>
+      ) : state === 'later' ? (
+        <T v="small" tone="muted">
+          Saved for later in Reflect.
         </T>
       ) : (
-        <Button
-          small
-          label="Save as an intention"
-          onPress={() => {
-            keepIntention({ id, date: today, text: card.step ?? '', from: card.questionId })
-            setSaved(true)
-          }}
-        />
+        <View style={{ flexDirection: 'row', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+          <Button
+            small
+            label="I'll try it"
+            onPress={() => {
+              startMove(today, card.questionId, card.optionId, step, Date.now(), false, !!card.regional).catch(() => {})
+              setState('trying')
+            }}
+          />
+          <Button
+            small
+            kind="text"
+            label="Save for later"
+            onPress={() => {
+              keepIntention({ id, date: today, text: step, from: card.questionId })
+              setState('later')
+            }}
+          />
+        </View>
       )}
     </View>
   )

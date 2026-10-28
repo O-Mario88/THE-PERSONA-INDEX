@@ -53,7 +53,7 @@ export function Journey({ today, onBack, onWrite }: { today: string; onBack: () 
           </View>
         ) : (
           <T v="small" tone="muted">
-            No step open right now. Tap “I’ll try it” under any insight to choose one.
+            No step open right now. When a card offers something to try, tap “I’ll try it”.
           </T>
         )}
       </Card>
