@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { checkInFor, dueStep, heldBack, journeyHistory, lifeAreas, noteFor, outcomeLine, revisitFor, saveCheckIn, statusFor } from './growthJourney'
+import { checkInFor, dueStep, heldBack, journeyHistory, lifeAreas, noteFor, outcomeLine, revisitFor, saveCheckIn, statusFor, stepWords, tryAgain } from './growthJourney'
+import { loadMoves } from './moves'
+import { saveJSON } from './storage'
 import type { Move } from './moves'
 import type { Reflection } from './notebook'
 
@@ -44,6 +46,25 @@ describe('closing the loop on a step', () => {
     saveCheckIn({ questionId: 'q1', date: '2026-10-25', tried: 'not_yet', later: '2026-10-28' })
     expect(dueStep('2026-10-26', moves)).toBeNull()
     expect(dueStep('2026-10-28', moves)?.step).toBe('Ask for help')
+  })
+})
+
+describe('quoting a step', () => {
+  it('drops the closing full stop, even inside a quotation of its own', () => {
+    expect(stepWords('Ask for help.')).toBe('Ask for help')
+    expect(stepWords('Have one line ready: "I can do this part."')).toBe('Have one line ready: "I can do this part"')
+    expect(stepWords('Who could you ask?')).toBe('Who could you ask?')
+  })
+})
+
+describe('trying a step again', () => {
+  it('opens the step again from today, so the check-in asks about it afresh', () => {
+    saveJSON('pi.moves.v1', [move('2026-10-10', 'q1', 'Take a walk at lunch', 'helped')])
+    saveCheckIn({ questionId: 'q1', date: '2026-10-11', tried: 'yes', outcome: 'helped', feeling: 'lighter' })
+    tryAgain('q1', '2026-10-28')
+    expect(loadMoves()[0]).toMatchObject({ questionId: 'q1', date: '2026-10-28', status: 'started' })
+    expect(checkInFor('q1')).toBeNull()
+    expect(dueStep('2026-10-29')?.step).toBe('Take a walk at lunch')
   })
 })
 

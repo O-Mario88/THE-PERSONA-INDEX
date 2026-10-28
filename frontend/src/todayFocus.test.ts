@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import type { Move } from './moves'
 import type { Reflection } from './notebook'
 import { saveJSON } from './storage'
-import { lastMemory, linkLine, nextMirror, personalLine, quietStep } from './todayFocus'
+import { saveCheckIn } from './growthJourney'
+import { journeyNote, lastMemory, linkLine, nextMirror, personalLine, quietStep } from './todayFocus'
 
 beforeEach(() => localStorage.clear())
 
@@ -110,6 +111,33 @@ describe('the coming Mirror', () => {
 
   it('steps aside on Sunday, when the Mirror itself is ready', () => {
     expect(nextMirror('2026-11-01', { answers: [], skips: [] })).toBeNull()
+  })
+})
+
+describe('from your journey', () => {
+  const h = { answers: [answer('2026-10-27', 'q1', { theme: 'helping', need: 'calm' }), answer('2026-10-28', 'q2', { theme: 'friendship' })], skips: [] }
+  const step = (date: string, status: Move['status'] = 'started'): Move => ({ date, questionId: 'q1', optionId: 'o', step: 'Ask for help with one small task.', status })
+
+  it('says what you have been exploring and what you said about it, and whether today comes back to it', () => {
+    saveCheckIn({ questionId: 'q1', date: '2026-10-27', tried: 'yes', outcome: 'helped', feeling: 'lighter' })
+    expect(journeyNote('2026-10-28', h, ['neighbours'], [step('2026-10-26', 'helped')])?.lines).toEqual([
+      'You’ve been exploring feeling settled.',
+      'Yesterday you said “Ask for help with one small task” helped.',
+      'Today, there’s something related you could explore.',
+    ])
+  })
+
+  it('names the step you chose, unless the card below is already asking about it', () => {
+    expect(journeyNote('2026-10-28', h, [], [step('2026-10-28')])?.lines).toEqual(['You’ve been exploring feeling settled.', 'Today you chose to try “Ask for help with one small task”.'])
+    // Started yesterday and not asked about yet: the quiet step card asks, so this only names the topic.
+    expect(journeyNote('2026-10-28', h, [], [step('2026-10-27')])?.lines).toEqual(['You’ve been exploring feeling settled.'])
+  })
+
+  it('stays quiet with no step from the past week, or one from a heavy or intimate answer', () => {
+    expect(journeyNote('2026-10-28', h, [], [])).toBeNull()
+    expect(journeyNote('2026-11-10', h, [], [step('2026-10-26')])).toBeNull()
+    const intimate = { answers: [answer('2026-10-27', 'q1', { theme: 'intimacy' })], skips: [] }
+    expect(journeyNote('2026-10-28', intimate, [], [step('2026-10-28')])).toBeNull()
   })
 })
 

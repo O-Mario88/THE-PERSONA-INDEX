@@ -12,7 +12,7 @@ import { heroFor, type Progress } from '@shared/homeHero'
 import { pruneNotebook } from '@shared/notebook'
 import { sendUnsent } from '@shared/moves'
 import { carryLine, rememberLine } from '@shared/continuity'
-import { lastMemory, linkLine, personalLine } from '@shared/todayFocus'
+import { journeyNote, lastMemory, linkLine, personalLine } from '@shared/todayFocus'
 import { forgetPick, isFirstDay, loadHistory, todaysPick, writeFirstOf, type Half } from '@shared/profile'
 import { darkNow, intimacyOn, loadPrefs, pulseOn, regionHere, savePrefs, type Prefs } from '@shared/prefs'
 import { cachedPack, fetchPack, regionalFor, regionalToday } from '@shared/regional'
@@ -309,15 +309,21 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
   const dark = darkNow(prefs, phoneDark, win === 'evening' || win === 'night' || win === 'rest')
   const palette = dark ? darkPalette : lightPalette
 
-  const hero = set
-    ? heroFor({ date: set.date, window: win, review: !!set.review, morning, evening, pulse: prefs.pulse !== false, friend: null })
-    : null
+  // The open sitting's next question previews it on Today, never an intimate one.
+  const nextPrompt = (qs: Question[]) => {
+    const next = qs.find((q) => !recalledChoice(q.id))
+    return next && next.care !== 'intimate' ? next.prompt : null
+  }
+  const plainHero = set ? heroFor({ date: set.date, window: win, review: !!set.review, morning, evening, pulse: prefs.pulse !== false, friend: null }) : null
+  const preview = plainHero?.opens === 'morning' ? nextPrompt(morningQs) : plainHero?.opens === 'evening' ? nextPrompt(eveningQs) : null
+  const hero = set && preview ? heroFor({ date: set.date, window: win, review: !!set.review, morning, evening, pulse: prefs.pulse !== false, friend: null, preview }) : plainHero
 
   // Focused Today: what you said last time, tied to the sitting on offer
   // only when one of its questions truly comes back to it (todayFocus.ts).
   const memory = set && !welcome ? lastMemory(set.date, loadHistory()) : null
   const offering = hero && ((hero.opens === 'morning' && morning !== 'done') || (hero.opens === 'evening' && evening !== null && evening !== 'done'))
   const link = memory && offering ? linkLine(memory, themesOf(hero.opens === 'evening' ? eveningQs : morningQs)) : null
+  const journey = set && !welcome ? journeyNote(set.date, loadHistory(), offering ? themesOf(hero.opens === 'evening' ? eveningQs : morningQs) : []) : null
   const dayDone = evening === 'done' || (evening === null && morning === 'done')
   const tomorrowThemes = (set?.tomorrowThemes ?? []).slice(0, 2).map((t) => themeName(t).toLowerCase())
   const tomorrow = dayDone && tomorrowThemes.length > 0 ? `Tomorrow your morning three open at ${clock(5 * 60)}, with questions about ${tomorrowThemes.join(' and ')}.` : null
@@ -612,6 +618,7 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
             note={personalLine(weekOne ? dayN : null, memory)}
             hero={hero}
             memory={memory}
+            journey={journey}
             link={link}
             tomorrow={tomorrow}
             onOpen={() => {

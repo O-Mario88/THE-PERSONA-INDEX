@@ -9,7 +9,7 @@ import type { Window } from '@shared/day'
 import { greeting, type Hero } from '@shared/homeHero'
 import { tr } from '@shared/i18n'
 import type { Read } from '@shared/reads/types'
-import type { Memory } from '@shared/todayFocus'
+import type { JourneyNote, Memory } from '@shared/todayFocus'
 import { radius, RAIL_W, useTheme, WIDE } from '../theme'
 import { Button, Card, Chip, Hairline, T } from '../ui/kit'
 import { Avatar } from '../ui/parts'
@@ -24,6 +24,7 @@ interface TodayProps {
   note?: string | null // a line from your own days, under the greeting
   hero: Hero
   memory: Memory | null
+  journey: JourneyNote | null // "From your journey", when a step of yours from the past week has something to say
   link: string | null // how today's questions tie to the memory, when they do
   tomorrow: string | null
   onOpen: () => void
@@ -38,7 +39,7 @@ interface TodayProps {
   children?: ReactNode
 }
 
-export function Today({ date, window: w, name, note, hero, memory, link, tomorrow, onOpen, onAccount, themes, intimacy, onRead, rail, onWrite, onInsights, onJourney, children }: TodayProps) {
+export function Today({ date, window: w, name, note, hero, memory, journey, link, tomorrow, onOpen, onAccount, themes, intimacy, onRead, rail, onWrite, onInsights, onJourney, children }: TodayProps) {
   const { width } = useWindowDimensions()
   const header = (
     <View style={styles.header}>
@@ -60,7 +61,7 @@ export function Today({ date, window: w, name, note, hero, memory, link, tomorro
       </View>
     </View>
   )
-  const main = <MainCard hero={hero} memory={memory} link={link} tomorrow={tomorrow} onOpen={onOpen} onWrite={onWrite} />
+  const main = <MainCard hero={hero} memory={memory} journey={journey} link={link} tomorrow={tomorrow} onOpen={onOpen} onWrite={onWrite} />
   const step = <QuietStepCard today={date} onJourney={onJourney} />
   const moment = <NeedAMoment onWrite={onWrite} />
   const mirror = <MirrorCard today={date} onWrite={onWrite} onInsights={onInsights} />
@@ -136,11 +137,14 @@ function Wash() {
   )
 }
 
-// The one card that matters: what you said last time (kept behind a tap, so
-// nobody glancing at your phone reads it), and today's questions tied to it.
+// The one card that matters: from your journey (what you've been exploring
+// and what you said about it), else what you said last time (kept behind a
+// tap, so nobody glancing at your phone reads it), then today's questions,
+// shown by the first one waiting.
 function MainCard({
   hero,
   memory,
+  journey,
   link,
   tomorrow,
   onOpen,
@@ -148,6 +152,7 @@ function MainCard({
 }: {
   hero: Hero
   memory: Memory | null
+  journey: JourneyNote | null
   link: string | null
   tomorrow: string | null
   onOpen: () => void
@@ -157,18 +162,25 @@ function MainCard({
   const narrow = useWindowDimensions().width < 400
   return (
     <Card style={{ gap: 16 }}>
-      {memory && (
+      {journey ? (
         <>
-          <MemoryRow memory={memory} onWrite={onWrite} />
+          <JourneyRow lines={journey.lines} />
           <Hairline />
         </>
+      ) : (
+        memory && (
+          <>
+            <MemoryRow memory={memory} onWrite={onWrite} />
+            <Hairline />
+          </>
+        )
       )}
       <View style={{ gap: 6 }}>
         <T v="label">{hero.eyebrow}</T>
         <T v="h2" style={narrow ? { fontSize: 17, lineHeight: 22 } : { fontSize: 19, lineHeight: 24 }}>
           {hero.title}
         </T>
-        <T tone="text2">{link ?? hero.sub}</T>
+        <T tone="text2">{journey ? hero.sub : (link ?? hero.sub)}</T>
         {tomorrow ? (
           <T v="small" tone="muted">
             {tomorrow}
@@ -177,6 +189,23 @@ function MainCard({
       </View>
       {hero.action && <Button wide label={hero.action} iconAfter="chevron" onPress={onOpen} />}
     </Card>
+  )
+}
+
+// From your journey (shared todayFocus.ts journeyNote): only your own steps,
+// what you said about them, and whether today comes back to them.
+function JourneyRow({ lines }: { lines: string[] }) {
+  const [first, ...rest] = lines
+  return (
+    <View style={{ gap: 6 }}>
+      <T v="label">From your journey</T>
+      <T v="h3">{first}</T>
+      {rest.map((line) => (
+        <T key={line} tone="text2">
+          {line}
+        </T>
+      ))}
+    </View>
   )
 }
 

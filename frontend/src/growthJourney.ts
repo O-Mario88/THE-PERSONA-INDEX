@@ -10,7 +10,7 @@
 
 import type { StepStatus } from './api'
 import { cardTextOf } from './insights'
-import { loadMoves, type Move } from './moves'
+import { loadMoves, restartMove, type Move } from './moves'
 import type { Reflection, ReflectionArea } from './notebook'
 import type { History } from './profile'
 import { AREA_NAMES, areaOf } from './reflect'
@@ -46,6 +46,16 @@ export function saveCheckIn(c: CheckIn, note?: string): StepStatus | null {
 }
 
 export const noteFor = (questionId: string): string | null => load(NOTE_PREFIX + questionId)
+
+// tryAgain opens a step again from today, after "Would you like to try it
+// again?": the old check-in goes, so the next one asks about this try. The
+// note, in the person's own words, stays.
+export function tryAgain(questionId: string, today: string): void {
+  saveJSON(CHECKINS_KEY, all().filter((c) => c.questionId !== questionId))
+  restartMove(questionId, today).catch(() => {
+    // offline: sent again the next time the app opens
+  })
+}
 
 // statusFor turns a check-in into the status the server already knows.
 export function statusFor(c: CheckIn): StepStatus | null {
@@ -95,8 +105,9 @@ export function outcomeLine(c: CheckIn | null, status: StepStatus): string {
 }
 
 // A step's words for quoting inside a sentence, without its closing full
-// stop: “Ask one person for help”, you said…
-export const stepWords = (step: string): string => step.trim().replace(/\.+$/, '')
+// stop, even one inside a quotation of its own: “Ask one person for help”,
+// you said…
+export const stepWords = (step: string): string => step.trim().replace(/\.+(["”’']?)$/, '$1')
 
 // A step's words as one key, so the same step from two cards is one step.
 export const stepKey = (step: string): string => step.trim().toLowerCase()

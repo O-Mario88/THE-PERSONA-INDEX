@@ -4,13 +4,15 @@
 // part says nothing rather than something generic.
 
 import { carryLine, ideaToTry, lastCard, whenWas } from './continuity'
-import { dueStep, revisitFor } from './growthJourney'
+import { checkInFor, checkIns, dueStep, revisitFor, stepWords, type CheckIn } from './growthJourney'
 import { acrossDays, startedOn } from './firstWeek'
 import { readWriting } from './kinder'
 import { loadMoves, type Move } from './moves'
 import { reflections, type Reflection, type ReflectionArea } from './notebook'
+import { cardTextOf } from './insights'
+import { NEED_PHRASES } from './needs'
 import type { History } from './profile'
-import { AREA_NAMES } from './reflect'
+import { AREA_NAMES, areaOf } from './reflect'
 import { addDays } from './storage'
 import { themeName } from './themes'
 
@@ -65,6 +67,52 @@ export function linkLine(m: Memory, todaysThemes: string[]): string {
   const near = m.kind === 'answer' ? (m.theme ? [m.theme] : []) : AREA_THEMES[m.area]
   const shared = todaysThemes.find((t) => near.includes(t))
   return shared ? `One of today’s questions comes back to ${themeName(shared).toLowerCase()}.` : 'Let’s see what today adds to it.'
+}
+
+// "From your journey" (Edwin's brief, 2026-10-28): what you've been
+// exploring, from the step you chose most recently and the answer it came
+// from; what you last did or said about it, unless the quiet step below is
+// already asking; and whether today's questions come back to it. Only your
+// own steps, check-ins and answers; nothing from a heavy or intimate answer.
+export type JourneyNote = { lines: string[] }
+
+const JOURNEY_DAYS = 7
+const AREA_PHRASE: Record<ReflectionArea, string> = {
+  work: 'your work',
+  school: 'school and learning',
+  family: 'family life',
+  culture: 'culture and faith',
+  social: 'your friendships',
+  health: 'your health',
+  money: 'money',
+  self: 'yourself',
+}
+
+function saidAbout(c: CheckIn, step: string): string {
+  const s = `“${stepWords(step)}”`
+  if (c.tried === 'not_yet') return c.later ? `you kept ${s} for later` : `you let ${s} go for now`
+  if (c.tried === 'decided_not') return `you decided ${s} wasn’t for you`
+  if (c.outcome === 'helped') return `you said ${s} helped`
+  if (c.outcome === 'helped_little') return `you said ${s} helped a little`
+  if (c.outcome === 'harder') return `you said ${s} made things harder`
+  return `you said ${s} didn’t make a difference`
+}
+
+export function journeyNote(today: string, h: History, todaysThemes: string[], moves: Move[] = loadMoves(), checks: CheckIn[] = checkIns()): JourneyNote | null {
+  const from = addDays(today, -JOURNEY_DAYS)
+  const m = moves.filter((x) => x.date >= from && x.date <= today).sort((a, b) => b.date.localeCompare(a.date) || (b.at ?? 0) - (a.at ?? 0))[0]
+  if (!m) return null
+  const answer = h.answers.find((a) => a.questionId === m.questionId)
+  const theme = answer?.theme ?? cardTextOf(m.questionId)?.theme
+  if (answer?.heavy || theme === 'intimacy') return null
+  const area = areaOf(theme)
+  const lines = [answer?.need ? `You’ve been exploring ${NEED_PHRASES[answer.need]}.` : `You’ve been exploring ${AREA_PHRASE[area]}.`]
+  const c = checkInFor(m.questionId, checks)
+  const asking = dueStep(today, moves, checks)?.questionId === m.questionId
+  if (c && c.date >= from) lines.push(`${c.date === today ? 'Today' : whenWas(c.date, today)} ${saidAbout(c, m.step)}.`)
+  else if (!asking) lines.push(`${m.date === today ? 'Today' : whenWas(m.date, today)} you chose to try “${stepWords(m.step)}”.`)
+  if (todaysThemes.some((t) => areaOf(t) === area)) lines.push('Today, there’s something related you could explore.')
+  return { lines }
 }
 
 export type QuietStep =

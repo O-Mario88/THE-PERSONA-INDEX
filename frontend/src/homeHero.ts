@@ -30,14 +30,26 @@ export function greeting(w: Window, name?: string | null): string {
 }
 
 // A sitting's three questions, in its own window or still open after it:
-// the button says start, or carry on once one is answered.
-function sitting(which: 'morning' | 'evening', eyebrow: string, started: boolean): Hero & { opens: OpenWindow } {
+// the button says start, or carry on once one is answered. With a preview
+// (the first question waiting, Edwin's brief, 2026-10-28), the card reads as
+// today's reflection and shows that question.
+function sitting(which: 'morning' | 'evening', eyebrow: string, started: boolean, preview?: string | null): Hero & { opens: OpenWindow } {
   const morning = which === 'morning'
+  const action = started ? 'Carry on' : morning ? 'Start today’s questions' : 'Start your evening three'
+  if (preview) {
+    return {
+      eyebrow: eyebrow.replace('Today’s questions', 'Today’s reflection').replace('This evening’s questions', 'This evening’s reflection'),
+      title: preview,
+      sub: started ? 'Pick up where you left off. A few minutes, just for you.' : 'Three thoughtful questions. A few minutes, just for you.',
+      action,
+      opens: which,
+    }
+  }
   return {
     eyebrow,
     title: `Your ${which} three are ${started ? 'waiting' : 'ready'}`,
-    sub: morning ? 'Two minutes, then the day is yours.' : 'One tap on this morning’s step, then three questions.',
-    action: started ? 'Carry on' : morning ? 'Start today’s questions' : 'Start your evening three',
+    sub: morning ? 'Two minutes, then the day is yours.' : 'Three questions, then how today went.',
+    action,
     opens: which,
   }
 }
@@ -53,6 +65,7 @@ export function heroFor({
   evening,
   pulse,
   friend,
+  preview,
 }: {
   date: string
   window: Window
@@ -61,6 +74,7 @@ export function heroFor({
   evening: Progress | null
   pulse: boolean
   friend?: string | null // today's friend, once the circle has three
+  preview?: string | null // the open sitting's next question, never an intimate one
 }): Hero & { opens: OpenWindow | 'mirror' | null } {
   if (review) {
     return {
@@ -76,18 +90,18 @@ export function heroFor({
   }
   const info = WINDOW_INFO[w]
   const timed = { eyebrow: `Open now · closes ${clock(info.closes % (24 * 60))}` }
-  if ((w === 'midday' || w === 'afternoon') && morning !== 'done') return sitting('morning', `Still open · until ${clock(MORNING_CLOSES)}`, morning === 'started')
-  if (w === 'night' && evening && evening !== 'done') return sitting('evening', 'Still open · until midnight', evening === 'started')
+  if ((w === 'midday' || w === 'afternoon') && morning !== 'done') return sitting('morning', `Still open · until ${clock(MORNING_CLOSES)}`, morning === 'started', preview)
+  if (w === 'night' && evening && evening !== 'done') return sitting('evening', 'Still open · until midnight', evening === 'started', preview)
   switch (w) {
     case 'morning':
       return morning === 'done'
-        ? { eyebrow: 'Morning done', title: 'Your three are answered', sub: `Midday opens at ${clock(WINDOW_INFO.midday.opens)}: one tap on your step.`, action: 'See your morning', opens: 'morning' }
-        : sitting('morning', `Today’s questions · closes ${clock(info.closes)}`, morning === 'started')
+        ? { eyebrow: 'Morning done', title: 'Your three are answered', sub: `Midday opens at ${clock(WINDOW_INFO.midday.opens)}, with a reminder of your step.`, action: 'See your morning', opens: 'morning' }
+        : sitting('morning', `Today’s questions · closes ${clock(info.closes)}`, morning === 'started', preview)
     case 'midday':
       return {
         ...timed,
         title: friend ? `Today's friend is ${friend}` : 'Your midday check',
-        sub: friend ? 'One question, then a one-tap check on your step.' : 'One tap on your morning step, then today’s read.',
+        sub: friend ? 'One question, then a reminder of your step.' : 'A reminder of your morning step, then today’s read.',
         action: 'Open',
         opens: 'midday',
       }
@@ -103,7 +117,7 @@ export function heroFor({
       if (!evening) return { ...timed, title: "That's today's questions", sub: `Three good things open at ${clock(21 * 60)}.`, opens: null }
       return evening === 'done'
         ? { eyebrow: 'Evening done', title: 'Your evening three are answered', sub: `The night wind-down opens at ${clock(WINDOW_INFO.night.opens)}.`, action: 'See your evening', opens: 'evening' }
-        : sitting('evening', `This evening’s questions · closes ${clock(info.closes)}`, evening === 'started')
+        : sitting('evening', `This evening’s questions · closes ${clock(info.closes)}`, evening === 'started', preview)
     case 'night':
       if (windowsDone(date).night !== undefined)
         return { eyebrow: 'Night done', title: "That's your day", sub: `Sleep well. Your morning three open at ${opensAt('morning')}.`, opens: null }

@@ -3,6 +3,7 @@
 // nothing rather than something generic.
 import { useState } from 'react'
 import { View } from 'react-native'
+import { tryAgain } from '@shared/growthJourney'
 import { startMove } from '@shared/moves'
 import type { ReflectionArea } from '@shared/notebook'
 import { loadHistory } from '@shared/profile'
@@ -38,6 +39,9 @@ function StepBody({ today, step, onSaid }: { today: string; step: QuietStep; onS
         <T v="small" tone="muted">
           From what today’s answers reached for.
         </T>
+        <View style={{ flexDirection: 'row' }}>
+          <Button small kind="outline" label="I’ll keep this in mind" onPress={() => onSaid('It’s with you today. Nothing else to do.')} />
+        </View>
       </>
     )
   }
@@ -51,6 +55,7 @@ function StepBody({ today, step, onSaid }: { today: string; step: QuietStep; onS
         <View style={{ flexDirection: 'row' }}>
           <Button
             small
+            kind="outline"
             label="I'll try it"
             onPress={() => {
               startMove(today, step.questionId, step.optionId, step.step).catch(() => {})
@@ -62,7 +67,23 @@ function StepBody({ today, step, onSaid }: { today: string; step: QuietStep; onS
     )
   }
   if (step.kind === 'revisit') {
-    return <T v="h3">{step.line}</T>
+    return (
+      <>
+        <T v="h3">{step.line}</T>
+        <View style={{ flexDirection: 'row', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+          <Button
+            small
+            kind="outline"
+            label="I’ll try it again"
+            onPress={() => {
+              tryAgain(step.move.questionId, today)
+              onSaid('I’ll ask you how it went this time.')
+            }}
+          />
+          <Button small kind="text" label="Not now" onPress={() => onSaid('That’s fine. It’s there whenever you want it.')} />
+        </View>
+      </>
+    )
   }
   return <CheckIn move={step.move} today={today} onDone={onSaid} />
 }
