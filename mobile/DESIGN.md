@@ -110,7 +110,7 @@ person's own.
 - **The coming Mirror**: how far away, a dot a day this week, and what the
   answers lean towards so far.
 
-The season tapestry lives on a sitting's close, not on Today.
+A sitting's close shows this week's seven tiles, Monday to Sunday, ending at the Sunday Mirror. No ninety-day grid anywhere: a long count makes people give up.
 
 ## On the website
 

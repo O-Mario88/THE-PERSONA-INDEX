@@ -1,9 +1,9 @@
 // The close of a sitting: the midnight card with
-// the season tapestry weaving in, then the first glimpse (first sitting
+// this week's tiles, then the first glimpse (first sitting
 // only) or today's thread, the small steps, and what comes next. Nothing is
 // scored, shared or set against anyone else.
 import { useState } from 'react'
-import { useWindowDimensions, View } from 'react-native'
+import { View } from 'react-native'
 import { recalledChoice, SKIPPED, type Question } from '@shared/api'
 import { adviceFor, levelLine } from '@shared/advice'
 import { isSaturday, opensAt } from '@shared/day'
@@ -12,13 +12,13 @@ import { HELPLINE_LINE } from '@shared/helplineText'
 import { heavyPause, isLowMood, loadHistory, recordRoute, type AnswerRecord, type History, type Route } from '@shared/profile'
 import { NEED_PHRASES, type Need } from '@shared/needs'
 import { routeToAsk } from '@shared/reaching'
-import { season } from '@shared/tapestry'
+import { week } from '@shared/tapestry'
 import { themeName } from '@shared/themes'
 import { sideOf, TRAITS } from '@shared/traits'
 import { GLIMPSE_BALANCED, GLIMPSE_NEXT, QUIET_DAY, ROUTE_ASK, ROUTE_REPLIES, ROUTE_WORDS, routeLead, SUNDAY_LINE } from '@shared/words'
-import { font, gutter, radius, useTheme } from '../theme'
+import { font, radius, useTheme } from '../theme'
 import { B, Chip, Option, T, Tinted } from '../ui/kit'
-import { Tapestry, themeIcon } from '../ui/parts'
+import { themeIcon, WeekTiles } from '../ui/parts'
 import { Steps } from './Steps'
 
 type Props = {
@@ -54,7 +54,6 @@ function summaryLine(answers: AnswerRecord[], sitting: 'morning' | 'evening'): s
 
 export function Close(props: Props) {
   const p = useTheme()
-  const { width } = useWindowDimensions()
   const { date, questions, tomorrowThemes, sitting, glimpse, dayWithYou } = props
   const [history] = useState(loadHistory)
   const mine = answersIn(history, questions, date)
@@ -64,19 +63,18 @@ export function Close(props: Props) {
   const [paused] = useState(() => heavyPause(history, date))
   const dayAnswers = props.sitting === 'evening' ? [...answersIn(history, props.morning, date), ...mine] : mine
   const glimpseFor = glimpse && !heavy ? glimpse : null
-  const s = season(date)
+  const [thisWeek] = useState(() => week(date))
   const answered = questions.filter((q) => {
     const c = recalledChoice(q.id)
     return !!c && c !== SKIPPED
   }).length
-  const inner = Math.min(width, 640) - gutter * 2 - 40
 
   return (
     <View style={{ gap: 20 }}>
       <View style={{ backgroundColor: p.navy, borderRadius: radius.xl, padding: 20, gap: 16 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
           <T v="label" tone="onNavy2">
-            {dayWithYou === 1 ? `Your first ${sitting}` : `${sitting === 'morning' ? 'Morning close' : 'Evening close'} · ${dayWithYou ? `your day ${dayWithYou}` : `day ${s.day} of 90`}`}
+            {dayWithYou === 1 ? `Your first ${sitting}` : `${sitting === 'morning' ? 'Morning close' : 'Evening close'} · ${dayWithYou ? `your day ${dayWithYou}` : 'this week'}`}
           </T>
           {questions.length > 0 && (
             <T v="small" tone="onNavy" bold>
@@ -84,12 +82,12 @@ export function Close(props: Props) {
             </T>
           )}
         </View>
-        <Tapestry s={s} dark cols={15} width={inner} />
+        <WeekTiles tiles={thisWeek} dark />
         <T v="title" tone="onNavy" style={{ fontSize: 23, lineHeight: 28 }}>
           {summaryLine(mine, sitting)}
         </T>
         <T v="small" tone="onNavy2">
-          Today's tile weaves in as you watch. A missed day stays open, and nothing resets.
+          Today’s tile is woven. Your week comes together in Sunday’s Mirror, and a missed day takes nothing away.
         </T>
       </View>
 

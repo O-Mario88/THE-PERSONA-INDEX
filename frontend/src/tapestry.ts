@@ -71,6 +71,24 @@ export function season(today: string): Season {
   return { day, start, tiles, woven }
 }
 
+// week is this week's seven tiles, Monday to Sunday (Edwin, 2026-10-28: a
+// ninety-day grid makes people give up; a week ends at the Sunday Mirror).
+export function week(today: string): Tile[] {
+  const s = load()
+  const weekday = (new Date(`${today}T00:00:00Z`).getUTCDay() + 6) % 7 // Monday is 0
+  const monday = addDays(today, -weekday)
+  return Array.from({ length: 7 }, (_, i) => {
+    const date = addDays(monday, i)
+    const c = s?.days[date]
+    if (date > today) return { date, state: 'ahead' as const, today: false }
+    if (c && Object.values(c).some((n) => (n ?? 0) > 0)) {
+      const need = topNeed(c)
+      return { date, state: 'woven' as const, ...(need ? { need } : {}), today: date === today }
+    }
+    return { date, state: 'linen' as const, today: date === today }
+  })
+}
+
 // dayNeeds is what one day's answers reached for, most first: the morning
 // close says what today's tiles were woven from.
 export function dayNeeds(date: string): Need[] {

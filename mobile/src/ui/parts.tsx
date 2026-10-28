@@ -1,10 +1,11 @@
-// Discs, initials, rings and the season tapestry.
+// Discs, initials, rings and this week's tiles.
 import type { ReactNode } from 'react'
 import { Text, View } from 'react-native'
 import Svg, { Circle } from 'react-native-svg'
 import { tintFor } from '@shared/avatarTint'
 import { NEED_TINTS } from '@shared/needs'
-import type { Season } from '@shared/tapestry'
+import type { Tile } from '@shared/tapestry'
+import { locale } from '@shared/locale'
 import { font, useTheme } from '../theme'
 import { Icon, type IconName } from './Icon'
 import { T } from './kit'
@@ -113,30 +114,35 @@ export function Ring({ part, big, small, size = 64, label, onDark }: { part: num
   )
 }
 
-// Ninety tiles, one a day. A missed day stays linen; nothing resets.
-export function Tapestry({ s, cols = 15, dark, width }: { s: Season; cols?: number; dark?: boolean; width: number }) {
+// This week's seven tiles, Monday to Sunday, the last one the Sunday Mirror:
+// woven where you answered, open where you didn't, and nothing resets
+// (Edwin, 2026-10-28: a ninety-day grid makes people give up).
+export function WeekTiles({ tiles, dark }: { tiles: Tile[]; dark?: boolean }) {
   const p = useTheme()
-  const gap = 4
-  const tile = Math.floor((width - gap * (cols - 1)) / cols)
+  const woven = tiles.filter((t) => t.state === 'woven').length
   return (
-    <View
-      accessibilityRole="image"
-      accessibilityLabel={`Season tapestry, day ${s.day} of 90: ${s.woven} ${s.woven === 1 ? 'day' : 'days'} woven`}
-      style={{ flexDirection: 'row', flexWrap: 'wrap', gap, width }}
-    >
-      {s.tiles.map((t) => (
-        <View
-          key={t.date}
-          style={{
-            width: tile,
-            height: tile,
-            borderRadius: 3,
-            backgroundColor:
-              t.state === 'woven' ? (t.need ? NEED_TINTS[t.need] : p.lime) : t.state === 'ahead' ? 'transparent' : dark ? 'rgba(255,255,255,0.12)' : p.surface3,
-            borderWidth: t.today ? 2 : t.state === 'ahead' ? 1 : 0,
-            borderColor: t.today ? (dark ? p.brandLime : p.text) : dark ? 'rgba(255,255,255,0.14)' : p.line,
-          }}
-        />
+    <View accessibilityRole="image" accessibilityLabel={`This week: ${woven} of 7 days woven`} style={{ flexDirection: 'row', gap: 8 }}>
+      {tiles.map((t, i) => (
+        <View key={t.date} style={{ flex: 1, alignItems: 'center', gap: 6 }}>
+          <View
+            style={{
+              alignSelf: 'stretch',
+              aspectRatio: 1,
+              borderRadius: 8,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor:
+                t.state === 'woven' ? (t.need ? NEED_TINTS[t.need] : p.lime) : t.state === 'ahead' ? 'transparent' : dark ? 'rgba(255,255,255,0.12)' : p.surface3,
+              borderWidth: t.today ? 2 : t.state === 'ahead' ? 1 : 0,
+              borderColor: t.today ? (dark ? p.brandLime : p.text) : dark ? 'rgba(255,255,255,0.18)' : p.line,
+            }}
+          >
+            {i === 6 && t.state === 'ahead' && <Icon name="mirror" size={14} color={dark ? p.onNavy2 : p.muted} />}
+          </View>
+          <Text style={{ fontFamily: t.today ? font.bold : font.medium, fontSize: 12, color: dark ? (t.today ? p.onNavy : p.onNavy2) : t.today ? p.text : p.muted }}>
+            {new Date(`${t.date}T00:00:00Z`).toLocaleDateString(locale(), { weekday: 'narrow', timeZone: 'UTC' })}
+          </Text>
+        </View>
       ))}
     </View>
   )
