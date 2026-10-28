@@ -43,7 +43,7 @@ import { useAccount } from '@shared/useAccount'
 import { font, radius, useTheme } from '../theme'
 import { Icon, type IconName } from '../ui/Icon'
 import { Button, Chip, Field, T, Tinted } from '../ui/kit'
-import { Avatar, Disc, type Tone } from '../ui/parts'
+import { CardHead, Avatar, Disc, type Tone } from '../ui/parts'
 import { locale } from '@shared/locale'
 
 const dayMonth = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString(locale(), { day: 'numeric', month: 'long', timeZone: 'UTC' })
@@ -591,8 +591,7 @@ export function SupportCelebrate({ today }: { today?: string }) {
         <>
           {today && (
             <Tinted tone="purple">
-              <Disc icon="heart" tone="purple" size={44} />
-              <T v="h3">Is there someone you’d like to encourage?</T>
+              <CardHead icon="heart" tone="purple" title="Is there someone you’d like to encourage?" />
               <T v="small" tone="muted">
                 A small message can make a big difference.
               </T>
@@ -600,8 +599,7 @@ export function SupportCelebrate({ today }: { today?: string }) {
             </Tinted>
           )}
           <Tinted tone="amber">
-            <Disc icon="sun" tone="amber" size={44} />
-            <T v="h3">Celebrate a win together</T>
+            <CardHead icon="sun" tone="amber" title="Celebrate a win together" />
             <T v="small" tone="muted">
               Made progress on something that matters? Tell someone who matters.
             </T>

@@ -74,7 +74,7 @@ import { leaningVerdict, loadHistory, notMeSides, rememberLeaning } from '@share
 import { font, radius, useTheme } from '../theme'
 import { Icon, type IconName } from '../ui/Icon'
 import { Button, Chip, T, Tinted } from '../ui/kit'
-import { Disc, type Tone } from '../ui/parts'
+import { CardHead, Disc, type Tone } from '../ui/parts'
 import { CircleLine, InConnection, MirrorPatterns, MirrorThreads, showConnection } from './MirrorBits'
 import { locale } from '@shared/locale'
 
@@ -184,18 +184,13 @@ function Section({ id, icon, tone = 'green', title, note, children }: { id: stri
   const ref = useSectionRef(id)
   return (
     <View ref={ref} collapsable={false} style={{ gap: 14 }}>
-      <View style={{ flexDirection: 'row', gap: 12, alignItems: 'flex-start' }}>
-        <Disc icon={icon} tone={tone} size={40} />
-        <View style={{ flex: 1, gap: 2 }}>
-          <T v="h3">
-            {title}
+      <View style={{ gap: 6 }}>
+        <CardHead icon={icon} tone={tone} title={title} />
+        {note ? (
+          <T v="small" tone="muted">
+            {note}
           </T>
-          {note ? (
-            <T v="small" tone="muted">
-              {note}
-            </T>
-          ) : null}
-        </View>
+        ) : null}
       </View>
       {children}
     </View>
@@ -498,19 +493,14 @@ function DirectionBox({ span, from, today, direction, title, allowOwn = false }:
   return (
     <View ref={ref} collapsable={false}>
       <Box>
-        <View style={{ flexDirection: 'row', gap: 12 }}>
-          <Disc icon="arrow" tone="amber" size={40} />
-          <View style={{ flex: 1, gap: 4 }}>
-            <T v="h3">
-              {title}
+        <View style={{ gap: 6 }}>
+          <CardHead icon="arrow" tone="amber" title={title} />
+          {direction && <T v="quote" style={{ fontSize: 20, lineHeight: 27 }}>{direction.text}</T>}
+          {direction && (
+            <T v="small" tone="muted">
+              {direction.why}
             </T>
-            {direction && <T v="quote" style={{ fontSize: 20, lineHeight: 27 }}>{direction.text}</T>}
-            {direction && (
-              <T v="small" tone="muted">
-                {direction.why}
-              </T>
-            )}
-          </View>
+          )}
         </View>
         {chosen ? (
           <View style={{ gap: 4 }}>
@@ -1030,16 +1020,11 @@ function ThemeBox({ noun, from, today, themes, back }: { noun: 'month' | 'quarte
     <View style={{ gap: 16 }}>
       {themes.length > 0 && !chosen && (
         <View style={{ gap: 12 }}>
-          <View style={{ flexDirection: 'row', gap: 12 }}>
-            <Disc icon="arrow" tone="amber" size={40} />
-            <View style={{ flex: 1, gap: 2 }}>
-              <T v="h3">
-                One direction for the coming {noun}
-              </T>
-              <T v="small" tone="muted">
-                A theme from your own answers, if one feels right. Pick one, or none.
-              </T>
-            </View>
+          <View style={{ gap: 6 }}>
+            <CardHead icon="arrow" tone="amber" title={`One direction for the coming ${noun}`} />
+            <T v="small" tone="muted">
+              A theme from your own answers, if one feels right. Pick one, or none.
+            </T>
           </View>
           <Row>
             {themes.map((t) => (

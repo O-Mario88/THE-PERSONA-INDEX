@@ -18,7 +18,7 @@ import { splitReveal } from '@shared/reveal'
 import { NOT_ME_REPLY, VERDICT_REPLIES } from '@shared/words'
 import { radius, useTheme } from '../theme'
 import { Button, Card, Chip, Page, T, Tinted } from '../ui/kit'
-import { Disc } from '../ui/parts'
+import { CardHead } from '../ui/parts'
 import { HeavyCard, VerdictRow } from './QuestionCard'
 
 const WEEK = 7
@@ -66,10 +66,7 @@ export function Insights({
           {saved.length > 0 && (
             <>
               <Card style={{ gap: 10 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                  <Disc icon="bookmark" tone="purple" size={40} />
-                  <T v="h2">What you've kept</T>
-                </View>
+                <CardHead icon="bookmark" tone="purple" v="h2" title="What you've kept" />
                 {saved.slice(0, 3).map((c) => (
                   <T key={c.questionId}>• {c.headline}</T>
                 ))}
@@ -121,14 +118,11 @@ function InsightCard({ card, today, onRated, onOpenReflect, onOpenMirror }: { ca
   const reading = card.reveal ? splitReveal(card.reveal) : null
   return (
     <View style={{ gap: 14 }}>
-      <View style={{ flexDirection: 'row', gap: 12 }}>
-        <Disc icon="leaf" size={44} />
-        <View style={{ flex: 1, gap: 2 }}>
-          <T v="h3">{evidenceLabel(card.evidence, card.date, today)}</T>
-          <T v="small" tone="muted">
-            {card.prompt} You chose “{card.label}”.
-          </T>
-        </View>
+      <View style={{ gap: 6 }}>
+        <CardHead icon="leaf" title={evidenceLabel(card.evidence, card.date, today)} />
+        <T v="small" tone="muted">
+          {card.prompt} You chose “{card.label}”.
+        </T>
       </View>
       {card.heavy ? (
         <HeavyCard />
@@ -144,10 +138,7 @@ function InsightCard({ card, today, onRated, onOpenReflect, onOpenMirror }: { ca
           )}
           {card.need && (
             <View style={{ gap: 8 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                <Disc icon="leaf" size={32} />
-                <T v="h3">What this could mean for you</T>
-              </View>
+              <CardHead icon="leaf" title="What this could mean for you" />
               <View style={{ flexDirection: 'row' }}>
                 <View style={{ backgroundColor: p.accentWash, borderRadius: radius.pill, paddingHorizontal: 12, paddingVertical: 4 }}>
                   <T v="small" tone="accent" bold>
@@ -159,10 +150,7 @@ function InsightCard({ card, today, onRated, onOpenReflect, onOpenMirror }: { ca
           )}
           {card.otherSide && (
             <View style={{ gap: 8 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                <Disc icon="pin" tone="rose" size={32} />
-                <T v="h3">The other side of it</T>
-              </View>
+              <CardHead icon="pin" tone="rose" title="The other side of it" />
               <T v="small" tone="text2">
                 {card.otherSide}
               </T>
@@ -186,13 +174,8 @@ function TryThis({ card, today }: { card: ForYouCard; today: string }) {
   const [saved, setSaved] = useState(() => intentions().some((i) => i.id === id))
   return (
     <Tinted tone="blue">
-      <View style={{ flexDirection: 'row', gap: 12 }}>
-        <Disc icon="bulb" tone="amber" size={40} />
-        <View style={{ flex: 1, gap: 2 }}>
-          <T v="h3">Something you could try</T>
-          <T v="small">{card.step}</T>
-        </View>
-      </View>
+      <CardHead icon="bulb" tone="amber" title="Something you could try" />
+      <T>{card.step}</T>
       {saved ? (
         <T v="small" tone="muted">
           Saved as an intention in Reflect.
@@ -246,10 +229,7 @@ function NotAlone({ today, cards, pulse, onOpenSettings }: { today: string; card
   const counted = cards.filter((c) => !c.heavy && !c.regional)
   return (
     <View style={{ gap: 10 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-        <Disc icon="people" tone="blue" size={40} />
-        <T v="h2">You're not alone in this</T>
-      </View>
+      <CardHead icon="people" tone="blue" v="h2" title="You're not alone in this" />
       {!pulse ? (
         <>
           <T v="small" tone="muted">
@@ -295,10 +275,7 @@ function AcrossDays({ today }: { today: string }) {
   if (days === 0) return null
   return (
     <Card style={{ gap: 8 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-        <Disc icon="insights" tone="blue" size={40} />
-        <T v="h2">{lean ? 'What keeps coming up' : 'Building a picture of you'}</T>
-      </View>
+      <CardHead icon="insights" tone="blue" v="h2" title={lean ? 'What keeps coming up' : 'Building a picture of you'} />
       <T tone="text2">
         {lean
           ? `Across your ${days} days of answers, you keep leaning towards ${lean}. I'll keep watching whether it holds.`
@@ -318,10 +295,7 @@ function WhatHelpedYou() {
   if (helped.length === 0) return null
   return (
     <Card style={{ gap: 8 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-        <Disc icon="leaf" tone="green" size={40} />
-        <T v="h2">What has helped you</T>
-      </View>
+      <CardHead icon="leaf" tone="green" v="h2" title="What has helped you" />
       {helped.map((m) => (
         <T key={m.questionId} tone="text2">
           • {m.step}

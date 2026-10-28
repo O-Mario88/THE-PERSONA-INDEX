@@ -12,7 +12,7 @@ import { createInvite, getCircle, inviteLink, TAG_NAMES, TAGS, type AccountView,
 import { dayMonth } from '@shared/reflect'
 import { font, radius } from '../theme'
 import { Button, Card, Chip, Page, T, Tinted } from '../ui/kit'
-import { Avatar, Disc, Ring as Progress } from '../ui/parts'
+import { CardHead, Avatar, Ring as Progress } from '../ui/parts'
 import { CloserTogether, CommonGround, Growing, SupportCelebrate, WhatHelped } from './ConnectMore'
 
 export function Connect({ me, onSignIn, today, questions = [] }: { me: AccountView | null; onSignIn: () => void; today?: string; questions?: Question[] }) {
@@ -193,16 +193,16 @@ function Invite({ circle }: { circle: CircleView | null }) {
   }
   return (
     <View style={{ gap: 14 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-        <Disc icon="user-plus" tone="purple" size={44} />
-        <View style={{ flex: 1 }}>
-          <T v="h2">Invite a friend</T>
-          <T v="small" tone="muted">
-            They see your name and handle, never your answers.
-          </T>
-        </View>
-        {active < need && <Progress part={active / need} big={`${active}/${need}`} label={`${active} of ${need} friends for your Outside Mirror`} size={56} />}
-      </View>
+      <CardHead
+        icon="user-plus"
+        tone="purple"
+        v="h2"
+        title="Invite a friend"
+        right={active < need && <Progress part={active / need} big={`${active}/${need}`} label={`${active} of ${need} friends for your Outside Mirror`} size={56} />}
+      />
+      <T v="small" tone="muted">
+        They see your name and handle, never your answers.
+      </T>
       {active < need && <T tone="text2">{need - active === 1 ? 'One more friend unlocks your Outside Mirror.' : `${need - active} more friends unlock your Outside Mirror.`}</T>}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         {TAGS.map((t) => (

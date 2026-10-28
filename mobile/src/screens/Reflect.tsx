@@ -21,7 +21,7 @@ import { Notebook } from './Notebook'
 import { HeavyCard } from './QuestionCard'
 import { font, radius, useTheme } from '../theme'
 import { Button, Card, Page, T, Tinted } from '../ui/kit'
-import { Disc, type Tone } from '../ui/parts'
+import { CardHead, Disc, type Tone } from '../ui/parts'
 import { Icon, type IconName } from '../ui/Icon'
 
 const SPAN_DAYS: Record<ReflectionPeriod, number> = { day: 0, week: 6, month: 30 }
@@ -119,12 +119,9 @@ export function Reflect({
     <Page
       aside={
         <>
-          <Card style={{ flexDirection: 'row', gap: 14 }}>
-            <Disc icon="leaf" tone="amber" size={44} />
-            <View style={{ flex: 1, gap: 4 }}>
-              <T v="h3">Remember</T>
-              <T tone="muted">{reminderFor(today)}</T>
-            </View>
+          <Card style={{ gap: 10 }}>
+            <CardHead icon="leaf" tone="amber" title="Remember" />
+            <T tone="muted">{reminderFor(today)}</T>
           </Card>
           {past.length > 0 && (
             <Card style={{ gap: 12 }}>
@@ -146,13 +143,10 @@ export function Reflect({
           )}
 
           {consider && (
-            <View style={{ flexDirection: 'row', gap: 14 }}>
-              <Disc icon="pin" tone="rose" size={44} />
-              <View style={{ flex: 1, gap: 8 }}>
-                <T v="h3">Something I noticed</T>
-                <T tone="muted">{consider.text}</T>
-                <Button small kind="soft" label="Reflect on this" iconAfter="arrow" onPress={() => setChosen(fromNoticed(consider, period))} />
-              </View>
+            <View style={{ gap: 10 }}>
+              <CardHead icon="pin" tone="rose" title="Something I noticed" />
+              <T tone="muted">{consider.text}</T>
+              <Button small kind="soft" label="Reflect on this" iconAfter="arrow" onPress={() => setChosen(fromNoticed(consider, period))} style={{ alignSelf: 'flex-start' }} />
             </View>
           )}
         </>
@@ -228,9 +222,9 @@ export function Reflect({
                 onPress={() => item && setChosen(fromNoticed(item, period))}
                 style={{ width: '50%', paddingRight: 12, gap: 6 }}
               >
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
                   <Disc icon={ICONS[area]} tone={TONES[area]} size={28} />
-                  <T v="h3" style={{ fontSize: 16 }}>
+                  <T v="h3" style={{ fontSize: 16, lineHeight: 20, flex: 1, paddingTop: 4 }}>
                     {AREA_NAMES[area]}
                   </T>
                 </View>
@@ -357,20 +351,19 @@ function Writing({
 
   return (
     <Tinted>
-      <View style={{ flexDirection: 'row', gap: 12 }}>
-        <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: p.surface, alignItems: 'center', justifyContent: 'center' }}>
-          <Icon name={free ? 'pencil' : 'leaf'} size={22} color={p.leaf} />
-        </View>
-        <View style={{ flex: 1, gap: 6 }}>
-          <T v="eyebrow">{free ? 'Write freely' : 'A thought for you'}</T>
-          <T style={{ fontFamily: font.semibold, fontSize: 24, lineHeight: 30 }}>{free ? 'Whatever is on your mind.' : (thought?.question ?? 'Your reflection')}</T>
-        </View>
-        {!free && (
-          <Pressable accessibilityRole="button" accessibilityLabel="Another question" onPress={onAnother} hitSlop={10}>
-            <Icon name="refresh" size={18} color={p.text2} />
-          </Pressable>
-        )}
-      </View>
+      <CardHead
+        icon={free ? 'pencil' : 'leaf'}
+        v="eyebrow"
+        title={free ? 'Write freely' : 'A thought for you'}
+        right={
+          !free && (
+            <Pressable accessibilityRole="button" accessibilityLabel="Another question" onPress={onAnother} hitSlop={10}>
+              <Icon name="refresh" size={18} color={p.text2} />
+            </Pressable>
+          )
+        }
+      />
+      <T style={{ fontFamily: font.semibold, fontSize: 24, lineHeight: 30 }}>{free ? 'Whatever is on your mind.' : (thought?.question ?? 'Your reflection')}</T>
       <T tone="text2">{free ? 'No question, no shape to fill. Just your words.' : thought?.lead}</T>
       {!free && thought && (
         <View style={{ flexDirection: 'row' }}>
@@ -423,10 +416,7 @@ function KinderCard({ reading, onWrite }: { reading: Extract<Reading, { kind: 'h
   )
   return (
     <Card style={{ gap: 14 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-        <Disc icon="heart" tone="rose" size={40} />
-        <T v="h2">{KINDER_TITLE}</T>
-      </View>
+      <CardHead icon="heart" tone="rose" v="h2" title={KINDER_TITLE} />
       {look.lines.slice(0, -1).map((line) => (
         <T key={line} tone="text2">
           {line}
