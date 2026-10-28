@@ -11,7 +11,7 @@ import { patchAccount, sendCode, signInMethods, signInWithID, verifyCode, type A
 import { Cancelled, appProviders, appleToken, googleToken, type IdToken, type Providers } from '../platform/idSignIn'
 import { doneWithGoogleReturn, takeGoogleReturn } from '../platform/googleWeb'
 import { font, gutter, radius, useTheme } from '../theme'
-import { Button, Field, T } from '../ui/kit'
+import { Button, Card, Field, T } from '../ui/kit'
 import { Icon } from '../ui/Icon'
 
 const ERRORS: Record<string, string> = {
@@ -109,46 +109,34 @@ export function SignUp({ page, onDone, onNotNow, notNow }: { page: SignUpPage; o
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: p.bg }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 40 }}>
-        <View style={{ backgroundColor: p.navy, paddingHorizontal: gutter, paddingTop: Math.max(insets.top, 20) + 16, paddingBottom: 28, gap: 18 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <Text style={{ fontFamily: font.bold, fontSize: 16, color: p.onNavy }}>P</Text>
-            <T v="label" tone="onNavy">
-              The Persona Index
+        {/* A calm cream header in Today's style (Edwin, 2026-10-28: the blue
+            block made the page feel crowded and pushed the form off screen). */}
+        <View style={{ paddingHorizontal: gutter, paddingTop: Math.max(insets.top, 20) + 16, gap: 16, maxWidth: 640, width: '100%', alignSelf: 'center' }}>
+          <View style={{ gap: 8 }}>
+            <T v="label" tone="warm">
+              {page.label}
             </T>
+            <T v="display">{page.title}</T>
+            <T tone="text2">{page.lead}</T>
           </View>
-          <T v="label" style={{ color: p.brandLime }}>
-            {page.label}
-          </T>
-          <T v="display" tone="onNavy" style={{ fontSize: 40, lineHeight: 44 }}>
-            {page.title}
-          </T>
-          <T tone="onNavy2" style={{ fontSize: 18, lineHeight: 27 }}>
-            {page.lead}
-          </T>
           {page.points && (
-            <View style={{ gap: 10 }}>
+            <Card style={{ gap: 10 }}>
               {page.points.map((pt) => (
-                <View key={pt} style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
-                  <Icon name="check" size={16} color={p.brandLime} />
-                  <T tone="onNavy2" style={{ flex: 1 }}>
-                    {pt}
-                  </T>
+                <View key={pt} style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}>
+                  <View style={{ paddingTop: 3 }}>
+                    <Icon name="check" size={16} color={p.accentInk} width={2.2} />
+                  </View>
+                  <T style={{ flex: 1 }}>{pt}</T>
                 </View>
               ))}
-            </View>
+            </Card>
           )}
-          <T v="tiny" tone="onNavy2">
-            3 questions a morning, 3 an evening · personaindex.com
-          </T>
         </View>
 
-        <View style={{ paddingHorizontal: gutter, paddingTop: 28, gap: 16, maxWidth: 640, width: '100%', alignSelf: 'center' }}>
+        <View style={{ paddingHorizontal: gutter, paddingTop: 24, gap: 16, maxWidth: 640, width: '100%', alignSelf: 'center' }}>
           {step.at === 'start' && (
             <>
-              <View style={{ gap: 4 }}>
-                <T v="title">{page.head}</T>
-                <T tone="muted">No password. One tap or a code.</T>
-              </View>
+              <T v="title">{page.head}</T>
               {!methods && <T tone="muted">One moment…</T>}
               {none && <T tone="text2">{ERRORS.sign_in_unavailable}</T>}
               {methods && providers.apple && (
