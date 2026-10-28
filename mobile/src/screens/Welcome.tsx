@@ -15,10 +15,10 @@ export function Welcome({ onBegin }: { onBegin: (name: string) => void }) {
           Welcome to The Persona Index
         </T>
         <View style={{ gap: 16, marginTop: 24 }}>
-          <T v="display" style={{ fontSize: 40, lineHeight: 44 }}>
+          <T v="display" style={{ fontSize: 35, lineHeight: 40 }}>
             Discover yourself. Find what works. Live a little better every day.
           </T>
-          <T tone="text2" style={{ fontSize: 18, lineHeight: 27 }}>
+          <T tone="text2" style={{ fontSize: 16, lineHeight: 24 }}>
             Understand why you feel, think, and act the way you do. Discover your strengths, learn from others' experiences, and find small ways to bring more happiness,
             confidence, and peace into your life.
           </T>

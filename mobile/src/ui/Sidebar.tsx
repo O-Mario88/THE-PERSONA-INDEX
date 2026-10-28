@@ -28,7 +28,7 @@ function Row({ item }: { item: SideItem }) {
       })}
     >
       <Icon name={item.icon} size={22} color={item.on ? p.brandLime : p.sideInk} width={item.on ? 2.2 : 1.8} />
-      <Text style={{ fontFamily: item.on ? font.bold : font.semibold, fontSize: 16, color: item.on ? p.sideOnInk : p.sideInk }}>{tr(item.name)}</Text>
+      <Text style={{ fontFamily: item.on ? font.bold : font.semibold, fontSize: 15, color: item.on ? p.sideOnInk : p.sideInk }}>{tr(item.name)}</Text>
     </Pressable>
   )
 }
@@ -39,7 +39,7 @@ export function Sidebar({ top, foot }: { top: SideItem[]; foot: SideItem[] }) {
     <View accessibilityRole="tablist" style={{ width: SIDE_W, backgroundColor: p.side, paddingVertical: 24, paddingHorizontal: 16, gap: 4 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: 8, marginBottom: 32 }}>
         <Icon name="leaf" size={26} color={p.brandLime} width={2} />
-        <Text style={{ maxWidth: 150, color: p.onNavy, fontFamily: font.bold, fontSize: 17, lineHeight: 20, letterSpacing: -0.2 }}>The Persona Index</Text>
+        <Text style={{ maxWidth: 150, color: p.onNavy, fontFamily: font.bold, fontSize: 16, lineHeight: 18, letterSpacing: -0.2 }}>The Persona Index</Text>
       </View>
       {top.map((item) => (
         <Row key={item.key} item={item} />

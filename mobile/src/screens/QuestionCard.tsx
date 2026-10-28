@@ -172,7 +172,7 @@ export function QuestionCard({ question, date, sitting, wordsDays = DEFAULT_WORD
       <View style={{ flexDirection: 'row' }}>
         <Chip icon={theme.icon} label={question.theme ? themeName(question.theme) : 'Today'} />
       </View>
-      <T v="title" style={{ fontSize: 30, lineHeight: 34 }}>
+      <T v="title" style={{ fontSize: 26, lineHeight: 31 }}>
         {question.prompt}
       </T>
       {question.local && <T tone="muted">{LOCAL_NOTE}</T>}
@@ -295,7 +295,7 @@ function Quote({ text }: { text: string }) {
   const p = useTheme()
   return (
     <View style={{ borderLeftWidth: 3, borderLeftColor: p.amber, paddingLeft: 14 }}>
-      <T v="body" style={{ fontFamily: font.semibold, fontSize: 18, lineHeight: 26 }}>
+      <T v="body" style={{ fontFamily: font.semibold, fontSize: 16, lineHeight: 23 }}>
         “{text}”
       </T>
     </View>
@@ -462,11 +462,11 @@ function InsightPanel({
           </T>
         )}
       </View>
-      <T v="title" style={{ fontSize: 26, lineHeight: 31 }}>
+      <T v="title" style={{ fontSize: 23, lineHeight: 28 }}>
         {headline}
       </T>
       {body ? (
-        <T tone="text2" style={{ fontSize: 17, lineHeight: 26 }}>
+        <T tone="text2" style={{ fontSize: 16, lineHeight: 23 }}>
           {body}
         </T>
       ) : null}
@@ -664,7 +664,7 @@ export function VerdictRow({ onTap }: { onTap: (v: Verdict) => void }) {
             backgroundColor: pressed ? p.accentWash : p.surface,
           })}
         >
-          <Text style={{ fontFamily: font.bold, fontSize: 15, color: p.text }}>{label}</Text>
+          <Text style={{ fontFamily: font.bold, fontSize: 14, color: p.text }}>{label}</Text>
         </Pressable>
       ))}
     </View>

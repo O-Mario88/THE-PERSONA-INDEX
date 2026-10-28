@@ -75,7 +75,7 @@ function WordsField({ label, value, onChangeText, lines = 1 }: { label: string; 
           paddingHorizontal: 16,
           paddingVertical: 14,
           fontFamily: font.regular,
-          fontSize: 16,
+          fontSize: 15,
           color: p.text,
           textAlignVertical: 'top',
         }}

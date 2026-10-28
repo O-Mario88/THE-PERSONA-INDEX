@@ -85,7 +85,7 @@ export function Close(props: Props) {
           )}
         </View>
         <Tapestry s={s} dark cols={15} width={inner} />
-        <T v="title" tone="onNavy" style={{ fontSize: 26, lineHeight: 31 }}>
+        <T v="title" tone="onNavy" style={{ fontSize: 23, lineHeight: 28 }}>
           {summaryLine(mine, sitting)}
         </T>
         <T v="small" tone="onNavy2">
@@ -117,7 +117,7 @@ export function Close(props: Props) {
       {endsDay && (
         <>
           {isSaturday(date) ? <T>{SUNDAY_LINE}</T> : <Upcoming label="Tomorrow" themes={tomorrowThemes} />}
-          <T style={{ fontFamily: font.semibold, fontSize: 20, lineHeight: 28 }}>
+          <T style={{ fontFamily: font.semibold, fontSize: 18, lineHeight: 25 }}>
             {isSaturday(date)
               ? 'Sleep well. Tomorrow is for looking back: your week will be waiting in your mirror.'
               : `Sleep well. Your next three open at ${opensAt('morning')}.`}
@@ -144,7 +144,7 @@ function Glimpse({ answers, history, date, name }: { answers: AnswerRecord[]; hi
       <T v="eyebrow">Your first glimpse</T>
       <T v="h3">{name ? `${name}, here’s what your first answers hint at.` : 'Here’s what your first answers hint at.'}</T>
       {top && (
-        <T style={{ fontFamily: font.semibold, fontSize: 18, lineHeight: 25 }}>
+        <T style={{ fontFamily: font.semibold, fontSize: 16, lineHeight: 22 }}>
           {cap(top.quality)}, with {top.with}.
         </T>
       )}
@@ -172,7 +172,7 @@ function Thread({ answers, history, date, paused }: { answers: AnswerRecord[]; h
   return (
     <View style={{ gap: 10 }}>
       <T v="eyebrow">Today's thread</T>
-      <T v="h3" style={{ fontSize: 19, lineHeight: 26 }}>
+      <T v="h3" style={{ fontSize: 17, lineHeight: 23 }}>
         {advice.headline}
       </T>
       {advice.points.length > 0 && !open && (

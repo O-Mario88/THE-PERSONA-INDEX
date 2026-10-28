@@ -135,7 +135,7 @@ function InsightCard({
         <>
           {reading && (
             <>
-              <T v="h2" style={{ fontSize: 22, lineHeight: 28 }}>
+              <T v="h2" style={{ fontSize: 19, lineHeight: 25 }}>
                 {reading.headline}
               </T>
               {reading.body ? <T tone="text2">{reading.body}</T> : null}

@@ -52,7 +52,7 @@ export function Today({ date, window: w, name, note, hero, memory, link, tomorro
         </Pressable>
       </View>
       <View style={{ gap: 8, paddingTop: 28 }}>
-        <T v="display" style={width < 400 ? { fontSize: 29, lineHeight: 34 } : { fontSize: 34, lineHeight: 40 }}>
+        <T v="display" style={width < 400 ? { fontSize: 26, lineHeight: 31 } : { fontSize: 30, lineHeight: 36 }}>
           {greeting(w, name)}
         </T>
         {note ? <T tone="text2">{note}</T> : null}
@@ -164,7 +164,7 @@ function MainCard({
       )}
       <View style={{ gap: 6 }}>
         <T v="label">{hero.eyebrow}</T>
-        <T v="h2" style={narrow ? { fontSize: 19, lineHeight: 24 } : { fontSize: 22, lineHeight: 27 }}>
+        <T v="h2" style={narrow ? { fontSize: 17, lineHeight: 22 } : { fontSize: 19, lineHeight: 24 }}>
           {hero.title}
         </T>
         <T tone="text2">{link ?? hero.sub}</T>
@@ -233,7 +233,7 @@ function MemoryRow({ memory, onWrite }: { memory: Memory; onWrite: (prompt?: str
       </Pressable>
       {open &&
         (memory.kind === 'writing' ? (
-          <T v="quote" lines={5} style={{ fontSize: 19, lineHeight: 25 }}>
+          <T v="quote" lines={5} style={{ fontSize: 17, lineHeight: 22 }}>
             “{memory.text}”
           </T>
         ) : (

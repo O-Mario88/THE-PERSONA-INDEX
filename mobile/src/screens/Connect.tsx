@@ -248,7 +248,7 @@ function Invite({ circle }: { circle: CircleView | null }) {
 
 function Tagline() {
   return (
-    <T style={{ fontFamily: font.semibold, fontSize: 20, lineHeight: 28 }} center>
+    <T style={{ fontFamily: font.semibold, fontSize: 18, lineHeight: 25 }} center>
       A little closer. A little stronger. Together.
     </T>
   )

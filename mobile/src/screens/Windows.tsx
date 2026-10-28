@@ -139,7 +139,7 @@ export function Night({ date, tomorrowThemes, onClose }: { date: string; tomorro
         <T v="display">That's your day.</T>
         {picked.length > 0 && <T tone="muted">Kept in your notebook: {picked.join(' · ')}.</T>}
         {isSaturday(date) ? <T>{SUNDAY_LINE}</T> : <Upcoming label="Tomorrow" themes={tomorrowThemes} />}
-        <T style={{ fontFamily: font.semibold, fontSize: 20, lineHeight: 28 }}>
+        <T style={{ fontFamily: font.semibold, fontSize: 18, lineHeight: 25 }}>
           {isSaturday(date) ? 'Sleep well. Tomorrow is for looking back: your week will be waiting in your mirror.' : `Sleep well. Your next three open at ${opensAt('morning')}.`}
         </T>
       </View>
@@ -165,7 +165,7 @@ export function Night({ date, tomorrowThemes, onClose }: { date: string; tomorro
             placeholder="Something else"
             placeholderTextColor={p.muted}
             accessibilityLabel="Something else that was good"
-            style={{ flex: 1, borderWidth: 1.5, borderColor: p.line, backgroundColor: p.surface, borderRadius: radius.md, padding: 12, fontFamily: font.regular, fontSize: 16, color: p.text }}
+            style={{ flex: 1, borderWidth: 1.5, borderColor: p.line, backgroundColor: p.surface, borderRadius: radius.md, padding: 12, fontFamily: font.regular, fontSize: 15, color: p.text }}
           />
           <Button
             small

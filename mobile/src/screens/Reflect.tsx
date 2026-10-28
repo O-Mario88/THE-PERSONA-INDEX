@@ -220,7 +220,7 @@ export function Reflect({
         <View style={{ flexDirection: 'row', gap: 20, borderBottomWidth: 1, borderBottomColor: p.line }}>
           {(['strength', 'grow'] as const).map((g) => (
             <Pressable key={g} accessibilityRole="tab" accessibilityState={{ selected: group === g }} onPress={() => setGroup(g)} style={{ paddingVertical: 10, borderBottomWidth: 2, borderBottomColor: group === g ? p.lime : 'transparent' }}>
-              <Text style={{ fontFamily: font.bold, fontSize: 15, color: group === g ? p.accentInk : p.muted }}>{g === 'strength' ? 'Strengths' : 'Areas to grow'}</Text>
+              <Text style={{ fontFamily: font.bold, fontSize: 14, color: group === g ? p.accentInk : p.muted }}>{g === 'strength' ? 'Strengths' : 'Areas to grow'}</Text>
             </Pressable>
           ))}
         </View>
@@ -240,7 +240,7 @@ export function Reflect({
               >
                 <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
                   <Disc icon={ICONS[area]} tone={TONES[area]} size={28} />
-                  <T v="h3" style={{ fontSize: 16, lineHeight: 20, flex: 1, paddingTop: 4 }}>
+                  <T v="h3" style={{ fontSize: 15, lineHeight: 18, flex: 1, paddingTop: 4 }}>
                     {AREA_NAMES[area]}
                   </T>
                 </View>
@@ -330,7 +330,7 @@ function Writing({
               maxLength={140}
               placeholder="Ask for help earlier"
               placeholderTextColor={p.muted}
-              style={{ borderWidth: 1.5, borderColor: p.line, backgroundColor: p.surface, borderRadius: radius.md, padding: 14, fontFamily: font.regular, fontSize: 16, color: p.text }}
+              style={{ borderWidth: 1.5, borderColor: p.line, backgroundColor: p.surface, borderRadius: radius.md, padding: 14, fontFamily: font.regular, fontSize: 15, color: p.text }}
             />
             <T v="small" tone="muted">
               In a week, a gentle check-in asks how it went. No goals and no scores.
@@ -378,7 +378,7 @@ function Writing({
           )
         }
       />
-      <T style={{ fontFamily: font.semibold, fontSize: 24, lineHeight: 30 }}>{free ? 'Whatever is on your mind.' : (thought?.question ?? 'Your reflection')}</T>
+      <T style={{ fontFamily: font.semibold, fontSize: 21, lineHeight: 27 }}>{free ? 'Whatever is on your mind.' : (thought?.question ?? 'Your reflection')}</T>
       <T tone="text2">{free ? 'No question, no shape to fill. Just your words.' : thought?.lead}</T>
       {!free && thought && (
         <View style={{ flexDirection: 'row' }}>
@@ -400,7 +400,7 @@ function Writing({
           placeholder="Start writing here…"
           placeholderTextColor={p.muted}
           accessibilityLabel={free ? 'Write freely' : (thought?.question ?? 'Your reflection')}
-          style={{ minHeight: 160, padding: 16, fontFamily: font.regular, fontSize: 17, lineHeight: 25, color: p.text, textAlignVertical: 'top' }}
+          style={{ minHeight: 160, padding: 16, fontFamily: font.regular, fontSize: 16, lineHeight: 22, color: p.text, textAlignVertical: 'top' }}
         />
         <View style={{ borderTopWidth: 1, borderTopColor: p.line, paddingHorizontal: 16, paddingVertical: 10, alignItems: 'flex-end' }}>
           <T v="small" tone="muted">
@@ -442,7 +442,7 @@ function KinderCard({ reading, onWrite }: { reading: Extract<Reading, { kind: 'h
           <T v="eyebrow" tone="leaf">
             {look.evidence.lead}
           </T>
-          <T v="quote" style={{ fontSize: 18, lineHeight: 25 }}>
+          <T v="quote" style={{ fontSize: 16, lineHeight: 22 }}>
             “{look.evidence.text}”
           </T>
         </View>

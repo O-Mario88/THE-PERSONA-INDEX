@@ -23,7 +23,7 @@ export function ReadScreen({ read, date, intimacy, onBack, onOpen }: { read: Rea
         {topicOf(read)} · {minutes(read)} min read
       </T>
       <T v="title">{read.title}</T>
-      <T tone="text2" style={{ fontSize: 18, lineHeight: 27 }}>
+      <T tone="text2" style={{ fontSize: 16, lineHeight: 24 }}>
         {read.summary}
       </T>
       {read.paragraphs.map((para, i) => (

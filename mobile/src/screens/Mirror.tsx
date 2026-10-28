@@ -414,7 +414,7 @@ function MirrorPage({ m, today, reload, onCircle, onRead }: { m: MirrorData; tod
           )}
         </T>
         {line ? (
-          <T tone="onNavy" style={{ fontFamily: font.semibold, fontSize: 19, lineHeight: 26 }}>
+          <T tone="onNavy" style={{ fontFamily: font.semibold, fontSize: 17, lineHeight: 23 }}>
             {line}
           </T>
         ) : null}
@@ -1049,7 +1049,7 @@ function PeriodPage({ p: pm, onRead }: { p: PeriodMirror; onRead?: (r: Read) => 
           )}
         </T>
         {line ? (
-          <T tone="onNavy" style={{ fontFamily: font.semibold, fontSize: 19, lineHeight: 26 }}>
+          <T tone="onNavy" style={{ fontFamily: font.semibold, fontSize: 17, lineHeight: 23 }}>
             {line}
           </T>
         ) : null}

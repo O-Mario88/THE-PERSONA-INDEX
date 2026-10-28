@@ -172,7 +172,7 @@ export function SignUp({ page, onDone, onNotNow, notNow }: { page: SignUpPage; o
                           onPress={() => setVia(t.id)}
                           style={{ flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: radius.sm, backgroundColor: via === t.id ? p.surface : 'transparent' }}
                         >
-                          <Text style={{ fontFamily: font.bold, fontSize: 15, color: via === t.id ? p.text : p.muted }}>{t.name}</Text>
+                          <Text style={{ fontFamily: font.bold, fontSize: 14, color: via === t.id ? p.text : p.muted }}>{t.name}</Text>
                         </Pressable>
                       ))}
                     </View>
@@ -218,7 +218,7 @@ export function SignUp({ page, onDone, onNotNow, notNow }: { page: SignUpPage; o
                 textContentType="oneTimeCode"
                 autoComplete="one-time-code"
                 accessibilityLabel="The code"
-                style={{ fontSize: 28, letterSpacing: 12, textAlign: 'center', fontFamily: font.bold }}
+                style={{ fontSize: 25, letterSpacing: 12, textAlign: 'center', fontFamily: font.bold }}
               />
               <T v="small" tone="muted">
                 This device will be added to your account. You can sign it out any time from You.

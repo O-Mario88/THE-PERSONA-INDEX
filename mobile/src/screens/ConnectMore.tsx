@@ -340,7 +340,7 @@ export function CommonGround({ friends }: { friends: FriendView[] }) {
                 </T>
               </View>
             </View>
-            <T style={{ fontFamily: font.semibold, fontSize: 22, lineHeight: 28 }}>{pair.headline}</T>
+            <T style={{ fontFamily: font.semibold, fontSize: 19, lineHeight: 25 }}>{pair.headline}</T>
             <Chips>
               {pair.shared.map((id) => (
                 <Chip key={id} label={label(id)} />
@@ -546,7 +546,7 @@ function HelpedCard({ share: s, title }: { share: ShareView; title: string }) {
         </View>
       </View>
       {title ? <T v="eyebrow" tone="muted">{title}</T> : null}
-      <T style={{ fontFamily: font.semibold, fontSize: 20, lineHeight: 27 }}>“{s.text}”</T>
+      <T style={{ fontFamily: font.semibold, fontSize: 18, lineHeight: 24 }}>“{s.text}”</T>
       {s.why ? (
         <View style={{ flexDirection: 'row', gap: 10 }}>
           <Icon name="sun" size={18} color={p.text} />

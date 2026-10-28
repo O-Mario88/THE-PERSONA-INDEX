@@ -527,7 +527,7 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
           {closing && steps.length > 0 && carry && (
             <Tinted style={{ gap: 6 }}>
               <T v="eyebrow">One thing to carry into today</T>
-              <T v="quote" style={{ fontSize: 19, lineHeight: 26 }}>
+              <T v="quote" style={{ fontSize: 17, lineHeight: 23 }}>
                 {carry}
               </T>
               <T v="small" tone="muted">

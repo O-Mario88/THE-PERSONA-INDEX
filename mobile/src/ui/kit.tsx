@@ -26,22 +26,23 @@ import { tr } from '@shared/i18n'
 type Variant = 'display' | 'title' | 'h2' | 'h3' | 'body' | 'small' | 'tiny' | 'label' | 'eyebrow' | 'quote'
 type Tone = 'text' | 'text2' | 'muted' | 'accent' | 'onNavy' | 'onNavy2' | 'danger' | 'leaf' | 'warm'
 
-// X-style type (Edwin, 2026-10-27): one face, few sizes, Bold headings (never
+// X-style type (Edwin, 2026-10-27; a step smaller on 2026-10-28 to fit every
+// screen): one face, few sizes, Bold headings (never
 // extra bold) with tight tracking, compact body lines, and labels in sentence case rather
 // than spaced capitals.
 const VARIANTS: Record<Variant, TextStyle> = {
-  display: { fontFamily: font.bold, fontSize: 31, lineHeight: 36, letterSpacing: -0.6 },
-  title: { fontFamily: font.bold, fontSize: 23, lineHeight: 28, letterSpacing: -0.35 },
-  h2: { fontFamily: font.bold, fontSize: 20, lineHeight: 24, letterSpacing: -0.2 },
-  h3: { fontFamily: font.bold, fontSize: 17, lineHeight: 22, letterSpacing: -0.1 },
-  body: { fontFamily: font.regular, fontSize: 16, lineHeight: 22 },
-  small: { fontFamily: font.regular, fontSize: 14, lineHeight: 19 },
-  tiny: { fontFamily: font.medium, fontSize: 13, lineHeight: 16 },
-  label: { fontFamily: font.bold, fontSize: 13, lineHeight: 16 },
-  eyebrow: { fontFamily: font.bold, fontSize: 13, lineHeight: 16 },
+  display: { fontFamily: font.bold, fontSize: 27, lineHeight: 32, letterSpacing: -0.6 },
+  title: { fontFamily: font.bold, fontSize: 20, lineHeight: 25, letterSpacing: -0.35 },
+  h2: { fontFamily: font.bold, fontSize: 18, lineHeight: 22, letterSpacing: -0.2 },
+  h3: { fontFamily: font.bold, fontSize: 16, lineHeight: 20, letterSpacing: -0.1 },
+  body: { fontFamily: font.regular, fontSize: 15, lineHeight: 20 },
+  small: { fontFamily: font.regular, fontSize: 13, lineHeight: 18 },
+  tiny: { fontFamily: font.medium, fontSize: 12, lineHeight: 15 },
+  label: { fontFamily: font.bold, fontSize: 12, lineHeight: 15 },
+  eyebrow: { fontFamily: font.bold, fontSize: 12, lineHeight: 15 },
   // A line set apart: a quote, a thought, a direction. The same face, a
   // little larger and lighter than a heading.
-  quote: { fontFamily: font.semibold, fontSize: 22, lineHeight: 28, letterSpacing: -0.2 },
+  quote: { fontFamily: font.semibold, fontSize: 19, lineHeight: 25, letterSpacing: -0.2 },
 }
 
 function toneColor(p: Palette, tone: Tone): string {
@@ -223,8 +224,8 @@ export function Option({ label, onPress, disabled, chosen, icon }: { label: stri
       <View style={[styles.optionRing, { borderColor: chosen ? p.lime : p.lineStrong, backgroundColor: chosen ? p.lime : p.surface }]}>
         {chosen && <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: p.onLime }} />}
       </View>
-      {icon ? <Text style={{ fontSize: 16, color: p.text }}>{icon}</Text> : null}
-      <Text style={{ flex: 1, fontFamily: font.bold, fontSize: 17, lineHeight: 22, color: p.text }}>{tr(label)}</Text>
+      {icon ? <Text style={{ fontSize: 15, color: p.text }}>{icon}</Text> : null}
+      <Text style={{ flex: 1, fontFamily: font.bold, fontSize: 16, lineHeight: 20, color: p.text }}>{tr(label)}</Text>
     </Pressable>
   )
 }
@@ -242,7 +243,7 @@ export function Radio({ label, checked, onPress }: { label: string; checked: boo
       <View style={[styles.optionRing, { borderColor: checked ? p.lime : p.lineStrong }]}>
         {checked && <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: p.lime }} />}
       </View>
-      <Text style={{ flex: 1, fontFamily: font.semibold, fontSize: 16, lineHeight: 22, color: p.text }}>{tr(label)}</Text>
+      <Text style={{ flex: 1, fontFamily: font.semibold, fontSize: 15, lineHeight: 20, color: p.text }}>{tr(label)}</Text>
     </Pressable>
   )
 }
@@ -253,7 +254,7 @@ export function Toggle({ label, note, value, onChange }: { label: string; note?:
   return (
     <View style={[styles.toggle, { borderColor: p.line }]}>
       <View style={{ flex: 1, gap: 2 }}>
-        <T v="h3" style={{ fontSize: 16 }}>
+        <T v="h3" style={{ fontSize: 15 }}>
           {label}
         </T>
         {note ? <T v="small" tone="muted">{note}</T> : null}
@@ -307,7 +308,7 @@ export function Field(props: TextInputProps & { label?: string; note?: string })
         style={[
           styles.field,
           { backgroundColor: p.surface, borderColor: p.line, color: p.text },
-          rest.multiline && { minHeight: 112, lineHeight: 24, textAlignVertical: 'top', paddingTop: 12 },
+          rest.multiline && { minHeight: 112, lineHeight: 22, textAlignVertical: 'top', paddingTop: 12 },
           style,
         ]}
       />
@@ -436,5 +437,5 @@ const styles = StyleSheet.create({
   optionRing: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   toggle: { flexDirection: 'row', alignItems: 'center', gap: 16, paddingVertical: 16, borderTopWidth: StyleSheet.hairlineWidth },
   chip: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 40, paddingHorizontal: 16, borderRadius: radius.pill },
-  field: { minHeight: 52, borderWidth: 1.5, borderRadius: radius.md, paddingHorizontal: 16, paddingVertical: 12, fontFamily: font.regular, fontSize: 16 },
+  field: { minHeight: 52, borderWidth: 1.5, borderRadius: radius.md, paddingHorizontal: 16, paddingVertical: 12, fontFamily: font.regular, fontSize: 15 },
 })
