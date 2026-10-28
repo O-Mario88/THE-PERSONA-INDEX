@@ -12,6 +12,15 @@ describe('choices are on until you switch them off in You', () => {
     expect(regionHere({ ...p, country: 'UG' })).not.toBeNull()
   })
 
+  it('remembers the language you choose, German, Russian, Japanese and Korean included, and nothing unknown', () => {
+    for (const lang of ['es', 'pt', 'fr', 'de', 'ru', 'ja', 'ko'] as const) {
+      savePrefs({ ...loadPrefs(), lang })
+      expect(loadPrefs().lang).toBe(lang)
+    }
+    localStorage.setItem('pi.prefs.v1', JSON.stringify({ lang: 'xx' }))
+    expect(loadPrefs().lang).toBeUndefined()
+  })
+
   it('counts how your steps went in What helped until you switch it off, and remembers that', () => {
     expect(whatHelpedOn(loadPrefs())).toBe(true)
     savePrefs({ ...loadPrefs(), whatHelped: false })

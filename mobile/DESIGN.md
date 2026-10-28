@@ -127,10 +127,15 @@ Edwin's sprout (2026-10-28): a dark-green and a lime leaf on a slim stem,
 with the vein cut out of the lime leaf so it sits on any background. The
 source is `assets/brand/mark.svg`; the app draws the same paths
 (`src/ui/Logo.tsx`: `Mark`, and `Logo` with THE / PERSONA INDEX and the line
-"Understand. Grow. Be more you."). The app icon is the sprout on deep navy
-(`assets/icon.png`, the Android layers, the splash, and the web icons in
-`frontend/public`), all rendered from that one file. Words on marigold (the
-dark theme's buttons and chosen chips) are navy, never black.
+"Understand. Grow. Be more you."). The app icon follows light and dark
+(Edwin, 2026-10-28): the sprout on warm white with a faint shadow in light
+mode (`assets/icon.png`), on deep navy in dark mode (`assets/icon-dark.png`),
+and in grey for iPhone's tinted icons (`assets/icon-tinted.png`). iPhone
+switches between them by itself; Android and the website's home-screen icons
+can't switch, so they use the light one (Android's themed icons still follow
+the phone), and the browser tab's `favicon.svg` follows the browser. All are
+rendered from that one file. Words on marigold (the dark theme's buttons and
+chosen chips) are navy, never black.
 
 ## The launch and the welcome
 

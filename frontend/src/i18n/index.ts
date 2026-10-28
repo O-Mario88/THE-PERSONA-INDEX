@@ -6,19 +6,28 @@
 // English, it is the language of the largest group likely to use the app
 // (Latin America, the US and Spain).
 
+import { de } from './de'
 import { es } from './es'
 import { fr } from './fr'
+import { ja } from './ja'
+import { ko } from './ko'
 import { pt } from './pt'
+import { ru } from './ru'
 
-export type Lang = 'en' | 'es' | 'pt' | 'fr'
+export type Lang = 'en' | 'es' | 'pt' | 'fr' | 'de' | 'ru' | 'ja' | 'ko'
 export const LANGS: { id: Lang; name: string }[] = [
   { id: 'en', name: 'English' },
   { id: 'es', name: 'Español' },
   { id: 'pt', name: 'Português' },
   { id: 'fr', name: 'Français' },
+  // Edwin, 2026-10-28: German, Russian, Japanese and Korean.
+  { id: 'de', name: 'Deutsch' },
+  { id: 'ru', name: 'Русский' },
+  { id: 'ja', name: '日本語' },
+  { id: 'ko', name: '한국어' },
 ]
 
-const MAPS: Record<Exclude<Lang, 'en'>, Record<string, string>> = { es, pt, fr }
+const MAPS: Record<Exclude<Lang, 'en'>, Record<string, string>> = { es, pt, fr, de, ru, ja, ko }
 
 let chosen: Lang | 'auto' = 'auto'
 let device = 'en'

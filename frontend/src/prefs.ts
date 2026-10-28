@@ -34,9 +34,12 @@ export type Prefs = {
   whatHelped?: false
   style?: ReflectionStyle
   time?: ReflectionTime
-  lang?: 'en' | 'es' | 'pt' | 'fr' // the app's language; absent follows the phone (i18n/index.ts)
+  lang?: AppLang // the app's language; absent follows the phone (i18n/index.ts)
 }
 export type ReflectionStyle = 'think' | 'practical' | 'both'
+// The languages the app speaks (i18n/index.ts LANGS), German, Russian, Japanese and Korean since 2026-10-28.
+const APP_LANGS = ['en', 'es', 'pt', 'fr', 'de', 'ru', 'ja', 'ko'] as const
+export type AppLang = (typeof APP_LANGS)[number]
 export type ReflectionTime = 'minute' | 'few' | 'deep'
 export const NO_COUNTRY = 'none'
 
@@ -62,7 +65,7 @@ export function loadPrefs(): Prefs {
     const whatHelped = p.whatHelped === false ? { whatHelped: false as const } : {}
     const style = p.style === 'think' || p.style === 'practical' || p.style === 'both' ? { style: p.style } : {}
     const time = p.time === 'minute' || p.time === 'few' || p.time === 'deep' ? { time: p.time } : {}
-    const lang = p.lang === 'en' || p.lang === 'es' || p.lang === 'pt' || p.lang === 'fr' ? { lang: p.lang } : {}
+    const lang = (APP_LANGS as readonly string[]).includes(p.lang ?? '') ? { lang: p.lang } : {}
     return {
       adult: typeof p.adult === 'boolean' ? p.adult : null,
       mild: !!p.mild,

@@ -10,7 +10,7 @@ import { tr } from '@shared/i18n'
 import { MAX_NAME } from '@shared/welcomeKeys'
 import { brand, light, serif, ThemeProvider } from '../theme'
 import { Dawn } from '../ui/Dawn'
-import { Button, Field, T } from '../ui/kit'
+import { Button, Field, koreanBreaks, T } from '../ui/kit'
 import { Lockup } from '../ui/Logo'
 
 const COLUMN = 380
@@ -34,7 +34,7 @@ export function Welcome({ onBegin }: { onBegin: (name: string) => void }) {
           >
             <View style={{ width: column }}>
               <Lockup mark={Math.round(column * 0.27)} words={Math.round(column * 0.62)} />
-              <Text accessibilityRole="header" style={styles.heading}>
+              <Text accessibilityRole="header" lineBreakStrategyIOS={koreanBreaks().ios} style={[styles.heading, koreanBreaks().style]}>
                 {tr('A more intentional you, starts here.')}
               </Text>
               <View style={styles.rule} />

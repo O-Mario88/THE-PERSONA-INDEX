@@ -22,7 +22,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { brand, font, gutter, lift, radius, RAIL_AT, RAIL_W, useTheme, WIDE, type Palette } from '../theme'
 import { Icon, type IconName } from './Icon'
-import { tr } from '@shared/i18n'
+import { tr, uiLanguage } from '@shared/i18n'
 
 // ---- type ----
 
@@ -90,15 +90,26 @@ export function T({
 }) {
   const p = useTheme()
   const t = tone ?? (v === 'eyebrow' ? 'accent' : v === 'label' || v === 'tiny' ? 'muted' : 'text')
+  const words = koreanBreaks()
   return (
     <Text
       numberOfLines={lines}
       accessibilityRole={v === 'display' || v === 'title' || v === 'h2' ? 'header' : undefined}
-      style={[VARIANTS[v], { color: toneColor(p, t) }, bold && { fontFamily: font.bold }, center && { textAlign: 'center' }, style]}
+      lineBreakStrategyIOS={words.ios}
+      style={[VARIANTS[v], { color: toneColor(p, t) }, bold && { fontFamily: font.bold }, center && { textAlign: 'center' }, words.style, style]}
     >
       {typeof children === 'string' ? tr(children) : children}
     </Text>
   )
+}
+
+// Korean wraps between words, never inside one (Edwin, 2026-10-28: Korean
+// added). iOS has a Hangul word mode, the web has keep-all; Android wraps
+// as it does.
+const KEEP_ALL = { wordBreak: 'keep-all' } as TextStyle
+export function koreanBreaks(): { ios?: 'hangul-word'; style?: TextStyle } {
+  if (uiLanguage() !== 'ko') return {}
+  return { ios: 'hangul-word', style: Platform.OS === 'web' ? KEEP_ALL : undefined }
 }
 
 // Bold words inside a line of body text.

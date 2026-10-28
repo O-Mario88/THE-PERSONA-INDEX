@@ -20,12 +20,17 @@
       "config": {
         "usesNonExemptEncryption": false
       },
-      "usesAppleSignIn": true
+      "usesAppleSignIn": true,
+      "icon": {
+        "light": "./assets/icon.png",
+        "dark": "./assets/icon-dark.png",
+        "tinted": "./assets/icon-tinted.png"
+      }
     },
     "android": {
       "package": "com.personaindex.app",
       "adaptiveIcon": {
-        "backgroundColor": "#0f1e2e",
+        "backgroundColor": "#f8f4ec",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
