@@ -542,8 +542,8 @@ export function VerdictRow({ onTap }: { onTap: (v: Verdict) => void }) {
           style={({ pressed }) => ({
             flex: 1,
             alignItems: 'center',
-            paddingVertical: 12,
-            borderRadius: radius.md,
+            paddingVertical: 10,
+            borderRadius: radius.sm,
             borderWidth: 1,
             borderColor: p.lineStrong,
             backgroundColor: pressed ? p.accentWash : p.surface,

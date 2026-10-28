@@ -157,16 +157,18 @@ export function Button({
       accessibilityLabel={tr(label)}
       disabled={off}
       onPress={onPress}
+      hitSlop={small ? 4 : undefined}
       style={(s) => [
         styles.btn,
         {
           backgroundColor: off && kind === 'primary' ? p.surface3 : hovered(s) && !off && (kind === 'outline' || kind === 'light' || kind === 'ghost') ? p.surface2 : l.bg,
           borderColor: l.border ?? 'transparent',
           borderWidth: l.border ? 1 : 0,
-          minHeight: small ? 40 : kind === 'text' ? 36 : wide ? 56 : 48,
-          paddingHorizontal: kind === 'text' ? 0 : small ? 16 : 24,
+          // Curved corners, never a pill, and compact (Edwin, 2026-10-28).
+          minHeight: small ? 38 : kind === 'text' ? 36 : wide ? 48 : 44,
+          paddingHorizontal: kind === 'text' ? 0 : small ? 14 : 20,
           alignSelf: wide ? 'stretch' : 'flex-start',
-          borderRadius: small ? radius.pill : radius.md,
+          borderRadius: radius.sm,
           opacity: s.pressed ? 0.85 : hovered(s) && !off && (kind === 'primary' || kind === 'soft') ? 0.92 : 1,
           // A small press-down, the way the big apps answer a tap.
           transform: [{ scale: s.pressed && !off && kind !== 'text' ? 0.97 : 1 }],
@@ -179,7 +181,7 @@ export function Button({
       ) : (
         <>
           {icon && <Icon name={icon} size={18} color={fg} />}
-          <Text style={{ fontFamily: kind === 'text' ? font.semibold : font.bold, fontSize: small || kind === 'text' ? 14 : wide ? 16 : 15, color: fg }}>{tr(label)}</Text>
+          <Text style={{ fontFamily: kind === 'text' ? font.semibold : font.bold, fontSize: small || kind === 'text' ? 14 : 15, color: fg }}>{tr(label)}</Text>
           {iconAfter && <Icon name={iconAfter} size={18} color={fg} />}
         </>
       )}
@@ -475,6 +477,6 @@ const styles = StyleSheet.create({
   option: { flexDirection: 'row', alignItems: 'center', gap: 16, minHeight: 64, borderWidth: 1.5, borderRadius: radius.md, paddingHorizontal: 20, paddingVertical: 16 },
   optionRing: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   toggle: { flexDirection: 'row', alignItems: 'center', gap: 16, paddingVertical: 16, borderTopWidth: StyleSheet.hairlineWidth },
-  chip: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 40, paddingHorizontal: 16, borderRadius: radius.pill },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 36, paddingHorizontal: 14, borderRadius: radius.sm },
   field: { minHeight: 52, borderWidth: 1.5, borderRadius: radius.md, paddingHorizontal: 16, paddingVertical: 12, fontFamily: font.regular, fontSize: 15 },
 })

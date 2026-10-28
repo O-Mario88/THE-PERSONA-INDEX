@@ -23,7 +23,7 @@ export function DepthSwitch({ deep, onChange, center = true }: { deep: boolean; 
     <View
       accessibilityRole="tablist"
       accessibilityLabel="Reading depth"
-      style={{ flexDirection: 'row', gap: 4, padding: 4, borderRadius: radius.pill, backgroundColor: p.surface2, alignSelf: center ? 'center' : 'flex-start' }}
+      style={{ flexDirection: 'row', gap: 4, padding: 3, borderRadius: radius.sm, backgroundColor: p.surface2, alignSelf: center ? 'center' : 'flex-start' }}
     >
       {(
         [
@@ -37,7 +37,7 @@ export function DepthSwitch({ deep, onChange, center = true }: { deep: boolean; 
           accessibilityState={{ selected: deep === d }}
           onPress={() => onChange(d)}
           hitSlop={4}
-          style={{ paddingHorizontal: 16, paddingVertical: 10, borderRadius: radius.pill, backgroundColor: deep === d ? p.surface : 'transparent' }}
+          style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, backgroundColor: deep === d ? p.surface : 'transparent' }}
         >
           <T v="small" bold tone={deep === d ? 'text' : 'muted'}>
             {label}

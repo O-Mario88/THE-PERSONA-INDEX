@@ -253,7 +253,7 @@ function MemoryRow({ memory, onWrite }: { memory: Memory; onWrite: (prompt?: str
           style={{
             paddingHorizontal: 10,
             paddingVertical: 6,
-            borderRadius: radius.pill,
+            borderRadius: radius.sm,
             backgroundColor: p.accentWash,
           }}
         >
