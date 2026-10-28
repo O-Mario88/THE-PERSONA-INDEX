@@ -31,6 +31,7 @@ import { dark as darkPalette, font, light as lightPalette, radius, RAIL_AT, RAIL
 import { Back, Button, Page, PrivacyLine, T, Tinted } from './ui/kit'
 import { Icon, type IconName } from './ui/Icon'
 import { CardHead } from './ui/parts'
+import { usePulse } from './ui/Pulse'
 import { Sidebar, type SideItem } from './ui/Sidebar'
 import { QuestionCard } from './screens/QuestionCard'
 import { Close } from './screens/Close'
@@ -135,6 +136,7 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
   const [back, setBack] = useState<Tab>('today')
   const [reading, setReading] = useState<Read | null>(null)
   const [prefs, setPrefs] = useState<Prefs>(loadPrefs)
+  const [connectFocus, setConnectFocus] = useState<string | null>(null)
   // The app's language: the person's choice, or the phone's (i18n/index.ts).
   setLanguage(prefs.lang ?? 'auto', locale())
   const [pickVersion, setPickVersion] = useState(0)
@@ -142,6 +144,8 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
   const [, setFinished] = useState(0)
   const onDone = useCallback(() => setFinished((n) => n + 1), [])
   const { date, window: win, sitting: clockSitting } = useDay()
+  // One Human Pulse for every page (shared humanPulse.ts), once it is on.
+  const pulseCounts = usePulse(date, pulseOn(prefs))
   const [welcome, setWelcome] = useState(() => loadKey(WELCOMED) === null && loadHistory().answers.length === 0 && keys('pi.choice.').length === 0)
   const [localName, setLocalName] = useState(() => loadKey(NAME_KEY) ?? '')
   const me = useAccount()
@@ -272,6 +276,12 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
     setWritePrompt(prompt ?? null)
     setWriteFollows(followsUp ?? null)
     setWriteFree(!prompt)
+  }
+  // "See how others answered": Connect, opened on that exact question.
+  function exploreWithOthers(questionId: string) {
+    saveKey(CONNECT_OPEN_KEY, '1')
+    setConnectFocus(questionId)
+    setTab('circle')
   }
   function open(v: 'settings' | 'kept' | 'signin' | 'mirror') {
     if (tab === 'today' || tab === 'notebook' || tab === 'circle' || tab === 'insights' || tab === 'account') setBack(tab)
@@ -420,9 +430,19 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
   } else if (tab === 'notebook') {
     body = <Reflect today={date} questions={[...morningQs, ...eveningQs]} mild={!intimacyOn(prefs)} startFree={writeFree} startPrompt={writePrompt} startFollowsUp={writeFollows} name={me?.name || localName || null} />
   } else if (tab === 'insights') {
-    body = <Insights today={date} questions={[...morningQs, ...eveningQs]} pulse={pulseOn(prefs)} onOpenSettings={() => goTab('account')} onOpenMirror={() => open('mirror')} />
+    body = <Insights today={date} questions={[...morningQs, ...eveningQs]} pulseCounts={pulseCounts} onExplore={exploreWithOthers} onOpenMirror={() => open('mirror')} />
   } else if (tab === 'circle') {
-    body = <Connect me={me} onSignIn={() => open('signin')} today={date} questions={[...morningQs, ...eveningQs]} />
+    body = (
+      <Connect
+        me={me}
+        onSignIn={() => open('signin')}
+        today={date}
+        questions={[...morningQs, ...eveningQs]}
+        pulse={pulseOn(prefs) ? pulseCounts : false}
+        focus={connectFocus}
+        onPulseOn={() => changePrefs({ ...prefs, pulse: true })}
+      />
+    )
   } else if (tab === 'account') {
     body = (
       <You
@@ -479,6 +499,7 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
               of={steps.length}
               onDone={onDone}
               onNext={() => flowStep.go(at + 1)}
+              pulse={{ counts: pulseCounts, onExplore: exploreWithOthers }}
             />
           )}
           {closing &&

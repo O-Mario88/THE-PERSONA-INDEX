@@ -2,6 +2,9 @@
 // what it may say about you, one small step to try and whether it is you.
 // Every rule lives in the shared code; this file only draws it.
 import { useEffect, useMemo, useState } from 'react'
+import type { PulseCounts } from '@shared/humanPulse'
+import { notAloneFor } from '@shared/insights'
+import { PulseLine } from '../ui/Pulse'
 import { Linking, Pressable, Text, View } from 'react-native'
 import {
   ApiError,
@@ -63,11 +66,13 @@ type Props = {
   of?: number
   onDone?: (questionId: string, done: Done) => void
   onNext: () => void
+  // Today's Human Pulse counts, once it is on, and where "See how others answered" goes.
+  pulse?: { counts: PulseCounts | null; onExplore: (questionId: string) => void }
 }
 
 type Mode = 'options' | 'writing' | 'closest'
 
-export function QuestionCard({ question, date, sitting, wordsDays = DEFAULT_WORDS_DAYS, writeFirst = false, index, of, onDone, onNext }: Props) {
+export function QuestionCard({ question, date, sitting, wordsDays = DEFAULT_WORDS_DAYS, writeFirst = false, index, of, onDone, onNext, pulse }: Props) {
   const [choice, setChoice] = useState<string | null>(() => recalledChoice(question.id))
   const [words, setWords] = useState<OwnWords | null>(() => recalledWords(question.id))
   const [draft, setDraft] = useState(() => (recalledChoice(question.id) ? '' : recalledDraft(question.id)))
@@ -273,6 +278,7 @@ export function QuestionCard({ question, date, sitting, wordsDays = DEFAULT_WORD
           card={index !== undefined && of ? `Card ${index + 1} of ${of}` : undefined}
           nextLabel={index !== undefined && of && index + 1 < of ? `Question ${index + 2} of ${of}` : 'Next'}
           onNext={onNext}
+          pulse={pulse}
         />
       )}
 
@@ -322,6 +328,7 @@ function Answer({
   card,
   nextLabel,
   onNext,
+  pulse,
 }: {
   question: Question
   option: Opt
@@ -331,6 +338,7 @@ function Answer({
   card?: string
   nextLabel: string
   onNext: () => void
+  pulse?: Props['pulse']
 }) {
   const insight = option.heavy ? undefined : option.insight
   const [thread] = useState(() => threadLine(loadHistory(), question, option.id, date))
@@ -363,6 +371,10 @@ function Answer({
           thread={notMe ? null : thread}
           focus={notMe || !focus ? null : focusTouch(focus.when, focus.will)}
         />
+      )}
+      {/* After your own reading, one line saying you're not the only one (never after a heavy answer). */}
+      {insight && pulse?.counts && !option.heavy && !question.local && (
+        <PulseLine line={notAloneFor(pulse.counts.questions, question.id, option.id)} stale={pulse.counts.stale} onExplore={() => pulse.onExplore(question.id)} />
       )}
       {insight && isLowMood(question.theme, option.depth) && <Helpline />}
       <Button wide label={nextLabel} onPress={onNext} />

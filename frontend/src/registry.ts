@@ -78,6 +78,7 @@ export const REGISTRY: Entry[] = [
   { key: 'pi.glimpse', what: 'Which sitting showed your first glimpse', backup: 'always', merge: 'local', download: false },
   { key: 'pi.reminders.v1', what: 'Which reminders you turned on in the phone app, and at what time', backup: 'never', merge: 'local', download: false },
   { key: 'pi.journey.v1', what: 'The one area of your life you chose to look at after your first Mirror, and since when', backup: 'always', merge: 'local', download: true },
+  { key: 'pi.pulse.notalone', what: 'The last Human Pulse counts this phone fetched (anonymous totals, the same for everyone), kept for when it is offline', backup: 'never', merge: 'local', download: false },
   { key: 'pi.invite.later', what: 'The day you said "Not now" to inviting a friend from Today, so it waits a week before asking again', backup: 'never', merge: 'local', download: false },
   { key: 'pi.reminders.asked', what: 'Whether you were asked about reminders after your first questions, and what you said', backup: 'never', merge: 'local', download: false },
   { key: 'pi.install.v1', what: 'Whether you were invited to add the app to your home screen', backup: 'never', merge: 'local', download: false },

@@ -1,24 +1,25 @@
 // Insights: understand yourself, find what
 // helps. For You is the person's own answers, worked out on this device;
-// You're Not Alone shows the server's real counts, only to someone who
-// turned the Human Pulse on; Saved holds the cards they kept. No made-up
+// each card carries the shared Human Pulse line (humanPulse.ts) once it is on,
+// with Connect a tap away; Saved holds the cards they kept. No made-up
 // rows, no scores.
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { View } from 'react-native'
 import { recalledVerdict, type Question, type Verdict } from '@shared/api'
-import { evidenceLabel, forYou, getNotAlone, notAloneFor, type ForYouCard, type NotAloneQuestion } from '@shared/insights'
+import { evidenceLabel, forYou, notAloneFor, type ForYouCard } from '@shared/insights'
+import type { PulseCounts } from '@shared/humanPulse'
 import { NEED_NAMES } from '@shared/needs'
 import { intentions, keepIntention, keptCards } from '@shared/notebook'
 import { loadMoves } from '@shared/moves'
 import { loadHistory } from '@shared/profile'
 import { acrossDays } from '@shared/firstWeek'
-import { count } from '@shared/pulse'
 import { rateAnswer } from '@shared/rating'
 import { splitReveal } from '@shared/reveal'
 import { NOT_ME_REPLY, VERDICT_REPLIES } from '@shared/words'
 import { radius, useTheme } from '../theme'
 import { Button, Card, Chip, Page, T } from '../ui/kit'
 import { CardHead } from '../ui/parts'
+import { PulseLine } from '../ui/Pulse'
 import { HeavyCard, VerdictRow } from './QuestionCard'
 
 const WEEK = 7
@@ -28,14 +29,14 @@ const FOR_YOU_MAX = 6
 export function Insights({
   today,
   questions,
-  pulse,
-  onOpenSettings,
+  pulseCounts,
+  onExplore,
   onOpenMirror,
 }: {
   today: string
   questions: Question[]
-  pulse: boolean
-  onOpenSettings: () => void
+  pulseCounts: PulseCounts | null
+  onExplore: (questionId: string) => void
   onOpenMirror?: () => void
 }) {
   const [days, setDays] = useState(WEEK)
@@ -49,19 +50,12 @@ export function Insights({
   const earlier = shown.filter((x) => x.date !== today)
   const [openToday, setOpenToday] = useState(false)
   const saved = keptCards().filter((c) => !c.private)
-  const counted = cards.some((c) => !c.heavy && !c.regional)
   const answeredAny = loadHistory().answers.length > 0
   return (
     <Page
       aside={
-        (counted && pulse) || saved.length > 0 ? (
+        saved.length > 0 ? (
         <>
-          {/* Only with the Human Pulse on; off, there is nothing to show and no nudge to turn it on. */}
-          {counted && pulse && (
-            <Card>
-              <NotAlone today={today} cards={cards} pulse={pulse} onOpenSettings={onOpenSettings} />
-            </Card>
-          )}
           {saved.length > 0 && (
             <>
               <Card style={{ gap: 10 }}>
@@ -103,7 +97,7 @@ export function Insights({
           )}
           {[...(openToday ? fresh : []), ...earlier].map((c) => (
             <Card key={c.questionId} style={{ gap: 20 }}>
-              <InsightCard card={c} today={today} onRated={() => setVersion((v) => v + 1)} />
+              <InsightCard card={c} today={today} onRated={() => setVersion((v) => v + 1)} pulseCounts={pulseCounts} onExplore={onExplore} />
             </Card>
           ))}
         </>
@@ -112,7 +106,19 @@ export function Insights({
   )
 }
 
-function InsightCard({ card, today, onRated }: { card: ForYouCard; today: string; onRated: () => void }) {
+function InsightCard({
+  card,
+  today,
+  onRated,
+  pulseCounts,
+  onExplore,
+}: {
+  card: ForYouCard
+  today: string
+  onRated: () => void
+  pulseCounts: PulseCounts | null
+  onExplore: (questionId: string) => void
+}) {
   const p = useTheme()
   const reading = card.reveal ? splitReveal(card.reveal) : null
   return (
@@ -134,6 +140,15 @@ function InsightCard({ card, today, onRated }: { card: ForYouCard; today: string
               </T>
               {reading.body ? <T tone="text2">{reading.body}</T> : null}
             </>
+          )}
+          {/* The shared Human Pulse for this answer, and Connect opened on this exact question. */}
+          {pulseCounts && !card.regional && (
+            <PulseLine
+              line={notAloneFor(pulseCounts.questions, card.questionId, card.optionId)}
+              stale={pulseCounts.stale}
+              explore="Explore this with others"
+              onExplore={() => onExplore(card.questionId)}
+            />
           )}
           {card.need && (
             <View style={{ gap: 8 }}>
@@ -202,63 +217,6 @@ function RateCard({ card, onRated }: { card: ForYouCard; onRated: () => void }) 
           if (v === 'not_me') setTimeout(onRated, 1500)
         }}
       />
-    </View>
-  )
-}
-
-function NotAlone({ today, cards, pulse, onOpenSettings }: { today: string; cards: ForYouCard[]; pulse: boolean; onOpenSettings: () => void }) {
-  const [counts, setCounts] = useState<NotAloneQuestion[] | null>(null)
-  const [loaded, setLoaded] = useState(false)
-  useEffect(() => {
-    if (!pulse) return
-    let live = true
-    getNotAlone(today).then((c) => {
-      if (!live) return
-      setCounts(c)
-      setLoaded(true)
-    })
-    return () => {
-      live = false
-    }
-  }, [today, pulse])
-  const counted = cards.filter((c) => !c.heavy && !c.regional)
-  return (
-    <View style={{ gap: 10 }}>
-      <CardHead icon="people" tone="blue" v="h2" title="You're not alone in this" />
-      {!pulse ? (
-        <>
-          <T v="small" tone="muted">
-            With the Human Pulse on, this shows the count of people who chose the same response as you. Off unless you turn it on.
-          </T>
-          <Button kind="text" label="Human Pulse in You" onPress={onOpenSettings} />
-        </>
-      ) : !loaded ? (
-        <T v="small" tone="muted">
-          Getting the counts…
-        </T>
-      ) : !counts ? (
-        <T v="small" tone="muted">
-          The counts can’t be reached just now.
-        </T>
-      ) : (
-        counted.map((c) => {
-          const line = notAloneFor(counts, c.questionId, c.optionId)
-          return (
-            <View key={c.questionId} style={{ gap: 2 }}>
-              <T v="small" tone="muted">
-                {c.prompt}
-              </T>
-              <T bold>
-                {!line || line.kind === 'forming'
-                  ? 'The picture is still forming.'
-                  : line.kind === 'few'
-                    ? 'A few people chose the same response.'
-                    : `${count(line.same)} of ${count(line.total)} people chose the same response.`}
-              </T>
-            </View>
-          )
-        })
-      )}
     </View>
   )
 }

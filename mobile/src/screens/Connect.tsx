@@ -14,8 +14,26 @@ import { font, radius } from '../theme'
 import { Button, Card, Chip, Page, T, Tinted } from '../ui/kit'
 import { CardHead, Avatar, Ring as Progress } from '../ui/parts'
 import { CloserTogether, CommonGround, Growing, SupportCelebrate, WhatHelped } from './ConnectMore'
+import { NotAloneSection } from './NotAlone'
+import type { PulseCounts } from '@shared/humanPulse'
 
-export function Connect({ me, onSignIn, today, questions = [] }: { me: AccountView | null; onSignIn: () => void; today?: string; questions?: Question[] }) {
+export function Connect({
+  me,
+  onSignIn,
+  today,
+  questions = [],
+  pulse = false,
+  focus = null,
+  onPulseOn = () => {},
+}: {
+  me: AccountView | null
+  onSignIn: () => void
+  today?: string
+  questions?: Question[]
+  pulse?: PulseCounts | null | false // the shared Human Pulse; false while it is off
+  focus?: string | null // the question someone came here from
+  onPulseOn?: () => void
+}) {
   const [circle, setCircle] = useState<CircleView | null>(null)
   const [error, setError] = useState('')
   const [rings, setRings] = useState<Rings>(loadRings)
@@ -40,6 +58,7 @@ export function Connect({ me, onSignIn, today, questions = [] }: { me: AccountVi
           <T v="display">Your circle</T>
           <T tone="text2">The people who matter to you, and a quiet way to stay close to them.</T>
         </View>
+        <NotAloneSection pulse={pulse} focus={focus} onPulseOn={onPulseOn} />
         {/* One card, one button, like Today (Edwin, 2026-10-28). */}
         <Tinted>
           <T v="h2">Start your circle</T>
@@ -76,6 +95,7 @@ export function Connect({ me, onSignIn, today, questions = [] }: { me: AccountVi
         <T v="display">Connect</T>
         <T tone="text2">The people who matter to you, and a quiet way to stay close to them.</T>
       </View>
+      <NotAloneSection pulse={pulse} focus={focus} onPulseOn={onPulseOn} />
       {error ? <T tone="danger">{error}</T> : null}
       {friends.length > 0 && <CloserTogether friends={friends} rings={rings} />}
 
