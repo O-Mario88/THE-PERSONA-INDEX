@@ -41,6 +41,7 @@ import { SignUp } from './screens/SignUp'
 import { Today } from './screens/Today'
 import { Reflect } from './screens/Reflect'
 import { Insights } from './screens/Insights'
+import { Journey } from './screens/Journey'
 import { Connect } from './screens/Connect'
 import { KeptScreen, You } from './screens/You'
 import { Settings } from './screens/Settings'
@@ -56,7 +57,7 @@ import { locale } from '@shared/locale'
 
 type State = { kind: 'loading' } | { kind: 'ready'; set: DailySet; day: string; offline?: true } | { kind: 'empty' } | { kind: 'error' }
 type Tab = 'today' | 'notebook' | 'circle' | 'insights' | 'account'
-type View_ = Tab | 'settings' | 'kept' | 'read' | 'signin' | 'mirror'
+type View_ = Tab | 'settings' | 'kept' | 'read' | 'signin' | 'mirror' | 'journey'
 
 const TABS: { tab: Tab; name: string; icon: IconName }[] = [
   { tab: 'today', name: 'Today', icon: 'home' },
@@ -283,14 +284,14 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
     setConnectFocus(questionId)
     setTab('circle')
   }
-  function open(v: 'settings' | 'kept' | 'signin' | 'mirror') {
+  function open(v: 'settings' | 'kept' | 'signin' | 'mirror' | 'journey') {
     if (tab === 'today' || tab === 'notebook' || tab === 'circle' || tab === 'insights' || tab === 'account') setBack(tab)
     setTab(v)
   }
   onReminder.current = (w) => (w === 'mirrors' ? open('mirror') : setTab(w === 'reflect' ? 'notebook' : 'today'))
   function openRead(r: Read) {
     setReading(r)
-    if (tab !== 'read' && tab !== 'settings' && tab !== 'kept' && tab !== 'signin' && tab !== 'mirror') setBack(tab)
+    if (tab !== 'read' && tab !== 'settings' && tab !== 'kept' && tab !== 'signin' && tab !== 'mirror' && tab !== 'journey') setBack(tab)
     setTab('read')
   }
   function closeFlow() {
@@ -409,6 +410,8 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
     body = <KeptScreen today={date} mild={!intimacyOn(prefs)} signedIn={!!me} onBack={() => setTab(back)} onDeleted={() => setFinished((n) => n + 1)} />
   } else if (tab === 'read' && reading) {
     body = <ReadScreen read={reading} date={date} intimacy={intimacyOn(prefs)} onBack={() => setTab(back)} onOpen={openRead} />
+  } else if (tab === 'journey') {
+    body = <Journey today={date} onBack={() => setTab(back)} onWrite={write} />
   } else if (tab === 'mirror') {
     body = (
       <Page scrollRef={mirrorScroll}>
@@ -430,7 +433,7 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
   } else if (tab === 'notebook') {
     body = <Reflect today={date} questions={[...morningQs, ...eveningQs]} mild={!intimacyOn(prefs)} startFree={writeFree} startPrompt={writePrompt} startFollowsUp={writeFollows} name={me?.name || localName || null} />
   } else if (tab === 'insights') {
-    body = <Insights today={date} questions={[...morningQs, ...eveningQs]} pulseCounts={pulseCounts} onExplore={exploreWithOthers} onOpenMirror={() => open('mirror')} />
+    body = <Insights today={date} questions={[...morningQs, ...eveningQs]} pulseCounts={pulseCounts} onExplore={exploreWithOthers} onOpenMirror={() => open('mirror')} onOpenJourney={() => open('journey')} />
   } else if (tab === 'circle') {
     body = (
       <Connect
@@ -440,6 +443,7 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
         questions={[...morningQs, ...eveningQs]}
         pulse={pulseOn(prefs) ? pulseCounts : false}
         focus={connectFocus}
+        onWrite={write}
       />
     )
   } else if (tab === 'account') {
@@ -626,6 +630,7 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
               else if (hero.opens) setFlow(hero.opens)
             }}
             onAccount={() => goTab('account')}
+            onJourney={() => open('journey')}
             themes={themesOf([...morningQs, ...eveningQs])}
             intimacy={intimacyOn(prefs)}
             onRead={openRead}
@@ -704,7 +709,7 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
 
 // Inner pages light the tab they belong under.
 function tabHome(tab: View_): View_ {
-  return tab === 'settings' || tab === 'kept' || tab === 'signin' ? 'account' : tab === 'mirror' ? 'insights' : tab
+  return tab === 'settings' || tab === 'kept' || tab === 'signin' ? 'account' : tab === 'mirror' || tab === 'journey' ? 'insights' : tab
 }
 
 function TabBar({ tab, onTab, shown }: { tab: View_; onTab: (t: Tab) => void; shown: typeof TABS }) {
@@ -804,8 +809,8 @@ function InviteNudge({ today, signedIn, onOpen }: { today: string; signedIn: boo
   if (later && addDays(later, 7) > today) return null
   return (
     <Tinted style={{ gap: 10 }}>
-      <CardHead icon="people" tone="purple" title="Invite someone who knows you" />
-      <T tone="text2">Three friends unlock your Outside Mirror: how the people around you experience you. They never see your answers.</T>
+      <CardHead icon="heart" tone="rose" title="Reach out when you’re ready" />
+      <T tone="text2">Is there someone you’d feel comfortable reconnecting with? Your Circle is here whenever you want it, and friends never see your answers.</T>
       <View style={{ flexDirection: 'row', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
         <Button small kind="outline" label={signedIn ? 'Invite a friend' : 'Start your circle'} iconAfter="chevron" onPress={onOpen} />
         <Button

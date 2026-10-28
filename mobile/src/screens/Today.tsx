@@ -34,10 +34,11 @@ interface TodayProps {
   rail?: boolean // a right-hand column beside the feed, on a very wide screen
   onWrite: (prompt?: string, followsUp?: string) => void
   onInsights: () => void
+  onJourney: () => void
   children?: ReactNode
 }
 
-export function Today({ date, window: w, name, note, hero, memory, link, tomorrow, onOpen, onAccount, themes, intimacy, onRead, rail, onWrite, onInsights, children }: TodayProps) {
+export function Today({ date, window: w, name, note, hero, memory, link, tomorrow, onOpen, onAccount, themes, intimacy, onRead, rail, onWrite, onInsights, onJourney, children }: TodayProps) {
   const { width } = useWindowDimensions()
   const header = (
     <View style={styles.header}>
@@ -60,7 +61,7 @@ export function Today({ date, window: w, name, note, hero, memory, link, tomorro
     </View>
   )
   const main = <MainCard hero={hero} memory={memory} link={link} tomorrow={tomorrow} onOpen={onOpen} onWrite={onWrite} />
-  const step = <QuietStepCard today={date} />
+  const step = <QuietStepCard today={date} onJourney={onJourney} />
   const moment = <NeedAMoment onWrite={onWrite} />
   const mirror = <MirrorCard today={date} onWrite={onWrite} onInsights={onInsights} />
   if (rail) {

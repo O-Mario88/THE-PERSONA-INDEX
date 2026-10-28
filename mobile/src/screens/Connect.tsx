@@ -12,7 +12,7 @@ import { createInvite, getCircle, inviteLink, TAG_NAMES, TAGS, type AccountView,
 import { dayMonth } from '@shared/reflect'
 import { font, radius } from '../theme'
 import { Button, Card, Chip, Page, T, Tinted } from '../ui/kit'
-import { CardHead, Avatar, Ring as Progress } from '../ui/parts'
+import { CardHead, Avatar } from '../ui/parts'
 import { CloserTogether, CommonGround, Growing, SupportCelebrate, WhatHelped } from './ConnectMore'
 import { NotAloneSection } from './NotAlone'
 import type { PulseCounts } from '@shared/humanPulse'
@@ -24,6 +24,7 @@ export function Connect({
   questions = [],
   pulse = false,
   focus = null,
+  onWrite = () => {},
 }: {
   me: AccountView | null
   onSignIn: () => void
@@ -31,7 +32,9 @@ export function Connect({
   questions?: Question[]
   pulse?: PulseCounts | null | false // the shared Human Pulse; false while it is off
   focus?: string | null // the question someone came here from
+  onWrite?: (prompt?: string) => void
 }) {
+  const reflectOn = () => onWrite('When you saw how others answered, what did you notice? Does it change how you see your own answer?')
   const [circle, setCircle] = useState<CircleView | null>(null)
   const [error, setError] = useState('')
   const [rings, setRings] = useState<Rings>(loadRings)
@@ -51,22 +54,17 @@ export function Connect({
   if (!me) {
     return (
       <Page>
+        {/* Connect is complete with no friends at all (Edwin, 2026-10-28): shared
+            experiences first, and the circle as an open door, never a lock. */}
         <View style={{ gap: 4 }}>
-          <T v="label">Connect</T>
-          <T v="display">Your circle</T>
-          <T tone="text2">The people who matter to you, and a quiet way to stay close to them.</T>
+          <T v="display">Connect</T>
+          <T tone="text2">A little understanding goes a long way.</T>
         </View>
-        <NotAloneSection pulse={pulse} focus={focus} />
-        {/* One card, one button, like Today (Edwin, 2026-10-28). */}
+        <NotAloneSection pulse={pulse} focus={focus} onReflect={reflectOn} />
         <Tinted>
-          <T v="h2">Start your circle</T>
-          <T tone="text2">
-            Three friends unlock your Outside Mirror: how the people around you experience you, blended so no one answer can be traced. Friends never see your answers.
-          </T>
-          <Button wide label="Sign in to start" iconAfter="chevron" onPress={onSignIn} />
-          <T v="small" tone="muted">
-            No password: a 6-digit code.
-          </T>
+          <CardHead icon="heart" tone="rose" title="Reach out when you’re ready" />
+          <T tone="text2">Is there someone you’d feel comfortable reconnecting with? Your Circle is here whenever you want it, and friends never see your answers.</T>
+          <Button small kind="outline" label="Start your circle" iconAfter="chevron" onPress={onSignIn} />
         </Tinted>
         {today && (
           <Card>
@@ -91,9 +89,9 @@ export function Connect({
       <View style={{ gap: 4 }}>
         <T v="label">Connect{me.handle ? ` · @${me.handle}` : ''}</T>
         <T v="display">Connect</T>
-        <T tone="text2">The people who matter to you, and a quiet way to stay close to them.</T>
+        <T tone="text2">A little understanding goes a long way.</T>
       </View>
-      <NotAloneSection pulse={pulse} focus={focus} />
+      <NotAloneSection pulse={pulse} focus={focus} onReflect={reflectOn} />
       {error ? <T tone="danger">{error}</T> : null}
       {friends.length > 0 && <CloserTogether friends={friends} rings={rings} />}
 
@@ -222,12 +220,12 @@ function Invite({ circle }: { circle: CircleView | null }) {
         tone="purple"
         v="h2"
         title="Invite a friend"
-        right={active < need && <Progress part={active / need} big={`${active}/${need}`} label={`${active} of ${need} friends for your Outside Mirror`} size={56} />}
       />
       <T v="small" tone="muted">
         They see your name and handle, never your answers.
       </T>
-      {active < need && <T tone="text2">{need - active === 1 ? 'One more friend unlocks your Outside Mirror.' : `${need - active} more friends unlock your Outside Mirror.`}</T>}
+      {/* No counts and nothing locked: the Outside Mirror is a possibility, not a target. */}
+      {active < need && <T tone="text2">When a few friends are here, your Outside Mirror can show how the people around you experience you.</T>}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         {TAGS.map((t) => (
           <Chip key={t} label={TAG_NAMES[t]} on={tag === t} onPress={() => setTag(t)} />

@@ -3,7 +3,8 @@
 // are, one quiet next step of your own, and the Mirror that's coming. Each
 // part says nothing rather than something generic.
 
-import { carryLine, ideaToTry, lastCard, stepToFollow, whenWas } from './continuity'
+import { carryLine, ideaToTry, lastCard, whenWas } from './continuity'
+import { dueStep, revisitFor } from './growthJourney'
 import { acrossDays, startedOn } from './firstWeek'
 import { readWriting } from './kinder'
 import { loadMoves, type Move } from './moves'
@@ -68,15 +69,19 @@ export function linkLine(m: Memory, todaysThemes: string[]): string {
 
 export type QuietStep =
   | { kind: 'followUp'; move: Move }
+  | { kind: 'revisit'; move: Move; line: string }
   | { kind: 'carry'; text: string }
   | { kind: 'idea'; questionId: string; optionId: string; step: string; from: string }
 
 // quietStep is the one next step on Today: how a step you said you'd try
-// went, then one thing to carry from today's answers, then a small idea from
-// your own recent cards.
+// went (the Growth Journey check-in), then a step that helped before when
+// today touches the same part of life, then one thing to carry from today's
+// answers, then a small idea from your own recent cards.
 export function quietStep(today: string, h: History, moves: Move[] = loadMoves()): QuietStep | null {
-  const move = stepToFollow(today, moves)
+  const move = dueStep(today, moves)
   if (move) return { kind: 'followUp', move }
+  const again = revisitFor(today, h, moves)
+  if (again) return { kind: 'revisit', ...again }
   const carry = carryLine(today, h)
   if (carry) return { kind: 'carry', text: carry }
   const idea = ideaToTry(today, h, moves)

@@ -73,6 +73,12 @@ describe('one quiet next step', () => {
     expect(quietStep('2026-10-28', { answers: [], skips: [] }, [started('2026-10-26')])).toMatchObject({ kind: 'followUp', move: { step: 'Step from 2026-10-26' } })
   })
 
+  it('brings back a step that helped before, when today touches the same part of life', () => {
+    const h = { answers: [answer('2026-10-20', 'q1', { theme: 'work-career' }), answer('2026-10-28', 'q2', { theme: 'colleagues', need: 'calm' })], skips: [] }
+    localStorage.setItem('pi.checkins.v1', JSON.stringify([{ questionId: 'q1', date: '2026-10-21', tried: 'yes', outcome: 'helped' }]))
+    expect(quietStep('2026-10-28', h, [{ date: '2026-10-20', questionId: 'q1', optionId: 'o', step: 'Ask for help', status: 'helped' }])).toMatchObject({ kind: 'revisit' })
+  })
+
   it('then gives one thing to carry from today’s answers', () => {
     const h = { answers: [answer('2026-10-28', 'a', { need: 'calm' })], skips: [] }
     expect(quietStep('2026-10-28', h, [])).toEqual({ kind: 'carry', text: 'Notice one moment today when your shoulders drop.' })

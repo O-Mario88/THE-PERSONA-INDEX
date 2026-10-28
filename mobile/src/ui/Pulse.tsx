@@ -28,7 +28,7 @@ export function usePulse(date: string | undefined, on: boolean): PulseCounts | n
 
 // PulseLine: "37 of 140 people chose the same answer as you.", with a way to
 // see more in Connect. Nothing at all when there is nothing honest to say.
-export function PulseLine({ line, stale, onExplore, explore = 'See how others answered' }: { line: NotAloneLine | null; stale?: boolean; onExplore?: () => void; explore?: string }) {
+export function PulseLine({ line, stale, onExplore, explore = 'Explore shared experiences' }: { line: NotAloneLine | null; stale?: boolean; onExplore?: () => void; explore?: string }) {
   const p = useTheme()
   const words = line ? pulseWords(line) : null
   if (!words) return null

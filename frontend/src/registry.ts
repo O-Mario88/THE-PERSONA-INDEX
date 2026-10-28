@@ -34,6 +34,8 @@ export const REGISTRY: Entry[] = [
   { key: 'pi.prefs.v1', what: 'Your settings, including the country you said you live in', backup: 'always', merge: 'local', download: true },
   { key: 'pi.seed', what: 'The order your answers are shown in', backup: 'always', merge: 'local', download: false },
   { key: 'pi.history.v1', what: 'Your answers of the last 60 days: theme, depth and whether the card was you', backup: 'always', merge: 'history', download: true },
+  { key: 'pi.checkins.v1', what: 'How the steps you tried went: whether you tried them, how it went and how you felt', backup: 'always', merge: 'local', download: true },
+  { key: 'pi.stepnote.', what: 'Anything you wrote down about how a step went, in your own words', backup: 'journal', merge: 'local', download: true },
   { key: 'pi.moves.v1', what: 'Your small steps and how they went', backup: 'always', merge: 'moves', download: true },
   { key: 'pi.choice.', what: 'Which answer you chose, for a week', backup: 'always', merge: 'local', download: true },
   { key: 'pi.at.', what: 'When you answered, for a week', backup: 'always', merge: 'local', download: false },

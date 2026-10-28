@@ -21,8 +21,8 @@ import { Notebook } from './Notebook'
 import { HeavyCard } from './QuestionCard'
 import { font, radius, useTheme } from '../theme'
 import { Button, Card, Page, T, Tinted, Private } from '../ui/kit'
-import { CardHead, Disc, type Tone } from '../ui/parts'
-import { Icon, type IconName } from '../ui/Icon'
+import { AREA_ICON, AREA_TONE, CardHead, Disc } from '../ui/parts'
+import { Icon } from '../ui/Icon'
 
 const SPAN_DAYS: Record<ReflectionPeriod, number> = { day: 0, week: 6, month: 30 }
 const THIS: Record<ReflectionPeriod, string> = { day: 'today', week: 'this week', month: 'this month' }
@@ -34,8 +34,8 @@ const SOURCE: Record<NoticedSource, string> = {
   reflections: 'From your reflections',
 }
 const AREAS: ReflectionArea[] = ['work', 'school', 'family', 'culture', 'social', 'health', 'money', 'self']
-const ICONS: Record<ReflectionArea, IconName> = { work: 'briefcase', school: 'notebook', family: 'heart', culture: 'globe', social: 'people', health: 'leaf', money: 'bars', self: 'you' }
-const TONES: Record<ReflectionArea, Tone> = { work: 'blue', school: 'blue', family: 'rose', culture: 'blue', social: 'blue', health: 'green', money: 'amber', self: 'purple' }
+const ICONS = AREA_ICON
+const TONES = AREA_TONE
 
 function answeredIn(period: ReflectionPeriod, today: string, todays: Question[]): Answered[] {
   const from = addDays(today, -SPAN_DAYS[period])

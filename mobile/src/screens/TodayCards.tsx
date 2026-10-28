@@ -3,7 +3,7 @@
 // nothing rather than something generic.
 import { useState } from 'react'
 import { View } from 'react-native'
-import { setMoveStatus, startMove } from '@shared/moves'
+import { startMove } from '@shared/moves'
 import type { ReflectionArea } from '@shared/notebook'
 import { loadHistory } from '@shared/profile'
 import { minutes, todaysRead } from '@shared/reads/reads'
@@ -13,10 +13,11 @@ import { load, loadJSON, saveJSON } from '@shared/storage'
 import { nextMirror, quietStep, type QuietStep } from '@shared/todayFocus'
 import { radius, useTheme } from '../theme'
 import { Button, Card, Chip, RowLink, T } from '../ui/kit'
+import { CheckIn } from './CheckIn'
 
 // One quiet next step: how a step you said you'd try went, else one thing to
 // carry from today's answers, else a small idea from your own recent cards.
-export function QuietStepCard({ today }: { today: string }) {
+export function QuietStepCard({ today, onJourney }: { today: string; onJourney: () => void }) {
   const [step] = useState(() => quietStep(today, loadHistory()))
   const [said, setSaid] = useState<string | null>(null)
   if (!step) return null
@@ -24,6 +25,7 @@ export function QuietStepCard({ today }: { today: string }) {
     <Card style={{ gap: 10 }}>
       <T v="label">A quiet next step</T>
       {said ? <T tone="text2">{said}</T> : <StepBody today={today} step={step} onSaid={setSaid} />}
+      <Button small kind="text" label="See your journey" iconAfter="arrow" onPress={onJourney} style={{ alignSelf: 'flex-start' }} />
     </Card>
   )
 }
@@ -59,21 +61,10 @@ function StepBody({ today, step, onSaid }: { today: string; step: QuietStep; onS
       </>
     )
   }
-  const answer = (status: 'helped' | 'no_change' | 'not_tried', reply: string) => {
-    setMoveStatus(step.move.questionId, status, today).catch(() => {})
-    onSaid(reply)
+  if (step.kind === 'revisit') {
+    return <T v="h3">{step.line}</T>
   }
-  return (
-    <>
-      <T v="h3">“{step.move.step}”</T>
-      <T tone="text2">You said you’d try this. How did it go?</T>
-      <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-        <Button small label="It helped" onPress={() => answer('helped', 'That’s worth knowing. I’ll remember it helped you. You’ll find it in Insights, under What has helped you.')} />
-        <Button small kind="ghost" label="No change yet" onPress={() => answer('no_change', 'Thanks for telling me. Not every step lands, and trying still counts.')} />
-        <Button small kind="ghost" label="Didn't get to it" onPress={() => answer('not_tried', 'That’s fine. Life gets in the way. It stays in your notebook.')} />
-      </View>
-    </>
-  )
+  return <CheckIn move={step.move} today={today} onDone={onSaid} />
 }
 
 // The Mirror that's coming: how far away, a dot for each day this week
@@ -106,7 +97,7 @@ const JOURNEY = 'pi.journey.v1'
 const JOURNEY_AREAS: ReflectionArea[] = ['work', 'family', 'social', 'money', 'health', 'self']
 type Journey = { area: ReflectionArea; since: string }
 
-function JourneyLine({ today, onWrite }: { today: string; onWrite: (prompt?: string) => void }) {
+export function JourneyLine({ today, onWrite }: { today: string; onWrite: (prompt?: string) => void }) {
   const [journey, setJourney] = useState(() => loadJSON(JOURNEY) as Journey | null)
   const [choosing, setChoosing] = useState(false)
   if (journey && !choosing) {

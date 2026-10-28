@@ -10,6 +10,7 @@ import { font, useTheme } from '../theme'
 import { Icon, type IconName } from './Icon'
 import { T } from './kit'
 import { THEMES } from '@shared/themes'
+import type { ReflectionArea } from '@shared/notebook'
 
 export type Tone = 'green' | 'blue' | 'purple' | 'rose' | 'amber'
 
@@ -69,6 +70,10 @@ export function themeIcon(slug?: string): IconName {
   if (!slug) return 'today'
   return TOPIC_ICONS[slug] ?? AREA_ICONS[THEMES[slug]?.area ?? ''] ?? 'today'
 }
+
+// Each part of life's icon and tint (Reflect and My Journey share them).
+export const AREA_ICON: Record<ReflectionArea, IconName> = { work: 'briefcase', school: 'notebook', family: 'heart', culture: 'globe', social: 'people', health: 'leaf', money: 'bars', self: 'you' }
+export const AREA_TONE: Record<ReflectionArea, Tone> = { work: 'blue', school: 'blue', family: 'rose', culture: 'blue', social: 'blue', health: 'green', money: 'amber', self: 'purple' }
 
 // Initials on a pastel picked from the name. No photos.
 export function Avatar({ name, size = 36 }: { name: string; size?: number }) {

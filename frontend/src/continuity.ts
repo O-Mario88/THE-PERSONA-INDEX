@@ -37,13 +37,6 @@ export function rememberLine(today: string, h: History): string | null {
   return card ? `${whenWas(card.date, today)} you chose “${card.label}”, and I noticed: ${card.noticed} Let's see what today adds.` : null
 }
 
-// stepToFollow is the oldest step from the past week, before today, that
-// someone said they'd try and hasn't said how it went.
-export function stepToFollow(today: string, moves: Move[] = loadMoves()): Move | null {
-  const from = addDays(today, -7)
-  return [...moves].filter((m) => m.status === 'started' && m.date < today && m.date >= from).sort((a, b) => a.date.localeCompare(b.date))[0] ?? null
-}
-
 // ideaToTry is something useful for a day someone doesn't feel like answering:
 // a small step from one of their own recent cards that they haven't tried yet.
 export function ideaToTry(today: string, h: History, moves: Move[] = loadMoves()): { questionId: string; optionId: string; step: string; from: string } | null {

@@ -32,12 +32,14 @@ export function Insights({
   pulseCounts,
   onExplore,
   onOpenMirror,
+  onOpenJourney,
 }: {
   today: string
   questions: Question[]
   pulseCounts: PulseCounts | null
   onExplore: (questionId: string) => void
   onOpenMirror?: () => void
+  onOpenJourney: () => void
 }) {
   const [days, setDays] = useState(WEEK)
   const [version, setVersion] = useState(0)
@@ -73,12 +75,11 @@ export function Insights({
         <T v="display">Insights</T>
         <T tone="text2">What I'm learning about you, and what seems to help you.</T>
       </View>
-      {(answeredAny || onOpenMirror) && (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-          {answeredAny && <Chip label="Last 30 days" on={days === MONTH} onPress={() => setDays(days === MONTH ? WEEK : MONTH)} />}
-          {onOpenMirror && <Button kind="text" small label="Your Mirrors" iconAfter="arrow" onPress={onOpenMirror} />}
-        </View>
-      )}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+        {answeredAny && <Chip label="Last 30 days" on={days === MONTH} onPress={() => setDays(days === MONTH ? WEEK : MONTH)} />}
+        <Button kind="text" small label="My journey" iconAfter="arrow" onPress={onOpenJourney} />
+        {onOpenMirror && <Button kind="text" small label="Your Mirrors" iconAfter="arrow" onPress={onOpenMirror} />}
+      </View>
       <AcrossDays today={today} />
       <WhatHelpedYou />
       <T v="h2">For You</T>
@@ -142,7 +143,6 @@ function InsightCard({
             <PulseLine
               line={notAloneFor(pulseCounts.questions, card.questionId, card.optionId)}
               stale={pulseCounts.stale}
-              explore="Explore this with others"
               onExplore={() => onExplore(card.questionId)}
             />
           )}

@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { carryLine, ideaToTry, rememberLine, stepToFollow } from './continuity'
-import type { Move } from './moves'
+import { carryLine, ideaToTry, rememberLine } from './continuity'
 import { saveJSON } from './storage'
 
 beforeEach(() => localStorage.clear())
@@ -20,17 +19,6 @@ describe('showing the app remembers', () => {
     expect(rememberLine('2026-10-27', { answers: [answer('2026-10-27', 'q1')], skips: [] })).toBeNull()
     expect(rememberLine('2026-10-28', { answers: [answer('2026-10-27', 'q1', true)], skips: [] })).toBeNull()
     expect(rememberLine('2026-11-10', { answers: [answer('2026-10-27', 'q1')], skips: [] })).toBeNull()
-  })
-})
-
-describe('following up on a step', () => {
-  const move = (date: string, status: Move['status']): Move => ({ date, questionId: `q-${date}`, optionId: 'o', step: `Step from ${date}`, status })
-
-  it('brings back the oldest step from the past week still waiting for an answer', () => {
-    const moves = [move('2026-10-26', 'started'), move('2026-10-25', 'helped'), move('2026-10-27', 'started'), move('2026-10-28', 'started')]
-    expect(stepToFollow('2026-10-28', moves)?.step).toBe('Step from 2026-10-26')
-    expect(stepToFollow('2026-11-10', moves)).toBeNull()
-    expect(stepToFollow('2026-10-28', [move('2026-10-28', 'started')])).toBeNull()
   })
 })
 
