@@ -47,6 +47,19 @@ export function saveCheckIn(c: CheckIn, note?: string): StepStatus | null {
 
 export const noteFor = (questionId: string): string | null => load(NOTE_PREFIX + questionId)
 
+// What a check-in adds to the anonymous What helped totals (api.ts
+// reportHelped, when the person keeps that choice on): the outcome alone, in
+// the totals' words. "It made things harder" counts as no help, never as
+// help; a step kept for later says nothing yet.
+export type HelpedOutcome = 'helped_lot' | 'helped_little' | 'no_change' | 'not_tried'
+export function helpedReport(c: CheckIn): HelpedOutcome | null {
+  if (c.tried === 'not_yet') return c.later ? null : 'not_tried'
+  if (c.tried === 'decided_not') return 'not_tried'
+  if (c.outcome === 'helped') return 'helped_lot'
+  if (c.outcome === 'helped_little') return 'helped_little'
+  return c.outcome ? 'no_change' : null
+}
+
 // tryAgain opens a step again from today, after "Would you like to try it
 // again?": the old check-in goes, so the next one asks about this try. The
 // note, in the person's own words, stays.

@@ -308,11 +308,12 @@ export type Kept = {
     planChecks?: number
     weeklyNotes: number
     votes: number
+    reports?: number // What helped reports (backend/whathelped.go)
     firstAnswer?: string
   }
   keptFor: { answersDays: number; weeklyNotesDays: number; votesDays: number; backupDays?: number }
 }
-export type Deleted = { answers: number; steps: number; planChecks?: number; weeklyNotes: number; votes: number }
+export type Deleted = { answers: number; steps: number; planChecks?: number; weeklyNotes: number; votes: number; reports?: number }
 
 // Everything the server holds for this phone, written out, for "Download my
 // book". Shapes mirror backend/keep.go.
@@ -382,6 +383,19 @@ export async function deleteEverywhere(today: string): Promise<Deleted> {
 }
 
 // saveStep starts the small step on an answered card, or says how it went.
+// reportHelped adds how a step went to the anonymous What helped totals
+// (backend/whathelped.go): the outcome alone, kept under a key of its own
+// with only the week. Sent only while the person keeps that choice on.
+export function reportHelped(questionId: string, optionId: string, outcome: 'helped_lot' | 'helped_little' | 'no_change' | 'not_tried', date: string): Promise<unknown> {
+  return withDevice((voterId) =>
+    request('/api/what-helped', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ questionId, optionId, outcome, date, voterId }),
+    }),
+  )
+}
+
 // needStep: the person picked the card's second step, the one serving what
 // the answer reached for, so the server's mirror shows those words.
 export function saveStep(

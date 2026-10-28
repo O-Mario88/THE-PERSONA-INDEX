@@ -176,7 +176,7 @@ describe('you’re not alone, and what helped others', () => {
     const [pick] = othersHelped(h, from, to, steps, texts(h))
     expect(pick.step).toBe(`Step for ${calm.questionId}.`)
     expect(pick.rows).toEqual([
-      { label: 'Helped a lot', count: 940 },
+      { label: 'Helped', count: 940 },
       { label: 'Helped a little', count: 840 },
       { label: 'No change', count: 450 },
       { label: 'Didn’t try', count: null },

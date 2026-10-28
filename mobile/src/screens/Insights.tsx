@@ -3,11 +3,12 @@
 // each card carries the shared Human Pulse line (humanPulse.ts) once it is on,
 // with Connect a tap away; Saved holds the cards they kept. No made-up
 // rows, no scores.
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { View } from 'react-native'
 import { recalledVerdict, type Question, type Verdict } from '@shared/api'
 import { evidenceLabel, forYou, notAloneFor, type ForYouCard } from '@shared/insights'
 import type { PulseCounts } from '@shared/humanPulse'
+import { getOthersHelped, othersLine, type OthersStep } from '@shared/mirrorStory'
 import { NEED_NAMES } from '@shared/needs'
 import { intentions, keepCard, keepIntention, keptCard, keptCards, unkeepCard } from '@shared/notebook'
 import { loadMoves, startMove } from '@shared/moves'
@@ -44,6 +45,15 @@ export function Insights({
 }) {
   const [days, setDays] = useState(WEEK)
   const [version, setVersion] = useState(0)
+  // What helped others: the anonymous totals, the same for everyone (backend/whathelped.go).
+  const [others, setOthers] = useState<OthersStep[] | null>(null)
+  useEffect(() => {
+    let live = true
+    getOthersHelped().then((s) => live && setOthers(s))
+    return () => {
+      live = false
+    }
+  }, [])
   const cards = useMemo(() => {
     void version
     return forYou(loadHistory(), today, days, questions)
@@ -95,7 +105,15 @@ export function Insights({
           {/* Nothing on Insights is folded away (Edwin, 2026-10-28): today's cards first, then earlier ones. */}
           {[...fresh, ...earlier].map((c) => (
             <Card key={c.questionId} style={{ gap: 20 }}>
-              <InsightCard card={c} question={questions.find((q) => q.id === c.questionId)} today={today} onRated={() => setVersion((v) => v + 1)} pulseCounts={pulseCounts} onExplore={onExplore} />
+              <InsightCard
+                card={c}
+                question={questions.find((q) => q.id === c.questionId)}
+                others={others?.find((s) => s.questionId === c.questionId && s.optionId === c.optionId) ?? null}
+                today={today}
+                onRated={() => setVersion((v) => v + 1)}
+                pulseCounts={pulseCounts}
+                onExplore={onExplore}
+              />
             </Card>
           ))}
         </>
@@ -107,6 +125,7 @@ export function Insights({
 function InsightCard({
   card,
   question,
+  others,
   today,
   onRated,
   pulseCounts,
@@ -114,6 +133,7 @@ function InsightCard({
 }: {
   card: ForYouCard
   question?: Question
+  others: OthersStep | null
   today: string
   onRated: () => void
   pulseCounts: PulseCounts | null
@@ -172,6 +192,15 @@ function InsightCard({
             </View>
           )}
           {card.step && <TryThis card={card} today={today} />}
+          {card.step && others && (
+            <View style={{ gap: 2 }}>
+              <T v="label">What helped others</T>
+              <T v="small" tone="text2">
+                {othersLine(others)}
+              </T>
+              <T v="tiny">Only from people who chose to report back. Not a promise it will work for you.</T>
+            </View>
+          )}
           <KeepCard card={card} />
           <CardFit card={card} question={question} onRated={onRated} />
           <T v="tiny">Something to think about, never a diagnosis.</T>

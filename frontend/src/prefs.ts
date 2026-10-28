@@ -15,7 +15,9 @@ import { loadJSON, saveJSON } from './storage'
 // the You page"): pulse: false hides every Human Pulse number; appearance is
 // light or dark on every page (Settings; absent is automatic); black: false (older) keeps the evening and night windows off
 // pure black; still: true shows cards at once instead of unfolding them;
-// connect: false turns quiet nods and Answer Together off both ways.
+// connect: false turns quiet nods and Answer Together off both ways;
+// whatHelped: false stops a check-in's outcome being added to the anonymous
+// What helped totals (backend/whathelped.go).
 export type Prefs = {
   adult: boolean | null
   mild: boolean
@@ -27,6 +29,7 @@ export type Prefs = {
   appearance?: 'light' | 'dark' // light or dark on every page; absent is automatic
   still?: true
   connect?: false
+  whatHelped?: false
   lang?: 'en' | 'es' | 'pt' | 'fr' // the app's language; absent follows the phone (i18n/index.ts)
 }
 export const NO_COUNTRY = 'none'
@@ -50,6 +53,7 @@ export function loadPrefs(): Prefs {
     const appearance = p.appearance === 'light' || p.appearance === 'dark' ? { appearance: p.appearance } : {}
     const still = p.still === true ? { still: true as const } : {}
     const connect = p.connect === false ? { connect: false as const } : {}
+    const whatHelped = p.whatHelped === false ? { whatHelped: false as const } : {}
     const lang = p.lang === 'en' || p.lang === 'es' || p.lang === 'pt' || p.lang === 'fr' ? { lang: p.lang } : {}
     return {
       adult: typeof p.adult === 'boolean' ? p.adult : null,
@@ -62,6 +66,7 @@ export function loadPrefs(): Prefs {
       ...appearance,
       ...still,
       ...connect,
+      ...whatHelped,
       ...lang,
     }
   }
@@ -73,6 +78,9 @@ export function savePrefs(p: Prefs) {
 }
 
 export const intimacyOn = (p: Prefs) => p.adult === true && !p.mild
+
+// whatHelpedOn: how a step went is added, without who, to What helped.
+export const whatHelpedOn = (p: Prefs): boolean => p.whatHelped !== false
 
 // The country to tailor to, or null when none was given.
 export const countryOf = (p: Prefs): string | null => (p.country && p.country !== NO_COUNTRY ? p.country : null)

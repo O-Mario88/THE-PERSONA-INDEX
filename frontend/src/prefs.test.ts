@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { appearanceOf, darkNow, loadPrefs, pulseOn, regionHere, savePrefs, withAppearance } from './prefs'
+import { appearanceOf, darkNow, loadPrefs, pulseOn, regionHere, savePrefs, whatHelpedOn, withAppearance } from './prefs'
 
 beforeEach(() => localStorage.clear())
 
@@ -10,6 +10,12 @@ describe('choices are on until you switch them off in You', () => {
     const p = loadPrefs()
     expect(pulseOn(p)).toBe(true)
     expect(regionHere({ ...p, country: 'UG' })).not.toBeNull()
+  })
+
+  it('counts how your steps went in What helped until you switch it off, and remembers that', () => {
+    expect(whatHelpedOn(loadPrefs())).toBe(true)
+    savePrefs({ ...loadPrefs(), whatHelped: false })
+    expect(whatHelpedOn(loadPrefs())).toBe(false)
   })
 
   it('keeps each one off once you switch it off', () => {

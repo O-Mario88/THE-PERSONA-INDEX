@@ -7,7 +7,7 @@ import { deleteBackup, vaultState } from '@shared/vault'
 import { ApiError, deleteEverywhere, forgetLocal, getKept, insteadCount, wordsBetween, type Kept } from '@shared/api'
 import { loadMoves } from '@shared/moves'
 import { notebookCount } from '@shared/notebook'
-import { countryOf, loadPrefs, pulseOn, type Prefs } from '@shared/prefs'
+import { countryOf, loadPrefs, pulseOn, whatHelpedOn, type Prefs } from '@shared/prefs'
 import { regionOf } from '@shared/regions'
 import { REGIONAL_SWITCH } from '@shared/words'
 import { ReminderSettingsView } from './Reminders'
@@ -127,6 +127,12 @@ export function You({
           note="See how many people chose the same answers as you: anonymous totals only, never who. Off hides every number, everywhere."
           value={pulseOn(prefs)}
           onChange={(on) => onChange(on ? without('pulse') : { ...prefs, pulse: false })}
+        />
+        <Toggle
+          label="Count my steps in What helped"
+          note="When you say how a step went, only the outcome is added to anonymous totals that show others what helped, never who. Off sends no more; Delete everything removes what was sent."
+          value={whatHelpedOn(prefs)}
+          onChange={(on) => onChange(on ? without('whatHelped') : { ...prefs, whatHelped: false })}
         />
         {regionOf(countryOf(prefs)) && (
           <Toggle
@@ -299,7 +305,7 @@ export function KeptScreen({ today, mild, signedIn, onBack, onDeleted }: { today
 
 function ServerList({ k }: { k: Kept }) {
   const { kept, keptFor } = k
-  if (kept.answers + kept.steps + (kept.planChecks ?? 0) + kept.weeklyNotes + kept.votes === 0) return <T>Nothing. This phone has no answers on the server.</T>
+  if (kept.answers + kept.steps + (kept.planChecks ?? 0) + kept.weeklyNotes + kept.votes + (kept.reports ?? 0) === 0) return <T>Nothing. This phone has no answers on the server.</T>
   return (
     <>
       <T>
@@ -319,6 +325,11 @@ function ServerList({ k }: { k: Kept }) {
         <T bold>{plural(kept.weeklyNotes, 'weekly note')}</T> for your month, quarter and year: counts and your clearest answers, never your words. Kept{' '}
         {plural(Math.round(keptFor.weeklyNotesDays / 30), 'month')}.
       </T>
+      {(kept.reports ?? 0) > 0 && (
+        <T>
+          <T bold>{plural(kept.reports ?? 0, 'What helped report')}</T>: how a step went, under a key of its own, with only the week. Kept until you delete everything.
+        </T>
+      )}
       <T>
         <T bold>{plural(kept.votes, 'vote')}</T> with no key that links them to each other, only there so you can't be counted twice. Kept {weeks(keptFor.votesDays)}, to
         the hour they came in.

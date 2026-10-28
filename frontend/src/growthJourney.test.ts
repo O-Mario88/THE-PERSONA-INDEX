@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { checkInFor, dueStep, heldBack, journeyHistory, lifeAreas, noteFor, outcomeLine, revisitFor, saveCheckIn, statusFor, stepWords, tryAgain } from './growthJourney'
+import { checkInFor, dueStep, heldBack, helpedReport, journeyHistory, lifeAreas, noteFor, outcomeLine, revisitFor, saveCheckIn, statusFor, stepWords, tryAgain } from './growthJourney'
 import { loadMoves } from './moves'
 import { saveJSON } from './storage'
 import type { Move } from './moves'
@@ -46,6 +46,18 @@ describe('closing the loop on a step', () => {
     saveCheckIn({ questionId: 'q1', date: '2026-10-25', tried: 'not_yet', later: '2026-10-28' })
     expect(dueStep('2026-10-26', moves)).toBeNull()
     expect(dueStep('2026-10-28', moves)?.step).toBe('Ask for help')
+  })
+})
+
+describe('what a check-in adds to What helped', () => {
+  it('gives the outcome alone, in the words the totals use, and nothing for a step kept for later', () => {
+    expect(helpedReport({ questionId: 'q', date: 'd', tried: 'yes', outcome: 'helped', feeling: 'lighter' })).toBe('helped_lot')
+    expect(helpedReport({ questionId: 'q', date: 'd', tried: 'little', outcome: 'helped_little' })).toBe('helped_little')
+    expect(helpedReport({ questionId: 'q', date: 'd', tried: 'yes', outcome: 'no_difference' })).toBe('no_change')
+    expect(helpedReport({ questionId: 'q', date: 'd', tried: 'yes', outcome: 'harder' })).toBe('no_change')
+    expect(helpedReport({ questionId: 'q', date: 'd', tried: 'decided_not' })).toBe('not_tried')
+    expect(helpedReport({ questionId: 'q', date: 'd', tried: 'not_yet' })).toBe('not_tried')
+    expect(helpedReport({ questionId: 'q', date: 'd', tried: 'not_yet', later: '2026-10-31' })).toBeNull()
   })
 })
 

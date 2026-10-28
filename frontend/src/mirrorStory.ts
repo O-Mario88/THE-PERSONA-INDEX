@@ -517,10 +517,24 @@ export type OthersStep = { questionId: string; optionId: string; total: number; 
 export type OthersPick = { step: string; total: number; rows: { label: string; count: number | null }[]; line: string }
 
 export const OTHERS_LABELS: Record<OthersOutcome, string> = {
-  helped_lot: 'Helped a lot',
+  helped_lot: 'Helped', // "It helped" in a check-in
   helped_little: 'Helped a little',
   no_change: 'No change',
   not_tried: 'Didn’t try',
+}
+
+// othersLine says what the people who reported back on a step found, in
+// counts: "Of the 2,480 who tried this and chose to report back, 1,780 said
+// it helped." A folded few is never added in.
+export function othersLine(s: OthersStep): string {
+  const counted = (o: OthersOutcome) => {
+    const c = s.outcomes.find((x) => x.outcome === o)
+    return c && !c.few ? c.count : 0
+  }
+  const helped = counted('helped_lot') + counted('helped_little')
+  return helped > 0
+    ? `Of the ${s.total.toLocaleString(locale())} who tried this and chose to report back, ${helped.toLocaleString(locale())} said it helped.`
+    : `${s.total.toLocaleString(locale())} reported back on this step.`
 }
 
 export function othersHelped(
@@ -543,12 +557,7 @@ export function othersHelped(
         const c = of(o)
         return { label: OTHERS_LABELS[o], count: c?.few ? null : (c?.count ?? 0) }
       })
-      const helped = (of('helped_lot')?.few ? 0 : (of('helped_lot')?.count ?? 0)) + (of('helped_little')?.few ? 0 : (of('helped_little')?.count ?? 0))
-      const line =
-        helped > 0
-          ? `Of the ${s.total.toLocaleString(locale())} who tried this and chose to report back, ${helped.toLocaleString(locale())} said it helped.`
-          : `${s.total.toLocaleString(locale())} reported back on this step.`
-      return { step: textOf(s.questionId)!.step!, total: s.total, rows, line }
+      return { step: textOf(s.questionId)!.step!, total: s.total, rows, line: othersLine(s) }
     })
 }
 

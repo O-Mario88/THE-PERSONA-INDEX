@@ -128,6 +128,7 @@ type Server struct {
 	bank    QuestionBank
 	votes   VoteStore
 	mirror  MirrorStore // each phone's kept answers and steps (mirrorstore.go)
+	helped  HelpedStore // What Helped reports, apart from votes and the mirror (whathelped.go)
 	vaults  VaultStore  // the sealed backups (vault.go)
 	social  SocialStore // accounts and the circle (social.go)
 	friends friendBank  // friend questions (friends.go)
@@ -179,6 +180,7 @@ func NewServer(clock func() time.Time, bank QuestionBank, store Store, devices *
 		bank:            bank,
 		votes:           store,
 		mirror:          store,
+		helped:          store,
 		vaults:          store,
 		social:          store,
 		friends:         mustFriendBank(),
@@ -220,6 +222,8 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("DELETE /api/mirror", s.ForgetDevice) // the older name, kept for phones still using it
 	mux.HandleFunc("POST /api/steps", s.SaveStep)
 	mux.HandleFunc("POST /api/plans/checks", s.SavePlanCheck)
+	mux.HandleFunc("POST /api/what-helped", s.SaveHelped)
+	mux.HandleFunc("GET /api/what-helped", s.GetWhatHelped)
 	mux.HandleFunc("GET /api/device/export", s.ExportDevice)
 	mux.HandleFunc("PUT /api/vault", s.PutVault)
 	mux.HandleFunc("GET /api/vault", s.GetVault)

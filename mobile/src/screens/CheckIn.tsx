@@ -4,8 +4,10 @@
 // "I decided not to" are answers like any other, never a failure.
 import { useState } from 'react'
 import { View } from 'react-native'
-import { saveCheckIn, type CheckIn as Check, type Feeling, type Outcome, type Tried } from '@shared/growthJourney'
+import { reportHelped } from '@shared/api'
+import { helpedReport, saveCheckIn, type CheckIn as Check, type Feeling, type Outcome, type Tried } from '@shared/growthJourney'
 import { setMoveStatus, type Move } from '@shared/moves'
+import { loadPrefs, whatHelpedOn } from '@shared/prefs'
 import { addDays } from '@shared/storage'
 import { Button, Chip, Field, Private, T } from '../ui/kit'
 
@@ -48,15 +50,23 @@ function Choices<K extends string>({ list, onPick }: { list: [K, string][]; onPi
 }
 
 // from: the step as the Mirror knows it, for one saved on another device.
-export function CheckIn({ move, today, onDone, from }: { move: Pick<Move, 'questionId' | 'step'>; today: string; onDone: (reply: string) => void; from?: { optionId: string; step: string; date: string } }) {
+// With the What helped choice on (You), the outcome alone is added to the
+// anonymous totals; the feeling and the note never leave the phone.
+type Step = Pick<Move, 'questionId' | 'step'> & Partial<Pick<Move, 'optionId' | 'local'>>
+export function CheckIn({ move, today, onDone, from }: { move: Step; today: string; onDone: (reply: string) => void; from?: { optionId: string; step: string; date: string } }) {
   const [tried, setTried] = useState<Tried | null>(null)
   const [outcome, setOutcome] = useState<Outcome | null>(null)
   const [feeling, setFeeling] = useState<Feeling | null>(null)
   const [note, setNote] = useState('')
 
+  const [counting] = useState(() => whatHelpedOn(loadPrefs()) && !move.local)
   const finish = (c: Omit<Check, 'questionId' | 'date'>, reply: string) => {
-    const status = saveCheckIn({ questionId: move.questionId, date: today, ...c }, note)
+    const check = { questionId: move.questionId, date: today, ...c }
+    const status = saveCheckIn(check, note)
     if (status) setMoveStatus(move.questionId, status, today, from).catch(() => {})
+    const report = helpedReport(check)
+    const optionId = move.optionId ?? from?.optionId
+    if (counting && report && optionId) reportHelped(move.questionId, optionId, report, today).catch(() => {})
     onDone(reply)
   }
   const recap = [labelOf(TRIED, tried), labelOf(OUTCOMES, outcome), labelOf(FEELINGS, feeling)].filter(Boolean).join(' · ')
@@ -88,6 +98,11 @@ export function CheckIn({ move, today, onDone, from }: { move: Pick<Move, 'quest
         <>
           <T tone="text2">How did it go?</T>
           <Choices list={OUTCOMES} onPick={setOutcome} />
+          {counting && (
+            <T v="tiny" tone="muted">
+              Only how it went is added, without your name, to what helped others. You can turn this off in You.
+            </T>
+          )}
         </>
       )}
       {outcome && !feeling && (

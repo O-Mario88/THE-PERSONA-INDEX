@@ -342,7 +342,7 @@ func (s *Server) ForgetDevice(w http.ResponseWriter, r *http.Request) {
 		rateLimited(w, retry)
 		return
 	}
-	f, err := s.mirror.ForgetDevice(r.Context(), s.devices.mirrorKey(deviceID), s.deviceVoteHashes(deviceID), s.clock().UTC().Format(dateLayout))
+	f, err := s.forgetDevice(r.Context(), deviceID, s.clock().UTC().Format(dateLayout))
 	if err != nil {
 		log.Printf("forget: %v", err)
 		writeError(w, http.StatusServiceUnavailable, "unavailable")
@@ -384,6 +384,11 @@ func (s *Server) DeviceData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	k, err := s.mirror.DeviceData(r.Context(), s.devices.mirrorKey(deviceID), s.deviceVoteHashes(deviceID))
+	if err == nil {
+		var reports []HelpedReport
+		reports, err = s.helped.HelpedReports(r.Context(), s.devices.helpedKey(deviceID))
+		k.Reports = len(reports)
+	}
 	if err != nil {
 		log.Printf("device data: %v", err)
 		writeError(w, http.StatusServiceUnavailable, "unavailable")
