@@ -9,7 +9,7 @@ import { recalledVerdict, type Question, type Verdict } from '@shared/api'
 import { evidenceLabel, forYou, notAloneFor, type ForYouCard } from '@shared/insights'
 import type { PulseCounts } from '@shared/humanPulse'
 import { NEED_NAMES } from '@shared/needs'
-import { intentions, keepIntention, keptCards } from '@shared/notebook'
+import { intentions, keepCard, keepIntention, keptCard, keptCards, unkeepCard } from '@shared/notebook'
 import { loadMoves, startMove } from '@shared/moves'
 import { loadHistory } from '@shared/profile'
 import { acrossDays } from '@shared/firstWeek'
@@ -20,7 +20,8 @@ import { radius, useTheme } from '../theme'
 import { Button, Card, Chip, Page, T } from '../ui/kit'
 import { CardHead } from '../ui/parts'
 import { PulseLine } from '../ui/Pulse'
-import { HeavyCard, VerdictRow } from './QuestionCard'
+import { loadPrefs } from '@shared/prefs'
+import { HeavyCard, Rate, VerdictRow } from './QuestionCard'
 
 const WEEK = 7
 const MONTH = 30
@@ -94,7 +95,7 @@ export function Insights({
           {/* Nothing on Insights is folded away (Edwin, 2026-10-28): today's cards first, then earlier ones. */}
           {[...fresh, ...earlier].map((c) => (
             <Card key={c.questionId} style={{ gap: 20 }}>
-              <InsightCard card={c} today={today} onRated={() => setVersion((v) => v + 1)} pulseCounts={pulseCounts} onExplore={onExplore} />
+              <InsightCard card={c} question={questions.find((q) => q.id === c.questionId)} today={today} onRated={() => setVersion((v) => v + 1)} pulseCounts={pulseCounts} onExplore={onExplore} />
             </Card>
           ))}
         </>
@@ -105,12 +106,14 @@ export function Insights({
 
 function InsightCard({
   card,
+  question,
   today,
   onRated,
   pulseCounts,
   onExplore,
 }: {
   card: ForYouCard
+  question?: Question
   today: string
   onRated: () => void
   pulseCounts: PulseCounts | null
@@ -169,7 +172,8 @@ function InsightCard({
             </View>
           )}
           {card.step && <TryThis card={card} today={today} />}
-          <RateCard card={card} onRated={onRated} />
+          <KeepCard card={card} />
+          <CardFit card={card} question={question} onRated={onRated} />
           <T v="tiny">Something to think about, never a diagnosis.</T>
         </>
       )}
@@ -221,6 +225,63 @@ function TryThis({ card, today }: { card: ForYouCard; today: string }) {
       )}
     </View>
   )
+}
+
+// Keep a card in your notebook. It lives here now, so the questions read as
+// one conversation (Edwin's brief, 2026-10-28).
+function KeepCard({ card }: { card: ForYouCard }) {
+  const [kept, setKept] = useState(() => !!keptCard(card.questionId))
+  if (!card.reveal) return null
+  const { headline, body } = splitReveal(card.reveal)
+  if (kept)
+    return (
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+        <T v="small" tone="leaf" bold>
+          Kept in your notebook, on this phone only.
+        </T>
+        <Button
+          small
+          kind="text"
+          label="Undo"
+          onPress={() => {
+            unkeepCard(card.questionId)
+            setKept(false)
+          }}
+        />
+      </View>
+    )
+  return (
+    <Button
+      small
+      kind="text"
+      icon="bookmark"
+      label="Keep in Notebook"
+      style={{ alignSelf: 'flex-start' }}
+      onPress={() => {
+        keepCard({
+          date: card.date,
+          questionId: card.questionId,
+          theme: card.theme ?? '',
+          prompt: card.prompt,
+          answer: card.label,
+          headline,
+          ...(body ? { body } : {}),
+          ...(card.otherSide ? { otherSide: card.otherSide } : {}),
+          ...(card.step ? { step: card.step } : {}),
+          ...(card.verdict ? { verdict: card.verdict } : {}),
+        })
+        setKept(true)
+      }}
+    />
+  )
+}
+
+// "Does this sound like you?" For today's cards, the whole of it, with
+// "What's closer to you?" after Not me; for earlier ones, the three taps.
+function CardFit({ card, question, onRated }: { card: ForYouCard; question?: Question; onRated: () => void }) {
+  const option = question?.options.find((o) => o.id === card.optionId)
+  if (question && option) return <Rate question={question} option={option} date={card.date} wordsDays={loadPrefs().wordsDays} />
+  return <RateCard card={card} onRated={onRated} />
 }
 
 function RateCard({ card, onRated }: { card: ForYouCard; onRated: () => void }) {

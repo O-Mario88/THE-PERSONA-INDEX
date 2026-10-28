@@ -47,7 +47,8 @@ function Choices<K extends string>({ list, onPick }: { list: [K, string][]; onPi
   )
 }
 
-export function CheckIn({ move, today, onDone }: { move: Move; today: string; onDone: (reply: string) => void }) {
+// from: the step as the Mirror knows it, for one saved on another device.
+export function CheckIn({ move, today, onDone, from }: { move: Pick<Move, 'questionId' | 'step'>; today: string; onDone: (reply: string) => void; from?: { optionId: string; step: string; date: string } }) {
   const [tried, setTried] = useState<Tried | null>(null)
   const [outcome, setOutcome] = useState<Outcome | null>(null)
   const [feeling, setFeeling] = useState<Feeling | null>(null)
@@ -55,7 +56,7 @@ export function CheckIn({ move, today, onDone }: { move: Move; today: string; on
 
   const finish = (c: Omit<Check, 'questionId' | 'date'>, reply: string) => {
     const status = saveCheckIn({ questionId: move.questionId, date: today, ...c }, note)
-    if (status) setMoveStatus(move.questionId, status, today).catch(() => {})
+    if (status) setMoveStatus(move.questionId, status, today, from).catch(() => {})
     onDone(reply)
   }
   const recap = [labelOf(TRIED, tried), labelOf(OUTCOMES, outcome), labelOf(FEELINGS, feeling)].filter(Boolean).join(' · ')

@@ -16,7 +16,6 @@ import {
   type OwnWords,
   type Period,
   type PeriodMirror,
-  type StepStatus,
   type ThemeRead,
   type Verdict,
 } from '@shared/api'
@@ -37,7 +36,7 @@ import {
   weekRange,
   type Lean,
 } from '@shared/mirrorText'
-import { setMoveStatus, startMove } from '@shared/moves'
+import { startMove } from '@shared/moves'
 import { NEED_NAMES, NEED_PHRASES } from '@shared/needs'
 import {
   changePlan,
@@ -94,6 +93,7 @@ import {
 import { font, radius, type Palette, useTheme } from '../theme'
 import { Icon } from '../ui/Icon'
 import { Button, Chip, Field, Hairline, T, Tinted } from '../ui/kit'
+import { CheckIn } from './CheckIn'
 import { Box, Chips, Eyebrow, Note, Quote } from './MirrorBits'
 import { PeriodStory, SundayMirror, YearMirror, type Host } from './MirrorStory'
 import { locale } from '@shared/locale'
@@ -887,19 +887,12 @@ function OwnWordsList({ words }: { words: OwnWords[] }) {
 
 const STEPS_SHOWN = 4
 
+// The week's steps; one still open gets the same three-question check-in as
+// Today and the evening close (one follow-up system, Edwin, 2026-10-28).
 function Steps({ m, today, reload }: { m: MirrorData; today: string; reload: () => void }) {
-  const [error, setError] = useState(false)
   const [all, setAll] = useState(false)
+  const [said, setSaid] = useState<Record<string, string>>({})
   const shown = all ? m.steps : m.steps.slice(0, STEPS_SHOWN)
-  async function mark(s: MirrorData['steps'][number], status: StepStatus) {
-    setError(false)
-    try {
-      await setMoveStatus(s.questionId, status, today, { optionId: s.optionId, step: s.step, date: s.started })
-      reload()
-    } catch {
-      setError(true)
-    }
-  }
   const r = m.stepRecord
   return (
     <>
@@ -909,18 +902,27 @@ function Steps({ m, today, reload }: { m: MirrorData; today: string; reload: () 
             {themeName(s.theme)}
             {edition(s.edition)} · {STEP_STATUS_WORDS[s.status]}
           </ThemeMeta>
-          <T>{s.step}</T>
-          {s.status === 'started' && (
-            <Chips>
-              <Chip label="It helped" onPress={() => mark(s, 'helped')} />
-              <Chip label="No change yet" onPress={() => mark(s, 'no_change')} />
-              <Chip label="Not today" onPress={() => mark(s, 'not_tried')} />
-            </Chips>
+          {s.status !== 'started' ? (
+            <T>{s.step}</T>
+          ) : said[s.questionId] ? (
+            <>
+              <T>{s.step}</T>
+              <T tone="text2">{said[s.questionId]}</T>
+            </>
+          ) : (
+            <CheckIn
+              move={s}
+              today={today}
+              from={{ optionId: s.optionId, step: s.step, date: s.started }}
+              onDone={(reply) => {
+                setSaid((was) => ({ ...was, [s.questionId]: reply }))
+                reload()
+              }}
+            />
           )}
         </View>
       ))}
       {m.steps.length > shown.length && <Button kind="text" small label={`Show all ${m.steps.length} steps`} onPress={() => setAll(true)} style={{ alignSelf: 'flex-start' }} />}
-      {error && <T tone="danger">That didn't save. Please try again.</T>}
       <Box eyebrow="Your record so far">
         <T>
           {r.started} {r.started === 1 ? 'step' : 'steps'} started, {r.tried} tried, {r.helped} helped.{' '}

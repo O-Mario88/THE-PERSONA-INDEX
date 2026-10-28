@@ -1,25 +1,31 @@
-// The close of a sitting: the midnight card with
-// this week's tiles, then the first glimpse (first sitting
-// only) or today's thread, the small steps, and what comes next. Nothing is
-// scored, shared or set against anyone else.
-import { useState } from 'react'
+// The close of a sitting, one reflection after a conversation (Edwin's
+// brief, 2026-10-28): the midnight card with this week's tiles, then the
+// first glimpse (first sitting only) or today's thread, how today's steps
+// went (the same check-in as everywhere), one thing worth trying from the
+// sitting's own answers, and what comes next. Nothing is scored, shared or
+// set against anyone else.
+import { useState, type ReactNode } from 'react'
 import { View } from 'react-native'
 import { recalledChoice, SKIPPED, type Question } from '@shared/api'
 import { adviceFor, levelLine } from '@shared/advice'
 import { isSaturday, opensAt } from '@shared/day'
+import { checkInFor } from '@shared/growthJourney'
 import { sharedNeed } from '@shared/glimpse'
 import { HELPLINE_LINE } from '@shared/helplineText'
+import { movesOn, startMove, startedInEvening, type Move } from '@shared/moves'
 import { heavyPause, isLowMood, loadHistory, recordRoute, type AnswerRecord, type History, type Route } from '@shared/profile'
 import { NEED_PHRASES, type Need } from '@shared/needs'
 import { routeToAsk } from '@shared/reaching'
+import { stepToTry, type SittingPick } from '@shared/sittingClose'
 import { week } from '@shared/tapestry'
 import { themeName } from '@shared/themes'
 import { sideOf, TRAITS } from '@shared/traits'
 import { GLIMPSE_BALANCED, GLIMPSE_NEXT, QUIET_DAY, ROUTE_ASK, ROUTE_REPLIES, ROUTE_WORDS, routeLead, SUNDAY_LINE } from '@shared/words'
 import { font, radius, useTheme } from '../theme'
-import { B, Chip, Option, T, Tinted } from '../ui/kit'
+import { B, Button, Chip, Option, T, Tinted } from '../ui/kit'
 import { themeIcon, WeekTiles } from '../ui/parts'
-import { Steps } from './Steps'
+import { CheckIn } from './CheckIn'
+import { OwnIdea } from './QuestionCard'
 
 type Props = {
   date: string
@@ -27,7 +33,17 @@ type Props = {
   dayWithYou?: number
   questions: Question[]
   tomorrowThemes: string[]
-} & ({ sitting: 'morning'; eveningThemes: string[] | null } | { sitting: 'evening'; morning: Question[] })
+} & ({ sitting: 'morning'; eveningThemes: string[] | null; carry?: string | null } | { sitting: 'evening'; morning: Question[] })
+
+// The sitting's answers that have a reading: what one thing to try is picked from.
+const picksIn = (questions: Question[]): SittingPick[] =>
+  questions.flatMap((q) => {
+    const id = recalledChoice(q.id)
+    return id && id !== SKIPPED && q.options.some((o) => o.id === id) ? [{ question: q, optionId: id }] : []
+  })
+
+// Today's steps not asked about yet, leaving out one chosen this evening.
+const openSteps = (date: string): Move[] => movesOn(date).filter((m) => m.status === 'started' && !startedInEvening(m) && !checkInFor(m.questionId))
 
 const answersIn = (h: History, questions: Question[], date: string): AnswerRecord[] =>
   questions.flatMap((q) => {
@@ -68,6 +84,7 @@ export function Close(props: Props) {
     const c = recalledChoice(q.id)
     return !!c && c !== SKIPPED
   }).length
+  const [pending] = useState(() => (sitting === 'evening' ? openSteps(date) : []))
 
   return (
     <View style={{ gap: 20 }}>
@@ -100,15 +117,20 @@ export function Close(props: Props) {
       {props.sitting === 'morning' ? (
         <>
           {glimpseFor ? <Glimpse answers={mine} history={history} date={date} name={glimpseFor.name} /> : <Thread answers={mine} history={history} date={date} paused={paused} />}
-          <Steps date={date} mode="morning" emptyNote={!glimpseFor} />
+          {!heavy && <TryOne date={date} questions={questions} sitting="morning" otherwise={props.carry ? <Carry text={props.carry} /> : null} />}
           {eveningThemes && <Upcoming label={`Your evening three · ${opensAt('evening')}`} themes={eveningThemes} note={`Go about your day. They'll be waiting for you at ${opensAt('evening')}.`} />}
         </>
       ) : (
         <>
           {glimpseFor && <Glimpse answers={dayAnswers} history={history} date={date} name={glimpseFor.name} />}
-          <Steps date={date} mode="evening" label="Your small steps" />
-          {!paused && <RouteCheck date={date} morning={props.morning} />}
-          <ForTomorrow answers={dayAnswers} history={history} date={date} paused={paused} />
+          <TodaysCheckIns date={date} steps={pending} />
+          {/* One question at the close at most: how the morning's choice went, only when no step is waiting. */}
+          {!paused && pending.length === 0 && <RouteCheck date={date} morning={props.morning} />}
+          {heavy ? (
+            <ForTomorrow answers={dayAnswers} history={history} date={date} paused={paused} />
+          ) : (
+            <TryOne date={date} questions={questions} sitting="evening" otherwise={<ForTomorrow answers={dayAnswers} history={history} date={date} paused={paused} />} />
+          )}
         </>
       )}
 
@@ -128,6 +150,77 @@ export function Close(props: Props) {
 }
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
+
+// One thing worth trying, from this sitting's own answers (shared
+// sittingClose.ts): the step already chosen, or one offered with I'll try it,
+// your own idea or Not now. Otherwise, the quiet line passed in.
+function TryOne({ date, questions, sitting, otherwise }: { date: string; questions: Question[]; sitting: 'morning' | 'evening'; otherwise: ReactNode }) {
+  const [picked] = useState(() => stepToTry(picksIn(questions)))
+  const [state, setState] = useState<'open' | 'trying' | 'own' | 'planned' | 'later'>(picked?.kind === 'trying' ? 'trying' : 'open')
+  if (!picked) return <>{otherwise}</>
+  const offer = picked.kind === 'offer' ? picked : null
+  const option = offer ? questions.find((q) => q.id === offer.questionId)?.options.find((o) => o.id === offer.optionId) : undefined
+  const step = offer ? offer.step : picked.kind === 'trying' ? picked.move.step : ''
+  return (
+    <Tinted style={{ gap: 10 }}>
+      <T v="eyebrow">{state === 'trying' ? 'You’re trying' : 'One thing worth trying'}</T>
+      <T v="h3">{step}</T>
+      {state === 'open' && offer && (
+        <View style={{ flexDirection: 'row', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+          <Button
+            small
+            label="I'll try it"
+            onPress={() => {
+              startMove(date, offer.questionId, offer.optionId, offer.step, Date.now(), false, offer.local).catch(() => {})
+              setState('trying')
+            }}
+          />
+          {option && <Button kind="text" label="My own idea" onPress={() => setState('own')} />}
+          <Button kind="text" label="Not now" onPress={() => setState('later')} />
+        </View>
+      )}
+      {state === 'own' && option && <OwnIdea option={option} date={date} onMade={() => setState('planned')} onCancel={() => setState('open')} />}
+      {state === 'trying' && <T tone="muted">{sitting === 'morning' ? 'I’ll ask you how it went this evening.' : 'I’ll ask you how it went tomorrow, on Today.'}</T>}
+      {state === 'planned' && <T tone="muted">Your own plan, kept in your notebook. Next time you sit down, I’ll ask how it went.</T>}
+      {state === 'later' && <T tone="muted">It stays with today’s cards in Insights, if you want it later.</T>}
+    </Tinted>
+  )
+}
+
+// One thing to carry into today: noticing, not a task.
+function Carry({ text }: { text: string }) {
+  return (
+    <Tinted style={{ gap: 6 }}>
+      <T v="eyebrow">One thing to carry into today</T>
+      <T v="quote" style={{ fontSize: 17, lineHeight: 23 }}>
+        {text}
+      </T>
+      <T v="small" tone="muted">
+        You don’t need to change anything. Just notice.
+      </T>
+    </Tinted>
+  )
+}
+
+// How today's steps went: the same three-question check-in as everywhere.
+function TodaysCheckIns({ date, steps }: { date: string; steps: Move[] }) {
+  const [said, setSaid] = useState<Record<string, string>>({})
+  if (steps.length === 0) return null
+  return (
+    <View style={{ gap: 14 }}>
+      <T v="eyebrow">{steps.length > 1 ? 'Your steps today' : 'Your step today'}</T>
+      {steps.map((m) =>
+        said[m.questionId] ? (
+          <T key={m.questionId} tone="text2">
+            {said[m.questionId]}
+          </T>
+        ) : (
+          <CheckIn key={m.questionId} move={m} today={date} onDone={(reply) => setSaid((was) => ({ ...was, [m.questionId]: reply }))} />
+        ),
+      )}
+    </View>
+  )
+}
 
 // The first glimpse: a few plain lines on what the first answers hint at,
 // said to the person by name, in the trait library's own warm words.

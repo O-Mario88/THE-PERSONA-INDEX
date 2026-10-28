@@ -499,8 +499,6 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
               sitting={flow}
               wordsDays={prefs.wordsDays}
               writeFirst={current.id === writeFirst}
-              index={at}
-              of={steps.length}
               onDone={onDone}
               onNext={() => flowStep.go(at + 1)}
               pulse={{ counts: pulseCounts, onExplore: exploreWithOthers }}
@@ -524,22 +522,12 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
                 date={set.date}
                 questions={morningQs}
                 eveningThemes={hasEvening ? themesOf(eveningQs) : null}
+                carry={carry}
                 tomorrowThemes={set.tomorrowThemes ?? []}
                 glimpse={glimpse ? { name: me?.name || localName || null } : undefined}
                 dayWithYou={weekOne ? dayN : undefined}
               />
             ))}
-          {closing && steps.length > 0 && carry && (
-            <Tinted style={{ gap: 6 }}>
-              <T v="eyebrow">One thing to carry into today</T>
-              <T v="quote" style={{ fontSize: 17, lineHeight: 23 }}>
-                {carry}
-              </T>
-              <T v="small" tone="muted">
-                You don’t need to change anything. Just notice.
-              </T>
-            </Tinted>
-          )}
           {/* The questions lead somewhere: everything they add up to lives in Insights. */}
           {closing && steps.length > 0 && (
             <Button

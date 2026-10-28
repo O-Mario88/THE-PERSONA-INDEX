@@ -1,4 +1,4 @@
-// The three short windows between the sittings: a check on the morning's step, the
+// The three short windows between the sittings: a reminder of the morning's step, the
 // afternoon's anonymous totals for those who asked for them, and three good
 // things before bed.
 import { useEffect, useState } from 'react'
@@ -14,14 +14,27 @@ import { SUNDAY_LINE } from '@shared/words'
 import { font, radius, useTheme } from '../theme'
 import { Button, Chip, T, Tinted, Private } from '../ui/kit'
 import { Upcoming } from './Close'
-import { Steps } from './Steps'
 
+// Midday only reminds: how a step went is asked once, with the same check-in
+// as everywhere, at the evening close or on Today.
 export function Midday({ date, morningOpen, onMorning }: { date: string; morningOpen: boolean; onMorning: () => void }) {
-  const hasSteps = movesOn(date).length > 0
+  const [steps] = useState(() => movesOn(date).filter((m) => m.status === 'started'))
   return (
     <View style={{ gap: 20 }}>
       <T v="display">Your midday check.</T>
-      {hasSteps ? <Steps date={date} mode="midday" label="This morning's step" /> : <T tone="muted">No small step picked this morning. That's fine; noticing counts too.</T>}
+      {steps.length > 0 ? (
+        <View style={{ gap: 6 }}>
+          <T v="eyebrow">{steps.length > 1 ? 'This morning’s steps' : 'This morning’s step'}</T>
+          {steps.map((m) => (
+            <T key={m.questionId} v="h3">
+              {m.step}
+            </T>
+          ))}
+          <T tone="muted">No need to report back now. I’ll ask you how it went this evening.</T>
+        </View>
+      ) : (
+        <T tone="muted">No small step picked this morning. That's fine; noticing counts too.</T>
+      )}
       {morningOpen && (
         <Tinted>
           <T>Your morning three are still open until 17:00.</T>
