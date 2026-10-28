@@ -35,7 +35,7 @@ export function greeting(w: Window, name?: string | null): string {
 // today's reflection and shows that question.
 function sitting(which: 'morning' | 'evening', eyebrow: string, started: boolean, preview?: string | null): Hero & { opens: OpenWindow } {
   const morning = which === 'morning'
-  const action = started ? 'Carry on' : morning ? 'Start today’s questions' : 'Start your evening three'
+  const action = started ? 'Carry on' : morning ? 'Begin today’s questions' : 'Begin your evening three'
   if (preview) {
     return {
       eyebrow: eyebrow.replace('Today’s questions', 'Today’s reflection').replace('This evening’s questions', 'This evening’s reflection'),

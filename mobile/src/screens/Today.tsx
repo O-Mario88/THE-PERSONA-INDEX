@@ -58,7 +58,7 @@ export function Today({ date, window: w, name, note, hero, memory, journey, link
         <T v="display" style={width < 400 ? { fontSize: 26, lineHeight: 31 } : { fontSize: 30, lineHeight: 36 }}>
           {greeting(w, name)}
         </T>
-        {note ? <T tone="text2">{note}</T> : null}
+        <T tone="text2">{note ?? 'A little more clarity, one day at a time.'}</T>
       </View>
     </View>
   )

@@ -19,13 +19,20 @@ import { CheckIn } from './CheckIn'
 
 // One quiet next step: how a step you said you'd try went, else one thing to
 // carry from today's answers, else a small idea from your own recent cards.
+// Its title says which (Edwin's Today mockup, 2026-10-28).
+const STEP_LABEL: Record<QuietStep['kind'], string> = {
+  followUp: 'How did it go?',
+  revisit: 'Something that helped before',
+  carry: 'One thing worth trying',
+  idea: 'One thing worth trying',
+}
 export function QuietStepCard({ today, onJourney }: { today: string; onJourney: () => void }) {
   const [step] = useState(() => quietStep(today, loadHistory(), undefined, loadPrefs().style))
   const [said, setSaid] = useState<string | null>(null)
   if (!step) return null
   return (
     <Card style={{ gap: 10 }}>
-      <T v="label">A quiet next step</T>
+      <T v="label">{STEP_LABEL[step.kind]}</T>
       {said ? <T tone="text2">{said}</T> : <StepBody today={today} step={step} onSaid={setSaid} />}
       <Button small kind="text" label="See your journey" iconAfter="arrow" onPress={onJourney} style={{ alignSelf: 'flex-start' }} />
     </Card>

@@ -8,7 +8,7 @@ const base = { date: '2026-10-28', review: false, pulse: true, evening: 'none' a
 describe('the main card on Today', () => {
   it('opens the morning three with a clear button', () => {
     const h = heroFor({ ...base, window: 'morning', morning: 'none' })
-    expect(h).toMatchObject({ opens: 'morning', title: 'Your morning three are ready', action: 'Start today’s questions' })
+    expect(h).toMatchObject({ opens: 'morning', title: 'Your morning three are ready', action: 'Begin today’s questions' })
     expect(h.eyebrow).toMatch(/^Today’s questions · closes /)
   })
 
@@ -31,7 +31,7 @@ describe('the main card on Today', () => {
 
   it('previews the first question waiting, as today’s reflection', () => {
     const h = heroFor({ ...base, window: 'morning', morning: 'none', preview: 'What makes it difficult to put your own needs first?' })
-    expect(h).toMatchObject({ title: 'What makes it difficult to put your own needs first?', sub: 'Three thoughtful questions. A few minutes, just for you.', action: 'Start today’s questions' })
+    expect(h).toMatchObject({ title: 'What makes it difficult to put your own needs first?', sub: 'Three thoughtful questions. A few minutes, just for you.', action: 'Begin today’s questions' })
     expect(h.eyebrow).toMatch(/^Today’s reflection · closes /)
     expect(heroFor({ ...base, window: 'morning', morning: 'started', preview: 'Next one?' })).toMatchObject({ title: 'Next one?', action: 'Carry on' })
   })
