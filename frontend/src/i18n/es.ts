@@ -211,8 +211,8 @@ export const es: Record<string, string> = {
   'Keep me on your home screen': 'Tenme en tu pantalla de inicio',
   'Add to home screen': 'Agregar a la pantalla de inicio',
   // Focused Today
-  'From your last reflection': 'De tu última reflexión',
-  'From your last answers': 'De tus últimas respuestas',
+  'Your last reflection': 'Tu última reflexión',
+  'Your last answers': 'Tus últimas respuestas',
   'Tap to read': 'Toca para leer',
   'Hide it': 'Ocultar',
   Yesterday: 'Ayer',

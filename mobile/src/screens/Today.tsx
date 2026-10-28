@@ -152,7 +152,7 @@ function MainCard({ hero, memory, link, tomorrow, onOpen }: { hero: Hero; memory
 function MemoryRow({ memory }: { memory: Memory }) {
   const p = useTheme()
   const [open, setOpen] = useState(false)
-  const label = tr(memory.kind === 'writing' ? 'From your last reflection' : 'From your last answers')
+  const label = tr(memory.kind === 'writing' ? 'Your last reflection' : 'Your last answers')
   return (
     <View style={{ gap: 10 }}>
       <Pressable
@@ -161,15 +161,24 @@ function MemoryRow({ memory }: { memory: Memory }) {
         accessibilityLabel={`${label}, ${tr(memory.when)}. ${tr(open ? 'Hide it' : 'Tap to read')}`}
         onPress={() => setOpen(!open)}
         hitSlop={8}
-        style={{ flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 32 }}
+        style={{ flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 40 }}
       >
-        <Icon name={open ? 'bookmark' : 'lock'} size={16} color={p.muted} />
-        <T v="label" style={{ flex: 1 }}>
-          {`${label} · ${tr(memory.when)}`}
-        </T>
-        <T v="small" tone="accent" bold>
-          {open ? 'Hide it' : 'Tap to read'}
-        </T>
+        <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: p.surface2, alignItems: 'center', justifyContent: 'center' }}>
+          <Icon name={open ? 'bookmark' : 'lock'} size={16} color={p.muted} />
+        </View>
+        <View style={{ flex: 1, gap: 2 }}>
+          <T v="label" tone="text2">
+            {label}
+          </T>
+          <T v="tiny" lines={1}>
+            {memory.when}
+          </T>
+        </View>
+        <View style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: radius.pill, backgroundColor: p.accentWash }}>
+          <T v="small" tone="accent" bold>
+            {open ? 'Hide it' : 'Tap to read'}
+          </T>
+        </View>
       </Pressable>
       {open &&
         (memory.kind === 'writing' ? (

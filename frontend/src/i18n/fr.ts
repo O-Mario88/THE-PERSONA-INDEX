@@ -144,8 +144,8 @@ export const fr: Record<string, string> = {
   'Keep going': 'Continuer',
   'Not today': "Pas aujourd'hui",
   // Focused Today
-  'From your last reflection': 'De ta dernière réflexion',
-  'From your last answers': 'De tes dernières réponses',
+  'Your last reflection': 'Ta dernière réflexion',
+  'Your last answers': 'Tes dernières réponses',
   'Tap to read': 'Touche pour lire',
   'Hide it': 'Masquer',
   Yesterday: 'Hier',
