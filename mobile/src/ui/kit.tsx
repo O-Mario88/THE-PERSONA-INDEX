@@ -394,6 +394,8 @@ export function Page({
 // phone asks for reduced motion (Edwin, 2026-10-28: motion like the big apps).
 let calm = false
 AccessibilityInfo.isReduceMotionEnabled?.().then((on) => (calm = on), () => {})
+// And when it changes while the app is open.
+AccessibilityInfo.addEventListener?.('reduceMotionChanged', (on) => (calm = on))
 const EASE_MS = 220
 
 function useEaseIn() {

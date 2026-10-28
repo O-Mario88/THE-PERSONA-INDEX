@@ -172,7 +172,6 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
     }
   }, [])
   const accountFirst = canSignIn && needsAccount(!!me, date)
-  const connectShown = !weekOne || !!me || loadKey(CONNECT_OPEN_KEY) === '1'
 
   useEffect(() => {
     let live = true
@@ -661,7 +660,8 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
     )
   }
 
-  const shown = TABS.filter((t) => t.tab !== 'circle' || connectShown)
+  // Five places, always (Edwin's brief, 2026-10-28): Connect is useful from day one, friends or not.
+  const shown = TABS
   // A wide browser or Mac window keeps the sidebar through a sitting, as the
   // web app does; the welcome and sign-up pages stand alone.
   const sidebar = wide && !welcome && !(fullScreen && !flow)
