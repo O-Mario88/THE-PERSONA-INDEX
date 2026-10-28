@@ -44,11 +44,12 @@ The key names `lime` and `navy` are kept from earlier palettes. Read them as
 ## Type
 
 X-style (Edwin, 2026-10-27): one face, few sizes, heavy headings with tight
-tracking, compact body lines, labels in sentence case. Figtree, bundled (400
-to 700; nothing heavier than Bold). `T` variants: `display` 31/36 at 700 (-0.6), `title` 23/28, `h2`
+tracking, compact body lines, labels in sentence case. Geist, bundled (400
+to 700; nothing heavier than Bold), chosen 2026-10-28 because Figtree felt
+imposing on a small phone. `T` variants: `display` 31/36 at 700 (-0.6), `title` 23/28, `h2`
 20/24 at 700, `h3` 17/22 at 700, `body` 16/22, `small` 14/19, `tiny` 13, and
 `label`/`eyebrow` 13 at 700 in sentence case ("Morning · 1 of 3"), and
-`quote` 22 at 600 for a line set apart. A question is 30 at 700. Figtree is
+`quote` 22 at 600 for a line set apart. A question is 30 at 700. Geist is
 the only face, in the app, on the read pages (served from `/fonts/`) and in
 the downloadable notebook; no serif anywhere.
 

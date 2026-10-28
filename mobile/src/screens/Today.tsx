@@ -51,7 +51,7 @@ export function Today({ date, window: w, name, note, hero, memory, link, tomorro
         </Pressable>
       </View>
       <View style={{ gap: 8, paddingTop: 28 }}>
-        <T v="display" style={{ fontSize: 34, lineHeight: 40 }}>
+        <T v="display" style={width < 400 ? { fontSize: 29, lineHeight: 34 } : { fontSize: 34, lineHeight: 40 }}>
           {greeting(w, name)}
         </T>
         {note ? <T tone="text2">{note}</T> : null}

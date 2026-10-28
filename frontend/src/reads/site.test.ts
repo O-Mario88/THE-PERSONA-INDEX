@@ -34,9 +34,9 @@ describe('the public read pages', () => {
     }
   })
 
-  it("read in the app's typeface, Figtree, from the site itself", () => {
+  it("read in the app's typeface, Geist, from the site itself", () => {
     const page = readSite().files['read/index.html']
-    expect(page).toMatch(/@font-face\{font-family:Figtree;src:url\(\/fonts\/figtree-400\.ttf\)/)
+    expect(page).toMatch(/@font-face\{font-family:Geist;src:url\(\/fonts\/geist-400\.ttf\)/)
     expect(page).not.toMatch(/Georgia|Times|[^-]serif|system-ui/)
   })
 

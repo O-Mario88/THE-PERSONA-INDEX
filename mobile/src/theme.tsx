@@ -124,12 +124,13 @@ export const dark: Palette = {
   sideOnInk: '#f4a258',
 }
 
-// Figtree, bundled. React Native picks a font file by name, not by weight.
+// Geist, bundled (Edwin, 2026-10-28: Figtree felt imposing on a small phone;
+// Geist is narrower and calmer, the face the Edify app uses). React Native picks a font file by name, not by weight.
 export const font = {
-  regular: 'Figtree_400Regular',
-  medium: 'Figtree_500Medium',
-  semibold: 'Figtree_600SemiBold',
-  bold: 'Figtree_700Bold',
+  regular: 'Geist_400Regular',
+  medium: 'Geist_500Medium',
+  semibold: 'Geist_600SemiBold',
+  bold: 'Geist_700Bold',
 }
 
 // A 4px grid, a 24px gutter, and the radii of the web app.

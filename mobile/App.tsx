@@ -4,11 +4,11 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 import * as SplashScreen from 'expo-splash-screen'
 import {
   useFonts,
-  Figtree_400Regular,
-  Figtree_500Medium,
-  Figtree_600SemiBold,
-  Figtree_700Bold,
-} from '@expo-google-fonts/figtree'
+  Geist_400Regular,
+  Geist_500Medium,
+  Geist_600SemiBold,
+  Geist_700Bold,
+} from '@expo-google-fonts/geist'
 import { hydrate } from './src/platform/setup'
 import './src/platform/gzip'
 import { light } from './src/theme'
@@ -17,10 +17,10 @@ import { WebLockGate } from './src/screens/Browser'
 
 SplashScreen.preventAutoHideAsync().catch(() => {})
 
-// The root: Figtree and what this device kept are loaded before the first
+// The root: Geist and what this device kept are loaded before the first
 // screen, so nothing flashes or jumps.
 export default function App() {
-  const [fonts] = useFonts({ Figtree_400Regular, Figtree_500Medium, Figtree_600SemiBold, Figtree_700Bold })
+  const [fonts] = useFonts({ Geist_400Regular, Geist_500Medium, Geist_600SemiBold, Geist_700Bold })
   const [kept, setKept] = useState(false)
   const [epoch, setEpoch] = useState(0)
   const scheme = useColorScheme()
