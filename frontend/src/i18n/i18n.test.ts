@@ -10,9 +10,9 @@ describe('the app in more than one language', () => {
   it('follows the phone, and keeps English when the phone speaks a language not offered yet', () => {
     setLanguage('auto', 'es-MX')
     expect(uiLanguage()).toBe('es')
-    expect(tr('Start My Journey')).toBe('Empezar mi camino')
+    expect(tr('Begin My Journey')).toBe('Empezar mi camino')
     setLanguage('auto', 'ja-JP')
-    expect(tr('Start My Journey')).toBe('Start My Journey')
+    expect(tr('Begin My Journey')).toBe('Begin My Journey')
   })
 
   it('lets the person choose, and never goes blank where a line is not translated yet', () => {

@@ -122,9 +122,13 @@ function useStep(steps: Question[]) {
   return { at, go }
 }
 
-export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart: () => void }) {
+export function Shell({ phoneDark, onRestart, onDayReady }: { phoneDark: boolean; onRestart: () => void; onDayReady?: () => void }) {
   const [state, setState] = useState<State>({ kind: 'loading' })
   const [attempt, setAttempt] = useState(0)
+  // The launch waits for today (App.tsx): say when it's in, or why not.
+  useEffect(() => {
+    if (state.kind !== 'loading') onDayReady?.()
+  }, [state.kind, onDayReady])
   // Back from Google's sign-in on the website: open on sign-in to finish it.
   const [tab, setTab] = useState<View_>(() => (backFromGoogle() ? 'signin' : 'today'))
   const { width: windowWidth } = useWindowDimensions()

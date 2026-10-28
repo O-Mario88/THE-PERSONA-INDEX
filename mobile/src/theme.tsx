@@ -2,7 +2,7 @@
 // (mobile/DESIGN.md explains each choice). Change a colour here, never in a
 // screen.
 import { createContext, useContext, type ReactNode } from 'react'
-import type { ViewStyle } from 'react-native'
+import { Platform, type ViewStyle } from 'react-native'
 
 export type Palette = {
   dark: boolean
@@ -144,6 +144,24 @@ export const RAIL_AT = 1340
 export const RAIL_W = 300
 export const SIDE_W = 248
 export const radius = { sm: 10, md: 14, lg: 18, xl: 24, pill: 999 } as const
+
+// The launch, loading and welcome pages (Edwin's design, 2026-10-29) look
+// the same in light and dark: the logo on midnight, then a sunrise.
+export const brand = {
+  night: '#0b1c2c', // behind the logo, and the phone's own splash (app.json)
+  onNight: '#ffffff',
+  onNight2: '#dce4ea',
+  sprout: '#c1e863', // the logo's light leaf: the progress bar and the welcome button
+  onSprout: '#0b1c2c',
+  track: '#e9e5dd', // the empty part of the bar, on the sunrise
+  ink: '#12283a', // words on the sunrise
+  inkSoft: '#4a5866', // the logo's line on the sunrise
+  dawn: '#f6f1ea', // the sunrise's own cream, while its picture loads
+} as const
+
+// A serif for the welcome's one heading, as in Edwin's design: the phone's
+// own, so nothing more is downloaded.
+export const serif = Platform.select({ ios: 'Georgia', android: 'serif', default: 'Georgia, "Times New Roman", serif' })
 
 // A card's lift: a hairline plus a soft shadow in light, none in dark.
 const CARD_SHADOW = '0 1px 2px rgba(18, 40, 58, 0.04), 0 6px 20px rgba(18, 40, 58, 0.05)'

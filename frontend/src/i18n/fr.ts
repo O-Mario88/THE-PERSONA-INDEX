@@ -3,15 +3,12 @@
 // the app writes it.
 export const fr: Record<string, string> = {
   'Welcome to The Persona Index': 'Bienvenue sur The Persona Index',
-  'Discover yourself. Find what works. Live a little better every day.': 'Découvre-toi. Trouve ce qui marche. Vis un peu mieux chaque jour.',
-  "Understand why you feel, think, and act the way you do. Discover your strengths, learn from others' experiences, and find small ways to bring more happiness, confidence, and peace into your life.":
-    "Comprends pourquoi tu ressens, penses et agis comme tu le fais. Découvre tes forces, apprends de l'expérience des autres et trouve de petites façons d'apporter plus de joie, de confiance et de paix dans ta vie.",
-  'Just a few minutes a day. No pressure. No judgment. Just meaningful discoveries about you.': 'Quelques minutes par jour. Sans pression. Sans jugement. Juste des découvertes qui comptent sur toi.',
-  "Let's make this personal. What should we call you?": 'Rendons ça personnel. Comment veux-tu qu’on t’appelle ?',
   'Your first name': 'Ton prénom',
-  'Enter your name': 'Écris ton prénom',
-  'Start My Journey': 'Commencer mon chemin',
-  'Every great change begins with understanding yourself.': 'Tout grand changement commence par se comprendre.',
+  'A more intentional you, starts here.': 'Un toi plus conscient commence ici.',
+  'First, what should we call you?': 'D’abord, comment veux-tu qu’on t’appelle ?',
+  'Begin My Journey': 'Commencer mon chemin',
+  'Getting things ready…': 'Je prépare tout…',
+  'Preparing a more personal experience for you…': 'Je prépare une expérience plus personnelle pour toi…',
   'The Persona Index': 'The Persona Index',
   Today: "Aujourd'hui",
   Reflect: 'Réfléchir',

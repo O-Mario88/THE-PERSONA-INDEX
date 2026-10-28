@@ -20,7 +20,7 @@ import {
   type ViewStyle,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { font, gutter, lift, radius, RAIL_AT, RAIL_W, useTheme, WIDE, type Palette } from '../theme'
+import { brand, font, gutter, lift, radius, RAIL_AT, RAIL_W, useTheme, WIDE, type Palette } from '../theme'
 import { Icon, type IconName } from './Icon'
 import { tr } from '@shared/i18n'
 
@@ -112,7 +112,8 @@ const hovered = (s: { pressed: boolean }) => !!(s as { hovered?: boolean }).hove
 
 // ---- buttons ----
 
-type Kind = 'primary' | 'soft' | 'ghost' | 'outline' | 'text' | 'danger' | 'light'
+// 'sprout' is the logo's light leaf with navy words: the welcome's one button.
+type Kind = 'primary' | 'soft' | 'ghost' | 'outline' | 'text' | 'danger' | 'light' | 'sprout'
 
 export function Button({
   kind = 'primary',
@@ -146,6 +147,7 @@ export function Button({
     text: { bg: 'transparent', fg: p.accentInk },
     danger: { bg: 'transparent', fg: p.danger, border: p.danger },
     light: { bg: p.surface, fg: p.text, border: p.lineStrong },
+    sprout: { bg: brand.sprout, fg: brand.onSprout },
   }
   const l = look[kind]
   const off = disabled || busy
@@ -398,6 +400,8 @@ let calm = false
 AccessibilityInfo.isReduceMotionEnabled?.().then((on) => (calm = on), () => {})
 // And when it changes while the app is open.
 AccessibilityInfo.addEventListener?.('reduceMotionChanged', (on) => (calm = on))
+// Whether the phone asks for reduced motion, for the launch (Launch.tsx).
+export const calmNow = () => calm
 const EASE_MS = 220
 
 function useEaseIn() {

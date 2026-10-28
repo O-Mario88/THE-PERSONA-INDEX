@@ -12,7 +12,7 @@
     "userInterfaceStyle": "automatic",
     "backgroundColor": "#fbf7f0",
     "splash": {
-      "backgroundColor": "#fbf7f0"
+      "backgroundColor": "#0b1c2c"
     },
     "ios": {
       "bundleIdentifier": "com.personaindex.app",
@@ -43,11 +43,7 @@
         {
           "image": "./assets/splash-icon.png",
           "imageWidth": 140,
-          "backgroundColor": "#fbf7f0",
-          "dark": {
-            "image": "./assets/splash-icon-dark.png",
-            "backgroundColor": "#0b1a24"
-          }
+          "backgroundColor": "#0b1c2c"
         }
       ],
       [

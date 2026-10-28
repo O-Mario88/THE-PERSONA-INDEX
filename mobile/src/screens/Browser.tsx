@@ -21,9 +21,13 @@ const todayIso = () => {
 }
 
 // The lock screen in front of the app, again after five minutes away.
-export function WebLockGate({ children }: { children: ReactNode }) {
+export function WebLockGate({ children, onLocked }: { children: ReactNode; onLocked?: () => void }) {
   const [open, setOpen] = useState(() => !web || !locked())
   const hiddenAt = useRef<number | null>(null)
+  // The launch shouldn't wait for today when the lock screen is what shows.
+  useEffect(() => {
+    if (!open) onLocked?.()
+  }, [open, onLocked])
   useEffect(() => {
     if (!web) return
     const seen = () => {

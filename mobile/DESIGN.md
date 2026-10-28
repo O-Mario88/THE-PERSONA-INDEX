@@ -132,6 +132,32 @@ source is `assets/brand/mark.svg`; the app draws the same paths
 `frontend/public`), all rendered from that one file. Words on marigold (the
 dark theme's buttons and chosen chips) are navy, never black.
 
+## The launch and the welcome
+
+Edwin's design (2026-10-29), four pages, the same in light and dark:
+
+1. **Launch.** The phone's own splash is the sprout on midnight (`#0b1c2c`,
+   app.json; the web page shows the same before the app has loaded,
+   `public/index.html`). The app's first frame is identical, then the sprout
+   grows and rises as THE / PERSONA INDEX™ / the line appear beneath it
+   (`src/screens/Launch.tsx`; `Lockup` and `Wordmark` in `src/ui/Logo.tsx`).
+2. **Loading.** The logo glides up as midnight gives way to a sunrise over
+   misty forested hills (`src/ui/Dawn.tsx`; the pictures are drawn by
+   `assets/brand/dawn.html`, tall for phones and wide for everything else).
+   A bar in the logo's lime fills only as far as the work done, under
+   "Getting things ready…".
+3. **Personalising.** "Preparing a more personal experience for you…" while
+   today is put together; the bar runs to the end.
+4. **Welcome** (first time only). Over the same sunrise: the logo, "A more
+   intentional you, starts here." in the phone's serif, an optional first
+   name and the lime "Begin My Journey" button (`src/screens/Welcome.tsx`).
+
+The stages and their timing live in `frontend/src/launch.ts`, with tests:
+each line stays long enough to read, the whole launch is about three and a
+half seconds when everything is quick, and a slow network never holds anyone
+on the loading page for more than six seconds. Reduced motion keeps the fades
+and drops the movement.
+
 ## On the website
 
 React Native for Web writes the app's styles into the page as it draws, so

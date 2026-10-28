@@ -4,9 +4,9 @@
 // any background, the Today wash included. Wordmark: THE / PERSONA INDEX,
 // with the line "Understand. Grow. Be more you." when there is room.
 import { useId } from 'react'
-import { View } from 'react-native'
+import { Text, View } from 'react-native'
 import Svg, { Defs, LinearGradient, Mask, Path, Rect, Stop } from 'react-native-svg'
-import { font, useTheme } from '../theme'
+import { brand, font, useTheme } from '../theme'
 import { T } from './kit'
 
 export function Mark({ size = 28 }: { size?: number }) {
@@ -37,6 +37,63 @@ export function Mark({ size = 28 }: { size?: number }) {
       <Path d="M46.5 63 C28 68 4 52 4 19 C26 18 44 36 46.5 63 Z" fill={`url(#${id}d)`} />
       <Path d="M49.5 76 C79 70 96 42 94 4 C63 12 44 42 49.5 76 Z" fill={`url(#${id}l)`} mask={`url(#${id}v)`} />
     </Svg>
+  )
+}
+
+// The words of the stacked lockup on the launch, loading and welcome pages
+// (Edwin's design, 2026-10-29): THE, PERSONA INDEX™ and the line, centred.
+// `width` is the PERSONA INDEX™ line's; the rest is drawn in proportion. A
+// logo, so it keeps its shape at any text size, and it is never translated.
+// Spaced capitals leave room after the last letter, so each line takes the
+// same room before its first, which keeps it centred.
+// The ™ hangs small at the top right, outside the centring, as in the design.
+const NAME_EMS = 10.4 // PERSONA INDEX in Geist Bold, tracked, in ems
+const TM_EMS = 0.5 // the ™'s box
+export function Wordmark({ width, ink, lineInk }: { width: number; ink: string; lineInk: string }) {
+  const s = width / NAME_EMS
+  const line = (size: number, track: number, color: string, family: string, lead: number) => ({
+    fontFamily: family,
+    fontSize: size,
+    lineHeight: Math.round(size * lead),
+    letterSpacing: track,
+    paddingLeft: track,
+    color,
+  })
+  return (
+    <View accessible accessibilityRole="image" accessibilityLabel="The Persona Index. Understand. Grow. Be more you." style={{ alignItems: 'center' }}>
+      <Text allowFontScaling={false} style={line(s * 0.6, s * 0.34, ink, font.bold, 1.3)}>
+        THE
+      </Text>
+      {/* An empty box the ™'s width on the left keeps the name centred; nothing
+          is drawn outside its box, which Android would cut off. */}
+      <View style={{ flexDirection: 'row' }}>
+        <View style={{ width: s * TM_EMS }} />
+        <Text allowFontScaling={false} style={line(s, s * 0.16, ink, font.bold, 1.2)}>
+          PERSONA INDEX
+        </Text>
+        <Text
+          allowFontScaling={false}
+          style={{ width: s * TM_EMS, marginTop: s * 0.12, marginLeft: -s * 0.06, fontFamily: font.bold, fontSize: s * 0.36, lineHeight: Math.round(s * 0.44), color: ink }}
+        >
+          ™
+        </Text>
+      </View>
+      <Text allowFontScaling={false} style={[line(s * 0.4, s * 0.14, lineInk, font.medium, 1.4), { marginTop: s * 0.45 }]}>
+        UNDERSTAND. GROW. BE MORE YOU.
+      </Text>
+    </View>
+  )
+}
+
+// The sprout above the words. `mark` is the sprout's width, `words` the
+// name's; tone 'night' for midnight, 'sunrise' for the light pages.
+export function Lockup({ mark, words, tone = 'sunrise' }: { mark: number; words: number; tone?: 'night' | 'sunrise' }) {
+  const night = tone === 'night'
+  return (
+    <View style={{ alignItems: 'center', gap: Math.round(mark * 0.03) }}>
+      <Mark size={mark} />
+      <Wordmark width={words} ink={night ? brand.onNight : brand.ink} lineInk={night ? brand.onNight2 : brand.inkSoft} />
+    </View>
   )
 }
 

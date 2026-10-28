@@ -3,15 +3,12 @@
 // writes it.
 export const pt: Record<string, string> = {
   'Welcome to The Persona Index': 'Boas-vindas ao The Persona Index',
-  'Discover yourself. Find what works. Live a little better every day.': 'Descubra você. Encontre o que funciona. Viva um pouco melhor a cada dia.',
-  "Understand why you feel, think, and act the way you do. Discover your strengths, learn from others' experiences, and find small ways to bring more happiness, confidence, and peace into your life.":
-    'Entenda por que você sente, pensa e age como age. Descubra suas forças, aprenda com a experiência dos outros e encontre pequenas formas de trazer mais alegria, confiança e paz para a sua vida.',
-  'Just a few minutes a day. No pressure. No judgment. Just meaningful discoveries about you.': 'Só alguns minutos por dia. Sem pressão. Sem julgamento. Só descobertas que importam sobre você.',
-  "Let's make this personal. What should we call you?": 'Vamos deixar isso pessoal. Como podemos te chamar?',
   'Your first name': 'Seu primeiro nome',
-  'Enter your name': 'Digite seu nome',
-  'Start My Journey': 'Começar minha jornada',
-  'Every great change begins with understanding yourself.': 'Toda grande mudança começa quando você se entende.',
+  'A more intentional you, starts here.': 'Um você mais intencional começa aqui.',
+  'First, what should we call you?': 'Primeiro, como podemos te chamar?',
+  'Begin My Journey': 'Começar minha jornada',
+  'Getting things ready…': 'Preparando tudo…',
+  'Preparing a more personal experience for you…': 'Preparando uma experiência mais pessoal para você…',
   'The Persona Index': 'The Persona Index',
   Today: 'Hoje',
   Reflect: 'Refletir',
