@@ -122,6 +122,8 @@ function Wash() {
 // The one card that matters: what you said last time (kept behind a tap, so
 // nobody glancing at your phone reads it), and today's questions tied to it.
 function MainCard({ hero, memory, link, tomorrow, onOpen }: { hero: Hero; memory: Memory | null; link: string | null; tomorrow: string | null; onOpen: () => void }) {
+  // Smaller on a narrow phone, so the title sits on one line.
+  const narrow = useWindowDimensions().width < 400
   return (
     <Card style={{ gap: 16 }}>
       {memory && (
@@ -132,7 +134,7 @@ function MainCard({ hero, memory, link, tomorrow, onOpen }: { hero: Hero; memory
       )}
       <View style={{ gap: 6 }}>
         <T v="label">{hero.eyebrow}</T>
-        <T v="h2" style={{ fontSize: 22, lineHeight: 27 }}>
+        <T v="h2" style={narrow ? { fontSize: 19, lineHeight: 24 } : { fontSize: 22, lineHeight: 27 }}>
           {hero.title}
         </T>
         <T tone="text2">{link ?? hero.sub}</T>
