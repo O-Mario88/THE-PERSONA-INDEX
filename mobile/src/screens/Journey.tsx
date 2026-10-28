@@ -8,19 +8,44 @@
 import { useState } from 'react'
 import { View } from 'react-native'
 import { growthPairs } from '@shared/growth'
-import { checkInFor, checkIns, discoveries, journeyHistory, lifeAreas, noteFor, outcomeLine } from '@shared/growthJourney'
+import { cardTextOf } from '@shared/insights'
+import { checkInFor, checkIns, discoveries, journeyHistory, lifeAreas, noteFor, outcomeLine, type Discovery } from '@shared/growthJourney'
 import { reflectSettings } from '@shared/journal'
 import { loadMoves } from '@shared/moves'
 import { reflections } from '@shared/notebook'
 import { loadHistory } from '@shared/profile'
 import { AREA_NAMES, dayMonth } from '@shared/reflect'
 import { DepthSwitch, useDeeper } from '../ui/Depth'
-import { Back, Card, Page, T } from '../ui/kit'
+import { Back, Button, Card, Page, T } from '../ui/kit'
 import { AREA_ICON, AREA_TONE, CardHead, Disc } from '../ui/parts'
 import { JourneyLine } from './TodayCards'
 
 // Explore deeper shows more of each; Essential the latest few.
 const SHOWN = { deeper: { found: 6, tried: 6, changed: 3, timeline: 20 }, essential: { found: 2, tried: 3, changed: 1, timeline: 5 } }
+
+// One discovery, with "Why am I seeing this?": the answer it came from.
+function Discovered({ d }: { d: Discovery }) {
+  const [open, setOpen] = useState(false)
+  const t = cardTextOf(d.questionId)
+  return (
+    <View style={{ gap: 2 }}>
+      <T bold>{d.headline}</T>
+      <T v="small" tone="muted">
+        {`${dayMonth(d.date)} · ${d.verdict === 'me' ? 'You said: That’s me' : 'You said: Partly'}`}
+      </T>
+      {t && (
+        <>
+          <Button small kind="text" label={open ? 'Hide why' : 'Why am I seeing this?'} onPress={() => setOpen(!open)} style={{ alignSelf: 'flex-start' }} />
+          {open && (
+            <T v="small" tone="text2">
+              {`From your answer: ${t.prompt} You chose “${t.label}”, and said it ${d.verdict === 'me' ? 'sounds like you' : 'partly sounds like you'}.`}
+            </T>
+          )}
+        </>
+      )}
+    </View>
+  )
+}
 
 export function Journey({ today, onBack, onWrite }: { today: string; onBack: () => void; onWrite: (prompt?: string) => void }) {
   const [moves] = useState(loadMoves)
@@ -74,14 +99,7 @@ export function Journey({ today, onBack, onWrite }: { today: string; onBack: () 
         {found.length === 0 ? (
           <T tone="text2">When a reading sounds like you, tap “That’s me” under it, and it’s kept here.</T>
         ) : (
-          found.slice(0, shown.found).map((d) => (
-            <View key={d.questionId} style={{ gap: 2 }}>
-              <T bold>{d.headline}</T>
-              <T v="small" tone="muted">
-                {`${dayMonth(d.date)} · ${d.verdict === 'me' ? 'You said: That’s me' : 'You said: Partly'}`}
-              </T>
-            </View>
-          ))
+          found.slice(0, shown.found).map((d) => <Discovered key={d.questionId} d={d} />)
         )}
       </Card>
 

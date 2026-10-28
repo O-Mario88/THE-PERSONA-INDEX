@@ -60,4 +60,17 @@ describe('what brings someone back in their first week', () => {
     const two = { answers: [ans('2026-10-27', { extraversion: 1 }), ans('2026-10-28', { extraversion: 1 }), ans('2026-10-28', { conscientiousness: 1 })], skips: [] }
     expect(acrossDays('2026-10-28', two).days).toBe(2)
   })
+
+  it('shows the answers behind what keeps coming up, newest first, only the ones that leaned that way', async () => {
+    const { acrossDaysWhy } = await import('./firstWeek')
+    const h = {
+      answers: [ans('2026-10-26', { extraversion: 1 }), ans('2026-10-27', { extraversion: 1 }), ans('2026-10-28', { extraversion: -1 }), ans('2026-10-28', { neuroticism: 1 })],
+      skips: [],
+    }
+    const text = (id: string) => ({ date: '2026-10-28', questionId: id, prompt: `Asked ${id}?`, label: `Chose ${id}` })
+    const why = acrossDaysWhy('2026-10-28', h, text)
+    expect(why.every((w) => !w.asked.includes('2026-10-28-extraversion'))).toBe(true)
+    expect(why.map((w) => w.date)).toEqual([...why.map((w) => w.date)].sort().reverse())
+    expect(why.find((w) => w.asked === 'Asked q-2026-10-27-extraversion?')).toEqual({ date: '2026-10-27', asked: 'Asked q-2026-10-27-extraversion?', said: 'Chose q-2026-10-27-extraversion' })
+  })
 })

@@ -1,5 +1,6 @@
 import { adviceFor } from './advice'
-import { heavyPause, isLowMood, loadHistory, pickedIds, type History } from './profile'
+import { cardTextOf, type CardText } from './insights'
+import { heavyPause, isLowMood, loadHistory, pickedIds, traitsOf, type History } from './profile'
 import { daysBetween, load, save } from './storage'
 
 // The first week (Edwin, 2026-10-26: "simple, healthy and focused"). A new
@@ -91,4 +92,24 @@ export function acrossDays(today: string, h: History = loadHistory()): { days: n
   if (days < 2 || heavyPause(h, today)) return { days, lean: null }
   const points = adviceFor(answers, h, today, 'morning').points
   return { days, lean: points.length ? points.map((p) => p.lean).join(' and ') : null }
+}
+
+// acrossDaysWhy is "Why am I seeing this?" for what keeps coming up (Edwin's
+// brief, 2026-10-28): the answers that leaned the same way as each leaning
+// named, newest first, with the question and what was chosen. Only answers
+// with a card of their own, so never an intimate or heavy one.
+export type AcrossWhy = { date: string; asked: string; said: string }
+
+export function acrossDaysWhy(today: string, h: History = loadHistory(), textOf: (questionId: string) => CardText | null = cardTextOf, max = 4): AcrossWhy[] {
+  const answers = h.answers.filter((a) => a.date <= today && !a.heavy)
+  const points = adviceFor(answers, h, today, 'morning').points
+  if (points.length === 0) return []
+  return answers
+    .filter((a) => points.some((p) => Math.sign(traitsOf(a)[p.trait] ?? 0) === (p.high ? 1 : -1)))
+    .sort((x, y) => y.date.localeCompare(x.date))
+    .flatMap((a) => {
+      const t = textOf(a.questionId)
+      return t && !t.heavy ? [{ date: a.date, asked: t.prompt, said: t.label }] : []
+    })
+    .slice(0, max)
 }

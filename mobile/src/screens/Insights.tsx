@@ -13,7 +13,8 @@ import { NEED_NAMES } from '@shared/needs'
 import { intentions, keepCard, keepIntention, keptCard, keptCards, unkeepCard } from '@shared/notebook'
 import { loadMoves, startMove } from '@shared/moves'
 import { loadHistory } from '@shared/profile'
-import { acrossDays } from '@shared/firstWeek'
+import { acrossDays, acrossDaysWhy } from '@shared/firstWeek'
+import { whenWas } from '@shared/continuity'
 import { rateAnswer } from '@shared/rating'
 import { splitReveal } from '@shared/reveal'
 import { NOT_ME_REPLY, VERDICT_REPLIES } from '@shared/words'
@@ -355,7 +356,34 @@ function AcrossDays({ today }: { today: string }) {
           ? `Across your ${days} days of answers, you keep leaning towards ${lean}. I'll keep watching whether it holds.`
           : 'Come back tomorrow and I can start showing you what links your answers across days, not just one sitting.'}
       </T>
+      {lean && <WhyAcross today={today} days={days} />}
     </Card>
+  )
+}
+
+// "Why am I seeing this?" (Edwin's brief, 2026-10-28): the answers behind
+// it, when you gave them, and how sure it is (shared firstWeek.ts).
+function WhyAcross({ today, days }: { today: string; days: number }) {
+  const [open, setOpen] = useState(false)
+  const [why] = useState(() => acrossDaysWhy(today))
+  if (why.length === 0) return null
+  return (
+    <View style={{ gap: 8 }}>
+      <Button small kind="text" label={open ? 'Hide why' : 'Why am I seeing this?'} onPress={() => setOpen(!open)} style={{ alignSelf: 'flex-start' }} />
+      {open && (
+        <>
+          {why.map((w) => (
+            <View key={`${w.date}-${w.asked}`} style={{ gap: 2 }}>
+              <T v="tiny">{w.date === today ? 'Today' : whenWas(w.date, today)}</T>
+              <T v="small" tone="text2">
+                {`${w.asked} You chose “${w.said}”.`}
+              </T>
+            </View>
+          ))}
+          <T v="tiny">{days < 7 ? 'A few days is still early, so this can change as you answer more.' : 'It rests on these answers, and it changes when your answers do.'}</T>
+        </>
+      )}
+    </View>
   )
 }
 
