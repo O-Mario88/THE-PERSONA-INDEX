@@ -7,13 +7,14 @@ import { deleteBackup, vaultState } from '@shared/vault'
 import { ApiError, deleteEverywhere, forgetLocal, getKept, insteadCount, wordsBetween, type Kept } from '@shared/api'
 import { loadMoves } from '@shared/moves'
 import { notebookCount } from '@shared/notebook'
-import { countryOf, loadPrefs, pulseOn, whatHelpedOn, type Prefs } from '@shared/prefs'
+import { followTime } from '@shared/depth'
+import { countryOf, loadPrefs, pulseOn, whatHelpedOn, type Prefs, type ReflectionStyle, type ReflectionTime } from '@shared/prefs'
 import { regionOf } from '@shared/regions'
 import { REGIONAL_SWITCH } from '@shared/words'
 import { ReminderSettingsView } from './Reminders'
 import { loadHistory } from '@shared/profile'
 import { forgetSession, patchAccount, signOut, type AccountView } from '@shared/social'
-import { Back, Button, Card, Field, Page, RowLink, T, Tinted, Toggle } from '../ui/kit'
+import { Back, Button, Card, Chip, Field, Page, RowLink, T, Tinted, Toggle } from '../ui/kit'
 import { Avatar } from '../ui/parts'
 import { DownloadButtons } from './BookDownloads'
 
@@ -25,6 +26,17 @@ const KEPT: [string, string][] = [
   ['That you answered a friend question', 'The date only, no question or option · 35 days'],
   ['Nods & Answer Together', 'Nods 35 days, Answer Together 3 days · never counted'],
   ['Human Pulse totals', 'Anonymous counts only'],
+]
+
+const STYLES: [ReflectionStyle, string][] = [
+  ['think', 'Help me think things through'],
+  ['practical', 'Give me small, practical ideas'],
+  ['both', 'A little of both'],
+]
+const TIMES: [ReflectionTime, string][] = [
+  ['minute', 'Just a minute'],
+  ['few', 'A few minutes'],
+  ['deep', 'I like to go deeper'],
 ]
 
 export function You({
@@ -114,6 +126,38 @@ export function You({
           />
         </View>
       )}
+
+      {/* My Reflection Style (Edwin's brief, 2026-10-28): optional. What feels
+          most useful decides what comes first; the time sets how much each page
+          shows at first (Essential or Explore deeper). */}
+      <Card style={{ gap: 12 }}>
+        <View style={{ gap: 4 }}>
+          <T v="h2">Make this space yours</T>
+          <T v="small" tone="muted">
+            How would you like The Persona Index to help you? Change it any time.
+          </T>
+        </View>
+        <T v="h3">What feels most useful?</T>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          {STYLES.map(([id, label]) => (
+            <Chip key={id} label={label} on={(prefs.style ?? 'both') === id} onPress={() => onChange({ ...prefs, style: id })} />
+          ))}
+        </View>
+        <T v="h3">How much time do you usually have?</T>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          {TIMES.map(([id, label]) => (
+            <Chip
+              key={id}
+              label={label}
+              on={(prefs.time ?? 'few') === id}
+              onPress={() => {
+                followTime()
+                onChange({ ...prefs, time: id })
+              }}
+            />
+          ))}
+        </View>
+      </Card>
 
       {/* Every on/off choice in the app lives here, and all start on (Edwin,
           2026-10-28). No other page asks you to switch anything. */}

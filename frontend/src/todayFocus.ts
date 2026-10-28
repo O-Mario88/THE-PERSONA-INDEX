@@ -11,6 +11,7 @@ import { loadMoves, type Move } from './moves'
 import { reflections, type Reflection, type ReflectionArea } from './notebook'
 import { cardTextOf } from './insights'
 import { NEED_PHRASES } from './needs'
+import type { ReflectionStyle } from './prefs'
 import type { History } from './profile'
 import { AREA_NAMES, areaOf } from './reflect'
 import { addDays } from './storage'
@@ -124,16 +125,22 @@ export type QuietStep =
 // quietStep is the one next step on Today: how a step you said you'd try
 // went (the Growth Journey check-in), then a step that helped before when
 // today touches the same part of life, then one thing to carry from today's
-// answers, then a small idea from your own recent cards.
-export function quietStep(today: string, h: History, moves: Move[] = loadMoves()): QuietStep | null {
+// answers, then a small idea from your own recent cards. Someone who asked
+// for small, practical ideas (My Reflection Style) gets the idea first.
+export function quietStep(today: string, h: History, moves: Move[] = loadMoves(), style?: ReflectionStyle): QuietStep | null {
   const move = dueStep(today, moves)
   if (move) return { kind: 'followUp', move }
   const again = revisitFor(today, h, moves)
   if (again) return { kind: 'revisit', ...again }
-  const carry = carryLine(today, h)
-  if (carry) return { kind: 'carry', text: carry }
-  const idea = ideaToTry(today, h, moves)
-  return idea ? { kind: 'idea', ...idea } : null
+  const carry = (): QuietStep | null => {
+    const text = carryLine(today, h)
+    return text ? { kind: 'carry', text } : null
+  }
+  const idea = (): QuietStep | null => {
+    const i = ideaToTry(today, h, moves)
+    return i ? { kind: 'idea', ...i } : null
+  }
+  return style === 'practical' ? (idea() ?? carry()) : (carry() ?? idea())
 }
 
 export type MirrorPreview = { days: number; answered: boolean[]; first: boolean; lean: string | null }

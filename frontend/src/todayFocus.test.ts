@@ -91,6 +91,14 @@ describe('one quiet next step', () => {
     expect(quietStep('2026-10-28', h, [])).toMatchObject({ kind: 'idea', step: 'Say no to one small thing.', from: 'Say no' })
   })
 
+  it('puts a small practical idea before something to notice, for someone who asked for practical ideas', () => {
+    card('2026-10-27', 'q1')
+    saveJSON('pi.insight.q1', { date: '2026-10-27', questionId: 'q1', prompt: 'P', label: 'L', reveal: 'R.', step: 'Take one short walk today.' })
+    const h = { answers: [{ ...answer('2026-10-27', 'q1'), optionId: 'o1' }, { ...answer('2026-10-28', 'q2'), need: 'calm' as const }], skips: [] }
+    expect(quietStep('2026-10-28', h, [])?.kind).toBe('carry')
+    expect(quietStep('2026-10-28', h, [], 'practical')?.kind).toBe('idea')
+  })
+
   it('shows nothing when there is nothing of yours to go on', () => {
     expect(quietStep('2026-10-28', { answers: [], skips: [] }, [])).toBeNull()
   })

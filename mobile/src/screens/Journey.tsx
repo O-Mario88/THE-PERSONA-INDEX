@@ -10,27 +10,32 @@ import { loadMoves } from '@shared/moves'
 import { reflections } from '@shared/notebook'
 import { loadHistory } from '@shared/profile'
 import { AREA_NAMES, dayMonth } from '@shared/reflect'
+import { DepthSwitch, useDeeper } from '../ui/Depth'
 import { Back, Card, Page, T } from '../ui/kit'
 import { AREA_ICON, AREA_TONE, CardHead, Disc } from '../ui/parts'
 import { JourneyLine } from './TodayCards'
 
 const LEARNED_SHOWN = 6
 const HISTORY_SHOWN = 20
+// Essential: the focus, the latest few things learned and the last few days.
+const LEARNED_ESSENTIAL = 3
+const HISTORY_ESSENTIAL = 5
 
 export function Journey({ today, onBack, onWrite }: { today: string; onBack: () => void; onWrite: (prompt?: string) => void }) {
   const [moves] = useState(loadMoves)
   const [checks] = useState(checkIns)
   const [h] = useState(loadHistory)
   const [written] = useState(reflections)
+  const [deeper, setDeeper] = useDeeper('journey')
   const newest = [...moves].sort((a, b) => b.date.localeCompare(a.date))
   // The open step: not checked in on yet, or kept for later.
   const active = newest.find((m) => {
     const c = checkInFor(m.questionId, checks)
     return m.status === 'started' && (!c?.tried || !!c.later)
   })
-  const learned = newest.filter((m) => m.status !== 'started' || checkInFor(m.questionId, checks)).slice(0, LEARNED_SHOWN)
+  const learned = newest.filter((m) => m.status !== 'started' || checkInFor(m.questionId, checks)).slice(0, deeper ? LEARNED_SHOWN : LEARNED_ESSENTIAL)
   const areas = lifeAreas(moves, h, written, today, checks)
-  const history = journeyHistory(moves, written, checks, HISTORY_SHOWN)
+  const history = journeyHistory(moves, written, checks, deeper ? HISTORY_SHOWN : HISTORY_ESSENTIAL)
 
   return (
     <Page>
@@ -39,6 +44,7 @@ export function Journey({ today, onBack, onWrite }: { today: string; onBack: () 
         <T v="display">My journey</T>
         <T tone="text2">Little steps. Meaningful discoveries. What you’ve tried, and what you’re learning about yourself.</T>
       </View>
+      <DepthSwitch deep={deeper} onChange={setDeeper} center={false} />
 
       <Card style={{ gap: 10 }}>
         <CardHead icon="pin" tone="amber" title="Your current focus" />
@@ -82,22 +88,24 @@ export function Journey({ today, onBack, onWrite }: { today: string; onBack: () 
         )}
       </Card>
 
-      <Card style={{ gap: 14 }}>
-        <CardHead icon="leaf" title="Your life areas" />
-        {areas.map((a) => (
-          <View key={a.area} style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}>
-            <Disc icon={AREA_ICON[a.area]} tone={AREA_TONE[a.area]} size={28} />
-            <View style={{ flex: 1, gap: 2, paddingTop: 3 }}>
-              <T v="h3" style={{ fontSize: 15, lineHeight: 19 }}>
-                {AREA_NAMES[a.area]}
-              </T>
-              <T v="small" tone={a.line ? 'text2' : 'muted'}>
-                {a.line ?? 'Not explored yet.'}
-              </T>
+      {deeper && (
+        <Card style={{ gap: 14 }}>
+          <CardHead icon="leaf" title="Your life areas" />
+          {areas.map((a) => (
+            <View key={a.area} style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}>
+              <Disc icon={AREA_ICON[a.area]} tone={AREA_TONE[a.area]} size={28} />
+              <View style={{ flex: 1, gap: 2, paddingTop: 3 }}>
+                <T v="h3" style={{ fontSize: 15, lineHeight: 19 }}>
+                  {AREA_NAMES[a.area]}
+                </T>
+                <T v="small" tone={a.line ? 'text2' : 'muted'}>
+                  {a.line ?? 'Not explored yet.'}
+                </T>
+              </View>
             </View>
-          </View>
-        ))}
-      </Card>
+          ))}
+        </Card>
+      )}
 
       <Card style={{ gap: 12 }}>
         <CardHead icon="calendar" tone="blue" title="Your history" />

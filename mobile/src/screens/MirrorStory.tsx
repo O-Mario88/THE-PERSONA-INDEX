@@ -21,8 +21,6 @@ import {
   keepLetter,
   keepProud,
   proudOf,
-  readsDeep,
-  rememberDepth,
   rememberFit,
   stillImportant,
   undoDirection,
@@ -77,6 +75,7 @@ import { helplineHere, loadPrefs, pulseOn } from '@shared/prefs'
 import { leaningVerdict, loadHistory, notMeSides, rememberLeaning } from '@shared/profile'
 import { font, radius, useTheme } from '../theme'
 import { Icon, type IconName } from '../ui/Icon'
+import { DepthSwitch, useDeeper } from '../ui/Depth'
 import { Button, Chip, T, Tinted } from '../ui/kit'
 import { CardHead, Disc, type Tone } from '../ui/parts'
 import { CircleLine, InConnection, MirrorPatterns, MirrorThreads, showConnection } from './MirrorBits'
@@ -563,43 +562,6 @@ function DirectionBox({ span, from, today, direction, title, allowOwn = false }:
 }
 
 // Two reading depths: the essential Mirror, and the whole of it.
-function DepthSwitch({ deep, onChange }: { deep: boolean; onChange: (deep: boolean) => void }) {
-  const p = useTheme()
-  return (
-    <View accessibilityRole="tablist" accessibilityLabel="Reading depth" style={{ flexDirection: 'row', gap: 4, padding: 4, borderRadius: radius.pill, backgroundColor: p.surface2, alignSelf: 'center' }}>
-      {(
-        [
-          [false, 'Essential'],
-          [true, 'Explore deeper'],
-        ] as const
-      ).map(([d, label]) => (
-        <Pressable
-          key={label}
-          accessibilityRole="tab"
-          accessibilityState={{ selected: deep === d }}
-          onPress={() => onChange(d)}
-          style={{ paddingHorizontal: 16, paddingVertical: 8, borderRadius: radius.pill, backgroundColor: deep === d ? p.surface : 'transparent' }}
-        >
-          <T v="small" bold tone={deep === d ? 'text' : 'muted'}>
-            {label}
-          </T>
-        </Pressable>
-      ))}
-    </View>
-  )
-}
-
-function useDepth() {
-  const [deep, setDeepState] = useState(readsDeep)
-  return [
-    deep,
-    (d: boolean) => {
-      rememberDepth(d)
-      setDeepState(d)
-    },
-  ] as const
-}
-
 function Deeper({ deep, children }: { deep: boolean; children: ReactNode }) {
   return deep ? (
     <View accessibilityLabel="Explore deeper" style={{ gap: 20 }}>
@@ -681,7 +643,7 @@ export function SundayMirror({
   footer: ReactNode
 }) {
   const jumps = useJumps(jumpTo)
-  const [deep, setDeep] = useDepth()
+  const [deep, setDeep] = useDeeper('mirror')
   const [, setTick] = useState(0)
   const history = useMemo(loadHistory, [m])
   const notMe = notMeSides(today)
@@ -847,7 +809,7 @@ export function PeriodStory({ p: pm, today, back, jumpTo, deeper, footer }: { p:
   const p = useTheme()
   const jumps = useJumps(jumpTo)
   const noun = pm.period
-  const [deep, setDeep] = useDepth()
+  const [deep, setDeep] = useDeeper('mirror')
   const [showAll, setShowAll] = useState(false)
   const [, setTick] = useState(0)
   const history = useMemo(loadHistory, [pm])
@@ -1071,7 +1033,7 @@ function ThemeBox({ noun, from, today, themes, back }: { noun: 'month' | 'quarte
 export function YearMirror({ y, today, back, jumpTo, deeper, footer }: { y: PeriodMirror; today: string; back: number; jumpTo?: (v: Host) => void; deeper: ReactNode; footer: ReactNode }) {
   const p = useTheme()
   const jumps = useJumps(jumpTo)
-  const [deep, setDeep] = useDepth()
+  const [deep, setDeep] = useDeeper('mirror')
   const quarters = useQuarters(y, today)
   const chapters = [1, 2, 3, 4].map((q) => chapterOf(q, quarters ? quarters[q - 1] : null))
   const story = quarters ? yearStory(chapters, y) : { headline: 'Gathering your year…', paragraphs: [], evidence: [] }

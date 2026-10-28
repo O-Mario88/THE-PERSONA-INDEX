@@ -6,6 +6,7 @@ import { View } from 'react-native'
 import { tryAgain } from '@shared/growthJourney'
 import { startMove } from '@shared/moves'
 import type { ReflectionArea } from '@shared/notebook'
+import { loadPrefs } from '@shared/prefs'
 import { loadHistory } from '@shared/profile'
 import { minutes, todaysRead } from '@shared/reads/reads'
 import type { Read } from '@shared/reads/types'
@@ -19,7 +20,7 @@ import { CheckIn } from './CheckIn'
 // One quiet next step: how a step you said you'd try went, else one thing to
 // carry from today's answers, else a small idea from your own recent cards.
 export function QuietStepCard({ today, onJourney }: { today: string; onJourney: () => void }) {
-  const [step] = useState(() => quietStep(today, loadHistory()))
+  const [step] = useState(() => quietStep(today, loadHistory(), undefined, loadPrefs().style))
   const [said, setSaid] = useState<string | null>(null)
   if (!step) return null
   return (

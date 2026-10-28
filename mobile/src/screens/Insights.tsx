@@ -22,6 +22,7 @@ import { Button, Card, Chip, Page, T } from '../ui/kit'
 import { CardHead } from '../ui/parts'
 import { PulseLine } from '../ui/Pulse'
 import { loadPrefs } from '@shared/prefs'
+import { DepthSwitch, useDeeper } from '../ui/Depth'
 import { HeavyCard, Rate, VerdictRow } from './QuestionCard'
 
 const WEEK = 7
@@ -45,6 +46,9 @@ export function Insights({
 }) {
   const [days, setDays] = useState(WEEK)
   const [version, setVersion] = useState(0)
+  // Essential or Explore deeper (shared depth.ts), and small practical ideas first for those who asked (My Reflection Style).
+  const [deeper, setDeeper] = useDeeper('insights')
+  const [practical] = useState(() => loadPrefs().style === 'practical')
   // What helped others: the anonymous totals, the same for everyone (backend/whathelped.go).
   const [others, setOthers] = useState<OthersStep[] | null>(null)
   useEffect(() => {
@@ -91,6 +95,7 @@ export function Insights({
         <Button kind="text" small label="My journey" iconAfter="arrow" onPress={onOpenJourney} />
         {onOpenMirror && <Button kind="text" small label="Your Mirrors" iconAfter="arrow" onPress={onOpenMirror} />}
       </View>
+      {shown.length > 0 && <DepthSwitch deep={deeper} onChange={setDeeper} center={false} />}
       <AcrossDays today={today} />
       <WhatHelpedYou />
       <T v="h2">For You</T>
@@ -109,6 +114,8 @@ export function Insights({
                 card={c}
                 question={questions.find((q) => q.id === c.questionId)}
                 others={others?.find((s) => s.questionId === c.questionId && s.optionId === c.optionId) ?? null}
+                deeper={deeper}
+                practical={practical}
                 today={today}
                 onRated={() => setVersion((v) => v + 1)}
                 pulseCounts={pulseCounts}
@@ -126,6 +133,8 @@ function InsightCard({
   card,
   question,
   others,
+  deeper,
+  practical,
   today,
   onRated,
   pulseCounts,
@@ -134,6 +143,8 @@ function InsightCard({
   card: ForYouCard
   question?: Question
   others: OthersStep | null
+  deeper: boolean // Explore deeper: the Human Pulse, what it reached for, the other side, what helped others, keeping it
+  practical: boolean // small practical ideas first: the step right after the reading
   today: string
   onRated: () => void
   pulseCounts: PulseCounts | null
@@ -161,15 +172,16 @@ function InsightCard({
               {reading.body ? <T tone="text2">{reading.body}</T> : null}
             </>
           )}
+          {practical && card.step && <TryThis card={card} today={today} />}
           {/* The shared Human Pulse for this answer, and Connect opened on this exact question. */}
-          {pulseCounts && !card.regional && (
+          {deeper && pulseCounts && !card.regional && (
             <PulseLine
               line={notAloneFor(pulseCounts.questions, card.questionId, card.optionId)}
               stale={pulseCounts.stale}
               onExplore={() => onExplore(card.questionId)}
             />
           )}
-          {card.need && (
+          {deeper && card.need && (
             <View style={{ gap: 6 }}>
               <T v="label">What you were reaching for</T>
               <View style={{ flexDirection: 'row' }}>
@@ -181,7 +193,7 @@ function InsightCard({
               </View>
             </View>
           )}
-          {card.otherSide && (
+          {deeper && card.otherSide && (
             <View style={{ gap: 6, borderLeftWidth: 3, borderLeftColor: p.rose, paddingLeft: 12 }}>
               <T v="label" style={{ color: p.rose }}>
                 The other side of it
@@ -191,8 +203,8 @@ function InsightCard({
               </T>
             </View>
           )}
-          {card.step && <TryThis card={card} today={today} />}
-          {card.step && others && (
+          {!practical && card.step && <TryThis card={card} today={today} />}
+          {deeper && card.step && others && (
             <View style={{ gap: 2 }}>
               <T v="label">What helped others</T>
               <T v="small" tone="text2">
@@ -201,7 +213,7 @@ function InsightCard({
               <T v="tiny">Only from people who chose to report back. Not a promise it will work for you.</T>
             </View>
           )}
-          <KeepCard card={card} />
+          {deeper && <KeepCard card={card} />}
           <CardFit card={card} question={question} onRated={onRated} />
           <T v="tiny">Something to think about, never a diagnosis.</T>
         </>

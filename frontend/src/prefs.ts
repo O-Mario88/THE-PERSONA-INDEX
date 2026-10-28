@@ -17,7 +17,9 @@ import { loadJSON, saveJSON } from './storage'
 // pure black; still: true shows cards at once instead of unfolding them;
 // connect: false turns quiet nods and Answer Together off both ways;
 // whatHelped: false stops a check-in's outcome being added to the anonymous
-// What helped totals (backend/whathelped.go).
+// What helped totals (backend/whathelped.go). style and time are My
+// Reflection Style (Edwin's brief, 2026-10-28): what feels most useful, and
+// how much time there usually is; absent is a little of both, a few minutes.
 export type Prefs = {
   adult: boolean | null
   mild: boolean
@@ -30,8 +32,12 @@ export type Prefs = {
   still?: true
   connect?: false
   whatHelped?: false
+  style?: ReflectionStyle
+  time?: ReflectionTime
   lang?: 'en' | 'es' | 'pt' | 'fr' // the app's language; absent follows the phone (i18n/index.ts)
 }
+export type ReflectionStyle = 'think' | 'practical' | 'both'
+export type ReflectionTime = 'minute' | 'few' | 'deep'
 export const NO_COUNTRY = 'none'
 
 export const WORDS_DAYS = [7, 35, 90] as const
@@ -54,6 +60,8 @@ export function loadPrefs(): Prefs {
     const still = p.still === true ? { still: true as const } : {}
     const connect = p.connect === false ? { connect: false as const } : {}
     const whatHelped = p.whatHelped === false ? { whatHelped: false as const } : {}
+    const style = p.style === 'think' || p.style === 'practical' || p.style === 'both' ? { style: p.style } : {}
+    const time = p.time === 'minute' || p.time === 'few' || p.time === 'deep' ? { time: p.time } : {}
     const lang = p.lang === 'en' || p.lang === 'es' || p.lang === 'pt' || p.lang === 'fr' ? { lang: p.lang } : {}
     return {
       adult: typeof p.adult === 'boolean' ? p.adult : null,
@@ -67,6 +75,8 @@ export function loadPrefs(): Prefs {
       ...still,
       ...connect,
       ...whatHelped,
+      ...style,
+      ...time,
       ...lang,
     }
   }

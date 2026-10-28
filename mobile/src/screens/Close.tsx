@@ -13,6 +13,7 @@ import { checkInFor } from '@shared/growthJourney'
 import { sharedNeed } from '@shared/glimpse'
 import { HELPLINE_LINE } from '@shared/helplineText'
 import { movesOn, startMove, startedInEvening, type Move } from '@shared/moves'
+import { loadPrefs } from '@shared/prefs'
 import { heavyPause, isLowMood, loadHistory, recordRoute, type AnswerRecord, type History, type Route } from '@shared/profile'
 import { NEED_PHRASES, type Need } from '@shared/needs'
 import { routeToAsk } from '@shared/reaching'
@@ -153,11 +154,14 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
 // One thing worth trying, from this sitting's own answers (shared
 // sittingClose.ts): the step already chosen, or one offered with I'll try it,
-// your own idea or Not now. Otherwise, the quiet line passed in.
+// your own idea or Not now. Otherwise, the quiet line passed in, which also
+// comes first for someone who'd rather think things through (My Reflection
+// Style); the step stays with today's cards in Insights.
 function TryOne({ date, questions, sitting, otherwise }: { date: string; questions: Question[]; sitting: 'morning' | 'evening'; otherwise: ReactNode }) {
   const [picked] = useState(() => stepToTry(picksIn(questions)))
+  const [think] = useState(() => loadPrefs().style === 'think')
   const [state, setState] = useState<'open' | 'trying' | 'own' | 'planned' | 'later'>(picked?.kind === 'trying' ? 'trying' : 'open')
-  if (!picked) return <>{otherwise}</>
+  if (!picked || (think && picked.kind === 'offer' && otherwise)) return <>{otherwise}</>
   const offer = picked.kind === 'offer' ? picked : null
   const option = offer ? questions.find((q) => q.id === offer.questionId)?.options.find((o) => o.id === offer.optionId) : undefined
   const step = offer ? offer.step : picked.kind === 'trying' ? picked.move.step : ''
