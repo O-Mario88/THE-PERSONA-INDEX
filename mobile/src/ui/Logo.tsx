@@ -61,7 +61,7 @@ export function Wordmark({ width, ink, lineInk }: { width: number; ink: string; 
   })
   return (
     <View accessible accessibilityRole="image" accessibilityLabel="The Persona Index. Understand. Grow. Be more you." style={{ alignItems: 'center' }}>
-      <Text allowFontScaling={false} style={line(s * 0.6, s * 0.34, ink, font.bold, 1.3)}>
+      <Text allowFontScaling={false} style={line(s * 0.6, s * 0.22, ink, font.bold, 1.3)}>
         THE
       </Text>
       {/* An empty box the ™'s width on the left keeps the name centred; nothing

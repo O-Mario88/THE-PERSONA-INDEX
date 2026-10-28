@@ -3,11 +3,15 @@
 <body style="margin:0;background:#000">
 <canvas id="c"></canvas>
 <script>
-// A sunrise over misty forested ridges, after Edwin's loading-screen mockup.
+// A sunrise over misty forested ridges, after Edwin's loading-screen mockup
+// (the background of src/ui/Dawn.tsx). Open this file in a browser with
+//   #W=1200&H=2600&sun=0.863&seed=7&lift=0.035   (dawn-tall.jpg, JPEG 84%)
+//   #W=2400&H=1500&sun=0.70&seed=7&lift=0.035    (dawn-wide.jpg, JPEG 80%)
+// and save the canvas; the same seed draws the same hills every time.
 // Scene units: v = y / H, u = (x - sunX * W) / H, so a tall phone image and a
 // wide desktop image share the same hills around the sun.
 const P = Object.fromEntries(new URLSearchParams(location.hash.slice(1)))
-const W = +P.W, H = +P.H, SUNX = +P.sun, SEED = +(P.seed || 7)
+const W = +P.W, H = +P.H, SUNX = +P.sun, SEED = +(P.seed || 7), LIFT = +(P.lift || 0)
 const cv = document.getElementById('c')
 cv.width = W; cv.height = H
 let ctx = cv.getContext('2d')
@@ -28,13 +32,13 @@ function mixc(c1, c2, t) { const a = Array.isArray(c1) ? c1 : hex(c1), b = Array
 const X = (u) => SUNX * W + u * H
 const U = (x) => (x - SUNX * W) / H
 const HORIZON = 0.68
-const SUN = { x: X(0), y: (HORIZON + 0.001) * H }
+const SUN = { x: X(0), y: (HORIZON + 0.001 - LIFT) * H }
 
 // 1. The sky: pale blue at the top, cream through the middle, warm at the hills.
 function sky() {
   const g = ctx.createLinearGradient(0, 0, 0, H)
   const stops = [[0, '#ccd9e7'], [0.1, '#d6dfe9'], [0.22, '#e6eaef'], [0.33, '#f3f2f0'], [0.42, '#faf6f0'], [0.52, '#faf2e9'], [0.6, '#fcf0e0'], [0.65, '#fcecd1'], [0.69, '#f8e0bb'], [0.8, '#e9d2b4'], [1, '#cdbba6']]
-  for (const [o, c] of stops) g.addColorStop(o, c)
+  for (const [o, c] of stops) g.addColorStop(o >= 0.5 && o < 1 ? o - LIFT : o, c)
   ctx.fillStyle = g
   ctx.fillRect(0, 0, W, H)
   // Warmth spreading from the sun.
@@ -61,7 +65,7 @@ function sun() {
 
 // A ridge as a function of x in pixels.
 function ridge(base, amp, freq, seed, oct = 6) {
-  return (x) => (base(U(x)) + (fbm(U(x) * freq + 10, seed, oct) - 0.5) * 2 * amp) * H
+  return (x) => (base(U(x)) - LIFT + (fbm(U(x) * freq + 10, seed, oct) - 0.5) * 2 * amp) * H
 }
 
 function fillRidge(ry, top, bottom, alpha = 1, to = H) {
@@ -262,6 +266,7 @@ function fbm2(x, y, s, oct = 5) { let a = 1, f = 1, sum = 0, n = 0; for (let o =
 
 // Uneven mist between v0 and v1: thick in places, thin in others.
 function mistNoise(v0, v1, color, alpha, seed, stretch = 6) {
+  v0 -= LIFT; v1 -= LIFT
   const scale = 4
   const w = Math.ceil(W / scale), h = Math.ceil(((v1 - v0) * H) / scale)
   const off = document.createElement('canvas'); off.width = w; off.height = h
