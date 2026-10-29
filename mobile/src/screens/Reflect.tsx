@@ -22,7 +22,7 @@ import { Notebook } from './Notebook'
 import { KeepMoment } from './KeepMoment'
 import { HeavyCard } from './QuestionCard'
 import { font, radius, useTheme, typeScale } from '../theme'
-import { Button, Card, Page, PageHeader, Private, T, Tinted } from '../ui/kit'
+import { Button, Card, Page, PageHeader, Private, Segmented, T, Tinted } from '../ui/kit'
 import { AREA_ICON, AREA_TONE, CardHead, Disc } from '../ui/parts'
 import { Icon } from '../ui/Icon'
 import { addSpoken, SpeakInstead } from '../ui/Speak'
@@ -170,27 +170,18 @@ export function Reflect({
     >
       <PageHeader title="Reflect" line={name ? `A quiet space for your thoughts, ${name}.` : 'A quiet space for your thoughts.'} />
 
-      <View style={{ flexDirection: 'row', backgroundColor: p.surface, borderColor: p.line, borderWidth: 1, borderRadius: radius.md, padding: 4 }}>
-        {(Object.keys(PERIOD_NAMES) as ReflectionPeriod[]).map((pd) => {
-          const on = !free && period === pd
-          return (
-            <Pressable
-              key={pd}
-              accessibilityRole="button"
-              accessibilityState={{ selected: on }}
-              onPress={() => {
-                setFree(false)
-                setPeriod(pd)
-                setAt(0)
-                setChosen(null)
-              }}
-              style={{ flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: radius.sm, backgroundColor: on ? p.lime : 'transparent' }}
-            >
-              <Text style={{ fontFamily: font.bold, ...typeScale.small, color: on ? p.onLime : p.text }}>{PERIOD_NAMES[pd]}</Text>
-            </Pressable>
-          )
-        })}
-      </View>
+      {/* The same switch as everywhere else in the app (the light-mode review, 2026-10-29). */}
+      <Segmented
+        label="Reflect on"
+        value={free ? null : period}
+        onChange={(pd) => {
+          setFree(false)
+          setPeriod(pd)
+          setAt(0)
+          setChosen(null)
+        }}
+        options={(Object.keys(PERIOD_NAMES) as ReflectionPeriod[]).map((pd) => ({ value: pd, label: PERIOD_NAMES[pd] }))}
+      />
       {writingWaits() && <BringBack onBack={() => setVersion((v) => v + 1)} />}
 
       <Writing

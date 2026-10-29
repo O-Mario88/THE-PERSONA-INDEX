@@ -273,7 +273,8 @@ export function RowGroup({ children }: { children: ReactNode }) {
 }
 
 // One choice out of a few, side by side, as the phone's own segmented control.
-export function Segmented<V extends string>({ options, value, onChange, label }: { options: { value: V; label: string }[]; value: V; onChange: (v: V) => void; label: string }) {
+// value null: nothing chosen yet (Reflect, while writing freely).
+export function Segmented<V extends string>({ options, value, onChange, label }: { options: { value: V; label: string }[]; value: V | null; onChange: (v: V) => void; label: string }) {
   const p = useTheme()
   return (
     <View accessibilityRole="radiogroup" accessibilityLabel={tr(label)} style={[styles.segmented, { backgroundColor: p.surface2 }]}>
