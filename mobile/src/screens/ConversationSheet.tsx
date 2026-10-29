@@ -265,7 +265,7 @@ function Tick({ label, sub, on, onPress }: { label: string; sub?: string; on: bo
           </T>
         ) : null}
       </View>
-      <View style={{ width: 24, height: 24, borderRadius: 7, borderWidth: 1.5, borderColor: on ? p.lime : p.lineStrong, alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ width: 24, height: 24, borderRadius: 7, borderWidth: 1.5, borderColor: on ? p.lime : p.control, alignItems: 'center', justifyContent: 'center' }}>
         <View style={{ position: 'absolute', top: -1.5, left: -1.5, right: -1.5, bottom: -1.5, borderRadius: 7, backgroundColor: p.lime, opacity: on ? 1 : 0 }} />
         {/* Positioned too, so on the web it paints above the fill, as it does on a phone. */}
         {on && (

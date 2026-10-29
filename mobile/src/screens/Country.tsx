@@ -50,7 +50,7 @@ export function CountrySelect({ value, onChange, withNone }: { value: string; on
             placeholder="Search"
             placeholderTextColor={p.muted}
             autoCorrect={false}
-            style={{ borderWidth: 1.5, borderColor: p.line, backgroundColor: p.surface, borderRadius: radius.md, padding: 14, fontFamily: font.regular, fontSize: 15, color: p.text }}
+            style={{ borderWidth: 1.5, borderColor: p.control, backgroundColor: p.surface, borderRadius: radius.md, padding: 14, fontFamily: font.regular, fontSize: 15, color: p.text }}
           />
           <FlatList
             data={list}

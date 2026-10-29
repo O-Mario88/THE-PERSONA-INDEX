@@ -810,7 +810,10 @@ function TabBar({ tab, onTab, shown }: { tab: View_; onTab: (t: Tab) => void; sh
             {/* Always drawn and shown by opacity: on Android a colour added later loses the round corners. */}
             <View style={{ width: 56, height: 30, alignItems: 'center', justifyContent: 'center' }}>
               <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 15, backgroundColor: p.accentWash, opacity: on ? 1 : 0 }} />
-              <Icon name={t.icon} size={22} color={on ? p.lime : p.muted} width={on ? 2.1 : 1.6} />
+              {/* Positioned too, so on the web the icon paints above the capsule, as it does on a phone. */}
+              <View style={{ position: 'relative' }}>
+                <Icon name={t.icon} size={22} color={on ? p.lime : p.muted} width={on ? 2.1 : 1.6} />
+              </View>
             </View>
             <Text style={{ fontFamily: on ? font.bold : font.medium, fontSize: 12, color: on ? p.text : p.muted }}>{tr(t.name)}</Text>
           </Pressable>

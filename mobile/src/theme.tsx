@@ -12,6 +12,7 @@ export type Palette = {
   surface3: string
   line: string
   lineStrong: string
+  control: string // the edge of a control (a switch's off track, a ring, a tick box, a text box): 3:1 or more on what it sits on
   text: string
   text2: string
   muted: string
@@ -53,9 +54,10 @@ export const light: Palette = {
   surface3: '#ebe2d3',
   line: '#ece3d4',
   lineStrong: '#ddd1bd',
+  control: '#958a77',
   text: '#12283a',
   text2: '#3d4f5c',
-  muted: '#69737c',
+  muted: '#5a656e', // 4.5:1 or more on cream, white and the tinted fills
   leaf: '#5f7d58',
   leafSoft: '#b5c7ae',
   lime: '#013d5a',
@@ -96,6 +98,7 @@ export const dark: Palette = {
   surface3: '#22425a',
   line: '#1f3a4e',
   lineStrong: '#2e4d63',
+  control: '#6a8597',
   text: '#f6efe3',
   text2: '#d6d2c9',
   muted: '#9eaab3',

@@ -178,7 +178,7 @@ export function Night({ date, tomorrowThemes, onClose }: { date: string; tomorro
             placeholder="Something else"
             placeholderTextColor={p.muted}
             accessibilityLabel="Something else that was good"
-            style={{ flex: 1, borderWidth: 1.5, borderColor: p.line, backgroundColor: p.surface, borderRadius: radius.md, padding: 12, fontFamily: font.regular, fontSize: 15, color: p.text }}
+            style={{ flex: 1, borderWidth: 1.5, borderColor: p.control, backgroundColor: p.surface, borderRadius: radius.md, padding: 12, fontFamily: font.regular, fontSize: 15, color: p.text }}
           />
           <Button
             small

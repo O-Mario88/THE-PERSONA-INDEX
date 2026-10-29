@@ -340,7 +340,7 @@ function Writing({
               maxLength={140}
               placeholder="Ask for help earlier"
               placeholderTextColor={p.muted}
-              style={{ borderWidth: 1.5, borderColor: p.line, backgroundColor: p.surface, borderRadius: radius.md, padding: 14, fontFamily: font.regular, fontSize: 15, color: p.text }}
+              style={{ borderWidth: 1.5, borderColor: p.control, backgroundColor: p.surface, borderRadius: radius.md, padding: 14, fontFamily: font.regular, fontSize: 15, color: p.text }}
             />
             <T v="small" tone="muted">
               In a week, a gentle check-in asks how it went. No goals and no scores.
@@ -399,7 +399,7 @@ function Writing({
           </View>
         </View>
       )}
-      <View style={{ backgroundColor: p.surface, borderColor: p.line, borderWidth: 1, borderRadius: radius.lg }}>
+      <View style={{ backgroundColor: p.surface, borderColor: p.control, borderWidth: 1, borderRadius: radius.lg }}>
         <TextInput
           multiline
           value={text}

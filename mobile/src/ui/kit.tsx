@@ -309,7 +309,7 @@ export function Option({ label, onPress, disabled, chosen, icon }: { label: stri
         return [styles.option, { backgroundColor: lit ? p.accentWash : p.surface, borderColor: lit ? p.accentLine : p.line, opacity: disabled ? 0.6 : 1 }]
       }}
     >
-      <View style={[styles.optionRing, { borderColor: chosen ? p.lime : p.lineStrong, backgroundColor: chosen ? p.lime : p.surface }]}>
+      <View style={[styles.optionRing, { borderColor: chosen ? p.lime : p.control, backgroundColor: chosen ? p.lime : p.surface }]}>
         {chosen && <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: p.onLime }} />}
       </View>
       {icon ? <Icon name={icon} size={18} color={p.text2} /> : null}
@@ -339,7 +339,10 @@ export function Radio({ label, checked, onPress }: { label: string; checked: boo
   )
 }
 
-// A switch with its words: the label, and a quieter note under it.
+// A switch with its words: the label, and a quieter note under it. On the
+// web an "on" switch's knob would otherwise be the browser library's teal.
+const WEB_THUMB = (Platform.OS === 'web' ? { activeThumbColor: '#ffffff' } : {}) as object
+
 export function Toggle({ label, note, value, onChange }: { label: string; note?: string; value: boolean; onChange: (on: boolean) => void }) {
   const p = useTheme()
   return (
@@ -361,9 +364,10 @@ export function Toggle({ label, note, value, onChange }: { label: string; note?:
           feel('select')
           onChange(on)
         }}
-        trackColor={{ true: p.lime, false: p.surface3 }}
+        trackColor={{ true: p.lime, false: p.control }}
         thumbColor="#ffffff"
-        ios_backgroundColor={p.surface3}
+        ios_backgroundColor={p.control}
+        {...WEB_THUMB}
       />
     </View>
   )
@@ -416,7 +420,7 @@ export function Field(props: TextInputProps & { label?: string; note?: string })
         placeholder={typeof rest.placeholder === 'string' ? tr(rest.placeholder) : rest.placeholder}
         style={[
           styles.field,
-          { backgroundColor: p.surface, borderColor: p.line, color: p.text },
+          { backgroundColor: p.surface, borderColor: p.control, color: p.text },
           rest.multiline && { minHeight: 112, lineHeight: 22, textAlignVertical: 'top', paddingTop: 12 },
           style,
         ]}

@@ -483,7 +483,7 @@ function Area({ label, value, onChange, max, lines = 2, id }: { label: string; v
       style={{
         minHeight: 24 * lines + 28,
         borderWidth: 1.5,
-        borderColor: p.line,
+        borderColor: p.control,
         backgroundColor: p.surface,
         borderRadius: radius.md,
         padding: 14,
