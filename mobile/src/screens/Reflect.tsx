@@ -27,6 +27,7 @@ import { AREA_ICON, AREA_TONE, CardHead, Disc } from '../ui/parts'
 import { Icon } from '../ui/Icon'
 import { addSpoken, SpeakInstead } from '../ui/Speak'
 import { mirrorName } from '@shared/mirrorDay'
+import { ShareSheet } from './ShareSheet'
 
 const SPAN_DAYS: Record<ReflectionPeriod, number> = { day: 0, week: 6, month: 30 }
 const THIS: Record<ReflectionPeriod, string> = { day: 'today', week: 'this week', month: 'this month' }
@@ -286,6 +287,9 @@ function Writing({
   const [reading, setReading] = useState<Reading | null>(null)
   const [intention, setIntention] = useState('')
   const [kept, setKept] = useState(false)
+  // After saving (Edwin, 2026-10-29): keep it private, or share a part of it.
+  const [savedText, setSavedText] = useState('')
+  const [privacy, setPrivacy] = useState<'asking' | 'private' | 'sharing'>('asking')
 
   function save() {
     if (!text.trim()) return
@@ -305,6 +309,8 @@ function Writing({
       ...(thought?.followsUp ? { followsUp: thought.followsUp } : {}),
     })
     setReading(readWriting(text))
+    setSavedText(text)
+    setPrivacy('asking')
     setText('')
     saveDraft(space, '')
     setSaved(rid)
@@ -322,6 +328,22 @@ function Writing({
             {`Saved, on this phone. It comes back on Today, and in your ${mirrorName()}.`}
           </T>
         </View>
+        {privacy === 'asking' ? (
+          <View style={{ gap: 8 }}>
+            <T v="small" bold>
+              Would you like to keep this private, or share a part of it with someone you trust?
+            </T>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              <Button small kind="secondary" label="Keep it private" onPress={() => setPrivacy('private')} />
+              <Button small kind="secondary" label="Share a part of it" onPress={() => setPrivacy('sharing')} />
+            </View>
+          </View>
+        ) : privacy === 'private' ? (
+          <T v="small" tone="muted">
+            Kept private. Only you can see it.
+          </T>
+        ) : null}
+        {privacy === 'sharing' && <ShareSheet kind="reflection" text={savedText} onClose={() => setPrivacy('private')} />}
         {!kept ? (
           <>
             <T v="small" bold>

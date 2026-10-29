@@ -21,6 +21,7 @@ import { DownloadButtons } from './BookDownloads'
 import { PrivacyLockChoices } from './PrivacyChoices'
 import { patronLine, patronStatus } from '@shared/patron'
 import { openPatron } from '../ui/Patron'
+import { SharingHistory } from './ShareSheet'
 
 const KEPT: [string, string][] = [
   ['Readings, plans, Notebook', 'Encrypted · until you delete'],
@@ -217,6 +218,9 @@ export function You({
         <ReminderSettingsView />
         <MirrorDayPicker />
       </Card>
+
+      {/* What you've shared, and taking it back (Edwin, 2026-10-29). */}
+      <SharingHistory />
 
       <RowGroup>
         <RowLink inGroup label="Settings" sub="Your name, language, light or dark, text size and where you live" onPress={onOpenSettings} />

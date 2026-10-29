@@ -87,6 +87,7 @@ import { CircleLine, InConnection, MirrorPatterns, MirrorThreads, showConnection
 import { locale } from '@shared/locale'
 import { shows } from '@shared/release'
 import { noteMirrorWeek } from '@shared/productCounts'
+import { ShareSheet } from './ShareSheet'
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
@@ -718,6 +719,7 @@ export function SundayMirror({
   const jumps = useJumps(jumpTo)
   const [deep, setDeep] = useDeeper('mirror')
   const [, setTick] = useState(0)
+  const [sharing, setSharing] = useState(false)
   // A return for another Mirror, counted once if the person said yes (productCounts.ts).
   useEffect(() => noteMirrorWeek(m.from), [m.from])
   const history = useMemo(loadHistory, [m])
@@ -812,6 +814,9 @@ export function SundayMirror({
       </Section>
 
       <WeekFocus from={m.from} today={today} choices={focus} />
+      {/* Share a part of this week with someone you trust (Edwin, 2026-10-29). */}
+      <Button small kind="text" icon="share" label="Share a part of this week" onPress={() => setSharing(true)} style={{ alignSelf: 'flex-start' }} />
+      {sharing && <ShareSheet kind="mirror" text={[story.headline, ...story.paragraphs].join(' ')} onClose={() => setSharing(false)} />}
 
       <Section id="ms-alone" icon="people" tone="blue" title="The moments we share">
         {/* Alongside the one person someone walks with (Edwin's brief, 2026-10-29). */}
