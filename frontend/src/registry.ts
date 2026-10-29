@@ -56,6 +56,7 @@ export const REGISTRY: Entry[] = [
   { key: 'pi.people', what: 'Your people: who you would want to hear from on a hard day, and what helps', backup: 'words', merge: 'newest', download: true },
   { key: 'pi.account.', what: 'Your sign-in on this phone and the name and handle friends see', backup: 'never', merge: 'local', download: false },
   { key: 'pi.signin.asked', what: 'That you were offered signing in after your first sitting', backup: 'never', merge: 'local', download: false },
+  { key: 'pi.signin.again', what: 'That the one later offer to sign in was made', backup: 'never', merge: 'local', download: false },
   { key: 'pi.invite', what: 'An invite link you followed, until you join or say not now', backup: 'never', merge: 'local', download: false },
   { key: 'pi.unrated.', what: 'A card tap waiting to be sent', backup: 'never', merge: 'local', download: false },
   { key: 'pi.pending.', what: 'An answer waiting to be sent', backup: 'never', merge: 'local', download: false },
