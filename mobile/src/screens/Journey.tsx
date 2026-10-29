@@ -19,6 +19,7 @@ import { DepthSwitch, useDeeper } from '../ui/Depth'
 import { Back, Button, Card, Page, T } from '../ui/kit'
 import { AREA_ICON, AREA_TONE, CardHead, Disc } from '../ui/parts'
 import { PulseNote, usePagePulse } from '../ui/Pulse'
+import { PrepareSheet } from './ConversationSheet'
 import { JourneyLine } from './TodayCards'
 
 // Explore deeper shows more of each; Essential the latest few.
@@ -78,6 +79,8 @@ export function Journey({ today, onBack, onWrite }: { today: string; onBack: () 
         <T v="display">My journey</T>
         <T tone="text2">Little steps. Meaningful discoveries. What you’ve tried, and what you’re learning about yourself.</T>
       </View>
+      {/* The conversation sheet (Edwin's brief, 2026-10-29), at the top of My Journey. */}
+      <PrepareSheet today={today} />
       <DepthSwitch deep={deeper} onChange={setDeeper} center={false} />
 
       <Card style={{ gap: 10 }}>

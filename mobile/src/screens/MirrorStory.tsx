@@ -78,6 +78,7 @@ import { Icon, type IconName } from '../ui/Icon'
 import { DepthSwitch, useDeeper } from '../ui/Depth'
 import { Button, Chip, T, Tinted } from '../ui/kit'
 import { CardHead, Disc, type Tone } from '../ui/parts'
+import { PrepareSheet } from './ConversationSheet'
 import { CircleLine, InConnection, MirrorPatterns, MirrorThreads, showConnection } from './MirrorBits'
 import { locale } from '@shared/locale'
 
@@ -764,6 +765,8 @@ export function SundayMirror({
 
       <DepthSwitch deep={deep} onChange={setDeep} />
       <Deeper deep={deep}>{deeper}</Deeper>
+      {/* The conversation sheet (Edwin's brief, 2026-10-29), at the bottom of the Sunday Mirror. */}
+      <PrepareSheet today={today} />
       {footer}
     </Page>
   )

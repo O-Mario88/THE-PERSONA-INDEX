@@ -56,7 +56,8 @@
         {
           "color": "#013d5a"
         }
-      ]
+      ],
+      "expo-asset"
     ],
     "experiments": {
       "tsconfigPaths": false

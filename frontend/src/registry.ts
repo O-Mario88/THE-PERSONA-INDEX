@@ -84,6 +84,8 @@ export const REGISTRY: Entry[] = [
   { key: 'pi.invite.later', what: 'The day you said "Not now" to inviting a friend from Today, so it waits a week before asking again', backup: 'never', merge: 'local', download: false },
   { key: 'pi.reminders.asked', what: 'Whether you were asked about reminders after your first questions, and what you said', backup: 'never', merge: 'local', download: false },
   { key: 'pi.install.v1', what: 'Whether you were invited to add the app to your home screen', backup: 'never', merge: 'local', download: false },
+  { key: 'pi.patron.v1', what: 'Whether you are a Patron and until when, as the server last said', backup: 'never', merge: 'local', download: false },
+  { key: 'pi.free.v1', what: 'How many free tries of Patron features you have used, such as speaking instead of typing', backup: 'always', merge: 'local', download: true },
 ]
 
 // entryFor finds the registry entry a key belongs to, or null.
