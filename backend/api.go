@@ -131,9 +131,13 @@ type Server struct {
 	helped  HelpedStore // What Helped reports, apart from votes and the mirror (whathelped.go)
 	vaults  VaultStore  // the sealed backups (vault.go)
 	social  SocialStore // accounts and the circle (social.go)
+	patron  PatronStore // what each person holds as a Patron (patron.go)
+	pairs   PairStore   // two people walking alongside each other (pair.go)
 	friends friendBank  // friend questions (friends.go)
 	signIn  SignInConfig
-	devices *deviceSigner
+	// patronCfg is what Patron offers here: test purchases, the Founding places (patron.go).
+	patronCfg PatronConfig
+	devices   *deviceSigner
 	// voteRetention is how long raw votes are kept (main.go), so "Delete
 	// everything" knows how far back a phone's votes can reach.
 	voteRetention time.Duration
@@ -183,6 +187,9 @@ func NewServer(clock func() time.Time, bank QuestionBank, store Store, devices *
 		helped:          store,
 		vaults:          store,
 		social:          store,
+		patron:          store,
+		pairs:           store,
+		patronCfg:       PatronConfig{FoundingLimit: defaultFoundingLimit},
 		friends:         mustFriendBank(),
 		devices:         devices,
 		voteRetention:   defaultRetention,
@@ -274,6 +281,16 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("POST /api/shares", s.PostShare)
 	mux.HandleFunc("DELETE /api/shares/{id}", s.WithdrawShare)
 	mux.HandleFunc("GET /api/common", s.GetCommon)
+
+	// Patron (patron.go) and walking alongside one person (pair.go).
+	mux.HandleFunc("GET /api/patron", s.GetPatron)
+	mux.HandleFunc("POST /api/patron/test", s.TestPurchase)
+	mux.HandleFunc("DELETE /api/patron/test", s.ClearTestPurchases)
+	mux.HandleFunc("GET /api/pair", s.GetPair)
+	mux.HandleFunc("POST /api/pair", s.AskPair)
+	mux.HandleFunc("POST /api/pair/accept", s.AcceptPair)
+	mux.HandleFunc("DELETE /api/pair", s.EndPair)
+	mux.HandleFunc("GET /api/pair/week", s.GetPairWeek)
 	mux.HandleFunc("PUT /api/common", s.PutCommon)
 	mux.HandleFunc("PUT /api/common/friends/{id}", s.PutCommonFriend)
 	mux.HandleFunc("GET /api/reachouts", s.GetReachOuts)

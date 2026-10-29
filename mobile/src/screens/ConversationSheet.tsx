@@ -39,7 +39,7 @@ import { NAME_KEY } from '@shared/welcomeKeys'
 import { brand, gutter, radius, useTheme } from '../theme'
 import { Icon } from '../ui/Icon'
 import { Mark } from '../ui/Logo'
-import { PatronNote } from '../ui/Patron'
+import { canOpenPatron, openPatron, PatronNote } from '../ui/Patron'
 import { Button, feel, RowGroup, RowLink, Segmented, T } from '../ui/kit'
 
 const web = Platform.OS === 'web'
@@ -175,7 +175,19 @@ export function ConversationSheet({ today, onClose }: { today: string; onClose: 
                     Your first longer sheet is free.
                   </T>
                 )}
-                {gate === 'patron' && <PatronNote text="Preparing conversation sheets across 14 and 30 days is part of The Persona Index Patron." />}
+                {gate === 'patron' && (
+                  <PatronNote
+                    text="Preparing conversation sheets across 14 and 30 days is part of The Persona Index Patron."
+                    onOpen={
+                      canOpenPatron()
+                        ? () => {
+                            onClose()
+                            openPatron()
+                          }
+                        : undefined
+                    }
+                  />
+                )}
               </View>
 
               <View style={{ gap: 8 }}>

@@ -490,5 +490,9 @@ func (s *Server) Disconnect(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusServiceUnavailable, "unavailable")
 		return
 	}
+	// Walking alongside someone needs them in the circle (pair.go).
+	if partner, err := s.walkingWith(r.Context(), acc.ID); err == nil && partner == r.PathValue("id") {
+		s.endPairOf(r.Context(), acc.ID)
+	}
 	w.WriteHeader(http.StatusNoContent)
 }

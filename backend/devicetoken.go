@@ -60,6 +60,7 @@ type deviceSigner struct {
 	// friend mark and the seal on a synced backup phrase, each its own key
 	// from the data secret.
 	hashLogin, accountDevice, friendMark, syncSeal []byte
+	hashPatron                                     []byte
 }
 
 // KeyConfig is the server's key material, from the environment (main.go).
@@ -95,6 +96,7 @@ func newKeyring(c KeyConfig) (*deviceSigner, error) {
 	d.accountDevice = deriveKey(c.DataSecret, "account-device v1")
 	d.friendMark = deriveKey(c.DataSecret, "friend-mark v1")
 	d.syncSeal = deriveKey(c.DataSecret, "sync-seal v1")
+	d.hashPatron = deriveKey(c.DataSecret, "patron-key v1")
 	return d, nil
 }
 
@@ -221,6 +223,14 @@ func (d *deviceSigner) helpedKey(id string) string {
 
 // privateQuestionID stands in for a private question's id in the mirror, so
 // a stored row says only that a private answer was given.
+// patronKey is what a phone's purchases are kept under before it signs in:
+// a keyed hash of its id with a key of its own (patron.go).
+func (d *deviceSigner) patronKey(id string) string {
+	m := hmac.New(sha256.New, d.hashPatron)
+	m.Write([]byte(id))
+	return hex.EncodeToString(m.Sum(nil)[:16])
+}
+
 func (d *deviceSigner) privateQuestionID(questionID string) string {
 	m := hmac.New(sha256.New, d.hashPrivate)
 	m.Write([]byte(questionID))

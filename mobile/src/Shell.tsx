@@ -20,6 +20,7 @@ import { addDays, keys, load as loadKey, remove as removeKey, save as saveKey } 
 import { NAME_KEY, WELCOMED } from '@shared/welcomeKeys'
 import { cardTextOf, pruneCardTexts } from '@shared/insights'
 import { seedEchoes } from '@shared/echoes'
+import { refreshPatron } from '@shared/patron'
 import { CONNECT_OPEN_KEY, dayWithYou, glimpseHere, inWeekOne, isNewcomer, markStarted, needsAccount, SHOW_ALL_KEY } from '@shared/firstWeek'
 import { signInMethods, type AccountView } from '@shared/social'
 import { pullSync } from '@shared/sync'
@@ -33,6 +34,8 @@ import { Back, Button, feel, Page, PrivacyLine, T, Tinted } from './ui/kit'
 import { Icon, type IconName } from './ui/Icon'
 import { CardHead } from './ui/parts'
 import { usePulse } from './ui/Pulse'
+import { setPatronOpener } from './ui/Patron'
+import { PatronPage } from './screens/PatronPage'
 import { Sidebar, type SideItem } from './ui/Sidebar'
 import { Enter, PushedPage } from './ui/Stack'
 import { QuestionCard } from './screens/QuestionCard'
@@ -59,7 +62,7 @@ import { locale } from '@shared/locale'
 
 type State = { kind: 'loading' } | { kind: 'ready'; set: DailySet; day: string; offline?: true } | { kind: 'empty' } | { kind: 'error' }
 type Tab = 'today' | 'notebook' | 'circle' | 'insights' | 'account'
-type View_ = Tab | 'settings' | 'kept' | 'read' | 'signin' | 'mirror' | 'journey'
+type View_ = Tab | 'settings' | 'kept' | 'read' | 'signin' | 'mirror' | 'journey' | 'patron'
 // The pages that open on top of a tab and slide away again (ui/Stack.tsx).
 type Inner = Exclude<View_, Tab>
 const ROOTS = new Set<View_>(['today', 'notebook', 'circle', 'insights', 'account'])
@@ -297,14 +300,25 @@ export function Shell({ phoneDark, onRestart, onDayReady }: { phoneDark: boolean
     setConnectFocus(questionId)
     setTab('circle')
   }
-  function open(v: 'settings' | 'kept' | 'signin' | 'mirror' | 'journey') {
+  function open(v: 'settings' | 'kept' | 'signin' | 'mirror' | 'journey' | 'patron') {
     if (tab === 'today' || tab === 'notebook' || tab === 'circle' || tab === 'insights' || tab === 'account') setBack(tab)
     setTab(v)
   }
   onReminder.current = (w) => (w === 'mirrors' ? open('mirror') : setTab(w === 'reflect' ? 'notebook' : 'today'))
+  // Any "See Patron" opens the Patron page (ui/Patron.tsx).
+  const openRef = useRef(open)
+  openRef.current = open
+  useEffect(() => {
+    setPatronOpener(() => openRef.current('patron'))
+    return () => setPatronOpener(null)
+  }, [])
+  // What the server says this person holds, each time the app opens or the account changes.
+  useEffect(() => {
+    refreshPatron().catch(() => {})
+  }, [me?.id])
   function openRead(r: Read) {
     setReading(r)
-    if (tab !== 'read' && tab !== 'settings' && tab !== 'kept' && tab !== 'signin' && tab !== 'mirror' && tab !== 'journey') setBack(tab)
+    if (tab !== 'read' && tab !== 'settings' && tab !== 'kept' && tab !== 'signin' && tab !== 'mirror' && tab !== 'journey' && tab !== 'patron') setBack(tab)
     setTab('read')
   }
   function closeFlow() {
@@ -410,6 +424,9 @@ export function Shell({ phoneDark, onRestart, onDayReady }: { phoneDark: boolean
     }
     if (v === 'journey') {
       return <Journey today={date} onBack={() => setTab(back)} onWrite={write} />
+    }
+    if (v === 'patron') {
+      return <PatronPage onBack={() => setTab(back)} />
     }
     if (v === 'mirror') {
       return (
@@ -756,7 +773,7 @@ export function Shell({ phoneDark, onRestart, onDayReady }: { phoneDark: boolean
 
 // Inner pages light the tab they belong under.
 function tabHome(tab: View_): View_ {
-  return tab === 'settings' || tab === 'kept' || tab === 'signin' ? 'account' : tab === 'mirror' || tab === 'journey' ? 'insights' : tab
+  return tab === 'settings' || tab === 'kept' || tab === 'signin' || tab === 'patron' ? 'account' : tab === 'mirror' || tab === 'journey' ? 'insights' : tab
 }
 
 function TabBar({ tab, onTab, shown }: { tab: View_; onTab: (t: Tab) => void; shown: typeof TABS }) {

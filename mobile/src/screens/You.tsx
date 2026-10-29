@@ -18,6 +18,8 @@ import { Back, Button, Card, Chip, Field, Page, RowGroup, RowLink, T, Tinted, To
 import { Avatar } from '../ui/parts'
 import { DownloadButtons } from './BookDownloads'
 import { PrivacyLockChoices } from './PrivacyChoices'
+import { patronLine, patronStatus } from '@shared/patron'
+import { openPatron } from '../ui/Patron'
 
 const KEPT: [string, string][] = [
   ['Readings, plans, Notebook', 'Encrypted · until you delete'],
@@ -162,6 +164,15 @@ export function You({
             />
           ))}
         </View>
+      </Card>
+
+      {/* Patron (Edwin's brief, 2026-10-29), right above Privacy and choices. */}
+      <Card style={{ gap: 8 }}>
+        <T v="h2">The Persona Index Patron</T>
+        <T v="small" tone="muted">
+          {patronLine(patronStatus()) ?? 'Keep the app independent and free of ads, and open the longer view of your own story.'}
+        </T>
+        <Button small kind="soft" label="See Patron" onPress={openPatron} />
       </Card>
 
       {/* Every on/off choice in the app lives here, and all start on (Edwin,

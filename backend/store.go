@@ -76,6 +76,8 @@ type Store interface {
 	VaultStore
 	SocialStore
 	HelpedStore
+	PatronStore // patron.go
+	PairStore   // pair.go
 }
 
 // VoteStore is the durable boundary: a vote is acknowledged only after Accept
@@ -116,6 +118,8 @@ type memoryStore struct {
 	social    memorySocial                              // see socialmemory.go
 	closer    memoryCloser                              // see closermemory.go
 	helped    map[string]map[HelpedStepKey]HelpedReport // reporter key -> step -> report; see whathelped.go
+	patron    map[string][]Entitlement                  // owner -> what they hold; see patron.go
+	pairs     []Pair                                    // see pair.go
 }
 
 func newMemoryStore() *memoryStore {
@@ -128,6 +132,7 @@ func newMemoryStore() *memoryStore {
 		social: newMemorySocial(),
 		closer: newMemoryCloser(),
 		helped: map[string]map[HelpedStepKey]HelpedReport{},
+		patron: map[string][]Entitlement{},
 	}
 }
 
