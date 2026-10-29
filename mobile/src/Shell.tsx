@@ -4,7 +4,7 @@
 // only draws them.
 import { StatusBar } from 'expo-status-bar'
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentRef, type ReactNode } from 'react'
-import { AppState, BackHandler, Platform, Pressable, ScrollView, useWindowDimensions, View } from 'react-native'
+import { AppState, BackHandler, Linking, Platform, Pressable, ScrollView, useWindowDimensions, View } from 'react-native'
 import { Text, TextScaleProvider } from './ui/textScale'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ApiError, cacheEdition, cachedEdition, getDay, pruneLocal, pruneWords, recalledChoice, sendPlanChecks, sendUnrated, type DailySet, type Question } from '@shared/api'
@@ -24,7 +24,8 @@ import { seedEchoes } from '@shared/echoes'
 import { refreshPatron } from '@shared/patron'
 import { CONNECT_OPEN_KEY, dayWithYou, glimpseHere, inWeekOne, isNewcomer, markStarted, needsAccount, SHOW_ALL_KEY } from '@shared/firstWeek'
 import type { SenseStart } from '@shared/makeSense'
-import { signInMethods, type AccountView } from '@shared/social'
+import { inviteFromURL, signInMethods, type AccountView } from '@shared/social'
+import { inviteCodeIn, keepInvite, pendingInvite } from '@shared/invites'
 import { pullSync } from '@shared/sync'
 import { useAccount } from '@shared/useAccount'
 import { startBackups } from '@shared/vault'
@@ -144,6 +145,29 @@ export function Shell({ phoneDark, onRestart, onDayReady }: { phoneDark: boolean
   }, [state.kind, onDayReady])
   // Back from Google's sign-in on the website: open on sign-in to finish it.
   const [tab, setTab] = useState<View_>(() => (backFromGoogle() ? 'signin' : 'today'))
+  // An invite link that opened the app (personaindex.com/c/<code>) waits on
+  // this device until the person accepts it or says not now, and opens Connect.
+  const [invite, setInvite] = useState<string | null>(pendingInvite)
+  useEffect(() => {
+    const take = (code: string | null) => {
+      if (!code) return
+      keepInvite(code)
+      setInvite(code)
+      setTab('circle')
+    }
+    if (Platform.OS === 'web') {
+      const code = typeof location === 'undefined' ? null : inviteCodeIn(location.pathname + location.search)
+      inviteFromURL() // tidies the address bar
+      take(code)
+      return
+    }
+    Linking.getInitialURL().then(
+      (url) => take(url ? inviteCodeIn(url) : null),
+      () => {},
+    )
+    const sub = Linking.addEventListener('url', (e) => take(inviteCodeIn(e.url)))
+    return () => sub.remove()
+  }, [])
   const { width: windowWidth } = useWindowDimensions()
   const wide = windowWidth >= WIDE
   const rail = windowWidth >= RAIL_AT
@@ -553,7 +577,19 @@ export function Shell({ phoneDark, onRestart, onDayReady }: { phoneDark: boolean
       />
     )
   } else if (rootTab === 'circle') {
-    body = <Connect me={me} onSignIn={() => open('signin')} today={date} questions={[...morningQs, ...eveningQs]} pulse={pulseOn(prefs) ? pulseCounts : false} focus={connectFocus} onWrite={write} />
+    body = (
+      <Connect
+        me={me}
+        onSignIn={() => open('signin')}
+        today={date}
+        questions={[...morningQs, ...eveningQs]}
+        pulse={pulseOn(prefs) ? pulseCounts : false}
+        focus={connectFocus}
+        onWrite={write}
+        invite={invite}
+        onInviteDone={() => setInvite(null)}
+      />
+    )
   } else if (rootTab === 'account') {
     body = <You me={me} localName={localName} prefs={prefs} onChange={changePrefs} onSignIn={() => open('signin')} onOpenSettings={() => open('settings')} onOpenKept={() => open('kept')} />
   } else if (rootTab === 'today' && sense) {

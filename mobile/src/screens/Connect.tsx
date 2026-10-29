@@ -6,7 +6,7 @@
 // (anonymous totals, kept visually apart from friends). No feed, no activity
 // status, no counts of anything but your own people. The fuller Circle
 // (Common Ground, Support & Celebrate, walking alongside) waits (release.ts).
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { Share, View } from 'react-native'
 import { ApiError } from '@shared/api'
 import type { Question } from '@shared/api'
@@ -16,6 +16,7 @@ import { dayMonth } from '@shared/reflect'
 import { CIRCLE_ACCESS, INNER_CIRCLE, innerCircle, setInner } from '@shared/rings'
 import {
   createInvite,
+  dropInvite,
   disconnect,
   getCircle,
   getOutside,
@@ -41,6 +42,7 @@ import { radius } from '../theme'
 import { Back, Button, Card, Chip, Page, PageHeader, RowGroup, RowLink, T, Tinted } from '../ui/kit'
 import { CardHead, Avatar } from '../ui/parts'
 import { Section } from '../ui/Layout'
+import { AcceptInvite, PasteInvite } from './AcceptInvite'
 import { NotAloneSection } from './NotAlone'
 import { AskNoteSheet, InviteCard, NoteCard } from './OutsideNotes'
 import { ReflectTogetherSheet, TogetherCard } from './ReflectTogether'
@@ -54,9 +56,13 @@ export function Connect({
   pulse = false,
   focus = null,
   onWrite = () => {},
+  invite = null,
+  onInviteDone = () => {},
 }: {
   me: AccountView | null
   onSignIn: () => void
+  invite?: string | null // an invite this person followed, waiting until they accept
+  onInviteDone?: () => void
   today?: string
   questions?: Question[]
   pulse?: PulseCounts | null | false // the shared Human Pulse; false while it is off
@@ -71,6 +77,9 @@ export function Connect({
   const [entries, setEntries] = useState<InboxEntry[] | null>(null)
   const [error, setError] = useState('')
   const [view, setView] = useState<'home' | 'people'>('home')
+  const [code, setCode] = useState<string | null>(invite)
+  const [joined, setJoined] = useState('')
+  useEffect(() => setCode(invite), [invite])
   const refresh = useCallback(() => {
     getCircle().then(
       (c) => {
@@ -97,6 +106,30 @@ export function Connect({
     markSeen(next)
   }, [shares, together, outside])
 
+  const endInvite = () => {
+    dropInvite()
+    setCode(null)
+    onInviteDone()
+  }
+  const inviteCard = code ? (
+    <AcceptInvite
+      code={code}
+      signedIn={!!me}
+      onSignIn={onSignIn}
+      onAccepted={(f) => {
+        endInvite()
+        setJoined(`You and ${f.name.split(' ')[0]} are connected. Nothing you wrote before is shared.`)
+        refresh()
+      }}
+      onDismiss={endInvite}
+    />
+  ) : null
+  const joinedLine = joined ? (
+    <Tinted tone="blue">
+      <T v="small">{joined}</T>
+    </Tinted>
+  ) : null
+
   const notAlone = (
     <Section title="You’re not alone" icon="globe">
       <T v="small" tone="muted">
@@ -110,6 +143,7 @@ export function Connect({
     return (
       <Page>
         <PageHeader title="Connect" line="Feel understood by the people you trust." />
+        {inviteCard}
         <Section title="With your people" icon="people">
           <Card style={{ gap: 10 }}>
             <T tone="text2">Share a part of what you write with someone you trust, and reflect together. Everything stays private until you choose to share it, and friends never see your answers.</T>
@@ -122,17 +156,40 @@ export function Connect({
   }
 
   const friends = circle?.friends ?? []
-  if (view === 'people') return <People friends={friends} shares={shares} questions={together?.questions ?? []} prompts={outside?.prompts ?? []} onBack={() => setView('home')} onChanged={refresh} />
+  if (view === 'people')
+    return (
+      <People
+        friends={friends}
+        shares={shares}
+        questions={together?.questions ?? []}
+        prompts={outside?.prompts ?? []}
+        onBack={() => setView('home')}
+        onChanged={refresh}
+        top={
+          <>
+            {inviteCard}
+            {joinedLine}
+          </>
+        }
+        onCode={setCode}
+      />
+    )
 
   const anyNew = (entries ?? []).some((e) => e.isNew)
   return (
     <Page>
       <PageHeader title="Connect" line="Feel understood by the people you trust." />
       {error ? <T tone="danger">{error}</T> : null}
+      {inviteCard}
+      {joinedLine}
 
       <Section title="With your people" icon="people">
         <RowGroup>
-          <RowLink inGroup label={`Your people · ${friends.length}`} sub="Who they are to you, what they chose to share with you, and reflecting together" onPress={() => setView('people')} />
+          {friends.length > 0 ? (
+            <RowLink inGroup label={`Your people · ${friends.length}`} sub="Who they are to you, what they chose to share with you, and reflecting together" onPress={() => setView('people')} />
+          ) : (
+            <RowLink inGroup label="Invite someone you trust" sub="Nothing is shared until you choose. You can also open an invite someone sent you." onPress={() => setView('people')} />
+          )}
         </RowGroup>
       </Section>
 
@@ -151,7 +208,7 @@ export function Connect({
           ),
         )}
         {entries && entries.length === 0 && <T tone="text2">Nothing shared with you yet. When someone you trust shares something with you, it shows here, for you alone.</T>}
-        {entries && (
+        {entries && entries.length > 0 && (
           <T v="small" tone="muted" center>
             {anyNew ? 'That’s everything new.' : CAUGHT_UP}
           </T>
@@ -177,6 +234,8 @@ function People({
   prompts,
   onBack,
   onChanged,
+  top,
+  onCode,
 }: {
   friends: FriendView[]
   shares: SharesView | null
@@ -184,6 +243,8 @@ function People({
   prompts: OutsidePrompt[]
   onBack: () => void
   onChanged: () => void
+  top: ReactNode // an invite waiting to be accepted, or the line saying it was
+  onCode: (code: string) => void
 }) {
   const [inner, setInnerIds] = useState<string[]>(innerCircle)
   const [reflecting, setReflecting] = useState<FriendView | null>(null)
@@ -205,10 +266,18 @@ function People({
     }
   }
   const lastFrom = (id: string) => shares?.received.find((s) => s.from.id === id)
+  const invitePart = (
+    <Card style={{ gap: 18 }}>
+      <Invite />
+      <PasteInvite onCode={onCode} />
+    </Card>
+  )
   return (
     <Page>
       <Back onPress={onBack} />
       <PageHeader title={`Your people · ${friends.length}`} line="A small, private list. Nobody else sees it." />
+      {top}
+      {friends.length === 0 && invitePart}
       <Card style={{ gap: 10 }}>
         {CIRCLE_ACCESS.map((a) => (
           <View key={a.who} style={{ gap: 2 }}>
@@ -273,10 +342,7 @@ function People({
           </Card>
         )
       })}
-      {friends.length === 0 && <T tone="text2">Nobody here yet. Invite someone you trust below.</T>}
-      <Card>
-        <Invite />
-      </Card>
+      {friends.length > 0 && invitePart}
       {reflecting && <ReflectTogetherSheet friend={reflecting} questions={questions} onClose={() => setReflecting(null)} onSent={onChanged} />}
       {askingNote && <AskNoteSheet friend={askingNote} prompts={prompts} onClose={() => setAskingNote(null)} onSent={onChanged} />}
     </Page>
