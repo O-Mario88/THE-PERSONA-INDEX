@@ -91,7 +91,7 @@ export const REGISTRY: Entry[] = [
   { key: 'pi.free.v1', what: 'How many free tries of Patron features you have used, such as speaking instead of typing', backup: 'always', merge: 'local', download: true },
   { key: 'pi.echoes.v1', what: 'A small note of each answer for about a year: the question, the day, your choice and what it reached for, so a question can come back as an echo', backup: 'always', merge: 'local', download: true },
   { key: 'pi.echo.', what: 'Which question came back as an echo, and when the last echo came', backup: 'always', merge: 'local', download: false },
-  { key: 'pi.echoseen.v1', what: 'The echoes you saw, and whether the shift felt true to how you have grown', backup: 'always', merge: 'local', download: true },
+  { key: 'pi.echoseen.v1', what: 'The echoes you saw, and what you made of a change: something changed, some of each, or just a different day', backup: 'always', merge: 'local', download: true },
   { key: 'pi.applock.v1', what: "The app's lock on this phone: whether it is on, the cover, the quiet icon, and your PINs, sealed", backup: 'never', merge: 'local', download: false },
 ]
 

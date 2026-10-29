@@ -33,7 +33,11 @@ See `CLAUDE.md` for the working rules.
   pipeline, the mirrors, deleting data, the static site, the frozen schedule
   and the edge rules.
 - [docs/data-map.md](docs/data-map.md): everything kept about a person,
-  where, for how long, and how it is deleted.
+  where, for how long, and how it is deleted; why Patron never changes
+  that; the clear choices for sharing; and what the voice promise covers.
+- [docs/first-release.md](docs/first-release.md): who the first release is
+  for, what it puts first and holds back, the growth ideas as hypotheses,
+  and the five signals counted without anyone's writing.
 - [docs/deploy.md](docs/deploy.md): the image, Cloudflare, and the
   checklist for every deploy.
 - [docs/monitoring.md](docs/monitoring.md): health checks, metrics, alerts

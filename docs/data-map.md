@@ -68,6 +68,8 @@ Postgres, schema in `backend/migrations/`. Every key below is an HMAC made from 
 | `mirror_plan_checks` | One check of a plan | Mirror key, a random key for the check (so a resend counts once and two checks of one plan cannot be tied together), the date, "did" or "not_yet". Never the plan's words | 35 days, with the rest of the mirror | Yes |
 | `vaults` | One encrypted backup copy: each backup is two, a main copy (everything but the writing) and a journal copy (written reflections, intentions and Reflect's drafts and choices), under keys from separate branches of the phrase | The SHA-256 of a key derived from the 12-word phrase, a version number, the sealed bytes (AES-GCM on the phone; the server cannot open them), the last day a phone wrote or read it. No mirror key, no pass: nothing ties it to a phone | 400 days after a phone last wrote or read it (`vaultRetention`, `vault.go`) | Yes: the app deletes it first, with `DELETE /api/vault`, while the phone still holds the phrase |
 | `what_helped` | One phone's report on one step, sent from a check-in while "Count my steps in What helped" is on (`010_what_helped.sql`, `whathelped.go`) | A keyed hash of its own (never the mirror key or a voter hash), question, option, the outcome (helped, helped a little, no change, didn't try) and the Monday of the week. Never the day, the feeling or the note | Until the phone deletes everything | Yes |
+| `entitlements` | One Patron purchase (`011_patron.sql`, `patron.go`) | The owner (an account, or a keyed hash of a phone's pass that no other table uses), the plan, its first and last day, and where it came from. No name, address or card | As a purchase record, for good | No. After the delete the phone has a new pass, so nothing links the row to it any more |
+| `pairs` | One ask, or two accounts walking alongside each other (`pair.go`) | The two account ids, whether the ask was accepted, the day | Until either ends it | With either account |
 | `mirror_folds` | A week that has been folded for everyone | The Monday and when it was folded. Nothing about any phone | For good | No |
 | `forgotten_devices` | A phone that deleted everything | Mirror key and the date | 35 days, with the rest of the mirror | It is what the delete writes |
 | `schema_migrations` | A migration that has run | File name and time | For good | No |
@@ -124,6 +126,38 @@ Migration `backend/migrations/008_accounts_circle.sql`; rules in `backend/social
 | Answer Together: the two people, the question and each choice. Never fed to a mirror or a count; the asker's choice is shown to the other only after they answer | `together` | 48 hours, then gone a day later |
 
 Signed in, every phone on the account votes and keeps its mirror under one pass, derived from the account (`accountDeviceID`), so the duplicate-vote rule holds per account. Answers are still stored under a keyed hash of that pass, never with a name or handle, but the server can tell which account they belong to.
+
+## Patron never changes what is kept
+
+Patron (`patron.go`, `frontend/src/patron.ts`) changes what the app makes for the person, never what is kept, where, or for how long. Every row on this page holds with or without a plan; the server's only Patron record is the purchase itself (`entitlements`, above).
+
+**Long comparisons run on the phone.** The server keeps answers and steps for 35 days (`mirrorRetention`) whatever the plan, and no feature, free or paid, reads further back on the server than that.
+
+- Seasonal Echoes compare today's answer with the same question from one, three, six or twelve months ago. They read the phone's own echo log (`pi.echoes.v1`, about 400 days, `echoes.ts`), which leaves the phone only sealed in the encrypted backup. A new phone gets it back only by restoring that backup with the 12-word phrase, and the comparison then runs on the new phone.
+- The monthly, quarterly and yearly Mirrors read the server's weekly notes (`mirror_weeks`, 400 days): counts, theme depths, trait sums and steps that helped, never words. They are free and the same for everyone.
+- The rule for anything new: a comparison that needs more than 35 days of answers runs on the phone, over history kept on the phone or restored from the encrypted backup. It never lengthens what the server keeps, and a plan never switches longer keeping on.
+
+**Cancelling stops new premium outputs and takes nothing away.** When a plan ends, the app stops making what Patron covers: another brief after the free one, Echoes older than a month, Speak instead after the free tries, and bringing back what helped after the first time. Everything already made stays readable and in "Download my book": the notebook, kept briefs (`pi.briefs.v1`), the echoes in My journey, and the Mirrors.
+
+**Trust is never behind the paywall.** The lock, the cover in the app switcher, the quiet icon, the guest PIN, "Download my book" and both deletes are free for everyone.
+
+## Choices: private by default, shared by choice
+
+Private reflection works from the first moment with nothing to switch on: answering, writing, the first experience, the Mirror and the lock.
+
+Adding to anything other people see is a choice the person makes, asked once in plain words after the first sitting and changeable on You. Until they choose, nothing is added:
+
+- **Count my answers in the anonymous totals** (the Human Pulse, Growing together, You're not alone). Until they say yes, an answer still reaches their own Mirror (`mirror_answers`) but adds nothing to `votes` or `vote_tallies` (`count: false` on `POST /api/votes`).
+- **Count my steps in What helped** (`what_helped`).
+- **Count how I use the app** (the anonymous product counts, `product_counts`).
+
+Seeing the totals is a separate switch from adding to them. Sharing with a person (a circle, a brief, a shared insight, walking alongside) only ever happens when the person does it, each time.
+
+## What the voice promise covers
+
+Speak instead (`mobile/src/ui/Speak.tsx`, `mobile/src/platform/voice.ts`, `frontend/src/speech.ts`) turns speech into words on the phone: on iPhone and Android with on-device recognition only, and on the website only where the browser recognises speech on the device (otherwise the button does not show). No audio is kept, and the clearer version is made on the phone from the person's own words (`distil.ts`), with no server and no AI service.
+
+That promise covers the speech becoming words, and nothing after it. From there the words are treated exactly like typed words and go where the person puts them: an answer in their own words stays on the phone (`pi.words.<questionId>`), Reflect writing goes only into the encrypted backup, and a brief goes only where the person shares it. If the app ever makes a summary or interpretation away from the phone, it will be its own named choice, asked for separately, and never covered by "on the phone".
 
 ## Deleting everything
 
