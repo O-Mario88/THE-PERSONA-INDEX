@@ -20,32 +20,33 @@ import {
 } from 'react-native'
 import { Text, TextInput } from './textScale'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { brand, font, gutter, lift, radius, RAIL_AT, RAIL_W, useTheme, WIDE, type Palette } from '../theme'
+import { brand, font, gutter, lift, radius, RAIL_AT, RAIL_W, useTheme, WIDE, type Palette, typeScale } from '../theme'
 import { Icon, type IconName } from './Icon'
 import { tr, uiLanguage } from '@shared/i18n'
 
 // ---- type ----
 
-type Variant = 'display' | 'title' | 'h2' | 'h3' | 'body' | 'small' | 'tiny' | 'label' | 'eyebrow' | 'quote'
+type Variant = 'display' | 'title' | 'h2' | 'h3' | 'body' | 'reading' | 'small' | 'tiny' | 'label' | 'eyebrow' | 'quote'
 type Tone = 'text' | 'text2' | 'muted' | 'accent' | 'onNavy' | 'onNavy2' | 'danger' | 'leaf' | 'warm'
 
-// X-style type (Edwin, 2026-10-27; a step smaller on 2026-10-28 to fit every
-// screen): one face, few sizes, Bold headings (never
-// extra bold) with tight tracking, compact body lines, and labels in sentence case rather
-// than spaced capitals.
+// One face (Geist) and one scale (theme typeScale, the light-mode review of
+// 2026-10-29): bold headings with tight tracking, semibold for row titles
+// and labels, regular for reading, labels in sentence case. Body text is 16
+// on 24 and readings 17 on 26, so a page reads easily at arm's length.
 const VARIANTS: Record<Variant, TextStyle> = {
-  display: { fontFamily: font.bold, fontSize: 27, lineHeight: 32, letterSpacing: -0.6 },
-  title: { fontFamily: font.bold, fontSize: 20, lineHeight: 25, letterSpacing: -0.35 },
-  h2: { fontFamily: font.bold, fontSize: 18, lineHeight: 22, letterSpacing: -0.2 },
-  h3: { fontFamily: font.bold, fontSize: 16, lineHeight: 20, letterSpacing: -0.1 },
-  body: { fontFamily: font.regular, fontSize: 15, lineHeight: 20 },
-  small: { fontFamily: font.regular, fontSize: 13, lineHeight: 18 },
-  tiny: { fontFamily: font.medium, fontSize: 12, lineHeight: 15 },
-  label: { fontFamily: font.bold, fontSize: 12, lineHeight: 15 },
-  eyebrow: { fontFamily: font.bold, fontSize: 12, lineHeight: 15 },
-  // A line set apart: a quote, a thought, a direction. The same face, a
-  // little larger and lighter than a heading.
-  quote: { fontFamily: font.semibold, fontSize: 19, lineHeight: 25, letterSpacing: -0.2 },
+  display: { fontFamily: font.bold, ...typeScale.display, letterSpacing: -0.7 },
+  title: { fontFamily: font.bold, ...typeScale.title, letterSpacing: -0.4 },
+  h2: { fontFamily: font.bold, ...typeScale.heading, letterSpacing: -0.2 },
+  h3: { fontFamily: font.semibold, ...typeScale.sub, letterSpacing: -0.1 },
+  body: { fontFamily: font.regular, ...typeScale.body },
+  reading: { fontFamily: font.regular, ...typeScale.reading },
+  small: { fontFamily: font.regular, ...typeScale.small },
+  tiny: { fontFamily: font.medium, ...typeScale.caption },
+  label: { fontFamily: font.semibold, ...typeScale.caption },
+  eyebrow: { fontFamily: font.semibold, ...typeScale.caption },
+  // A line set apart: a quote, a thought, a direction. Heading size, a
+  // little lighter than a heading.
+  quote: { fontFamily: font.semibold, ...typeScale.heading, letterSpacing: -0.2 },
 }
 
 function toneColor(p: Palette, tone: Tone): string {
@@ -202,7 +203,7 @@ export function Button({
       ) : (
         <>
           {icon && <Icon name={icon} size={18} color={fg} />}
-          <Text style={{ fontFamily: kind === 'text' ? font.semibold : font.bold, fontSize: small || kind === 'text' ? 14 : 15, color: fg }}>{tr(label)}</Text>
+          <Text style={{ fontFamily: kind === 'text' ? font.semibold : font.bold, ...(small ? typeScale.small : typeScale.body), color: fg }}>{tr(label)}</Text>
           {iconAfter && <Icon name={iconAfter} size={18} color={fg} />}
         </>
       )}
@@ -281,7 +282,7 @@ export function Segmented<V extends string>({ options, value, onChange, label }:
                 opacity, so Android keeps its round corners. */}
             <View style={[styles.segmentFill, { backgroundColor: p.dark ? p.surface3 : p.surface, opacity: on ? 1 : 0 }, on && lift(p)]} />
             {/* Segments share one row, so their words grow only a little with the text size. */}
-            <Text maxScale={1.1} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ fontFamily: on ? font.bold : font.semibold, fontSize: 14, color: on ? p.text : p.text2 }}>
+            <Text maxScale={1.1} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ fontFamily: on ? font.bold : font.semibold, ...typeScale.small, color: on ? p.text : p.text2 }}>
               {tr(o.label)}
             </Text>
           </Pressable>
@@ -318,7 +319,7 @@ export function Option({ label, onPress, disabled, chosen, icon }: { label: stri
         {chosen && <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: p.onLime }} />}
       </View>
       {icon ? <Icon name={icon} size={18} color={p.text2} /> : null}
-      <Text style={{ flex: 1, fontFamily: font.bold, fontSize: 16, lineHeight: 20, color: p.text }}>{tr(label)}</Text>
+      <Text style={{ flex: 1, fontFamily: font.bold, ...typeScale.sub, color: p.text }}>{tr(label)}</Text>
     </Pressable>
   )
 }
@@ -338,7 +339,7 @@ export function Radio({ label, checked, onPress }: { label: string; checked: boo
       }}
       style={(s) => [styles.radio, { borderTopColor: p.line, backgroundColor: hovered(s) || s.pressed ? p.surface2 : 'transparent' }]}
     >
-      <Text style={{ flex: 1, fontFamily: checked ? font.bold : font.medium, fontSize: 15, lineHeight: 20, color: p.text }}>{tr(label)}</Text>
+      <Text style={{ flex: 1, fontFamily: checked ? font.bold : font.medium, ...typeScale.body, color: p.text }}>{tr(label)}</Text>
       {checked ? <Icon name="check" size={20} color={p.lime} width={2.4} /> : null}
     </Pressable>
   )
@@ -353,7 +354,7 @@ export function Toggle({ label, note, value, onChange }: { label: string; note?:
   return (
     <View style={[styles.toggle, { borderColor: p.line }]}>
       <View style={{ flex: 1, gap: 2 }}>
-        <T v="h3" style={{ fontSize: 15 }}>
+        <T v="h3" style={typeScale.body}>
           {label}
         </T>
         {note ? (
@@ -387,7 +388,7 @@ export function Chip({ label, on, onPress, icon }: { label: string; on?: boolean
   const body = (
     <View style={[styles.chip, { backgroundColor: on ? p.lime : tappable ? p.surface : p.surface2, borderWidth: 1, borderColor: on ? p.lime : tappable ? p.lineStrong : 'transparent' }]}>
       {icon ? <Icon name={icon} size={16} color={on ? p.onLime : p.text2} /> : null}
-      <Text style={{ fontFamily: on ? font.bold : font.semibold, fontSize: 14, color: on ? p.onLime : p.text }}>{tr(label)}</Text>
+      <Text style={{ fontFamily: on ? font.bold : font.semibold, ...typeScale.small, color: on ? p.onLime : p.text }}>{tr(label)}</Text>
     </View>
   )
   if (!onPress) return body
@@ -430,7 +431,7 @@ export function Field(props: TextInputProps & { label?: string; note?: string })
         style={[
           styles.field,
           { backgroundColor: p.surface, borderColor: p.control, color: p.text },
-          rest.multiline && { minHeight: 112, lineHeight: 22, textAlignVertical: 'top', paddingTop: 12 },
+          rest.multiline && { minHeight: 112, lineHeight: typeScale.body.lineHeight, textAlignVertical: 'top', paddingTop: 12 },
           style,
         ]}
       />
@@ -620,5 +621,5 @@ const styles = StyleSheet.create({
   optionRing: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   toggle: { flexDirection: 'row', alignItems: 'center', gap: 16, paddingVertical: 16, borderTopWidth: StyleSheet.hairlineWidth },
   chip: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 36, paddingHorizontal: 14, borderRadius: radius.sm },
-  field: { minHeight: 52, borderWidth: 1.5, borderRadius: radius.md, paddingHorizontal: 16, paddingVertical: 12, fontFamily: font.regular, fontSize: 15 },
+  field: { minHeight: 52, borderWidth: 1.5, borderRadius: radius.md, paddingHorizontal: 16, paddingVertical: 12, fontFamily: font.regular, ...typeScale.body },
 })

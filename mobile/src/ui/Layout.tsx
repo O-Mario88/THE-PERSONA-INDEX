@@ -7,7 +7,7 @@ import { useId, useState, type ReactNode } from 'react'
 import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native'
 import Svg, { Circle, Defs, LinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg'
 import { tr } from '@shared/i18n'
-import { brand, lift, radius, useTheme } from '../theme'
+import { brand, lift, radius, useTheme, typeScale } from '../theme'
 import { Icon, type IconName } from './Icon'
 import { feel, T } from './kit'
 import { Disc } from './parts'
@@ -54,7 +54,7 @@ export function Tile({ icon, tone = 'blue', title, sub, onPress }: { icon: IconN
         <Disc icon={icon} tone={tone} size={34} />
         <Icon name="chevron" size={18} color={p.muted} />
       </View>
-      <T v="h3" style={{ fontSize: 15, lineHeight: 19 }}>
+      <T v="h3" style={typeScale.body}>
         {title}
       </T>
       {sub ? (

@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { countriesByName, countryName, guessCountry } from '@shared/country'
 import { NO_COUNTRY } from '@shared/prefs'
 import { COUNTRY_ASK, COUNTRY_KEEP, COUNTRY_NONE, COUNTRY_WHY } from '@shared/words'
-import { font, gutter, radius, useTheme } from '../theme'
+import { font, gutter, radius, useTheme, typeScale } from '../theme'
 import { Button, Option, T, Tinted } from '../ui/kit'
 import { Icon } from '../ui/Icon'
 
@@ -51,7 +51,7 @@ export function CountrySelect({ value, onChange, withNone }: { value: string; on
             placeholder="Search"
             placeholderTextColor={p.muted}
             autoCorrect={false}
-            style={{ borderWidth: 1.5, borderColor: p.control, backgroundColor: p.surface, borderRadius: radius.md, padding: 14, fontFamily: font.regular, fontSize: 15, color: p.text }}
+            style={{ borderWidth: 1.5, borderColor: p.control, backgroundColor: p.surface, borderRadius: radius.md, padding: 14, fontFamily: font.regular, ...typeScale.body, color: p.text }}
           />
           <FlatList
             data={list}

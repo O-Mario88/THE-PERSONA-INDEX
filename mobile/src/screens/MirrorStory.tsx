@@ -74,7 +74,7 @@ import { checkIntention, intentions, reflections } from '@shared/notebook'
 import { checkPattern, hasPatterns, patternCheckOf } from '@shared/patterns'
 import { helplineHere, loadPrefs, pulseOn } from '@shared/prefs'
 import { leaningVerdict, loadHistory, notMeSides, rememberLeaning } from '@shared/profile'
-import { font, radius, useTheme } from '../theme'
+import { font, radius, useTheme, typeScale } from '../theme'
 import { Icon, type IconName } from '../ui/Icon'
 import { DepthSwitch, useDeeper } from '../ui/Depth'
 import { Button, Chip, T, Tinted } from '../ui/kit'
@@ -121,12 +121,12 @@ function StoryHero({ eyebrow, story, meta, span }: { eyebrow: string; story: Sto
         <T v="eyebrow" tone="onNavy2">
           {eyebrow}
         </T>
-        <T v="quote" tone="onNavy" style={{ fontSize: 25, lineHeight: 30 }}>
+        <T v="quote" tone="onNavy" style={typeScale.title}>
           {story.headline}
         </T>
         <View style={{ width: 40, height: 3, borderRadius: 2, backgroundColor: p.brandLime }} />
         {story.paragraphs.map((x, i) => (
-          <T key={i} style={{ color: '#eef3f6', fontSize: 16, lineHeight: 24 }}>
+          <T key={i} style={{ color: '#eef3f6', ...typeScale.reading }}>
             {x}
           </T>
         ))}
@@ -219,7 +219,7 @@ function Quote({ text, when }: { text: string; when?: string }) {
   const p = useTheme()
   return (
     <View style={{ borderLeftWidth: 3, borderLeftColor: p.purple, paddingLeft: 14, gap: 4 }}>
-      <T style={{ fontFamily: font.semibold, fontSize: 17, lineHeight: 24 }}>“{text}”</T>
+      <T style={{ fontFamily: font.semibold, ...typeScale.sub }}>“{text}”</T>
       {when ? <Fine>{when}</Fine> : null}
     </View>
   )
@@ -489,7 +489,7 @@ function Area({ label, value, onChange, max, lines = 2, id }: { label: string; v
         borderRadius: radius.md,
         padding: 14,
         fontFamily: font.regular,
-        fontSize: 15,
+        ...typeScale.body,
         color: p.text,
         textAlignVertical: 'top',
       }}
@@ -514,7 +514,7 @@ function DirectionBox({ span, from, today, direction, title, allowOwn = false }:
       <Box>
         <View style={{ gap: 6 }}>
           <CardHead icon="arrow" tone="amber" title={title} />
-          {direction && <T v="quote" style={{ fontSize: 18, lineHeight: 24 }}>{direction.text}</T>}
+          {direction && <T v="quote">{direction.text}</T>}
           {direction && (
             <T v="small" tone="muted">
               {direction.why}
@@ -723,7 +723,7 @@ export function SundayMirror({
 
       {helped.length > 0 && (
         <Section id="ms-helped" icon="check" title="What helped you this week?" note="Based on the steps you chose to try, in your own words.">
-          {helpedLine ? <T v="quote" style={{ fontSize: 17, lineHeight: 23 }}>{helpedLine}</T> : null}
+          {helpedLine ? <T v="quote" style={typeScale.sub}>{helpedLine}</T> : null}
           <HelpedList items={helped} span="week" />
         </Section>
       )}
@@ -927,7 +927,7 @@ export function PeriodStory({ p: pm, today, back, jumpTo, deeper, footer }: { p:
 
       {helped.length > 0 && (
         <Section id="ms-worked" icon="check" title="What worked for you" note="Only what you marked yourself. Choosing a step is not the same as it working.">
-          {helpedSentence(helped) ? <T v="quote" style={{ fontSize: 17, lineHeight: 23 }}>{helpedSentence(helped)}</T> : null}
+          {helpedSentence(helped) ? <T v="quote" style={typeScale.sub}>{helpedSentence(helped)}</T> : null}
           <HelpedList items={helped} span={noun} />
         </Section>
       )}
@@ -1208,7 +1208,7 @@ function ChapterCard({ c }: { c: Chapter }) {
   return (
     <View style={{ gap: 4, padding: 16, borderRadius: radius.lg, borderWidth: 1, borderColor: p.line, backgroundColor: quiet ? 'transparent' : p.surface, borderStyle: quiet ? 'dashed' : 'solid' }}>
       <T v="label">{c.months}</T>
-      <T v="quote" style={{ fontSize: 18, lineHeight: 23, color: quiet ? p.muted : p.text }}>
+      <T v="quote" style={{ color: quiet ? p.muted : p.text }}>
         {c.title}
       </T>
       {c.state === 'told' && (

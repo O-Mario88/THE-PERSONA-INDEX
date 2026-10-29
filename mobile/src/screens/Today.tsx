@@ -10,7 +10,7 @@ import { greeting, type Hero } from '@shared/homeHero'
 import { tr } from '@shared/i18n'
 import type { Read } from '@shared/reads/types'
 import type { JourneyNote, Memory } from '@shared/todayFocus'
-import { radius, RAIL_W, useTheme, WIDE } from '../theme'
+import { radius, RAIL_W, useTheme, WIDE, typeScale } from '../theme'
 import { Button, Card, Chip, T } from '../ui/kit'
 import { Avatar } from '../ui/parts'
 import { Section, Spotlight } from '../ui/Layout'
@@ -55,9 +55,7 @@ export function Today({ date, window: w, name, note, hero, memory, journey, link
         </Pressable>
       </View>
       <View style={{ gap: 8, paddingTop: 28 }}>
-        <T v="display" style={width < 400 ? { fontSize: 26, lineHeight: 31 } : { fontSize: 30, lineHeight: 36 }}>
-          {greeting(w, name)}
-        </T>
+        <T v="display">{greeting(w, name)}</T>
         <T tone="text2">{note ?? 'A little more clarity, one day at a time.'}</T>
       </View>
     </View>
@@ -172,7 +170,7 @@ function MainCard({
           <T v="label" tone="onNavy2">
             {hero.eyebrow}
           </T>
-          <T v="h2" tone="onNavy" style={narrow ? { fontSize: 19, lineHeight: 24 } : { fontSize: 21, lineHeight: 27 }}>
+          <T v={narrow ? 'h2' : 'title'} tone="onNavy">
             {hero.title}
           </T>
           <T tone="onNavy2">{journey ? hero.sub : (link ?? hero.sub)}</T>
@@ -194,7 +192,7 @@ function JourneyRow({ lines }: { lines: string[] }) {
   const [first, ...rest] = lines
   return (
     <View style={{ gap: 6 }}>
-      <T v="label">From your journey</T>
+      <T v="eyebrow">From your journey</T>
       <T v="h3">{first}</T>
       {rest.map((line) => (
         <T key={line} tone="text2">
@@ -260,7 +258,7 @@ function MemoryRow({ memory, today, onWrite }: { memory: Memory; today: string; 
       </Pressable>
       {open &&
         (memory.kind === 'writing' ? (
-          <T v="quote" lines={5} style={{ fontSize: 17, lineHeight: 22 }}>
+          <T v="quote" lines={5} style={typeScale.sub}>
             “{memory.text}”
           </T>
         ) : (

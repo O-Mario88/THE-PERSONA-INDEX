@@ -139,6 +139,24 @@ export const font = {
   bold: 'Geist_700Bold',
 }
 
+// One type scale (the light-mode review, 2026-10-29): every size in the app
+// comes from here, so nothing drifts. Body text is 16 on 24 and readings 17
+// on 26; nothing is smaller than 13 except tab labels. Text size in Settings
+// multiplies all of it (ui/textScale.tsx). The logo, the launch and the
+// Welcome's serif heading are pictures of the brand and keep their own.
+export const typeScale = {
+  figure: { fontSize: 44, lineHeight: 50 }, // one big number on a card
+  display: { fontSize: 30, lineHeight: 36 }, // page titles and the Today greeting
+  title: { fontSize: 24, lineHeight: 30 }, // the question in a sitting, a card's headline
+  heading: { fontSize: 19, lineHeight: 25 }, // card titles and section headings
+  sub: { fontSize: 17, lineHeight: 24 }, // answer options and row titles
+  reading: { fontSize: 17, lineHeight: 26 }, // readings and reflections
+  body: { fontSize: 16, lineHeight: 24 },
+  small: { fontSize: 14, lineHeight: 20 }, // notes under controls, chips, segments
+  caption: { fontSize: 13, lineHeight: 18 }, // labels above cards, dates, counts
+  tab: { fontSize: 12, lineHeight: 16 }, // tab labels only
+} as const
+
 // A 4px grid, a 24px gutter, and the radii of the web app.
 export const space = { 1: 4, 2: 8, 3: 12, 4: 16, 5: 20, 6: 24, 8: 32, 10: 40 } as const
 export const gutter = 24

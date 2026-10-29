@@ -7,7 +7,7 @@ import { View } from 'react-native'
 import { TextInput } from '../ui/textScale'
 import { onChange } from '@shared/storage'
 import { newPhrase, normalisePhrase, phraseProblem, restore, restoreWriting, setWords, turnOff, turnOn, vaultState, type PhraseProblem, type VaultState } from '@shared/vault'
-import { font, lift, radius, useTheme } from '../theme'
+import { font, lift, radius, useTheme, typeScale } from '../theme'
 import { Icon } from '../ui/Icon'
 import { Button, T, Toggle } from '../ui/kit'
 import { locale } from '@shared/locale'
@@ -76,7 +76,7 @@ function WordsField({ label, value, onChangeText, lines = 1 }: { label: string; 
           paddingHorizontal: 16,
           paddingVertical: 14,
           fontFamily: font.regular,
-          fontSize: 15,
+          ...typeScale.body,
           color: p.text,
           textAlignVertical: 'top',
         }}

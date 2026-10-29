@@ -38,7 +38,7 @@ export function QuietStepCard({ today }: { today: string }) {
   const source = step.kind === 'idea' ? step : step.kind === 'carry' ? null : step.move.local ? null : step.move
   return (
     <Card style={{ gap: 10 }}>
-      <T v="label">{STEP_LABEL[step.kind]}</T>
+      <T v="eyebrow">{STEP_LABEL[step.kind]}</T>
       {said ? <T tone="text2">{said}</T> : <StepBody today={today} step={step} onSaid={setSaid} />}
       {source && <PulseNote text={pulse.step(source.questionId, source.optionId)} />}
     </Card>

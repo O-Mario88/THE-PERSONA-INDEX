@@ -10,7 +10,7 @@ import { acceptPair, askPair, endPair, getPair, getPairWeek, pairWeekWords, type
 import { mondayOf } from '@shared/profile'
 import { dayMonth } from '@shared/reflect'
 import { accountToken, type FriendView } from '@shared/social'
-import { radius, useTheme } from '../theme'
+import { radius, useTheme, typeScale } from '../theme'
 import { Button, Card, RowGroup, RowLink, T } from '../ui/kit'
 import { CardHead } from '../ui/parts'
 import { PatronNote } from '../ui/Patron'
@@ -135,7 +135,7 @@ export function PairWeekCard({ from }: { from: string }) {
       <T v="label" style={{ marginTop: 4 }}>
         One question for the two of you
       </T>
-      <T v="quote" style={{ fontSize: 17, lineHeight: 23 }}>
+      <T v="quote" style={typeScale.sub}>
         {words.question}
       </T>
     </View>

@@ -36,7 +36,7 @@ import { loadHistory } from '@shared/profile'
 import { dayMonth } from '@shared/reflect'
 import { addDays, load } from '@shared/storage'
 import { NAME_KEY } from '@shared/welcomeKeys'
-import { brand, gutter, radius, useTheme } from '../theme'
+import { brand, gutter, radius, useTheme, typeScale } from '../theme'
 import { Icon } from '../ui/Icon'
 import { Mark } from '../ui/Logo'
 import { canOpenPatron, openPatron, PatronNote } from '../ui/Patron'
@@ -256,7 +256,7 @@ function Tick({ label, sub, on, onPress }: { label: string; sub?: string; on: bo
       style={(s) => ({ flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 12, paddingHorizontal: 16, backgroundColor: s.pressed ? p.surface2 : 'transparent' })}
     >
       <View style={{ flex: 1, gap: 2 }}>
-        <T v="h3" style={{ fontSize: 15 }}>
+        <T v="h3" style={typeScale.body}>
           {label}
         </T>
         {sub ? (

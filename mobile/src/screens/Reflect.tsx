@@ -21,7 +21,7 @@ import { BringBack } from './Backup'
 import { Notebook } from './Notebook'
 import { KeepMoment } from './KeepMoment'
 import { HeavyCard } from './QuestionCard'
-import { font, radius, useTheme } from '../theme'
+import { font, radius, useTheme, typeScale } from '../theme'
 import { Button, Card, Page, T, Tinted, Private } from '../ui/kit'
 import { AREA_ICON, AREA_TONE, CardHead, Disc } from '../ui/parts'
 import { Icon } from '../ui/Icon'
@@ -189,7 +189,7 @@ export function Reflect({
               }}
               style={{ flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: radius.sm, backgroundColor: on ? p.lime : 'transparent' }}
             >
-              <Text style={{ fontFamily: font.bold, fontSize: 14, color: on ? p.onLime : p.text }}>{PERIOD_NAMES[pd]}</Text>
+              <Text style={{ fontFamily: font.bold, ...typeScale.small, color: on ? p.onLime : p.text }}>{PERIOD_NAMES[pd]}</Text>
             </Pressable>
           )
         })}
@@ -231,7 +231,7 @@ export function Reflect({
         <View style={{ flexDirection: 'row', gap: 20, borderBottomWidth: 1, borderBottomColor: p.line }}>
           {(['strength', 'grow'] as const).map((g) => (
             <Pressable key={g} accessibilityRole="tab" accessibilityState={{ selected: group === g }} onPress={() => setGroup(g)} style={{ paddingVertical: 10, borderBottomWidth: 2, borderBottomColor: group === g ? p.lime : 'transparent' }}>
-              <Text style={{ fontFamily: font.bold, fontSize: 14, color: group === g ? p.accentInk : p.muted }}>{g === 'strength' ? 'Strengths' : 'Areas to grow'}</Text>
+              <Text style={{ fontFamily: font.bold, ...typeScale.small, color: group === g ? p.accentInk : p.muted }}>{g === 'strength' ? 'Strengths' : 'Areas to grow'}</Text>
             </Pressable>
           ))}
         </View>
@@ -251,7 +251,7 @@ export function Reflect({
               >
                 <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
                   <Disc icon={ICONS[area]} tone={TONES[area]} size={28} />
-                  <T v="h3" style={{ fontSize: 15, lineHeight: 18, flex: 1, paddingTop: 4 }}>
+                  <T v="h3" style={{ ...typeScale.body, flex: 1, paddingTop: 4 }}>
                     {AREA_NAMES[area]}
                   </T>
                 </View>
@@ -341,7 +341,7 @@ function Writing({
               maxLength={140}
               placeholder="Ask for help earlier"
               placeholderTextColor={p.muted}
-              style={{ borderWidth: 1.5, borderColor: p.control, backgroundColor: p.surface, borderRadius: radius.md, padding: 14, fontFamily: font.regular, fontSize: 15, color: p.text }}
+              style={{ borderWidth: 1.5, borderColor: p.control, backgroundColor: p.surface, borderRadius: radius.md, padding: 14, fontFamily: font.regular, ...typeScale.body, color: p.text }}
             />
             <T v="small" tone="muted">
               In a week, a gentle check-in asks how it went. No goals and no scores.
@@ -389,7 +389,7 @@ function Writing({
           )
         }
       />
-      <T style={{ fontFamily: font.semibold, fontSize: 21, lineHeight: 27 }}>{free ? 'Whatever is on your mind.' : (thought?.question ?? 'Your reflection')}</T>
+      <T v="title">{free ? 'Whatever is on your mind.' : (thought?.question ?? 'Your reflection')}</T>
       <T tone="text2">{free ? 'No question, no shape to fill. Just your words.' : thought?.lead}</T>
       {!free && thought && (
         <View style={{ flexDirection: 'row' }}>
@@ -411,7 +411,7 @@ function Writing({
           placeholder="Start writing here…"
           placeholderTextColor={p.muted}
           accessibilityLabel={free ? 'Write freely' : (thought?.question ?? 'Your reflection')}
-          style={{ minHeight: 160, padding: 16, fontFamily: font.regular, fontSize: 16, lineHeight: 22, color: p.text, textAlignVertical: 'top' }}
+          style={{ minHeight: 160, padding: 16, fontFamily: font.regular, ...typeScale.reading, color: p.text, textAlignVertical: 'top' }}
         />
         <View style={{ borderTopWidth: 1, borderTopColor: p.line, paddingHorizontal: 16, paddingVertical: 10, alignItems: 'flex-end' }}>
           <T v="small" tone="muted">
@@ -458,7 +458,7 @@ function KinderCard({ reading, onWrite }: { reading: Extract<Reading, { kind: 'h
           <T v="eyebrow" tone="leaf">
             {look.evidence.lead}
           </T>
-          <T v="quote" style={{ fontSize: 16, lineHeight: 22 }}>
+          <T v="quote" style={typeScale.body}>
             “{look.evidence.text}”
           </T>
         </View>

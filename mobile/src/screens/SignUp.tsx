@@ -11,7 +11,7 @@ import * as AppleAuthentication from 'expo-apple-authentication'
 import { patchAccount, sendCode, signInMethods, signInWithID, verifyCode, type AccountView, type SignInMethods } from '@shared/social'
 import { Cancelled, appProviders, appleToken, googleToken, type IdToken, type Providers } from '../platform/idSignIn'
 import { doneWithGoogleReturn, takeGoogleReturn } from '../platform/googleWeb'
-import { font, gutter, radius, useTheme } from '../theme'
+import { font, gutter, radius, useTheme, typeScale } from '../theme'
 import { Button, Card, Field, T } from '../ui/kit'
 import { Icon } from '../ui/Icon'
 
@@ -114,7 +114,7 @@ export function SignUp({ page, onDone, onNotNow, notNow, name: given = '' }: { p
             block made the page feel crowded and pushed the form off screen). */}
         <View style={{ paddingHorizontal: gutter, paddingTop: Math.max(insets.top, 20) + 16, gap: 16, maxWidth: 640, width: '100%', alignSelf: 'center' }}>
           <View style={{ gap: 8 }}>
-            <T v="label" tone="warm">
+            <T v="eyebrow">
               {page.label}
             </T>
             <T v="display">{page.title}</T>
@@ -173,7 +173,7 @@ export function SignUp({ page, onDone, onNotNow, notNow, name: given = '' }: { p
                           onPress={() => setVia(t.id)}
                           style={{ flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: radius.sm, backgroundColor: via === t.id ? p.surface : 'transparent' }}
                         >
-                          <Text style={{ fontFamily: font.bold, fontSize: 14, color: via === t.id ? p.text : p.muted }}>{t.name}</Text>
+                          <Text style={{ fontFamily: font.bold, ...typeScale.small, color: via === t.id ? p.text : p.muted }}>{t.name}</Text>
                         </Pressable>
                       ))}
                     </View>
@@ -209,7 +209,7 @@ export function SignUp({ page, onDone, onNotNow, notNow, name: given = '' }: { p
 
           {step.at === 'code' && (
             <>
-              <T v="label">{step.kind === 'phone' ? 'Check your messages' : 'Check your email'}</T>
+              <T v="eyebrow">{step.kind === 'phone' ? 'Check your messages' : 'Check your email'}</T>
               <T v="title">We sent a 6-digit code to {step.address}</T>
               <T tone="muted">It works for 10 minutes. Nothing to type back, just the six digits.</T>
               <Field
@@ -219,7 +219,7 @@ export function SignUp({ page, onDone, onNotNow, notNow, name: given = '' }: { p
                 textContentType="oneTimeCode"
                 autoComplete="one-time-code"
                 accessibilityLabel="The code"
-                style={{ fontSize: 25, letterSpacing: 12, textAlign: 'center', fontFamily: font.bold }}
+                style={{ ...typeScale.title, letterSpacing: 12, textAlign: 'center', fontFamily: font.bold }}
               />
               <T v="small" tone="muted">
                 This device will be added to your account. You can sign it out any time from You.

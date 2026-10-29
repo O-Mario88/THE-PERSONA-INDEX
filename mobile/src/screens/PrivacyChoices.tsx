@@ -10,7 +10,7 @@ import { appLock, saveAppLock, sealPin, type AppLock, type QuietIcon } from '@sh
 import { isPatron } from '@shared/patron'
 import { applyCover, checkName, chosenIcon, confirmOwner, homeScreenIcon, ownerCheck, quietIconsHere, setQuietIcon, type OwnerCheck } from '../platform/applock'
 import { currentSpace, wipeGuest } from '../platform/setup'
-import { brand, useTheme } from '../theme'
+import { brand, useTheme, typeScale } from '../theme'
 import { PinPad } from '../ui/AppLockGate'
 import { Button, T, Toggle } from '../ui/kit'
 import { PatronNote } from '../ui/Patron'
@@ -116,7 +116,7 @@ function PhoneLockChoices() {
       {quietIconsHere() && (
         <View style={{ gap: 10, paddingVertical: 12 }}>
           <View style={{ gap: 2 }}>
-            <T v="h3" style={{ fontSize: 15 }}>
+            <T v="h3" style={typeScale.body}>
               A quiet app icon
             </T>
             <T v="small" tone="muted">
@@ -139,7 +139,7 @@ function PhoneLockChoices() {
       {!guestSpace && (
         <View style={{ gap: 8, paddingVertical: 12 }}>
           <View style={{ gap: 2 }}>
-            <T v="h3" style={{ fontSize: 15 }}>
+            <T v="h3" style={typeScale.body}>
               A guest PIN
             </T>
             <T v="small" tone="muted">

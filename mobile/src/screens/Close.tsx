@@ -27,7 +27,7 @@ import { week } from '@shared/tapestry'
 import { themeName } from '@shared/themes'
 import { sideOf, TRAITS } from '@shared/traits'
 import { GLIMPSE_BALANCED, GLIMPSE_NEXT, QUIET_DAY, ROUTE_ASK, ROUTE_REPLIES, ROUTE_WORDS, routeLead } from '@shared/words'
-import { brand, font, radius, useTheme } from '../theme'
+import { brand, font, radius, useTheme, typeScale } from '../theme'
 import { B, Button, Chip, feel, Option, T, Tinted } from '../ui/kit'
 import { CardHead, themeIcon, WeekTiles } from '../ui/parts'
 import { PatronNote } from '../ui/Patron'
@@ -120,7 +120,7 @@ export function Close(props: Props) {
           )}
         </View>
         <WeekTiles tiles={thisWeek} dark />
-        <T v="title" tone="onNavy" style={{ fontSize: 23, lineHeight: 28 }}>
+        <T v="title" tone="onNavy">
           {summaryLine(mine, sitting)}
         </T>
         <T tone="onNavy2">{nextLine(date, eveningThemes, tomorrowThemes)}</T>
@@ -205,7 +205,7 @@ function EchoCard({ questions, date }: { questions: Question[]; date: string }) 
         {title}
       </T>
       {lines.map((l) => (
-        <T key={l} style={{ color: brand.onNight, fontSize: 16, lineHeight: 22 }}>
+        <T key={l} style={{ color: brand.onNight }}>
           {l}
         </T>
       ))}
@@ -304,7 +304,7 @@ function Carry({ text }: { text: string }) {
   return (
     <Tinted style={{ gap: 6 }}>
       <T v="eyebrow">One thing to carry into today</T>
-      <T v="quote" style={{ fontSize: 17, lineHeight: 23 }}>
+      <T v="quote" style={typeScale.sub}>
         {text}
       </T>
       <T v="small" tone="muted">
@@ -347,7 +347,7 @@ function Glimpse({ answers, history, date, name }: { answers: AnswerRecord[]; hi
       <T v="eyebrow">Your first glimpse</T>
       <T v="h3">{name ? `${name}, here’s what your first answers hint at.` : 'Here’s what your first answers hint at.'}</T>
       {top && (
-        <T style={{ fontFamily: font.semibold, fontSize: 16, lineHeight: 22 }}>
+        <T style={{ fontFamily: font.semibold }}>
           {cap(top.quality)}, with {top.with}.
         </T>
       )}
@@ -375,9 +375,7 @@ function Thread({ answers, history, date, paused }: { answers: AnswerRecord[]; h
   return (
     <View style={{ gap: 10 }}>
       <T v="eyebrow">Today's thread</T>
-      <T v="h3" style={{ fontSize: 17, lineHeight: 23 }}>
-        {advice.headline}
-      </T>
+      <T v="h3">{advice.headline}</T>
       {advice.points.length > 0 && !open && (
         <View style={{ flexDirection: 'row' }}>
           <Chip label={advice.points.length > 1 ? 'What each could mean' : 'What it could mean'} onPress={() => setOpen(true)} />

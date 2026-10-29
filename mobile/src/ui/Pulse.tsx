@@ -9,7 +9,7 @@ import { tr, trf } from '@shared/i18n'
 import type { NotAloneLine } from '@shared/insights'
 import { getOthersHelped, type OthersStep } from '@shared/mirrorStory'
 import { loadPrefs, pulseOn } from '@shared/prefs'
-import { font, useTheme } from '../theme'
+import { font, useTheme, typeScale } from '../theme'
 import { Icon } from './Icon'
 import { Button, T } from './kit'
 import { Disc } from './parts'
@@ -70,7 +70,7 @@ export function PulseNote({ text, style }: { text: string | null; style?: StyleP
   return (
     <View accessible accessibilityLabel={`${tr('You’re not alone.')} ${text}`} style={[{ flexDirection: 'row', alignItems: 'center', gap: 6 }, style]}>
       <Icon name="people" size={15} color={p.blue} />
-      <Text style={{ flex: 1, fontFamily: font.medium, fontSize: 13, lineHeight: 17, color: p.text2 }}>{text}</Text>
+      <Text style={{ flex: 1, fontFamily: font.medium, ...typeScale.caption, color: p.text2 }}>{text}</Text>
     </View>
   )
 }

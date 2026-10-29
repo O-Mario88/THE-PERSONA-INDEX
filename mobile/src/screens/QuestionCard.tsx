@@ -54,7 +54,7 @@ import { themeIcon } from '../ui/parts'
 import { keepCardText } from '@shared/insights'
 import { rateAnswer } from '@shared/rating'
 import { CRISIS_LINE, focusTouch, HEAVY_HEADLINE, HEAVY_THANKS, LOCAL_NOTE, NO_PEOPLE, NOT_ME_REPLY, peopleAsk, SWAP_NOTE, VERDICT_REPLIES } from '@shared/words'
-import { font, lift, radius, useTheme } from '../theme'
+import { font, lift, radius, useTheme, typeScale } from '../theme'
 import { B, Button, Chip, Field, Option, T, Tinted, Private } from '../ui/kit'
 import { addSpoken, SpeakInstead } from '../ui/Speak'
 
@@ -173,7 +173,7 @@ export function QuestionCard({ question, date, sitting, wordsDays = DEFAULT_WORD
       <View style={{ flexDirection: 'row' }}>
         <Chip icon={themeIcon(question.theme)} label={question.theme ? themeName(question.theme) : 'Today'} />
       </View>
-      <T v="title" style={{ fontSize: 26, lineHeight: 31 }}>
+      <T v="title">
         {question.prompt}
       </T>
       {question.local && <T tone="muted">{LOCAL_NOTE}</T>}
@@ -294,7 +294,7 @@ function Quote({ text }: { text: string }) {
   const p = useTheme()
   return (
     <View style={{ borderLeftWidth: 3, borderLeftColor: p.amber, paddingLeft: 14 }}>
-      <T v="body" style={{ fontFamily: font.semibold, fontSize: 16, lineHeight: 23 }}>
+      <T v="body" style={{ fontFamily: font.semibold }}>
         “{text}”
       </T>
     </View>
@@ -451,11 +451,11 @@ function InsightPanel({
           </T>
         )}
       </View>
-      <T v="title" style={{ fontSize: 23, lineHeight: 28 }}>
+      <T v="title">
         {headline}
       </T>
       {body ? (
-        <T tone="text2" style={{ fontSize: 16, lineHeight: 23 }}>
+        <T v="reading" tone="text2">
           {body}
         </T>
       ) : null}
@@ -552,7 +552,7 @@ export function VerdictRow({ onTap }: { onTap: (v: Verdict) => void }) {
             backgroundColor: pressed ? p.accentWash : p.surface,
           })}
         >
-          <Text style={{ fontFamily: font.bold, fontSize: 14, color: p.text }}>{label}</Text>
+          <Text style={{ fontFamily: font.bold, ...typeScale.small, color: p.text }}>{label}</Text>
         </Pressable>
       ))}
     </View>

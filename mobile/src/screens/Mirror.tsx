@@ -90,7 +90,7 @@ import {
   timesDoneLine,
   WORDS_BACK_ASK,
 } from '@shared/words'
-import { font, radius, type Palette, useTheme } from '../theme'
+import { font, radius, type Palette, useTheme, typeScale } from '../theme'
 import { Icon } from '../ui/Icon'
 import { Button, Chip, Field, Hairline, T, Tinted } from '../ui/kit'
 import { CheckIn } from './CheckIn'
@@ -415,7 +415,7 @@ function MirrorPage({ m, today, reload, onCircle, onRead }: { m: MirrorData; tod
           )}
         </T>
         {line ? (
-          <T tone="onNavy" style={{ fontFamily: font.semibold, fontSize: 17, lineHeight: 23 }}>
+          <T tone="onNavy" style={{ fontFamily: font.semibold, ...typeScale.sub }}>
             {line}
           </T>
         ) : null}
@@ -1052,7 +1052,7 @@ function PeriodPage({ p: pm, onRead }: { p: PeriodMirror; onRead?: (r: Read) => 
           )}
         </T>
         {line ? (
-          <T tone="onNavy" style={{ fontFamily: font.semibold, fontSize: 17, lineHeight: 23 }}>
+          <T tone="onNavy" style={{ fontFamily: font.semibold, ...typeScale.sub }}>
             {line}
           </T>
         ) : null}

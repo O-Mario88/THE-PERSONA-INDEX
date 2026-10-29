@@ -22,6 +22,7 @@ import { AREA_ICON, AREA_TONE, CardHead, Disc } from '../ui/parts'
 import { PulseNote, usePagePulse } from '../ui/Pulse'
 import { PrepareSheet } from './ConversationSheet'
 import { JourneyLine } from './TodayCards'
+import { typeScale } from '../theme'
 
 // Explore deeper shows more of each; Essential the latest few.
 const SHOWN = { deeper: { found: 6, tried: 6, changed: 3, timeline: 20 }, essential: { found: 2, tried: 3, changed: 1, timeline: 5 } }
@@ -91,7 +92,7 @@ export function Journey({ today, onBack, onWrite }: { today: string; onBack: () 
         <JourneyLine today={today} onWrite={onWrite} />
         {active ? (
           <View style={{ gap: 2 }}>
-            <T v="label">Your next step</T>
+            <T v="eyebrow">Your next step</T>
             <T bold>“{active.step}”</T>
             <T v="small" tone="muted">
               I’ll ask you how it went on Today.
@@ -159,7 +160,7 @@ export function Journey({ today, onBack, onWrite }: { today: string; onBack: () 
         )}
         {echoed.map((e) => (
           <View key={`echo-${e.questionId}`} style={{ gap: 4 }}>
-            <T v="label">{`An echo across ${echoSpan(e.milestone)}`}</T>
+            <T v="eyebrow">{`An echo across ${echoSpan(e.milestone)}`}</T>
             <T tone="text2">
               {e.before === e.after ? `On ${dayMonth(e.from)} and on ${dayMonth(e.date)}, you chose “${e.before}”.` : `On ${dayMonth(e.from)} you chose “${e.before}”. On ${dayMonth(e.date)}, “${e.after}”.`}
             </T>
@@ -180,7 +181,7 @@ export function Journey({ today, onBack, onWrite }: { today: string; onBack: () 
             <View key={a.area} style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}>
               <Disc icon={AREA_ICON[a.area]} tone={AREA_TONE[a.area]} size={28} />
               <View style={{ flex: 1, gap: 2, paddingTop: 3 }}>
-                <T v="h3" style={{ fontSize: 15, lineHeight: 19 }}>
+                <T v="h3" style={typeScale.body}>
                   {AREA_NAMES[a.area]}
                 </T>
                 <T v="small" tone={a.line ? 'text2' : 'muted'}>

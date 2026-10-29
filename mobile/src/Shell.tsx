@@ -30,7 +30,7 @@ import { startBackups } from '@shared/vault'
 import { startReminders, type Opens } from './platform/reminders'
 import { markWindow } from '@shared/windows'
 import type { Read } from '@shared/reads/types'
-import { dark as darkPalette, font, light as lightPalette, radius, RAIL_AT, RAIL_W, ThemeProvider, useTheme, WIDE } from './theme'
+import { dark as darkPalette, font, light as lightPalette, radius, RAIL_AT, RAIL_W, ThemeProvider, useTheme, WIDE, typeScale } from './theme'
 import { Back, Button, feel, Page, PrivacyLine, T, Tinted } from './ui/kit'
 import { Icon, type IconName } from './ui/Icon'
 import { CardHead } from './ui/parts'
@@ -808,7 +808,7 @@ function TabBar({ tab, onTab, shown }: { tab: View_; onTab: (t: Tab) => void; sh
                 <Icon name={t.icon} size={22} color={on ? p.lime : p.muted} width={on ? 2.1 : 1.6} />
               </View>
             </View>
-            <Text maxScale={1.15} style={{ fontFamily: on ? font.bold : font.medium, fontSize: 12, color: on ? p.text : p.muted }}>
+            <Text maxScale={1.15} style={{ fontFamily: on ? font.bold : font.medium, ...typeScale.tab, color: on ? p.text : p.muted }}>
               {tr(t.name)}
             </Text>
           </Pressable>

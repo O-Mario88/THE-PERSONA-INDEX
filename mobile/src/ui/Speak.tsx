@@ -11,7 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { distil } from '@shared/distil'
 import { freeLeft, isPatron, noteFreeTry } from '@shared/patron'
 import { allowListening, downloadModel, startListening, voiceReady, type Listening as Session, type VoiceReady } from '../platform/voice'
-import { brand, radius, useTheme } from '../theme'
+import { brand, radius, useTheme, typeScale } from '../theme'
 import { Icon } from './Icon'
 import { Button, calmNow, feel, T } from './kit'
 import { PatronNote } from './Patron'
@@ -176,7 +176,7 @@ function ListenSheet({ onClose }: { onClose: (text: string | null) => void }) {
                 </T>
               </View>
               <ScrollView style={{ maxHeight: 180 }}>
-                <T tone={words ? 'text' : 'muted'} style={{ fontSize: 17, lineHeight: 24 }}>
+                <T tone={words ? 'text' : 'muted'} style={typeScale.reading}>
                   {words || '…'}
                 </T>
               </ScrollView>
@@ -223,7 +223,7 @@ function Choice({ label, text, action, onKeep }: { label: string; text: string; 
   return (
     <View style={{ gap: 8, padding: 14, borderRadius: radius.md, borderWidth: 1, borderColor: p.line, backgroundColor: p.bg }}>
       <T v="label">{label}</T>
-      <T style={{ fontSize: 16, lineHeight: 22 }}>{text}</T>
+      <T>{text}</T>
       <Button small kind="secondary" label={action} onPress={onKeep} />
     </View>
   )

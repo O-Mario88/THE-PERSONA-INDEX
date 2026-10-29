@@ -114,7 +114,7 @@ export function You({
         </Tinted>
       ) : (
         <View style={{ gap: 12 }}>
-          <T v="label">What friends see</T>
+          <T v="eyebrow">What friends see</T>
           <Field label="Display name" value={name} onChangeText={setName} maxLength={40} onBlur={saveProfile} />
           <Field label="Handle" value={handle} onChangeText={setHandle} maxLength={21} autoCapitalize="none" onBlur={saveProfile} />
           {note ? (
@@ -222,7 +222,7 @@ export function You({
 
       {me && (
         <View style={{ gap: 10 }}>
-          <T v="label">What your account keeps</T>
+          <T v="eyebrow">What your account keeps</T>
           {KEPT.map(([what, how]) => (
             <View key={what} style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
               <T v="small" bold style={{ flex: 1 }}>

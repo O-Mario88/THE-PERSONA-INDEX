@@ -42,7 +42,7 @@ import {
   type ThemeOption,
 } from '@shared/social'
 import { useAccount } from '@shared/useAccount'
-import { font, radius, useTheme } from '../theme'
+import { font, radius, useTheme, typeScale } from '../theme'
 import { Icon, type IconName } from '../ui/Icon'
 import { Button, Chip, Field, T, Tinted } from '../ui/kit'
 import { CardHead, Avatar, Disc, type Tone } from '../ui/parts'
@@ -147,7 +147,7 @@ export function CloserTogether({ friends, rings }: { friends: FriendView[]; ring
 
   return (
     <View style={{ gap: 14 }}>
-      <T v="label">Closer together</T>
+      <T v="eyebrow">Closer together</T>
       {cards.map((r) => (
         <View key={r.id} style={{ flexDirection: 'row', gap: 12 }}>
           <Avatar name={r.from.name} size={40} />
@@ -342,7 +342,7 @@ export function CommonGround({ friends }: { friends: FriendView[] }) {
                 </T>
               </View>
             </View>
-            <T style={{ fontFamily: font.semibold, fontSize: 19, lineHeight: 25 }}>{pair.headline}</T>
+            <T style={{ fontFamily: font.semibold, ...typeScale.heading }}>{pair.headline}</T>
             <Chips>
               {pair.shared.map((id) => (
                 <Chip key={id} label={label(id)} />
@@ -541,7 +541,7 @@ function HelpedCard({ share: s, title }: { share: ShareView; title: string }) {
           {title}
         </T>
       ) : null}
-      <T style={{ fontFamily: font.semibold, fontSize: 18, lineHeight: 24 }}>“{s.text}”</T>
+      <T style={{ fontFamily: font.semibold, ...typeScale.heading }}>“{s.text}”</T>
       {s.why ? (
         <View style={{ flexDirection: 'row', gap: 10 }}>
           <Icon name="sun" size={18} color={p.text} />

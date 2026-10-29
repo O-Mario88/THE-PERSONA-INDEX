@@ -3,7 +3,7 @@
 // tabs as rows, and Profile and Settings at the foot.
 import { Pressable, View } from 'react-native'
 import { Text } from './textScale'
-import { font, radius, SIDE_W, useTheme } from '../theme'
+import { font, radius, SIDE_W, useTheme, typeScale } from '../theme'
 import { Icon, type IconName } from './Icon'
 import { Logo } from './Logo'
 import { tr } from '@shared/i18n'
@@ -30,7 +30,7 @@ function Row({ item }: { item: SideItem }) {
       })}
     >
       <Icon name={item.icon} size={22} color={item.on ? p.brandLime : p.sideInk} width={item.on ? 2.2 : 1.8} />
-      <Text style={{ fontFamily: item.on ? font.bold : font.semibold, fontSize: 15, color: item.on ? p.sideOnInk : p.sideInk }}>{tr(item.name)}</Text>
+      <Text style={{ fontFamily: item.on ? font.bold : font.semibold, ...typeScale.body, color: item.on ? p.sideOnInk : p.sideInk }}>{tr(item.name)}</Text>
     </Pressable>
   )
 }

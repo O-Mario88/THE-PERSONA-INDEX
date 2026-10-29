@@ -7,7 +7,7 @@ import { tintFor } from '@shared/avatarTint'
 import { NEED_TINTS } from '@shared/needs'
 import type { Tile } from '@shared/tapestry'
 import { locale } from '@shared/locale'
-import { font, useTheme } from '../theme'
+import { font, useTheme, typeScale } from '../theme'
 import { Icon, type IconName } from './Icon'
 import { T } from './kit'
 import { THEMES } from '@shared/themes'
@@ -145,7 +145,7 @@ export function WeekTiles({ tiles, dark }: { tiles: Tile[]; dark?: boolean }) {
           >
             {i === 6 && t.state === 'ahead' && <Icon name="mirror" size={14} color={dark ? p.onNavy2 : p.muted} />}
           </View>
-          <Text style={{ fontFamily: t.today ? font.bold : font.medium, fontSize: 12, color: dark ? (t.today ? p.onNavy : p.onNavy2) : t.today ? p.text : p.muted }}>
+          <Text style={{ fontFamily: t.today ? font.bold : font.medium, ...typeScale.tab, color: dark ? (t.today ? p.onNavy : p.onNavy2) : t.today ? p.text : p.muted }}>
             {new Date(`${t.date}T00:00:00Z`).toLocaleDateString(locale(), { weekday: 'narrow', timeZone: 'UTC' })}
           </Text>
         </View>

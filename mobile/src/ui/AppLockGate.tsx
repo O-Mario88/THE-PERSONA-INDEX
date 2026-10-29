@@ -12,7 +12,7 @@ import { onChange } from '@shared/storage'
 import { WELCOMED, NAME_KEY } from '@shared/welcomeKeys'
 import { applyCover, checkName, confirmOwner, ownerCheck, type OwnerCheck } from '../platform/applock'
 import { currentSpace, enterSpace, realValue, type Space } from '../platform/setup'
-import { brand, font, useTheme } from '../theme'
+import { brand, font, useTheme, typeScale } from '../theme'
 import { Icon } from './Icon'
 import { Button, calmNow, feel, T } from './kit'
 
@@ -250,7 +250,7 @@ export function PinPad({
                 backgroundColor: s.pressed ? (night ? '#1c3346' : p.surface2) : 'transparent',
               })}
             >
-              {k === 'del' ? <Icon name="back" size={22} color={ink} /> : <T style={{ fontFamily: font.semibold, fontSize: 28, lineHeight: 34, color: ink }}>{k}</T>}
+              {k === 'del' ? <Icon name="back" size={22} color={ink} /> : <T style={{ fontFamily: font.semibold, ...typeScale.display, color: ink }}>{k}</T>}
             </Pressable>
           ),
         )}

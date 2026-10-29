@@ -9,7 +9,7 @@ import { trf } from '@shared/i18n'
 import { cardTextOf } from '@shared/insights'
 import { loadHistory } from '@shared/profile'
 import { count } from '@shared/pulse'
-import { brand, font } from '../theme'
+import { brand, font, typeScale } from '../theme'
 import { Icon } from '../ui/Icon'
 import { Button, Card, RowGroup, T } from '../ui/kit'
 import { Spotlight } from '../ui/Layout'
@@ -47,8 +47,8 @@ export function NotAloneSection({ pulse, focus, onReflect }: { pulse: PulseCount
           <View style={{ gap: 6 }}>
             {lead.line.kind === 'count' ? (
               <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
-                <Text style={{ fontFamily: font.bold, fontSize: 44, lineHeight: 50, letterSpacing: -1, color: brand.marigold }}>{count(lead.line.same)}</Text>
-                <T tone="onNavy" bold style={{ fontSize: 16, lineHeight: 21, flexShrink: 1 }}>
+                <Text style={{ fontFamily: font.bold, ...typeScale.figure, letterSpacing: -1, color: brand.marigold }}>{count(lead.line.same)}</Text>
+                <T tone="onNavy" bold style={{ flexShrink: 1 }}>
                   {trf('of {total} people chose the same answer as you', { total: count(lead.line.total) })}
                 </T>
               </View>
