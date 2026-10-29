@@ -9,7 +9,8 @@
 // tap away: the first day works without one, and from the second day the
 // sittings ask for a free account, as before (firstWeek.ts).
 import { useState } from 'react'
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native'
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native'
+import { Text } from '../ui/textScale'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { StatusBar } from 'expo-status-bar'
 import { tr } from '@shared/i18n'

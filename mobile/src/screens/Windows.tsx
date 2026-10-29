@@ -2,7 +2,8 @@
 // afternoon's anonymous totals for those who asked for them, and three good
 // things before bed.
 import { useEffect, useState } from 'react'
-import { TextInput, View } from 'react-native'
+import { View } from 'react-native'
+import { TextInput } from '../ui/textScale'
 import { recalledChoice, SKIPPED, type Question } from '@shared/api'
 import { isSaturday, opensAt } from '@shared/day'
 import { movesOn } from '@shared/moves'

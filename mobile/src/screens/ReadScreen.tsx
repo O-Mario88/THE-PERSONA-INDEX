@@ -1,7 +1,8 @@
 // One short read: the topic, the words, something
 // to try, and two more on the same area.
 import { useEffect } from 'react'
-import { Linking, Text, View } from 'react-native'
+import { Linking, View } from 'react-native'
+import { Text } from '../ui/textScale'
 import { HELPLINE_LINE } from '@shared/helplineText'
 import { helplineHere } from '@shared/prefs'
 import { appOnly, heavy, minutes, related, topicOf } from '@shared/reads/reads'

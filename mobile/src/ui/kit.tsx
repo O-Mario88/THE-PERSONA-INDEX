@@ -11,8 +11,6 @@ import {
   ScrollView,
   StyleSheet,
   Switch,
-  Text,
-  TextInput,
   useWindowDimensions,
   View,
   type StyleProp,
@@ -20,6 +18,7 @@ import {
   type TextStyle,
   type ViewStyle,
 } from 'react-native'
+import { Text, TextInput } from './textScale'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { brand, font, gutter, lift, radius, RAIL_AT, RAIL_W, useTheme, WIDE, type Palette } from '../theme'
 import { Icon, type IconName } from './Icon'
@@ -278,7 +277,10 @@ export function Segmented<V extends string>({ options, value, onChange, label }:
             {/* The chosen one sits raised: white in light, a lighter step in dark. Always drawn and shown by
                 opacity, so Android keeps its round corners. */}
             <View style={[styles.segmentFill, { backgroundColor: p.dark ? p.surface3 : p.surface, opacity: on ? 1 : 0 }, on && lift(p)]} />
-            <Text style={{ fontFamily: on ? font.bold : font.semibold, fontSize: 14, color: on ? p.text : p.text2 }}>{tr(o.label)}</Text>
+            {/* Segments share one row, so their words grow only a little with the text size. */}
+            <Text maxScale={1.1} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ fontFamily: on ? font.bold : font.semibold, fontSize: 14, color: on ? p.text : p.text2 }}>
+              {tr(o.label)}
+            </Text>
           </Pressable>
         )
       })}

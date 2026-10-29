@@ -216,7 +216,7 @@ export function You({
       </Card>
 
       <RowGroup>
-        <RowLink inGroup label="Settings" sub="Your name, language, light or dark, and where you live" onPress={onOpenSettings} />
+        <RowLink inGroup label="Settings" sub="Your name, language, light or dark, text size and where you live" onPress={onOpenSettings} />
         <RowLink inGroup label="What I keep, and how to delete it" onPress={onOpenKept} />
       </RowGroup>
 

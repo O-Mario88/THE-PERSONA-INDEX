@@ -20,6 +20,8 @@ import { loadJSON, saveJSON } from './storage'
 // What helped totals (backend/whathelped.go). style and time are My
 // Reflection Style (Edwin's brief, 2026-10-28): what feels most useful, and
 // how much time there usually is; absent is a little of both, a few minutes.
+// textSize scales every word in the app (Settings, Edwin 2026-10-29), on top
+// of the phone's own text size; absent is standard.
 export type Prefs = {
   adult: boolean | null
   mild: boolean
@@ -35,7 +37,13 @@ export type Prefs = {
   style?: ReflectionStyle
   time?: ReflectionTime
   lang?: AppLang // the app's language; absent follows the phone (i18n/index.ts)
+  textSize?: Exclude<TextSize, 'standard'>
 }
+
+// Text size, smallest to largest, and how much each scales the app's words.
+export const TEXT_SIZES = ['smaller', 'standard', 'larger', 'largest'] as const
+export type TextSize = (typeof TEXT_SIZES)[number]
+const TEXT_SCALE: Record<TextSize, number> = { smaller: 0.9, standard: 1, larger: 1.15, largest: 1.3 }
 export type ReflectionStyle = 'think' | 'practical' | 'both'
 // The languages the app speaks (i18n/index.ts LANGS), German, Russian, Japanese and Korean since 2026-10-28.
 const APP_LANGS = ['en', 'es', 'pt', 'fr', 'de', 'ru', 'ja', 'ko'] as const
@@ -66,6 +74,7 @@ export function loadPrefs(): Prefs {
     const style = p.style === 'think' || p.style === 'practical' || p.style === 'both' ? { style: p.style } : {}
     const time = p.time === 'minute' || p.time === 'few' || p.time === 'deep' ? { time: p.time } : {}
     const lang = (APP_LANGS as readonly string[]).includes(p.lang ?? '') ? { lang: p.lang } : {}
+    const textSize = p.textSize === 'smaller' || p.textSize === 'larger' || p.textSize === 'largest' ? { textSize: p.textSize } : {}
     return {
       adult: typeof p.adult === 'boolean' ? p.adult : null,
       mild: !!p.mild,
@@ -81,6 +90,7 @@ export function loadPrefs(): Prefs {
       ...style,
       ...time,
       ...lang,
+      ...textSize,
     }
   }
   return { adult: null, mild: false, wordsDays }
@@ -143,6 +153,14 @@ export function withAppearance(p: Prefs, a: Appearance): Prefs {
   const { black: _b, appearance: _a, ...rest } = p
   return a === 'auto' ? rest : { ...rest, appearance: a }
 }
+export const textSizeOf = (p: Prefs): TextSize => p.textSize ?? 'standard'
+export const textScaleOf = (p: Prefs): number => TEXT_SCALE[textSizeOf(p)]
+
+export function withTextSize(p: Prefs, size: TextSize): Prefs {
+  const { textSize: _t, ...rest } = p
+  return size === 'standard' ? rest : { ...rest, textSize: size }
+}
+
 // Cards unfold in three beats unless the person or the phone asks for less motion.
 export const stillOn = (p: Prefs) =>
   p.still === true || (typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches)

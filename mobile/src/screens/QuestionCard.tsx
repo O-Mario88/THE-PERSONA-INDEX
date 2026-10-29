@@ -8,7 +8,8 @@ import { useEffect, useMemo, useState } from 'react'
 import type { PulseCounts } from '@shared/humanPulse'
 import { notAloneFor } from '@shared/insights'
 import { PulseLine } from '../ui/Pulse'
-import { Linking, Pressable, Text, View } from 'react-native'
+import { Linking, Pressable, View } from 'react-native'
+import { Text } from '../ui/textScale'
 import {
   ApiError,
   castVote,

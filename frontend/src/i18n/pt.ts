@@ -198,7 +198,7 @@ export const pt: Record<string, string> = {
   Automatic: 'Automática',
   Light: 'Clara',
   Dark: 'Escura',
-  'Your name, language, light or dark, and where you live': 'Seu nome, idioma, clara ou escura, e onde você mora',
+  'Your name, language, light or dark, text size and where you live': 'Seu nome, idioma, clara ou escura, tamanho do texto e onde você mora',
   // Growth journey and Connect
   'Yes, I tried it': 'Sim, eu tentei',
   'A little': 'Um pouco',
@@ -318,4 +318,13 @@ export const pt: Record<string, string> = {
   'Workmates': 'Colegas de trabalho',
   'Close friends': 'Amigos próximos',
   'Classmates': 'Colegas de turma',
+  // Text size in Settings (2026-10-29)
+  'Text size': 'Tamanho do texto',
+  'Every word in the app grows or shrinks to match. Your phone’s own text size still adds to it.': 'Todas as palavras do app aumentam ou diminuem para combinar. O tamanho de texto do seu telefone ainda se soma a isso.',
+  'Smaller': 'Menor',
+  'Standard': 'Padrão',
+  'Larger': 'Maior',
+  'Largest': 'O maior',
+  'Where did you feel most like yourself today?': 'Onde você se sentiu mais você mesmo hoje?',
+  'This is how your questions and readings will look.': 'É assim que suas perguntas e leituras vão aparecer.',
 }

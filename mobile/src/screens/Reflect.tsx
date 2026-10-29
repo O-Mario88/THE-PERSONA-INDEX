@@ -5,7 +5,8 @@
 // words, and their choices. Everything stays on this device.
 import { writingWaits } from '@shared/vault'
 import { useEffect, useMemo, useState } from 'react'
-import { Pressable, Text, TextInput, View } from 'react-native'
+import { Pressable, View } from 'react-native'
+import { Text, TextInput } from '../ui/textScale'
 import { cachedEdition, getMirror, recalledChoice, type Mirror, type Question } from '@shared/api'
 import { draftOf, reflectSettings, reminderFor, saveDraft, type DraftSpace } from '@shared/journal'
 import { allGoodThings, intentionsDue, keepIntention, keepReflection, keptCards, reflections, type ReflectionArea, type ReflectionPeriod } from '@shared/notebook'

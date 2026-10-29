@@ -3,7 +3,8 @@
 // or a phone, or Apple and Google through their own sheets (idSignIn.ts).
 // Only the ways the server can really use are shown.
 import { useEffect, useState } from 'react'
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native'
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native'
+import { Text } from '../ui/textScale'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ApiError } from '@shared/api'
 import * as AppleAuthentication from 'expo-apple-authentication'

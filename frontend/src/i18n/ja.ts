@@ -265,7 +265,7 @@ export const ja: Record<string, string> = {
   Automatic: '自動',
   Light: 'ライト',
   Dark: 'ダーク',
-  'Your name, language, light or dark, and where you live': '名前、言語、ライトかダーク、住んでいる地域',
+  'Your name, language, light or dark, text size and where you live': '名前、言語、ライトかダーク、文字の大きさ、住んでいる地域',
   // Growth journey and Connect
   'Yes, I tried it': 'はい、試しました',
   'A little': '少し',
@@ -385,4 +385,13 @@ export const ja: Record<string, string> = {
   'Workmates': '職場の仲間',
   'Close friends': '親しい友だち',
   'Classmates': 'クラスメート',
+  // Text size in Settings (2026-10-29)
+  'Text size': '文字の大きさ',
+  'Every word in the app grows or shrinks to match. Your phone’s own text size still adds to it.': 'アプリのすべての文字が、これに合わせて大きくも小さくもなります。端末の文字サイズの設定も加わります。',
+  'Smaller': '小さめ',
+  'Standard': '標準',
+  'Larger': '大きめ',
+  'Largest': '最大',
+  'Where did you feel most like yourself today?': '今日、いちばん自分らしいと感じたのはどこでしたか？',
+  'This is how your questions and readings will look.': '質問や読みものはこのように表示されます。',
 }

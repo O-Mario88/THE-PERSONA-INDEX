@@ -2,7 +2,8 @@
 // your own answers that others shared, with real anonymous counts. It works
 // with no friends at all. Opened from an insight or a question, the question
 // you were reading comes first.
-import { Text, View } from 'react-native'
+import { View } from 'react-native'
+import { Text } from '../ui/textScale'
 import { pulseShort, pulseWords, sharedMoments, type PulseCounts } from '@shared/humanPulse'
 import { trf } from '@shared/i18n'
 import { cardTextOf } from '@shared/insights'

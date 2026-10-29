@@ -265,7 +265,7 @@ export const ko: Record<string, string> = {
   Automatic: '자동',
   Light: '라이트',
   Dark: '다크',
-  'Your name, language, light or dark, and where you live': '이름, 언어, 라이트 또는 다크, 사는 곳',
+  'Your name, language, light or dark, text size and where you live': '이름, 언어, 라이트 또는 다크, 글자 크기, 사는 곳',
   // Growth journey and Connect
   'Yes, I tried it': '네, 해 봤어요',
   'A little': '조금',
@@ -385,4 +385,13 @@ export const ko: Record<string, string> = {
   'Workmates': '직장 동료',
   'Close friends': '가까운 친구',
   'Classmates': '반 친구',
+  // Text size in Settings (2026-10-29)
+  'Text size': '글자 크기',
+  'Every word in the app grows or shrinks to match. Your phone’s own text size still adds to it.': '앱의 모든 글자가 여기에 맞춰 커지거나 작아져요. 기기의 글자 크기 설정도 함께 적용돼요.',
+  'Smaller': '작게',
+  'Standard': '기본',
+  'Larger': '크게',
+  'Largest': '가장 크게',
+  'Where did you feel most like yourself today?': '오늘 가장 나다웠다고 느낀 곳은 어디였나요?',
+  'This is how your questions and readings will look.': '질문과 읽을거리가 이렇게 보여요.',
 }

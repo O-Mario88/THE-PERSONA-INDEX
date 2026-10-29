@@ -3,7 +3,8 @@
 // and no account behind it (frontend/src/vault.ts). Phones get the crypto it
 // needs from platform/subtle.ts, so a backup made in a browser opens here.
 import { useEffect, useState } from 'react'
-import { TextInput, View } from 'react-native'
+import { View } from 'react-native'
+import { TextInput } from '../ui/textScale'
 import { onChange } from '@shared/storage'
 import { newPhrase, normalisePhrase, phraseProblem, restore, restoreWriting, setWords, turnOff, turnOn, vaultState, type PhraseProblem, type VaultState } from '@shared/vault'
 import { font, lift, radius, useTheme } from '../theme'

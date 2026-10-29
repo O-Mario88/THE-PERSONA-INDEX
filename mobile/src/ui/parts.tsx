@@ -1,6 +1,7 @@
 // Discs, initials, rings and this week's tiles.
 import type { ReactNode } from 'react'
-import { Text, View } from 'react-native'
+import { View } from 'react-native'
+import { Text } from './textScale'
 import Svg, { Circle } from 'react-native-svg'
 import { tintFor } from '@shared/avatarTint'
 import { NEED_TINTS } from '@shared/needs'

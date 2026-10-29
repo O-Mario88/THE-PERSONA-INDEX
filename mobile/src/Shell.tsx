@@ -4,7 +4,8 @@
 // only draws them.
 import { StatusBar } from 'expo-status-bar'
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentRef, type ReactNode } from 'react'
-import { AppState, BackHandler, Platform, Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native'
+import { AppState, BackHandler, Platform, Pressable, ScrollView, useWindowDimensions, View } from 'react-native'
+import { Text, TextScaleProvider } from './ui/textScale'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ApiError, cacheEdition, cachedEdition, getDay, pruneLocal, pruneWords, recalledChoice, sendPlanChecks, sendUnrated, type DailySet, type Question } from '@shared/api'
 import { clock, dayAt, nextTurn, WINDOW_INFO, type Day, type OpenWindow, type Sitting } from '@shared/day'
@@ -14,7 +15,7 @@ import { sendUnsent } from '@shared/moves'
 import { carryLine, rememberLine } from '@shared/continuity'
 import { journeyNote, lastMemory, linkLine, personalLine } from '@shared/todayFocus'
 import { forgetPick, isFirstDay, loadHistory, todaysPick, writeFirstOf, type Half } from '@shared/profile'
-import { darkNow, intimacyOn, loadPrefs, pulseOn, regionHere, savePrefs, type Prefs } from '@shared/prefs'
+import { darkNow, intimacyOn, loadPrefs, pulseOn, regionHere, savePrefs, textScaleOf, type Prefs } from '@shared/prefs'
 import { cachedPack, fetchPack, regionalFor, regionalToday } from '@shared/regional'
 import { addDays, keys, load as loadKey, remove as removeKey, save as saveKey } from '@shared/storage'
 import { NAME_KEY, WELCOMED } from '@shared/welcomeKeys'
@@ -759,25 +760,27 @@ export function Shell({ phoneDark, onRestart, onDayReady }: { phoneDark: boolean
       ]
   return (
     <ThemeProvider palette={palette}>
-      {/* Light clock and icons on midnight, dark ones on cream. */}
-      <StatusBar style={dark ? 'light' : 'dark'} />
-      <View style={{ flex: 1, flexDirection: sidebar ? 'row' : 'column', backgroundColor: palette.bg }}>
-        {sidebar && (
-          <Sidebar
-            top={[...sideItems(shown.filter((t) => t.tab !== 'account')), ...sideExtras]}
-            foot={[...sideItems(shown.filter((t) => t.tab === 'account')), { key: 'settings', name: 'Settings', icon: 'gear', on: tab === 'settings', onPress: () => open('settings') }]}
-          />
-        )}
-        <View style={{ flex: 1 }}>
-          {sittingOpen ? <Enter key={flow}>{body}</Enter> : body}
-          {stackTop && (
-            <PushedPage key={stackTop} leaving={!isInner(tab)} wide={wide} onBack={goBack} onGone={() => setStackTop(null)}>
-              {innerPage(stackTop)}
-            </PushedPage>
+      <TextScaleProvider scale={textScaleOf(prefs)}>
+        {/* Light clock and icons on midnight, dark ones on cream. */}
+        <StatusBar style={dark ? 'light' : 'dark'} />
+        <View style={{ flex: 1, flexDirection: sidebar ? 'row' : 'column', backgroundColor: palette.bg }}>
+          {sidebar && (
+            <Sidebar
+              top={[...sideItems(shown.filter((t) => t.tab !== 'account')), ...sideExtras]}
+              foot={[...sideItems(shown.filter((t) => t.tab === 'account')), { key: 'settings', name: 'Settings', icon: 'gear', on: tab === 'settings', onPress: () => open('settings') }]}
+            />
           )}
+          <View style={{ flex: 1 }}>
+            {sittingOpen ? <Enter key={flow}>{body}</Enter> : body}
+            {stackTop && (
+              <PushedPage key={stackTop} leaving={!isInner(tab)} wide={wide} onBack={goBack} onGone={() => setStackTop(null)}>
+                {innerPage(stackTop)}
+              </PushedPage>
+            )}
+          </View>
+          {showTabs && <TabBar tab={tab} onTab={goTab} shown={shown} />}
         </View>
-        {showTabs && <TabBar tab={tab} onTab={goTab} shown={shown} />}
-      </View>
+      </TextScaleProvider>
     </ThemeProvider>
   )
 }
@@ -815,7 +818,9 @@ function TabBar({ tab, onTab, shown }: { tab: View_; onTab: (t: Tab) => void; sh
                 <Icon name={t.icon} size={22} color={on ? p.lime : p.muted} width={on ? 2.1 : 1.6} />
               </View>
             </View>
-            <Text style={{ fontFamily: on ? font.bold : font.medium, fontSize: 12, color: on ? p.text : p.muted }}>{tr(t.name)}</Text>
+            <Text maxScale={1.15} style={{ fontFamily: on ? font.bold : font.medium, fontSize: 12, color: on ? p.text : p.muted }}>
+              {tr(t.name)}
+            </Text>
           </Pressable>
         )
       })}

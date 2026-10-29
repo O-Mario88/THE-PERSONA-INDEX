@@ -1,7 +1,8 @@
 // Where someone lives: a picker with a
 // search, filled in from the device's time zone, with "Prefer not to say".
 import { useMemo, useState } from 'react'
-import { FlatList, Modal, Pressable, TextInput, View } from 'react-native'
+import { FlatList, Modal, Pressable, View } from 'react-native'
+import { TextInput } from '../ui/textScale'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { countriesByName, countryName, guessCountry } from '@shared/country'
 import { NO_COUNTRY } from '@shared/prefs'

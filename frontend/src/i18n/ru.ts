@@ -265,7 +265,7 @@ export const ru: Record<string, string> = {
   Automatic: 'Автоматически',
   Light: 'Светлое',
   Dark: 'Тёмное',
-  'Your name, language, light or dark, and where you live': 'Твоё имя, язык, светлое или тёмное оформление и где ты живёшь',
+  'Your name, language, light or dark, text size and where you live': 'Твоё имя, язык, светлое или тёмное оформление, размер текста и где ты живёшь',
   // Growth journey and Connect
   'Yes, I tried it': 'Да, попробовал(а)',
   'A little': 'Немного',
@@ -385,4 +385,13 @@ export const ru: Record<string, string> = {
   'Workmates': 'Коллеги',
   'Close friends': 'Близкие друзья',
   'Classmates': 'Одноклассники',
+  // Text size in Settings (2026-10-29)
+  'Text size': 'Размер текста',
+  'Every word in the app grows or shrinks to match. Your phone’s own text size still adds to it.': 'Все слова в приложении становятся крупнее или мельче. Размер текста на телефоне тоже учитывается.',
+  'Smaller': 'Мельче',
+  'Standard': 'Обычный',
+  'Larger': 'Крупнее',
+  'Largest': 'Самый крупный',
+  'Where did you feel most like yourself today?': 'Где ты сегодня больше всего чувствовал себя собой?',
+  'This is how your questions and readings will look.': 'Так будут выглядеть твои вопросы и тексты.',
 }

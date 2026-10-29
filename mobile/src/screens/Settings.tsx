@@ -1,22 +1,61 @@
 // Settings: facts about you (your name, language, age and where you live),
-// light or dark for every page, and the rest folded under "More settings".
+// light or dark and the text size for every page, and the rest folded under "More settings".
 // Every on/off choice lives on the You page (Privacy and choices, Edwin
 // 2026-10-28).
 import { useState } from 'react'
 import { Pressable, View } from 'react-native'
-import { appearanceOf, withAppearance, WORDS_DAYS, type Prefs, type WordsDays } from '@shared/prefs'
+import { appearanceOf, textSizeOf, withAppearance, withTextSize, WORDS_DAYS, type Prefs, type TextSize, type WordsDays } from '@shared/prefs'
 import { MAX_NAME } from '@shared/welcomeKeys'
 import { COUNTRY_SETTING } from '@shared/words'
-import { useTheme } from '../theme'
-import { Back, Button, Card, Field, Page, Radio, RowLink, Segmented, T } from '../ui/kit'
+import { font, lift, radius, useTheme } from '../theme'
+import { Back, Button, Card, feel, Field, Page, Radio, RowLink, Segmented, T } from '../ui/kit'
 import { Icon } from '../ui/Icon'
 import { BackupSettings } from './Backup'
 import { CountrySelect } from './Country'
-import { LANGS } from '@shared/i18n'
+import { LANGS, tr } from '@shared/i18n'
+import { Text } from '../ui/textScale'
 
 const withoutLang = ({ lang: _, ...rest }: Prefs): Prefs => rest
 
 const WORDS_NAMES: Record<WordsDays, string> = { 7: 'One week', 35: 'Five weeks', 90: 'Three months' }
+
+// Each size shown as a letter at that size, as reading apps do: four words
+// would not fit side by side on a small phone.
+const TEXT_SIZE_CHOICES: { value: TextSize; label: string; glyph: number }[] = [
+  { value: 'smaller', label: 'Smaller', glyph: 14 },
+  { value: 'standard', label: 'Standard', glyph: 17 },
+  { value: 'larger', label: 'Larger', glyph: 20 },
+  { value: 'largest', label: 'Largest', glyph: 23 },
+]
+
+function TextSizePicker({ value, onChange }: { value: TextSize; onChange: (size: TextSize) => void }) {
+  const p = useTheme()
+  return (
+    <View accessibilityRole="radiogroup" accessibilityLabel={tr('Text size')} style={{ flexDirection: 'row', padding: 3, gap: 3, borderRadius: radius.sm, backgroundColor: p.surface2 }}>
+      {TEXT_SIZE_CHOICES.map((c) => {
+        const on = c.value === value
+        return (
+          <Pressable
+            key={c.value}
+            accessibilityRole="radio"
+            accessibilityLabel={tr(c.label)}
+            accessibilityState={{ checked: on }}
+            onPress={() => {
+              feel('select')
+              onChange(c.value)
+            }}
+            style={[{ flex: 1, minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 8 }, on && { backgroundColor: p.dark ? p.surface3 : p.surface }, on && lift(p)]}
+          >
+            {/* The letter keeps its own size: it shows the choice, whatever is chosen now. */}
+            <Text maxScale={1} style={{ fontFamily: on ? font.bold : font.semibold, fontSize: c.glyph, lineHeight: 28, color: on ? p.text : p.text2 }}>
+              A
+            </Text>
+          </Pressable>
+        )
+      })}
+    </View>
+  )
+}
 
 export function Settings({
   prefs,
@@ -90,6 +129,22 @@ export function Settings({
             { value: 'dark', label: 'Dark' },
           ]}
         />
+      </Card>
+
+      {/* Text size for every word in the app (Edwin, 2026-10-29). */}
+      <Card style={{ gap: 10 }}>
+        <T v="eyebrow">Text size</T>
+        <T v="small" tone="muted">
+          Every word in the app grows or shrinks to match. Your phone’s own text size still adds to it.
+        </T>
+        <TextSizePicker value={textSizeOf(prefs)} onChange={(s) => onChange(withTextSize(prefs, s))} />
+        <T v="small" tone="muted" center>
+          {TEXT_SIZE_CHOICES.find((c) => c.value === textSizeOf(prefs))?.label ?? 'Standard'}
+        </T>
+        <View style={{ gap: 4, padding: 16, borderRadius: radius.md, backgroundColor: p.surface2 }}>
+          <T v="h3">Where did you feel most like yourself today?</T>
+          <T tone="text2">This is how your questions and readings will look.</T>
+        </View>
       </Card>
 
       <Card style={{ gap: 10 }}>

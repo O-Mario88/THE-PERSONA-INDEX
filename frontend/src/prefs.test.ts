@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { appearanceOf, darkNow, loadPrefs, pulseOn, regionHere, savePrefs, whatHelpedOn, withAppearance } from './prefs'
+import { appearanceOf, darkNow, loadPrefs, pulseOn, regionHere, savePrefs, TEXT_SIZES, textScaleOf, textSizeOf, whatHelpedOn, withAppearance, withTextSize } from './prefs'
 
 beforeEach(() => localStorage.clear())
 
@@ -60,5 +60,31 @@ describe('light or dark, chosen once in Settings for every page', () => {
   it('remembers the choice', () => {
     savePrefs(withAppearance(loadPrefs(), 'dark'))
     expect(appearanceOf(loadPrefs())).toBe('dark')
+  })
+})
+
+// Edwin, 2026-10-29: "can you add the function to adjust the font size from
+// the settings". One choice scales every word in the app, on top of the
+// phone's own text size.
+describe('text size, chosen once in Settings for the whole app', () => {
+  it('is standard until chosen', () => {
+    expect(textSizeOf(loadPrefs())).toBe('standard')
+    expect(textScaleOf(loadPrefs())).toBe(1)
+  })
+
+  it('grows step by step from smaller to largest', () => {
+    const scales = TEXT_SIZES.map((s) => textScaleOf(withTextSize(loadPrefs(), s)))
+    expect(scales).toEqual([...scales].sort((a, b) => a - b))
+    expect(new Set(scales).size).toBe(TEXT_SIZES.length)
+    expect(textScaleOf(withTextSize(loadPrefs(), 'smaller'))).toBeLessThan(1)
+    expect(textScaleOf(withTextSize(loadPrefs(), 'largest'))).toBeGreaterThan(1.2)
+  })
+
+  it('remembers the choice, forgets anything unknown, and going back to standard clears it', () => {
+    savePrefs(withTextSize(loadPrefs(), 'larger'))
+    expect(textSizeOf(loadPrefs())).toBe('larger')
+    expect('textSize' in withTextSize(loadPrefs(), 'standard')).toBe(false)
+    localStorage.setItem('pi.prefs.v1', JSON.stringify({ textSize: 'huge' }))
+    expect(textSizeOf(loadPrefs())).toBe('standard')
   })
 })

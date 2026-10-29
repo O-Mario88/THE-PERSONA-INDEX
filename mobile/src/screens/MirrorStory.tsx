@@ -5,7 +5,8 @@
 // Not me. The older, fuller view stays under "Explore deeper". The rules all
 // live in the shared mirrorStory.ts and mirrorChoices.ts.
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ComponentRef, type ReactNode } from 'react'
-import { Linking, Pressable, Share, TextInput, View } from 'react-native'
+import { Linking, Pressable, Share, View } from 'react-native'
+import { TextInput } from '../ui/textScale'
 import Svg, { Circle, Path } from 'react-native-svg'
 import { getPeriodMirror, PERIODS_BACK, type Mirror as MirrorData, type PeriodMirror } from '@shared/api'
 import { connectionBetween } from '@shared/connection'

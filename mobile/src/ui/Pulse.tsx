@@ -2,7 +2,8 @@
 // frontend/src/humanPulse.ts): one line with the same words everywhere, and
 // one fetch a day shared by every page that asks.
 import { useEffect, useState } from 'react'
-import { Text, View, type StyleProp, type ViewStyle } from 'react-native'
+import { View, type StyleProp, type ViewStyle } from 'react-native'
+import { Text } from './textScale'
 import { answerPulse, loadPulse, pulseWords, stepPulse, type PulseCounts } from '@shared/humanPulse'
 import { tr, trf } from '@shared/i18n'
 import type { NotAloneLine } from '@shared/insights'
