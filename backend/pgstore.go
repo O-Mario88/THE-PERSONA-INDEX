@@ -327,7 +327,7 @@ func (p *pgStore) deleteInBatches(ctx context.Context, sql string, args ...any) 
 }
 
 func (p *pgStore) truncateForTests(ctx context.Context) error {
-	_, err := p.pool.Exec(ctx, `TRUNCATE votes, vote_tallies, mirror_answers, mirror_steps, mirror_weeks, mirror_folds, forgotten_devices, mirror_plan_checks, vaults, product_counts, share_notes, reflect_together, outside_notes,
+	_, err := p.pool.Exec(ctx, `TRUNCATE votes, vote_tallies, mirror_answers, mirror_steps, mirror_weeks, mirror_folds, forgotten_devices, mirror_plan_checks, vaults, product_counts, share_notes, reflect_together, outside_notes, push_tokens,
 		accounts, account_logins, account_sessions, login_codes, account_sync, friendships, circle_invites, circle_rooms,
 		circle_room_members, circle_asks, circle_dismissed, friend_prompt_log, friend_mirror_inputs, nods, together,
 		shares, share_recipients, common_tags, common_consent, reach_outs, what_helped, entitlements, pairs`)

@@ -135,6 +135,7 @@ func main() {
 	srv.trustCF = cfg.TrustCF
 	srv.signIn = signInFromEnv(os.Getenv, cfg.DatabaseURL == "", time.Now)
 	srv.patronCfg = patronFromEnv(os.Getenv, cfg.DatabaseURL == "")
+	srv.pusher = pusherFromEnv(os.Getenv, cfg.DatabaseURL == "")
 	srv.voteRetention = cfg.VoteRetention
 	srv.edgeSecret = cfg.EdgeSecret
 	srv.metricsToken = cfg.MetricsToken

@@ -169,6 +169,7 @@ func (m *memoryStore) DeleteAccount(_ context.Context, id string) error {
 	m.closer.forgetAccount(id)
 	m.forgetReflectTogether(id)
 	m.forgetOutsideNotes(id)
+	m.forgetPushTokens(id)
 	return nil
 }
 

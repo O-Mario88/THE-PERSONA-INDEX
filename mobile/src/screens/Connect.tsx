@@ -43,6 +43,10 @@ import { Back, Button, Card, Chip, Page, PageHeader, RowGroup, RowLink, T, Tinte
 import { CardHead, Avatar } from '../ui/parts'
 import { Section } from '../ui/Layout'
 import { AcceptInvite, PasteInvite } from './AcceptInvite'
+import { PushAsk } from './ShareChoices'
+import { pushState, shouldAskPush } from '@shared/push'
+import { localDate } from '@shared/day'
+import { pushAvailable } from '../platform/push'
 import { NotAloneSection } from './NotAlone'
 import { AskNoteSheet, InviteCard, NoteCard } from './OutsideNotes'
 import { ReflectTogetherSheet, TogetherCard } from './ReflectTogether'
@@ -79,6 +83,7 @@ export function Connect({
   const [view, setView] = useState<'home' | 'people'>('home')
   const [code, setCode] = useState<string | null>(invite)
   const [joined, setJoined] = useState('')
+  const [pushAsked, setPushAsked] = useState(false)
   useEffect(() => setCode(invite), [invite])
   const refresh = useCallback(() => {
     getCircle().then(
@@ -176,12 +181,15 @@ export function Connect({
     )
 
   const anyNew = (entries ?? []).some((e) => e.isNew)
+  // Offered once, when there is someone to hear from (push.ts).
+  const pushAsk = pushAvailable && !pushAsked && shouldAskPush(pushState(), friends.length) ? <PushAsk today={localDate()} onDone={() => setPushAsked(true)} /> : null
   return (
     <Page>
       <PageHeader title="Connect" line="Feel understood by the people you trust." />
       {error ? <T tone="danger">{error}</T> : null}
       {inviteCard}
       {joinedLine}
+      {pushAsk}
 
       <Section title="With your people" icon="people">
         <RowGroup>

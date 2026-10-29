@@ -8,6 +8,8 @@
 import { useState } from 'react'
 import { View } from 'react-native'
 import { withSharing, type Prefs } from '@shared/prefs'
+import { markPushAsked, PUSH_ASK, PUSH_NOTE, PUSH_ROW, pushState } from '@shared/push'
+import { turnOffPush, turnOnPush, type PushResult } from '../platform/push'
 import { Button, Card, T, Toggle } from '../ui/kit'
 
 export type ShareKey = 'answers' | 'helped' | 'use'
@@ -46,5 +48,71 @@ export function ShareChoices({ prefs, onSave }: { prefs: Prefs; onSave: (p: Pref
         You can change these any time on You, under Privacy and choices.
       </T>
     </Card>
+  )
+}
+
+// Notices when someone you trust reaches out (Edwin, 2026-10-29): offered once,
+// where it makes sense, and kept as a switch on You. platform/push.ts decides
+// whether this phone can have them at all (pushAvailable).
+const PUSH_RESULT: Record<Exclude<PushResult, 'on'>, string> = {
+  denied: 'Notices are off for this app in your phone’s settings. You can turn them on there, then here on You.',
+  failed: 'That didn’t work just now. You can try again on You, under Privacy and choices.',
+}
+
+export function PushAsk({ today, onDone }: { today: string; onDone: () => void }) {
+  const [busy, setBusy] = useState(false)
+  const [said, setSaid] = useState('')
+  async function on() {
+    setBusy(true)
+    const r = await turnOnPush()
+    setBusy(false)
+    if (r === 'on') return onDone()
+    markPushAsked(today)
+    setSaid(PUSH_RESULT[r])
+  }
+  if (said) {
+    return (
+      <Card>
+        <T v="small" tone="text2">
+          {said}
+        </T>
+        <Button small kind="text" label="Close" onPress={onDone} style={{ alignSelf: 'flex-start' }} />
+      </Card>
+    )
+  }
+  return (
+    <Card style={{ gap: 10 }}>
+      <T>{PUSH_ASK}</T>
+      <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
+        <Button small label="Turn on" busy={busy} onPress={on} />
+        <Button small kind="text" label="Not now" onPress={() => (markPushAsked(today), onDone())} />
+      </View>
+    </Card>
+  )
+}
+
+export function PushRow() {
+  const [value, setValue] = useState(pushState().on === true)
+  const [said, setSaid] = useState('')
+  async function change(next: boolean) {
+    setSaid('')
+    if (!next) {
+      setValue(false)
+      await turnOffPush()
+      return
+    }
+    const r = await turnOnPush()
+    setValue(r === 'on')
+    if (r !== 'on') setSaid(PUSH_RESULT[r])
+  }
+  return (
+    <View>
+      <Toggle label={PUSH_ROW} note={PUSH_NOTE} value={value} onChange={change} />
+      {said ? (
+        <T v="small" tone="muted">
+          {said}
+        </T>
+      ) : null}
+    </View>
   )
 }

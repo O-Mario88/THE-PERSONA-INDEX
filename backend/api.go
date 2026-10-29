@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"slices"
 	"strconv"
+	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -140,6 +141,10 @@ type Server struct {
 	productCounts   ProductCountStore    // anonymous daily product counts (productcounts.go)
 	reflectTogether ReflectTogetherStore // reflect together (reflecttogether.go)
 	outsideNotes    OutsideNoteStore     // the Outside Mirror as named notes (outsidenotes.go)
+	push            PushStore            // phones' push addresses (notify.go)
+	pusher          Pusher               // how notices go out; nil sends none (notify.go)
+	pushes          sync.WaitGroup       // notices still going out
+	pushLimit       *windowLimiter       // one notice per person, sender and kind per window
 	friends         friendBank           // friend questions (friends.go)
 	signIn          SignInConfig
 	// patronCfg is what Patron offers here: test purchases, the Founding places (patron.go).
@@ -200,6 +205,8 @@ func NewServer(clock func() time.Time, bank QuestionBank, store Store, devices *
 		productCounts:   store,
 		reflectTogether: store,
 		outsideNotes:    store,
+		push:            store,
+		pushLimit:       newWindowLimiter(pushesPerPairWindow, pushPairWindow),
 		patronCfg:       PatronConfig{FoundingLimit: defaultFoundingLimit},
 		friends:         mustFriendBank(),
 		devices:         devices,
@@ -257,6 +264,8 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/account", s.GetAccountDetails)
 	mux.HandleFunc("PATCH /api/account", s.PatchAccount)
 	mux.HandleFunc("DELETE /api/account", s.DeleteAccount)
+	mux.HandleFunc("PUT /api/push", s.PutPush)
+	mux.HandleFunc("DELETE /api/push", s.DeletePush)
 	mux.HandleFunc("POST /api/account/fresh", s.FreshDevice)
 	mux.HandleFunc("GET /api/account/device", s.AccountDevice)
 	mux.HandleFunc("DELETE /api/account/sessions/{id}", s.SignOut)

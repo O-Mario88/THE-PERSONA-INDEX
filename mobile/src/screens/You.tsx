@@ -12,7 +12,8 @@ import { countAnswersOn, countryOf, countUseOn, loadPrefs, pulseOn, whatHelpedOn
 import { regionOf } from '@shared/regions'
 import { REGIONAL_SWITCH } from '@shared/words'
 import { MirrorDayPicker, ReminderSettingsView } from './Reminders'
-import { SHARE_ROWS } from './ShareChoices'
+import { PushRow, SHARE_ROWS } from './ShareChoices'
+import { pushAvailable } from '../platform/push'
 import { loadHistory } from '@shared/profile'
 import { forgetSession, patchAccount, signOut, type AccountView } from '@shared/social'
 import { Back, Button, Card, Chip, Field, Page, RowGroup, RowLink, T, Tinted, Toggle } from '../ui/kit'
@@ -197,6 +198,7 @@ export function You({
         {SHARE_ROWS.map((r) => (
           <Toggle key={r.key} label={r.label} note={r.note} value={sharing[r.key]} onChange={(on) => onChange(withSharing(prefs, { ...sharing, [r.key]: on }))} />
         ))}
+        {me && pushAvailable && <PushRow />}
         {regionOf(countryOf(prefs)) && (
           <Toggle
             label={REGIONAL_SWITCH}

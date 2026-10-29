@@ -8,6 +8,7 @@
 
 import { ApiError } from './api'
 import { load, loadJSON, remove, save, saveJSON } from './storage'
+import { pushState, savePush } from './push'
 
 export const ACCOUNT_KEY = 'pi.account.v1'
 const ME_KEY = 'pi.account.me'
@@ -195,8 +196,23 @@ export async function deleteAccount(): Promise<void> {
 }
 
 export async function signOut(id: string | 'current'): Promise<void> {
+  // Notices stop for this person on this phone before it signs out.
+  if (id === 'current') await turnOffPushHere()
   await call(`/api/account/sessions/${encodeURIComponent(id)}`, json('DELETE'))
   if (id === 'current') forgetSession()
+}
+
+// ---- notices on this phone (backend/notify.go) ----
+
+export const registerPush = (token: string, platform: 'ios' | 'android') => call<void>('/api/push', json('PUT', { token, platform }))
+export const unregisterPush = (token: string) => call<void>('/api/push', json('DELETE', { token }))
+
+// turnOffPushHere takes this phone's address back from the server and keeps
+// "off" as the person's choice.
+export async function turnOffPushHere(): Promise<void> {
+  const s = pushState()
+  if (s.token) await unregisterPush(s.token).catch(() => {})
+  if (s.on !== undefined || s.token) savePush({ on: false })
 }
 
 export function putSync(phrase: string): Promise<void> {

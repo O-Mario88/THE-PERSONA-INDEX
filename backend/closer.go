@@ -302,6 +302,9 @@ func (s *Server) PostShare(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusServiceUnavailable, "unavailable")
 		return
 	}
+	for _, id := range sh.To {
+		s.tell(ctx, acc, id, "share")
+	}
 	writeJSON(w, http.StatusCreated, map[string]string{"id": sh.ID})
 }
 

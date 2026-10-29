@@ -10,6 +10,8 @@ How the backend runs in production, and the decisions behind it.
 | `DATABASE_MAX_CONNS` | Pool size per instance, default 20. Instances × pool must stay under the database's connection limit. Connect directly, not through a pooler in transaction mode ([deploy.md](deploy.md)). At 4,000 votes/s the pool was the limit ([load-test.md](load-test.md)). |
 | `DEVICE_TOKEN_SECRET` | 32+ random bytes that sign device passes. Required with `DATABASE_URL`. Same value on every instance. Can be rotated without signing anyone out; see "Keys" below. |
 | `DEVICE_TOKEN_SECRET_PREVIOUS` | Optional: the token secret before a rotation. Passes it signed keep working. |
+| `PUSH_SERVICE` | `expo` sends the notices people turn on when someone they trust shares with them or replies (`backend/notify.go`) through the Expo push service. Unset: none are sent (a local run logs them). The phone app needs its Expo project id in `mobile/app.json` (`expo.extra.eas.projectId`, from `eas init`) and APNs/FCM credentials in EAS before addresses can be made. |
+| `EXPO_ACCESS_TOKEN` | Optional: an Expo access token, when the Expo project requires one for push. |
 | `DATA_KEY_SECRET` | 32+ random bytes, different from both token secrets. Keys every hash the server stores. Required with `DATABASE_URL`. Same value on every instance. Never rotated; see "Keys" below. |
 | `TRUST_CF_CONNECTING_IP` | `1` only when every request reaches the API through Cloudflare, which `EDGE_SECRET` makes sure of. The server warns at start when this is on without it. |
 | `EDGE_SECRET` | 32+ bytes. When set, every request must carry it in `X-Edge-Secret` (Cloudflare adds it; [deploy.md](deploy.md#cloudflare)), or gets `403 edge_only`. `/api/health` and `/api/ready` are open, for the host's checks. |

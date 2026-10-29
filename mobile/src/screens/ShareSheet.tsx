@@ -17,6 +17,10 @@ import { Button, Card, feel, Option, T, Toggle } from '../ui/kit'
 import { Avatar } from '../ui/parts'
 import { TextInput } from '../ui/textScale'
 import { KIND_LABEL, MODE_LINE } from './SharedWithYou'
+import { PushAsk } from './ShareChoices'
+import { pushState, shouldAskPush } from '@shared/push'
+import { localDate } from '@shared/day'
+import { pushAvailable } from '../platform/push'
 
 const TEXT_MAX = 500
 
@@ -45,6 +49,7 @@ export function ShareSheet({
   const [mode, setMode] = useState<ShareMode>(initialMode)
   const [replies, setReplies] = useState(true)
   const [state, setState] = useState<'idle' | 'busy' | 'sent' | 'failed'>('idle')
+  const [pushDone, setPushDone] = useState(false)
   const inner = useMemo(innerCircle, [])
   useEffect(() => {
     if (!me) return
@@ -80,6 +85,7 @@ export function ShareSheet({
     <View style={{ gap: 10 }}>
       <T v="title">{`Shared with ${to.length === 1 ? '1 person' : `${to.length} people`}`}</T>
       <T tone="text2">Only those words went. You can take them back from anyone on You, under What you’ve shared. Anything already read can’t be taken back.</T>
+      {pushAvailable && !pushDone && shouldAskPush(pushState(), to.length) && <PushAsk today={localDate()} onDone={() => setPushDone(true)} />}
       <Button wide label="Done" onPress={onClose} />
     </View>
   ) : (

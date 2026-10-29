@@ -8,14 +8,14 @@ import { Icon, type IconName } from './Icon'
 import { Logo } from './Logo'
 import { tr } from '@shared/i18n'
 
-export type SideItem = { key: string; name: string; icon: IconName; on: boolean; onPress: () => void }
+export type SideItem = { key: string; name: string; icon: IconName; on: boolean; onPress: () => void; dot?: boolean }
 
 function Row({ item }: { item: SideItem }) {
   const p = useTheme()
   return (
     <Pressable
       accessibilityRole="tab"
-      accessibilityLabel={item.name}
+      accessibilityLabel={item.dot ? `${item.name}, something new` : item.name}
       accessibilityState={{ selected: item.on }}
       onPress={item.onPress}
       style={(state) => ({
@@ -31,6 +31,7 @@ function Row({ item }: { item: SideItem }) {
     >
       <Icon name={item.icon} size={22} color={item.on ? p.brandLime : p.sideInk} width={item.on ? 2.2 : 1.8} />
       <Text style={{ fontFamily: item.on ? font.bold : font.semibold, ...typeScale.body, color: item.on ? p.sideOnInk : p.sideInk }}>{tr(item.name)}</Text>
+      {item.dot && <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: p.brandLime, marginLeft: 'auto' }} />}
     </Pressable>
   )
 }

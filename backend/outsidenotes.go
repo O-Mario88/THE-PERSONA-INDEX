@@ -197,6 +197,7 @@ func (s *Server) AskOutside(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusServiceUnavailable, "unavailable")
 		return
 	}
+	s.tell(ctx, acc, b.FriendID, "note_ask")
 	writeJSON(w, http.StatusCreated, map[string]string{"id": n.ID})
 }
 
@@ -237,7 +238,9 @@ func (s *Server) WriteOutside(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusConflict, "already_written")
 	default:
 		n.Text, n.Status = text, outsideWritten
-		s.putOutside(w, r, n)
+		if s.putOutside(w, r, n) {
+			s.tell(r.Context(), acc, n.Asker, "note_written")
+		}
 	}
 }
 
@@ -280,13 +283,14 @@ func (s *Server) KeepOutside(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Server) putOutside(w http.ResponseWriter, r *http.Request, n OutsideNote) {
+func (s *Server) putOutside(w http.ResponseWriter, r *http.Request, n OutsideNote) bool {
 	if err := s.outsideNotes.PutOutsideNote(r.Context(), n); err != nil {
 		log.Printf("outside: %v", err)
 		writeError(w, http.StatusServiceUnavailable, "unavailable")
-		return
+		return false
 	}
 	w.WriteHeader(http.StatusNoContent)
+	return true
 }
 
 func (s *Server) deleteOutside(w http.ResponseWriter, r *http.Request, id string) {

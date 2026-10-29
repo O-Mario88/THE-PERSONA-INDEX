@@ -86,6 +86,7 @@ type Store interface {
 	ProductCountStore    // productcounts.go
 	ReflectTogetherStore // reflecttogether.go
 	OutsideNoteStore     // outsidenotes.go
+	PushStore            // notify.go
 }
 
 // VoteStore is the durable boundary: a vote is acknowledged only after Accept
@@ -131,6 +132,7 @@ type memoryStore struct {
 	productCounts   map[string]map[string]int                 // day -> event -> count; see productcounts.go
 	reflectTogether map[string]ReflectTogether                // see reflecttogether.go
 	outsideNotes    map[string]OutsideNote                    // see outsidenotes.go
+	pushTokens      map[string]PushToken                      // token -> address; see notify.go
 }
 
 func newMemoryStore() *memoryStore {
@@ -147,6 +149,7 @@ func newMemoryStore() *memoryStore {
 		productCounts:   map[string]map[string]int{},
 		reflectTogether: map[string]ReflectTogether{},
 		outsideNotes:    map[string]OutsideNote{},
+		pushTokens:      map[string]PushToken{},
 	}
 }
 

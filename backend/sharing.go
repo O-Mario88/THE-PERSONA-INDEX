@@ -169,6 +169,11 @@ func (s *Server) PostShareNote(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusServiceUnavailable, "unavailable")
 		return
 	}
+	other := sh.From // a reply goes to the other person in the thread
+	if sh.From == acc.ID {
+		other = with
+	}
+	s.tell(ctx, acc, other, "reply")
 	writeJSON(w, http.StatusCreated, map[string]string{"id": n.ID})
 }
 

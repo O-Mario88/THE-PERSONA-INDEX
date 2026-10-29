@@ -24,7 +24,9 @@ import { seedEchoes } from '@shared/echoes'
 import { refreshPatron } from '@shared/patron'
 import { CONNECT_OPEN_KEY, dayWithYou, glimpseHere, inWeekOne, isNewcomer, markStarted, needsAccount, SHOW_ALL_KEY } from '@shared/firstWeek'
 import type { SenseStart } from '@shared/makeSense'
-import { inviteFromURL, signInMethods, type AccountView } from '@shared/social'
+import { getOutside, getReflectTogether, getShares, inviteFromURL, signInMethods, type AccountView } from '@shared/social'
+import { inboxOf } from '@shared/inbox'
+import { onPeopleNotice, refreshPush } from './platform/push'
 import { inviteCodeIn, keepInvite, pendingInvite } from '@shared/invites'
 import { pullSync } from '@shared/sync'
 import { useAccount } from '@shared/useAccount'
@@ -201,6 +203,36 @@ export function Shell({ phoneDark, onRestart, onDayReady }: { phoneDark: boolean
   const me = useAccount()
   const [askedSignIn, setAskedSignIn] = useState(() => !!loadKey(SIGNIN_ASKED))
   const weekOne = inWeekOne(date)
+  // Notices about people you trust (platform/push.ts): a tap opens Connect, and
+  // after signing in the server hears this phone's address for that person.
+  useEffect(() => onPeopleNotice(() => setTab('circle')), [])
+  useEffect(() => {
+    if (me) refreshPush()
+  }, [me?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+  // A dot on Connect when something from your people is waiting: checked when
+  // the app comes back, every minute while open, and on leaving Connect.
+  const [peopleNew, setPeopleNew] = useState(false)
+  useEffect(() => {
+    if (!me) {
+      setPeopleNew(false)
+      return
+    }
+    let live = true
+    const check = () =>
+      Promise.all([getShares(), getReflectTogether().catch(() => ({ questions: [], items: [] })), getOutside().catch(() => undefined)]).then(
+        ([shares, together, outside]) => live && setPeopleNew(inboxOf(shares, together.items, outside).some((e) => e.isNew)),
+        () => {},
+      )
+    check()
+    const timer = setInterval(check, 60_000)
+    const sub = AppState.addEventListener('change', (st) => st === 'active' && check())
+    return () => {
+      live = false
+      clearInterval(timer)
+      sub.remove()
+    }
+  }, [me?.id, rootTab === 'circle']) // eslint-disable-line react-hooks/exhaustive-deps
+  const dotOn = (t: Tab) => t === 'circle' && peopleNew && rootTab !== 'circle'
   const dayN = dayWithYou(date)
   const [signup, setSignup] = useState(false)
   const [canSignIn, setCanSignIn] = useState(false)
@@ -802,6 +834,7 @@ export function Shell({ phoneDark, onRestart, onDayReady }: { phoneDark: boolean
       icon: t.icon,
       on: tab === t.tab || (t.tab === 'insights' && tab === 'mirror'),
       onPress: () => goTab(t.tab),
+      dot: dotOn(t.tab),
     }))
   const sideExtras: SideItem[] = weekOne
     ? []
@@ -829,7 +862,7 @@ export function Shell({ phoneDark, onRestart, onDayReady }: { phoneDark: boolean
               </PushedPage>
             )}
           </View>
-          {showTabs && <TabBar tab={tab} onTab={goTab} shown={shown} />}
+          {showTabs && <TabBar tab={tab} onTab={goTab} shown={shown} dotOn={dotOn} />}
         </View>
       </TextScaleProvider>
     </ThemeProvider>
@@ -862,7 +895,7 @@ function tabHome(tab: View_): View_ {
   return tab === 'settings' || tab === 'kept' || tab === 'signin' || tab === 'patron' ? 'account' : tab === 'mirror' || tab === 'journey' ? 'insights' : tab
 }
 
-function TabBar({ tab, onTab, shown }: { tab: View_; onTab: (t: Tab) => void; shown: typeof TABS }) {
+function TabBar({ tab, onTab, shown, dotOn }: { tab: View_; onTab: (t: Tab) => void; shown: typeof TABS; dotOn: (t: Tab) => boolean }) {
   const p = useTheme()
   const insets = useSafeAreaInsets()
   return (
@@ -873,7 +906,7 @@ function TabBar({ tab, onTab, shown }: { tab: View_; onTab: (t: Tab) => void; sh
           <Pressable
             key={t.tab}
             accessibilityRole="tab"
-            accessibilityLabel={tr(t.name)}
+            accessibilityLabel={dotOn(t.tab) ? `${tr(t.name)}, something new` : tr(t.name)}
             accessibilityState={{ selected: on }}
             onPress={() => {
               feel('select')
@@ -889,6 +922,7 @@ function TabBar({ tab, onTab, shown }: { tab: View_; onTab: (t: Tab) => void; sh
               {/* Positioned too, so on the web the icon paints above the capsule, as it does on a phone. */}
               <View style={{ position: 'relative' }}>
                 <Icon name={t.icon} size={22} color={on ? p.lime : p.muted} width={on ? 2.1 : 1.6} />
+                {dotOn(t.tab) && <View style={{ position: 'absolute', top: -2, right: -4, width: 9, height: 9, borderRadius: 5, backgroundColor: p.lime, borderWidth: 1.5, borderColor: p.surface }} />}
               </View>
             </View>
             <Text maxScale={1.15} style={{ fontFamily: on ? font.bold : font.medium, ...typeScale.tab, color: on ? p.text : p.muted }}>

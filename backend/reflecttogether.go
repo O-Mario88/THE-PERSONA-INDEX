@@ -197,6 +197,7 @@ func (s *Server) AskReflectTogether(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusServiceUnavailable, "unavailable")
 		return
 	}
+	s.tell(ctx, acc, b.FriendID, "rt_ask")
 	writeJSON(w, http.StatusCreated, map[string]string{"id": rt.ID})
 }
 
@@ -271,16 +272,23 @@ func (s *Server) RevealReflectTogether(w http.ResponseWriter, r *http.Request) {
 		}
 		rt.InviteeReveal = choice
 	}
-	s.saveReflectTogether(w, r, rt)
+	other := rt.Invitee
+	if rt.Invitee == acc.ID {
+		other = rt.Asker
+	}
+	if s.saveReflectTogether(w, r, rt) && b.Reveal {
+		s.tell(r.Context(), acc, other, "rt_reveal")
+	}
 }
 
-func (s *Server) saveReflectTogether(w http.ResponseWriter, r *http.Request, rt ReflectTogether) {
+func (s *Server) saveReflectTogether(w http.ResponseWriter, r *http.Request, rt ReflectTogether) bool {
 	if err := s.reflectTogether.PutReflectTogether(r.Context(), rt); err != nil {
 		log.Printf("reflect together: %v", err)
 		writeError(w, http.StatusServiceUnavailable, "unavailable")
-		return
+		return false
 	}
 	w.WriteHeader(http.StatusNoContent)
+	return true
 }
 
 func (s *Server) LeaveReflectTogether(w http.ResponseWriter, r *http.Request) {
