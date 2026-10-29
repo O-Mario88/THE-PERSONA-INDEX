@@ -60,6 +60,7 @@ import { ReminderAsk } from './screens/Reminders'
 import { setLanguage, tr, trf } from '@shared/i18n'
 import { backFromGoogle } from './platform/googleWeb'
 import { locale } from '@shared/locale'
+import { EmptyState } from './ui/Scene'
 
 type State = { kind: 'loading' } | { kind: 'ready'; set: DailySet; day: string; offline?: true } | { kind: 'empty' } | { kind: 'error' }
 type Tab = 'today' | 'notebook' | 'circle' | 'insights' | 'account'
@@ -537,6 +538,7 @@ export function Shell({ phoneDark, onRestart, onDayReady }: { phoneDark: boolean
         onExplore={exploreWithOthers}
         onOpenMirror={() => open('mirror')}
         onOpenJourney={() => open('journey')}
+        onToday={() => goTab('today')}
       />
     )
   } else if (rootTab === 'circle') {
@@ -704,19 +706,18 @@ export function Shell({ phoneDark, onRestart, onDayReady }: { phoneDark: boolean
             <InstallInvite today={set.date} />
           </Today>
         ) : state.kind === 'empty' ? (
-          <T>No questions today yet. Check back soon.</T>
+          <EmptyState scene="dawn" title="No questions yet today" line="They usually arrive early in the morning. Check back soon." />
         ) : state.kind === 'error' ? (
-          <View style={{ gap: 12 }}>
-            <T>I couldn't load today's questions.</T>
-            <Button
-              small
-              label="Try again"
-              onPress={() => {
-                setState({ kind: 'loading' })
-                setAttempt((n) => n + 1)
-              }}
-            />
-          </View>
+          <EmptyState
+            scene="night"
+            title="Today’s questions didn’t load"
+            line="Check your connection and try again. Your notebook and earlier answers are all still here."
+            action="Try again"
+            onAction={() => {
+              setState({ kind: 'loading' })
+              setAttempt((n) => n + 1)
+            }}
+          />
         ) : (
           <LoadingPage label="Getting today's questions ready…" />
         )}

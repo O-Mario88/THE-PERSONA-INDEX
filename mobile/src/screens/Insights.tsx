@@ -25,6 +25,7 @@ import { PulseLine, PulseNote, usePagePulse } from '../ui/Pulse'
 import { loadPrefs } from '@shared/prefs'
 import { DepthSwitch, useDeeper } from '../ui/Depth'
 import { HeavyCard, Rate, VerdictRow } from './QuestionCard'
+import { EmptyState } from '../ui/Scene'
 
 const WEEK = 7
 const MONTH = 30
@@ -37,6 +38,7 @@ export function Insights({
   onExplore,
   onOpenMirror,
   onOpenJourney,
+  onToday,
 }: {
   today: string
   questions: Question[]
@@ -44,6 +46,7 @@ export function Insights({
   onExplore: (questionId: string) => void
   onOpenMirror?: () => void
   onOpenJourney: () => void
+  onToday?: () => void
 }) {
   const p = useTheme()
   const [days, setDays] = useState(WEEK)
@@ -100,13 +103,17 @@ export function Insights({
       <WhatHelpedYou />
       <T v="h2">For You</T>
       {shown.length === 0 ? (
-        <Card>
-          <T tone="muted">
-            {days === WEEK
+        <EmptyState
+          scene="dawn"
+          title="Your first cards are on their way"
+          line={
+            days === WEEK
               ? 'Answer a few questions and I’ll show you here what they say about you, one card at a time.'
-              : 'Nothing from the last 30 days yet. As you answer, I’ll add your cards here.'}
-          </T>
-        </Card>
+              : 'Nothing from the last 30 days yet. As you answer, I’ll add your cards here.'
+          }
+          action={onToday ? 'Go to today’s questions' : undefined}
+          onAction={onToday}
+        />
       ) : (
         <>
           {/* Nothing on Insights is folded away (Edwin, 2026-10-28): today's cards first, then earlier ones.

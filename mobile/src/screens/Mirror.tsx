@@ -97,6 +97,7 @@ import { CheckIn } from './CheckIn'
 import { Box, Chips, Eyebrow, Note, Quote } from './MirrorBits'
 import { PeriodStory, SundayMirror, YearMirror, type Host } from './MirrorStory'
 import { locale } from '@shared/locale'
+import { EmptyState } from '../ui/Scene'
 
 type Span = 'week' | Period
 type State = { kind: 'loading' } | { kind: 'week'; m: MirrorData } | { kind: 'period'; p: PeriodMirror } | { kind: 'error' }
@@ -180,18 +181,16 @@ export function Mirror({ today, onOpenKept, onCircle, onRead, onOpenChoices, onW
       </View>
       {state.kind === 'loading' && <LoadingPage label={`Putting your ${span} together…`} />}
       {state.kind === 'error' && (
-        <View style={{ gap: 12 }}>
-          <T>I couldn't load your mirror just now.</T>
-          <Button
-            small
-            label="Try again"
-            onPress={() => {
-              setState({ kind: 'loading' })
-              reload()
-            }}
-            style={{ alignSelf: 'flex-start' }}
-          />
-        </View>
+        <EmptyState
+          scene="night"
+          title="Your mirror didn’t load"
+          line="Check your connection and try again. Nothing you answered is lost."
+          action="Try again"
+          onAction={() => {
+            setState({ kind: 'loading' })
+            reload()
+          }}
+        />
       )}
       {state.kind === 'week' && (
         <SundayMirror
