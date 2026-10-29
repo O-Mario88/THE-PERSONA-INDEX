@@ -289,7 +289,7 @@ function Writing({
   const [kept, setKept] = useState(false)
   // After saving (Edwin, 2026-10-29): keep it private, or share a part of it.
   const [savedText, setSavedText] = useState('')
-  const [privacy, setPrivacy] = useState<'asking' | 'private' | 'sharing'>('asking')
+  const [privacy, setPrivacy] = useState<'asking' | 'private' | 'sharing' | 'talking'>('asking')
 
   function save() {
     if (!text.trim()) return
@@ -331,11 +331,12 @@ function Writing({
         {privacy === 'asking' ? (
           <View style={{ gap: 8 }}>
             <T v="small" bold>
-              Would you like to keep this private, or share a part of it with someone you trust?
+              Would you like to keep this private, share a part of it, or reflect on it with someone?
             </T>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
               <Button small kind="secondary" label="Keep it private" onPress={() => setPrivacy('private')} />
               <Button small kind="secondary" label="Share a part of it" onPress={() => setPrivacy('sharing')} />
+              <Button small kind="secondary" label="Reflect on it with someone" onPress={() => setPrivacy('talking')} />
             </View>
           </View>
         ) : privacy === 'private' ? (
@@ -344,6 +345,7 @@ function Writing({
           </T>
         ) : null}
         {privacy === 'sharing' && <ShareSheet kind="reflection" text={savedText} onClose={() => setPrivacy('private')} />}
+        {privacy === 'talking' && <ShareSheet kind="reflection" text={savedText} initialMode="talk" onClose={() => setPrivacy('private')} />}
         {!kept ? (
           <>
             <T v="small" bold>

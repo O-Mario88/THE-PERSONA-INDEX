@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { CAUGHT_UP, inboxOf, markSeen, type InboxEntry } from './inbox'
-import type { NoteView, SentShareView, ShareView, SharesView } from './social'
+import type { NoteView, RTItem, SentShareView, ShareView, SharesView } from './social'
 
 // Edwin, 2026-10-29: "Shared with you" is a small inbox, replies grouped under
 // the item they answer, and when everything has been seen it simply says so.
@@ -52,5 +52,28 @@ describe('Shared with you', () => {
       ['r1', true],
       ['s1', false],
     ])
+  })
+
+  it('brings in an invitation to reflect together, and again when the other person answers or reveals', () => {
+    const item = (extra: Partial<RTItem>): RTItem => ({
+      id: 'rt1',
+      with: { id: 'ama', name: 'Ama', tag: 'friends', since: '2026-10-01', active: false, connect: true },
+      questionId: 'support',
+      asked: false,
+      mine: '',
+      iRevealed: false,
+      iKept: false,
+      theyAnswered: true,
+      theyKept: false,
+      theirs: '',
+      date: '2026-10-29',
+      ...extra,
+    })
+    const none = shares([])
+    const first = inboxOf(none, [item({})])
+    expect(first.map((e) => [e.kind, e.id, e.isNew])).toEqual([['together', 'rt1', true]])
+    markSeen(first)
+    expect(inboxOf(none, [item({ mine: 'quiet', iRevealed: true })])[0].isNew).toBe(false)
+    expect(inboxOf(none, [item({ mine: 'quiet', iRevealed: true, theirs: 'practical' })])[0].isNew).toBe(true)
   })
 })

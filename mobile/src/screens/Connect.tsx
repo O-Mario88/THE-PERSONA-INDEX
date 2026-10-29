@@ -17,6 +17,7 @@ import { CIRCLE_ACCESS, INNER_CIRCLE, innerCircle, setInner } from '@shared/ring
 import {
   createInvite,
   getCircle,
+  getReflectTogether,
   getShares,
   inviteLink,
   postNote,
@@ -26,6 +27,8 @@ import {
   type AccountView,
   type CircleView,
   type FriendView,
+  type ReflectTogetherView,
+  type RTQuestion,
   type SharesView,
   type Tag,
 } from '@shared/social'
@@ -34,6 +37,7 @@ import { Back, Button, Card, Chip, Page, PageHeader, RowGroup, RowLink, T, Tinte
 import { CardHead, Avatar } from '../ui/parts'
 import { Section } from '../ui/Layout'
 import { NotAloneSection } from './NotAlone'
+import { ReflectTogetherSheet, TogetherCard } from './ReflectTogether'
 import { KIND_LABEL, ReceivedCard, RepliesCard } from './SharedWithYou'
 
 const REFRESH_MS = 30_000 // while Connect is open, new items and replies show without leaving it
@@ -56,6 +60,7 @@ export function Connect({
   const reflectOn = () => onWrite('When you saw how others answered, what did you notice? Does it change how you see your own answer?')
   const [circle, setCircle] = useState<CircleView | null>(null)
   const [shares, setShares] = useState<SharesView | null>(null)
+  const [together, setTogether] = useState<ReflectTogetherView | null>(null)
   const [entries, setEntries] = useState<InboxEntry[] | null>(null)
   const [error, setError] = useState('')
   const [view, setView] = useState<'home' | 'people'>('home')
@@ -68,6 +73,7 @@ export function Connect({
       (e) => setError(e instanceof ApiError && e.status === 401 ? '' : 'I couldn’t load your people just now. Try again in a moment.'),
     )
     getShares().then(setShares, () => {})
+    getReflectTogether().then(setTogether, () => {})
   }, [])
   useEffect(() => {
     if (!me) return
@@ -78,10 +84,10 @@ export function Connect({
   // What is new is worked out once per load, then remembered as seen.
   useEffect(() => {
     if (!shares) return
-    const next = inboxOf(shares)
+    const next = inboxOf(shares, together?.items ?? [])
     setEntries(next)
     markSeen(next)
-  }, [shares])
+  }, [shares, together])
 
   const notAlone = (
     <Section title="You’re not alone" icon="globe">
@@ -108,7 +114,7 @@ export function Connect({
   }
 
   const friends = circle?.friends ?? []
-  if (view === 'people') return <People friends={friends} shares={shares} onBack={() => setView('home')} onChanged={refresh} />
+  if (view === 'people') return <People friends={friends} shares={shares} questions={together?.questions ?? []} onBack={() => setView('home')} onChanged={refresh} />
 
   const anyNew = (entries ?? []).some((e) => e.isNew)
   return (
@@ -124,7 +130,13 @@ export function Connect({
 
       <Section title="Shared with you" icon="heart">
         {(entries ?? []).map((e) =>
-          e.kind === 'received' ? <ReceivedCard key={e.id} share={e.share} isNew={e.isNew} onChanged={refresh} /> : <RepliesCard key={e.id} share={e.share} isNew={e.isNew} onChanged={refresh} />,
+          e.kind === 'received' ? (
+            <ReceivedCard key={e.id} share={e.share} isNew={e.isNew} onChanged={refresh} />
+          ) : e.kind === 'replies' ? (
+            <RepliesCard key={e.id} share={e.share} isNew={e.isNew} onChanged={refresh} />
+          ) : (
+            <TogetherCard key={e.id} item={e.item} question={together?.questions.find((q) => q.id === e.item.questionId)} isNew={e.isNew} onChanged={refresh} />
+          ),
         )}
         {entries && entries.length === 0 && <T tone="text2">Nothing shared with you yet. When someone you trust shares something with you, it shows here, for you alone.</T>}
         {entries && (
@@ -146,8 +158,9 @@ export function Connect({
 // Your people: everyone you are connected with, each a Connection or in your
 // Inner Circle, with the last thing they chose to share with you. No status,
 // no last seen, no rankings.
-function People({ friends, shares, onBack, onChanged }: { friends: FriendView[]; shares: SharesView | null; onBack: () => void; onChanged: () => void }) {
+function People({ friends, shares, questions, onBack, onChanged }: { friends: FriendView[]; shares: SharesView | null; questions: RTQuestion[]; onBack: () => void; onChanged: () => void }) {
   const [inner, setInnerIds] = useState<string[]>(innerCircle)
+  const [reflecting, setReflecting] = useState<FriendView | null>(null)
   const [note, setNote] = useState('')
   // Leaving the Inner Circle ends access to what was shared with it, quietly.
   async function placeInner(id: string, on: boolean) {
@@ -206,6 +219,7 @@ function People({ friends, shares, onBack, onChanged }: { friends: FriendView[];
             ) : (
               <T v="small" tone="muted">{`Nothing shared with you yet. What ${f.name.split(' ')[0]} chooses to share shows here.`}</T>
             )}
+            {!f.muted && f.connect && questions.length > 0 && <Button small kind="secondary" label="Reflect together" onPress={() => setReflecting(f)} style={{ alignSelf: 'flex-start' }} />}
           </Card>
         )
       })}
@@ -213,6 +227,7 @@ function People({ friends, shares, onBack, onChanged }: { friends: FriendView[];
       <Card>
         <Invite />
       </Card>
+      {reflecting && <ReflectTogetherSheet friend={reflecting} questions={questions} onClose={() => setReflecting(null)} onSent={onChanged} />}
     </Page>
   )
 }

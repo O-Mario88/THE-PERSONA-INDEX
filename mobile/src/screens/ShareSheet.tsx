@@ -20,7 +20,7 @@ import { KIND_LABEL, MODE_LINE } from './SharedWithYou'
 
 const TEXT_MAX = 500
 
-export function ShareSheet({ kind, text, onClose }: { kind: ShareKind; text: string; onClose: () => void }) {
+export function ShareSheet({ kind, text, onClose, initialMode = 'share' }: { kind: ShareKind; text: string; onClose: () => void; initialMode?: ShareMode }) {
   const p = useTheme()
   const insets = useSafeAreaInsets()
   const me = useAccount()
@@ -30,7 +30,7 @@ export function ShareSheet({ kind, text, onClose }: { kind: ShareKind; text: str
   const [friends, setFriends] = useState<FriendView[] | null>(null)
   const [audience, setAudience] = useState<ShareAudience>('inner')
   const [people, setPeople] = useState<string[]>([])
-  const [mode, setMode] = useState<ShareMode>('share')
+  const [mode, setMode] = useState<ShareMode>(initialMode)
   const [replies, setReplies] = useState(true)
   const [state, setState] = useState<'idle' | 'busy' | 'sent' | 'failed'>('idle')
   const inner = useMemo(innerCircle, [])

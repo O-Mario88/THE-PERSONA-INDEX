@@ -311,6 +311,29 @@ export const SHARE_TEXT_MAX = 280
 export const getShares = () => call<SharesView>('/api/shares')
 export const postShare = (s: NewShare) => call<{ id: string }>('/api/shares', json('POST', s))
 export const withdrawShare = (id: string) => call<void>(`/api/shares/${encodeURIComponent(id)}`, json('DELETE'))
+// Reflect together (Edwin, 2026-10-29): a question from a fixed list, both
+// answer privately, each chooses to reveal; theirs arrives only once both did.
+export type RTQuestion = { id: string; prompt: string; options: ThemeOption[]; same: string; differ: string }
+export type RTItem = {
+  id: string
+  with: FriendView
+  questionId: string
+  asked: boolean
+  mine: string
+  iRevealed: boolean
+  iKept: boolean
+  theyAnswered: boolean
+  theyKept: boolean
+  theirs: string
+  date: string
+}
+export type ReflectTogetherView = { questions: RTQuestion[]; items: RTItem[] }
+export const getReflectTogether = () => call<ReflectTogetherView>('/api/reflect-together')
+export const askReflectTogether = (friendId: string, questionId: string, optionId: string) => call<{ id: string }>('/api/reflect-together', json('POST', { friendId, questionId, optionId }))
+export const answerReflectTogether = (id: string, optionId: string) => call<void>(`/api/reflect-together/${encodeURIComponent(id)}/answer`, json('POST', { optionId }))
+export const revealReflectTogether = (id: string, reveal: boolean) => call<void>(`/api/reflect-together/${encodeURIComponent(id)}/reveal`, json('POST', { reveal }))
+export const leaveReflectTogether = (id: string) => call<void>(`/api/reflect-together/${encodeURIComponent(id)}`, json('DELETE'))
+
 // A private reply in the thread between the author and one person; the author names whose thread.
 export const postNote = (shareId: string, n: { kind: NoteKind; text?: string; with?: string }) => call<{ id: string }>(`/api/shares/${encodeURIComponent(shareId)}/notes`, json('POST', n))
 // Ends one person's access to an item, quietly, with their thread.

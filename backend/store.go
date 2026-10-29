@@ -81,9 +81,10 @@ type Store interface {
 	VaultStore
 	SocialStore
 	HelpedStore
-	PatronStore       // patron.go
-	PairStore         // pair.go
-	ProductCountStore // productcounts.go
+	PatronStore          // patron.go
+	PairStore            // pair.go
+	ProductCountStore    // productcounts.go
+	ReflectTogetherStore // reflecttogether.go
 }
 
 // VoteStore is the durable boundary: a vote is acknowledged only after Accept
@@ -114,19 +115,20 @@ type VoteStore interface {
 }
 
 type memoryStore struct {
-	mu            sync.Mutex
-	events        []VoteEvent
-	byIdemKey     map[string]int // scoped idempotency key -> index into events
-	byDedupe      map[string]int // voteDedupeKey -> index into events
-	counts        map[string]map[string]int
-	mirror        memoryMirror                              // see mirrorstore.go
-	vaults        map[string]memoryVault                    // see vault.go
-	social        memorySocial                              // see socialmemory.go
-	closer        memoryCloser                              // see closermemory.go
-	helped        map[string]map[HelpedStepKey]HelpedReport // reporter key -> step -> report; see whathelped.go
-	patron        map[string][]Entitlement                  // owner -> what they hold; see patron.go
-	pairs         []Pair                                    // see pair.go
-	productCounts map[string]map[string]int                 // day -> event -> count; see productcounts.go
+	mu              sync.Mutex
+	events          []VoteEvent
+	byIdemKey       map[string]int // scoped idempotency key -> index into events
+	byDedupe        map[string]int // voteDedupeKey -> index into events
+	counts          map[string]map[string]int
+	mirror          memoryMirror                              // see mirrorstore.go
+	vaults          map[string]memoryVault                    // see vault.go
+	social          memorySocial                              // see socialmemory.go
+	closer          memoryCloser                              // see closermemory.go
+	helped          map[string]map[HelpedStepKey]HelpedReport // reporter key -> step -> report; see whathelped.go
+	patron          map[string][]Entitlement                  // owner -> what they hold; see patron.go
+	pairs           []Pair                                    // see pair.go
+	productCounts   map[string]map[string]int                 // day -> event -> count; see productcounts.go
+	reflectTogether map[string]ReflectTogether                // see reflecttogether.go
 }
 
 func newMemoryStore() *memoryStore {
@@ -135,12 +137,13 @@ func newMemoryStore() *memoryStore {
 		mirror: memoryMirror{answers: map[string]map[string]MirrorAnswer{}, steps: map[string]map[string]MirrorStep{},
 			weeks: map[string]map[string]WeekSummary{}, folds: map[string]bool{}, forgotten: map[string]string{},
 			checks: map[string]map[string]PlanCheck{}},
-		vaults:        map[string]memoryVault{},
-		social:        newMemorySocial(),
-		closer:        newMemoryCloser(),
-		helped:        map[string]map[HelpedStepKey]HelpedReport{},
-		patron:        map[string][]Entitlement{},
-		productCounts: map[string]map[string]int{},
+		vaults:          map[string]memoryVault{},
+		social:          newMemorySocial(),
+		closer:          newMemoryCloser(),
+		helped:          map[string]map[HelpedStepKey]HelpedReport{},
+		patron:          map[string][]Entitlement{},
+		productCounts:   map[string]map[string]int{},
+		reflectTogether: map[string]ReflectTogether{},
 	}
 }
 

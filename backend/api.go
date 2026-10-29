@@ -128,18 +128,19 @@ func (emptyBank) GetSet(string) (DailySet, bool) { return DailySet{}, false }
 // Server holds the API's dependencies. Handlers are stateless over HTTP; vote
 // state lives behind the server so tests can use an in-memory store.
 type Server struct {
-	clock         func() time.Time
-	bank          QuestionBank
-	votes         VoteStore
-	mirror        MirrorStore       // each phone's kept answers and steps (mirrorstore.go)
-	helped        HelpedStore       // What Helped reports, apart from votes and the mirror (whathelped.go)
-	vaults        VaultStore        // the sealed backups (vault.go)
-	social        SocialStore       // accounts and the circle (social.go)
-	patron        PatronStore       // what each person holds as a Patron (patron.go)
-	pairs         PairStore         // two people walking alongside each other (pair.go)
-	productCounts ProductCountStore // anonymous daily product counts (productcounts.go)
-	friends       friendBank        // friend questions (friends.go)
-	signIn        SignInConfig
+	clock           func() time.Time
+	bank            QuestionBank
+	votes           VoteStore
+	mirror          MirrorStore          // each phone's kept answers and steps (mirrorstore.go)
+	helped          HelpedStore          // What Helped reports, apart from votes and the mirror (whathelped.go)
+	vaults          VaultStore           // the sealed backups (vault.go)
+	social          SocialStore          // accounts and the circle (social.go)
+	patron          PatronStore          // what each person holds as a Patron (patron.go)
+	pairs           PairStore            // two people walking alongside each other (pair.go)
+	productCounts   ProductCountStore    // anonymous daily product counts (productcounts.go)
+	reflectTogether ReflectTogetherStore // reflect together (reflecttogether.go)
+	friends         friendBank           // friend questions (friends.go)
+	signIn          SignInConfig
 	// patronCfg is what Patron offers here: test purchases, the Founding places (patron.go).
 	patronCfg PatronConfig
 	devices   *deviceSigner
@@ -196,6 +197,7 @@ func NewServer(clock func() time.Time, bank QuestionBank, store Store, devices *
 		patron:          store,
 		pairs:           store,
 		productCounts:   store,
+		reflectTogether: store,
 		patronCfg:       PatronConfig{FoundingLimit: defaultFoundingLimit},
 		friends:         mustFriendBank(),
 		devices:         devices,
@@ -291,6 +293,11 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("DELETE /api/shares/{id}", s.WithdrawShare)
 	mux.HandleFunc("POST /api/shares/{id}/notes", s.PostShareNote)
 	mux.HandleFunc("DELETE /api/shares/{id}/people/{friendId}", s.RemoveSharePerson)
+	mux.HandleFunc("GET /api/reflect-together", s.GetReflectTogether)
+	mux.HandleFunc("POST /api/reflect-together", s.AskReflectTogether)
+	mux.HandleFunc("POST /api/reflect-together/{id}/answer", s.AnswerReflectTogether)
+	mux.HandleFunc("POST /api/reflect-together/{id}/reveal", s.RevealReflectTogether)
+	mux.HandleFunc("DELETE /api/reflect-together/{id}", s.LeaveReflectTogether)
 	mux.HandleFunc("GET /api/common", s.GetCommon)
 
 	// Patron (patron.go) and walking alongside one person (pair.go).
