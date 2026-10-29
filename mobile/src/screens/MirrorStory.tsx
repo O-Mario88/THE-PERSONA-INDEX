@@ -70,6 +70,7 @@ import {
   type Story,
 } from '@shared/mirrorStory'
 import { leanings, periodName, weekRange } from '@shared/mirrorText'
+import { focusChoices, FOCUS_NEXT, matteredOf, recurringOf, saidHelped, stillOpen, WEEK_QUESTIONS, type FocusChoice } from '@shared/mirrorWeek'
 import { checkIntention, intentions, reflections } from '@shared/notebook'
 import { checkPattern, hasPatterns, patternCheckOf } from '@shared/patterns'
 import { helplineHere, loadPrefs, pulseOn } from '@shared/prefs'
@@ -77,7 +78,7 @@ import { leaningVerdict, loadHistory, notMeSides, rememberLeaning } from '@share
 import { font, radius, useTheme, typeScale } from '../theme'
 import { Icon, type IconName } from '../ui/Icon'
 import { DepthSwitch, useDeeper } from '../ui/Depth'
-import { Button, Chip, T, Tinted } from '../ui/kit'
+import { Button, Chip, Option, T, Tinted } from '../ui/kit'
 import { CardHead, Disc, type Tone } from '../ui/parts'
 import { PrepareSheet } from './ConversationSheet'
 import { PairWeekCard } from './WalkAlongside'
@@ -564,6 +565,72 @@ function DirectionBox({ span, from, today, direction, title, allowOwn = false }:
   )
 }
 
+// "What do you want to carry into next week?": one action, "Choose what to
+// focus on next", then the choices: the week's suggestion, what they said
+// helped, what they are still finding out, their own idea, or not now. A
+// choice is kept as something to try, and Today asks how it went a week on.
+function WeekFocus({ from, today, choices }: { from: string; today: string; choices: FocusChoice[] }) {
+  const ref = useSectionRef('ms-direction')
+  const [chosen, setChosen] = useState(() => directionChoice('week', from))
+  const [choosing, setChoosing] = useState(false)
+  const [own, setOwn] = useState<string | null>(null)
+  const kept = chosen && chosen.choice !== 'not_now' ? intentions().find((i) => i.id === `mirror-week-${from}`)?.text : undefined
+  function choose(choice: 'try' | 'own' | 'not_now', key: string, text?: string) {
+    chooseDirection('week', from, choice, key, today, text)
+    setChosen(directionChoice('week', from))
+    setChoosing(false)
+    setOwn(null)
+  }
+  return (
+    <View ref={ref} collapsable={false}>
+      <Box>
+        <CardHead icon="arrow" tone="amber" title={WEEK_QUESTIONS.carry} />
+        {chosen ? (
+          <View style={{ gap: 6 }}>
+            {kept ? <T v="quote">{kept}</T> : null}
+            <T v="small" tone="text2">
+              {chosen.choice === 'not_now' ? 'Put away for now. Nothing else will be suggested in its place.' : 'Kept as something to try. Today will ask how it went in a week.'}
+            </T>
+            <Button
+              kind="text"
+              small
+              label="Change"
+              onPress={() => {
+                undoDirection('week', from)
+                setChosen(null)
+              }}
+              style={{ alignSelf: 'flex-start' }}
+            />
+          </View>
+        ) : own !== null ? (
+          <View style={{ gap: 10 }}>
+            <T v="small" bold>
+              Your own idea, in a few words
+            </T>
+            <Area label="Your own idea, in a few words" value={own} onChange={setOwn} max={200} />
+            <Row>
+              <Button small label="Keep it" disabled={!own.trim()} onPress={() => own.trim() && choose('own', 'own', own)} />
+              <Chip label="Cancel" onPress={() => setOwn(null)} />
+            </Row>
+          </View>
+        ) : choosing ? (
+          <View style={{ gap: 10 }}>
+            {choices.map((c) => (
+              <Option key={c.key} label={c.text} onPress={() => choose('try', c.key, c.text)} />
+            ))}
+            <Row>
+              <Chip label="My own idea" onPress={() => setOwn('')} />
+              <Chip label="Not now" onPress={() => choose('not_now', 'not_now')} />
+            </Row>
+          </View>
+        ) : (
+          <Button label={FOCUS_NEXT} onPress={() => setChoosing(true)} style={{ alignSelf: 'flex-start' }} />
+        )}
+      </Box>
+    </View>
+  )
+}
+
 // Two reading depths: the essential Mirror, and the whole of it.
 function Deeper({ deep, children }: { deep: boolean; children: ReactNode }) {
   return deep ? (
@@ -682,20 +749,20 @@ export function SundayMirror({
   }, [today, pulse])
   const alone = notAlonePicks(history, m.from, m.to, counts)
   const othersPicks = othersHelped(history, m.from, m.to, others)
-  const words = reflectSettings().reflectionsInMirror ? ownWordsPick(reflections(), m.from, m.to) : null
+  // The five questions (Edwin's brief, 2026-10-29), each answered only from
+  // what the person kept, chose or said (shared mirrorWeek.ts).
+  const written = useMemo(reflections, [m])
+  const mattered = matteredOf(written, m.from, m.to)
+  // A line from Reflect, never one already shown under what mattered.
+  const words = reflectSettings().reflectionsInMirror ? ownWordsPick(written.filter((r) => !mattered.some((x) => x.id === r.id)), m.from, m.to) : null
   // Never a step they said made things harder, unless they choose it again.
   const held = heldBack(loadMoves(), checks)
   const direction = weekDirection({ from: m.from, history, helped, nextStep: m.nextSteps.find((s) => !held.has(stepKey(s.step)))?.step })
-  const helpedLine = helpedSentence(helped)
   const connected = showConnection(m.from, m.to)
-  const revealed = `${found.length === 1 ? 'One thing' : `${cap(say(found.length))} things`}`
-
-  const jumpList = [
-    found.length > 0 && { id: 'ms-revealed', icon: 'leaf', tone: 'green', title: `${revealed} revealed`, note: 'What stood out this week' },
-    ((pulse && alone.length > 0) || moment) && { id: 'ms-alone', icon: 'people', tone: 'blue', title: 'The moments we share', note: 'Shared experiences' },
-    (helped.length > 0 || othersPicks.length > 0) && { id: 'ms-helped', icon: 'bulb', tone: 'amber', title: 'What helped', note: othersPicks.length ? 'For you and others' : 'What you tried' },
-    connected && { id: 'ms-connection', icon: 'heart', tone: 'rose', title: 'Your connections', note: 'Support and encouragement' },
-  ].filter(Boolean) as Jump[]
+  const recurring = recurringOf(written, m.from, m.to)
+  const said = saidHelped(helped)
+  const open = stillOpen(helped)
+  const focus = focusChoices(direction, helped)
 
   const eyebrow = back === 0 ? 'Your Sunday Mirror' : `Your Sunday Mirror · ${weekRange(m.from)}`
   const meta = m.stats.answers > 0 ? `${m.stats.answers} ${m.stats.answers === 1 ? 'answer' : 'answers'} on ${say(m.stats.daysActive)} ${m.stats.daysActive === 1 ? 'day' : 'days'}` : undefined
@@ -711,26 +778,35 @@ export function SundayMirror({
         </Tinted>
       )}
 
-      <JumpRow jumps={jumpList} />
-
-      {found.length > 0 && (
-        <Section id="ms-revealed" icon="leaf" title={`${revealed} your answers revealed`} note="Based on your daily answers. Not labels: what your answers suggest.">
-          {found.map((o, i) => (
-            <ObservationCard key={o.key} o={o} n={i + 1} today={today} onFit={() => setTick((t) => t + 1)} />
-          ))}
-        </Section>
-      )}
-
-      {helped.length > 0 && (
-        <Section id="ms-helped" icon="check" title="What helped you this week?" note="Based on the steps you chose to try, in your own words.">
-          {helpedLine ? <T v="quote" style={typeScale.sub}>{helpedLine}</T> : null}
-          <HelpedList items={helped} span="week" />
-        </Section>
-      )}
-
-      <Section id="ms-words" icon="notebook" tone="purple" title="In your own words" note="From your private reflections, only on this phone.">
-        <OwnWordsView pick={words} span="week" />
+      <Section id="ms-mattered" icon="star" tone="purple" title={WEEK_QUESTIONS.mattered} note="From the moments you made sense of or kept, only on this phone.">
+        {mattered.map((x) => (
+          <Quote key={x.id} text={x.text} when={`${whenSaid(x.date, 'week')} · ${x.label.replace(/\.$/, '')}`} />
+        ))}
+        {words && <OwnWordsView pick={words} span="week" />}
+        {!mattered.length && !words && <Quiet>Nothing kept this week. The story above comes from your daily answers.</Quiet>}
       </Section>
+
+      <Section id="ms-revealed" icon="refresh" title={WEEK_QUESTIONS.recurring} note="From your daily answers and the moments you came back to. Not labels: what your answers suggest.">
+        {recurring.map((line) => (
+          <T key={line} v="reading">
+            {line}
+          </T>
+        ))}
+        {found.map((o, i) => (
+          <ObservationCard key={o.key} o={o} n={i + 1} today={today} onFit={() => setTick((t) => t + 1)} />
+        ))}
+        {!recurring.length && !found.length && <Quiet>Nothing came up more than once yet.</Quiet>}
+      </Section>
+
+      <Section id="ms-helped" icon="check" title={WEEK_QUESTIONS.helped} note="Only what you said after trying it.">
+        {said.length ? <HelpedList items={said} span="week" /> : <Quiet>You haven’t said that anything helped this week. When you try a step, Today asks how it went.</Quiet>}
+      </Section>
+
+      <Section id="ms-open" icon="clock" tone="amber" title={WEEK_QUESTIONS.unresolved} note="Steps still in progress, and ones that didn’t help as hoped.">
+        {open.length ? <HelpedList items={open} span="week" /> : <Quiet>Nothing is left open from this week.</Quiet>}
+      </Section>
+
+      <WeekFocus from={m.from} today={today} choices={focus} />
 
       <Section id="ms-alone" icon="people" tone="blue" title="The moments we share">
         {/* Alongside the one person someone walks with (Edwin's brief, 2026-10-29). */}
@@ -764,8 +840,6 @@ export function SundayMirror({
           <CircleLine own={m.traits} />
         </Section>
       )}
-
-      <DirectionBox span="week" from={m.from} today={today} direction={direction} title="One gentle direction for next week" />
 
       <DepthSwitch deep={deep} onChange={setDeep} />
       <Deeper deep={deep}>{deeper}</Deeper>
