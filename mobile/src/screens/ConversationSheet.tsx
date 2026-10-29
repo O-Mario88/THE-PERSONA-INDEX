@@ -49,6 +49,7 @@ import { canOpenPatron, openPatron, PatronNote } from '../ui/Patron'
 import { Button, Card, feel, Option, RowGroup, RowLink, Segmented, T } from '../ui/kit'
 import { addSpoken, SpeakInstead } from '../ui/Speak'
 import { TextInput } from '../ui/textScale'
+import { countEvent } from '@shared/productCounts'
 
 const web = Platform.OS === 'web'
 
@@ -137,7 +138,9 @@ function BriefViewer({ brief, onClose, onRemove }: { brief: KeptBrief; onClose: 
   async function share() {
     setShared('busy')
     try {
-      setShared((await sharePage(brief.sheet)) ? 'done' : 'failed')
+      const ok = await sharePage(brief.sheet)
+      if (ok) countEvent('brief_used')
+      setShared(ok ? 'done' : 'failed')
     } catch {
       setShared('failed')
     }
@@ -217,7 +220,9 @@ export function ConversationSheet({ today, onClose, onKept }: { today: string; o
   async function share(s: Sheet) {
     setShared('busy')
     try {
-      setShared((await sharePage(s)) ? 'done' : 'failed')
+      const ok = await sharePage(s)
+      if (ok) countEvent('brief_used')
+      setShared(ok ? 'done' : 'failed')
     } catch {
       setShared('failed')
     }

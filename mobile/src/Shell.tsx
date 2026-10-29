@@ -49,6 +49,7 @@ import { Today } from './screens/Today'
 import { Reflect } from './screens/Reflect'
 import { Insights } from './screens/Insights'
 import { mirrorDay } from '@shared/mirrorDay'
+import { flushCounts } from '@shared/productCounts'
 import { Journey } from './screens/Journey'
 import { Connect } from './screens/Connect'
 import { KeptScreen, You } from './screens/You'
@@ -285,6 +286,8 @@ export function Shell({ phoneDark, onRestart, onDayReady }: { phoneDark: boolean
   function changePrefs(next: Prefs) {
     savePrefs(next)
     setPrefs(next)
+    // Saying yes to counting sends what waited for it, once (productCounts.ts).
+    if (next.countUse === true && prefs.countUse !== true) flushCounts()
     if (next.wordsDays !== prefs.wordsDays) pruneWords(date, next.wordsDays)
     if (!set || (next.adult === prefs.adult && next.mild === prefs.mild)) return
     const started = (qs: Question[]) => qs.some((q) => recalledChoice(q.id))

@@ -33,6 +33,7 @@ import { addSpoken, SpeakInstead } from '../ui/Speak'
 import { TextInput } from '../ui/textScale'
 import { HeavyCard } from './QuestionCard'
 import { RemindersOn } from './Reminders'
+import { countEvent } from '@shared/productCounts'
 
 const WORDS_MAX = 600
 
@@ -77,6 +78,7 @@ export function MakeSense({ today, start: given, first = false, onClose }: { tod
         onChange={setResult}
         onKeep={() => {
           keepSense(start, answers, result, today)
+          countEvent('first_result')
           setKept(true)
         }}
         onLeave={onClose}

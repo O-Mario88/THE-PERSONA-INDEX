@@ -86,6 +86,7 @@ import { PairWeekCard } from './WalkAlongside'
 import { CircleLine, InConnection, MirrorPatterns, MirrorThreads, showConnection } from './MirrorBits'
 import { locale } from '@shared/locale'
 import { shows } from '@shared/release'
+import { noteMirrorWeek } from '@shared/productCounts'
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
@@ -717,6 +718,8 @@ export function SundayMirror({
   const jumps = useJumps(jumpTo)
   const [deep, setDeep] = useDeeper('mirror')
   const [, setTick] = useState(0)
+  // A return for another Mirror, counted once if the person said yes (productCounts.ts).
+  useEffect(() => noteMirrorWeek(m.from), [m.from])
   const history = useMemo(loadHistory, [m])
   const notMe = notMeSides(today)
   const leans = leanings(m.traits, notMe)

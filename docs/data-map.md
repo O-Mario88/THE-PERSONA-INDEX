@@ -70,6 +70,7 @@ Postgres, schema in `backend/migrations/`. Every key below is an HMAC made from 
 | `what_helped` | One phone's report on one step, sent from a check-in while "Count my steps in What helped" is on (`010_what_helped.sql`, `whathelped.go`) | A keyed hash of its own (never the mirror key or a voter hash), question, option, the outcome (helped, helped a little, no change, didn't try) and the Monday of the week. Never the day, the feeling or the note | Until the phone deletes everything | Yes |
 | `entitlements` | One Patron purchase (`011_patron.sql`, `patron.go`) | The owner (an account, or a keyed hash of a phone's pass that no other table uses), the plan, its first and last day, and where it came from. No name, address or card | As a purchase record, for good | No. After the delete the phone has a new pass, so nothing links the row to it any more |
 | `pairs` | One ask, or two accounts walking alongside each other (`pair.go`) | The two account ids, whether the ask was accepted, the day | Until either ends it | With either account |
+| `product_counts` | One day's total for one of four product events (`013_product_counts.sql`, `productcounts.go`), sent with `POST /api/counts` only by phones whose person said yes to "Count how I use the app" | The day, the event (a useful first result, a brief used, a second Mirror, a step that helped) and a count. No device, account, address, words or time of day | For good | No: with nothing to link a count to a phone, it is a real total |
 | `mirror_folds` | A week that has been folded for everyone | The Monday and when it was folded. Nothing about any phone | For good | No |
 | `forgotten_devices` | A phone that deleted everything | Mirror key and the date | 35 days, with the rest of the mirror | It is what the delete writes |
 | `schema_migrations` | A migration that has run | File name and time | For good | No |
@@ -149,7 +150,7 @@ Adding to anything other people see is a choice the person makes, asked once in 
 
 - **Count my answers in the anonymous totals** (the Human Pulse, Growing together, You're not alone). Until they say yes, an answer still reaches their own Mirror (`mirror_answers`) but adds nothing to `votes` or `vote_tallies` (`count: false` on `POST /api/votes`).
 - **Count my steps in What helped** (`what_helped`).
-- **Count how I use the app** (the anonymous product counts, `product_counts`).
+- **Count how I use the app** (the anonymous product counts, `product_counts`). A first result kept before the question waits on the phone (`pi.counted.v1`) and is sent once only if the person later says yes.
 
 Seeing the totals is a separate switch from adding to them. Sharing with a person (a circle, a brief, a shared insight, walking alongside) only ever happens when the person does it, each time.
 

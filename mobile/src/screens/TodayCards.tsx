@@ -22,6 +22,7 @@ import { Icon } from '../ui/Icon'
 import { Section } from '../ui/Layout'
 import { PulseNote, usePagePulse } from '../ui/Pulse'
 import { CheckIn } from './CheckIn'
+import { countEvent } from '@shared/productCounts'
 
 // One quiet next step: how a step you said you'd try went, else one thing to
 // carry from today's answers, else a small idea from your own recent cards.
@@ -132,6 +133,7 @@ function StepCheckIn({ intention, today, onSaid }: { intention: Intention; today
             label={c.label}
             onPress={() => {
               checkIntention(intention.id, c.check, today)
+              if (c.check === 'helped' || c.check === 'some') countEvent('step_helped')
               onSaid(c.reply)
             }}
           />

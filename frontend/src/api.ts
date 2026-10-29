@@ -397,6 +397,12 @@ export function reportHelped(questionId: string, optionId: string, outcome: 'hel
   )
 }
 
+// postCount sends one anonymous product count: the event's name and nothing
+// else, with no pass (productCounts.ts decides whether to send at all).
+export function postCount(event: string): Promise<unknown> {
+  return request('/api/counts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event }) })
+}
+
 // needStep: the person picked the card's second step, the one serving what
 // the answer reached for, so the server's mirror shows those words.
 export function saveStep(

@@ -11,6 +11,7 @@ import { loadPrefs, whatHelpedOn } from '@shared/prefs'
 import { addDays } from '@shared/storage'
 import { Button, Chip, Field, Private, T } from '../ui/kit'
 import { addSpoken, SpeakInstead } from '../ui/Speak'
+import { countEvent } from '@shared/productCounts'
 
 const TRIED: [Tried, string][] = [
   ['yes', 'Yes, I tried it'],
@@ -75,6 +76,7 @@ export function CheckIn({ move, today, onDone, from }: { move: Step; today: stri
     const report = helpedReport(check)
     const optionId = move.optionId ?? from?.optionId
     if (counting && report && optionId) reportHelped(move.questionId, optionId, report, today).catch(() => {})
+    if (check.outcome === 'helped' || check.outcome === 'helped_little') countEvent('step_helped')
     onDone(reply)
   }
   const recap = [labelOf(TRIED, tried), labelOf(OUTCOMES, outcome), labelOf(FEELINGS, feeling)].filter(Boolean).join(' · ')

@@ -128,17 +128,18 @@ func (emptyBank) GetSet(string) (DailySet, bool) { return DailySet{}, false }
 // Server holds the API's dependencies. Handlers are stateless over HTTP; vote
 // state lives behind the server so tests can use an in-memory store.
 type Server struct {
-	clock   func() time.Time
-	bank    QuestionBank
-	votes   VoteStore
-	mirror  MirrorStore // each phone's kept answers and steps (mirrorstore.go)
-	helped  HelpedStore // What Helped reports, apart from votes and the mirror (whathelped.go)
-	vaults  VaultStore  // the sealed backups (vault.go)
-	social  SocialStore // accounts and the circle (social.go)
-	patron  PatronStore // what each person holds as a Patron (patron.go)
-	pairs   PairStore   // two people walking alongside each other (pair.go)
-	friends friendBank  // friend questions (friends.go)
-	signIn  SignInConfig
+	clock         func() time.Time
+	bank          QuestionBank
+	votes         VoteStore
+	mirror        MirrorStore       // each phone's kept answers and steps (mirrorstore.go)
+	helped        HelpedStore       // What Helped reports, apart from votes and the mirror (whathelped.go)
+	vaults        VaultStore        // the sealed backups (vault.go)
+	social        SocialStore       // accounts and the circle (social.go)
+	patron        PatronStore       // what each person holds as a Patron (patron.go)
+	pairs         PairStore         // two people walking alongside each other (pair.go)
+	productCounts ProductCountStore // anonymous daily product counts (productcounts.go)
+	friends       friendBank        // friend questions (friends.go)
+	signIn        SignInConfig
 	// patronCfg is what Patron offers here: test purchases, the Founding places (patron.go).
 	patronCfg PatronConfig
 	devices   *deviceSigner
@@ -164,6 +165,7 @@ type Server struct {
 	accountLimit    *windowLimiter // per session
 	invitePeekLimit *windowLimiter // per network address
 	roomJoinLimit   *windowLimiter // per session
+	countLimit      *windowLimiter // product counts, per network address
 
 	// The layers around the API (middleware.go): its metrics, the edge
 	// secret, the access log setting, the static site and the metrics token.
@@ -193,6 +195,7 @@ func NewServer(clock func() time.Time, bank QuestionBank, store Store, devices *
 		social:          store,
 		patron:          store,
 		pairs:           store,
+		productCounts:   store,
 		patronCfg:       PatronConfig{FoundingLimit: defaultFoundingLimit},
 		friends:         mustFriendBank(),
 		devices:         devices,
@@ -208,6 +211,7 @@ func NewServer(clock func() time.Time, bank QuestionBank, store Store, devices *
 		accountLimit:    newWindowLimiter(accountsCallsMin, time.Minute),
 		invitePeekLimit: newWindowLimiter(invitePeeksPerHr, time.Hour),
 		roomJoinLimit:   newWindowLimiter(roomJoinsPerHour, time.Hour),
+		countLimit:      newWindowLimiter(countsPerAddrHour, time.Hour),
 		metrics:         newMetrics(clock()),
 		accessLog:       "errors",
 	}
@@ -235,6 +239,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("POST /api/plans/checks", s.SavePlanCheck)
 	mux.HandleFunc("POST /api/what-helped", s.SaveHelped)
 	mux.HandleFunc("GET /api/what-helped", s.GetWhatHelped)
+	mux.HandleFunc("POST /api/counts", s.SaveCount)
 	mux.HandleFunc("GET /api/device/export", s.ExportDevice)
 	mux.HandleFunc("PUT /api/vault", s.PutVault)
 	mux.HandleFunc("GET /api/vault", s.GetVault)
