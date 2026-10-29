@@ -82,6 +82,10 @@ type VoteRequest struct {
 	OptionID   string `json:"optionId"`
 	VoterID    string `json:"voterId"`
 	Sitting    string `json:"sitting,omitempty"` // morning | evening, on the phone's clock; empty reads as morning
+	// Count false keeps the answer for the phone's own mirror without adding
+	// it to the shared totals, until the person chooses to (Edwin,
+	// 2026-10-29). Absent, from an older app, it is counted as before.
+	Count *bool `json:"count,omitempty"`
 }
 
 // VoteAccepted is the 202 body, returned only once the vote is durably accepted.
@@ -476,7 +480,7 @@ func (s *Server) CastVote(w http.ResponseWriter, r *http.Request) {
 	if q.Care == careIntimate {
 		option = privateOption // whatever arrived, the choice is never stored
 	}
-	ballot := Ballot{Vote: Vote{QuestionID: q.ID, OptionID: option, VoterHash: s.devices.voterHash(deviceID, q.ID)}, DeviceKey: a.DeviceKey, Answer: &a}
+	ballot := Ballot{Vote: Vote{QuestionID: q.ID, OptionID: option, VoterHash: s.devices.voterHash(deviceID, q.ID)}, DeviceKey: a.DeviceKey, Answer: &a, Uncounted: notCounted(v.Count)}
 	s.accept(w, r, key, ballot)
 }
 
@@ -494,6 +498,7 @@ type RatingRequest struct {
 	Verdict    string `json:"verdict,omitempty"`
 	Learned    *bool  `json:"learned,omitempty"`
 	VoterID    string `json:"voterId"`
+	Count      *bool  `json:"count,omitempty"` // as on a vote: false keeps the tap out of the totals
 }
 
 // The three verdicts, as the API and the mirror store them.
@@ -552,9 +557,14 @@ func (s *Server) RateCard(w http.ResponseWriter, r *http.Request) {
 		Vote:      Vote{QuestionID: ratingKey(q.ID), OptionID: ratingOption(option, verdict), VoterHash: s.devices.voterHash(deviceID, ratingKey(q.ID))},
 		DeviceKey: s.devices.mirrorKey(deviceID),
 		Rating:    &Rating{QuestionID: kept, Verdict: verdict},
+		Uncounted: notCounted(v.Count),
 	}
 	s.accept(w, r, key, ballot)
 }
+
+// notCounted says a ballot stays out of the shared totals: only when the app
+// said so. An older app that says nothing is counted, as it always was.
+func notCounted(count *bool) bool { return count != nil && !*count }
 
 // readBallot does the checks votes and ratings share: idempotency key, body,
 // device token, rate limit, and that the option belongs to a question open

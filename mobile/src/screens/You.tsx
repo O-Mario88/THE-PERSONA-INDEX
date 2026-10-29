@@ -8,10 +8,11 @@ import { ApiError, deleteEverywhere, forgetLocal, getKept, insteadCount, wordsBe
 import { loadMoves } from '@shared/moves'
 import { notebookCount } from '@shared/notebook'
 import { followTime } from '@shared/depth'
-import { countryOf, loadPrefs, pulseOn, whatHelpedOn, type Prefs, type ReflectionStyle, type ReflectionTime } from '@shared/prefs'
+import { countAnswersOn, countryOf, countUseOn, loadPrefs, pulseOn, whatHelpedOn, withSharing, type Prefs, type ReflectionStyle, type ReflectionTime } from '@shared/prefs'
 import { regionOf } from '@shared/regions'
 import { REGIONAL_SWITCH } from '@shared/words'
 import { MirrorDayPicker, ReminderSettingsView } from './Reminders'
+import { SHARE_ROWS } from './ShareChoices'
 import { loadHistory } from '@shared/profile'
 import { forgetSession, patchAccount, signOut, type AccountView } from '@shared/social'
 import { Back, Button, Card, Chip, Field, Page, RowGroup, RowLink, T, Tinted, Toggle } from '../ui/kit'
@@ -93,6 +94,8 @@ export function You({
     delete next[k]
     return next
   }
+  // What this phone adds to shared totals, each off until chosen.
+  const sharing = { answers: countAnswersOn(prefs), helped: whatHelpedOn(prefs), use: countUseOn(prefs) }
   const shown = me?.name || localName || 'You'
 
   return (
@@ -175,12 +178,14 @@ export function You({
         <Button small kind="secondary" label="See Patron" onPress={openPatron} />
       </Card>
 
-      {/* Every on/off choice in the app lives here, and all start on (Edwin,
-          2026-10-28). No other page asks you to switch anything. */}
+      {/* Every on/off choice in the app lives here (Edwin, 2026-10-28). What only
+          changes this phone starts on; anything added to totals other people
+          see is off until chosen (Edwin, 2026-10-29). No other page asks you
+          to switch anything, apart from the one sharing question at a close. */}
       <Card style={{ gap: 4 }}>
         <T v="h2">Privacy and choices</T>
         <T v="small" tone="muted">
-          Everything starts on. Switch off anything you’d rather not have.
+          Private reflection works from the start. Anything added to totals other people see stays off until you choose it.
         </T>
         <Toggle
           label="The Human Pulse"
@@ -188,12 +193,9 @@ export function You({
           value={pulseOn(prefs)}
           onChange={(on) => onChange(on ? without('pulse') : { ...prefs, pulse: false })}
         />
-        <Toggle
-          label="Count my steps in What helped"
-          note="When you say how a step went, only the outcome is added to anonymous totals that show others what helped, never who. Off sends no more; Delete everything removes what was sent."
-          value={whatHelpedOn(prefs)}
-          onChange={(on) => onChange(on ? without('whatHelped') : { ...prefs, whatHelped: false })}
-        />
+        {SHARE_ROWS.map((r) => (
+          <Toggle key={r.key} label={r.label} note={r.note} value={sharing[r.key]} onChange={(on) => onChange(withSharing(prefs, { ...sharing, [r.key]: on }))} />
+        ))}
         {regionOf(countryOf(prefs)) && (
           <Toggle
             label={REGIONAL_SWITCH}

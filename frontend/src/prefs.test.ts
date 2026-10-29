@@ -1,5 +1,22 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { appearanceOf, darkNow, loadPrefs, pulseOn, regionHere, savePrefs, TEXT_SIZES, textScaleOf, textSizeOf, whatHelpedOn, withAppearance, withTextSize } from './prefs'
+import {
+  appearanceOf,
+  countAnswersOn,
+  countUseOn,
+  darkNow,
+  loadPrefs,
+  pulseOn,
+  regionHere,
+  savePrefs,
+  sharingAsked,
+  TEXT_SIZES,
+  textScaleOf,
+  textSizeOf,
+  whatHelpedOn,
+  withAppearance,
+  withTextSize,
+  withSharing,
+} from './prefs'
 
 beforeEach(() => localStorage.clear())
 
@@ -21,10 +38,22 @@ describe('choices are on until you switch them off in You', () => {
     expect(loadPrefs().lang).toBeUndefined()
   })
 
-  it('counts how your steps went in What helped until you switch it off, and remembers that', () => {
-    expect(whatHelpedOn(loadPrefs())).toBe(true)
-    savePrefs({ ...loadPrefs(), whatHelped: false })
+  // Edwin, 2026-10-29: private reflection is ready at once; adding to shared
+  // totals is a clear choice, asked once, and nothing is added until then.
+  it('adds nothing to any shared total until the person chooses, then remembers each choice', () => {
+    const p = loadPrefs()
+    expect([countAnswersOn(p), whatHelpedOn(p), countUseOn(p), sharingAsked(p)]).toEqual([false, false, false, false])
+    savePrefs(withSharing(loadPrefs(), { answers: true, helped: false, use: true }))
+    const q = loadPrefs()
+    expect([countAnswersOn(q), whatHelpedOn(q), countUseOn(q), sharingAsked(q)]).toEqual([true, false, true, true])
+  })
+
+  it('reads an older phone that never chose as not yet asked, even where What helped used to start on', () => {
+    localStorage.setItem('pi.prefs.v1', JSON.stringify({ mild: false }))
+    expect(sharingAsked(loadPrefs())).toBe(false)
     expect(whatHelpedOn(loadPrefs())).toBe(false)
+    localStorage.setItem('pi.prefs.v1', JSON.stringify({ whatHelped: 'yes', countAnswers: 1 }))
+    expect([whatHelpedOn(loadPrefs()), countAnswersOn(loadPrefs())]).toEqual([false, false])
   })
 
   it('keeps each one off once you switch it off', () => {

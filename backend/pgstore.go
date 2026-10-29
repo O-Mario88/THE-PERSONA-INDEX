@@ -168,12 +168,12 @@ func (p *pgStore) Accept(ctx context.Context, idempotencyKey string, b Ballot, a
 	}
 	// The vote, unless this phone deleted everything.
 	batch.Queue(`
-		INSERT INTO votes (id, question_id, option_id, voter_hash, idem_key, dedupe_key, accepted_at)
-		SELECT $1, $2, $3, $4, $5, $6, $7
+		INSERT INTO votes (id, question_id, option_id, voter_hash, idem_key, dedupe_key, accepted_at, counted)
+		SELECT $1, $2, $3, $4, $5, $6, $7, $9
 		WHERE NOT EXISTS (SELECT 1 FROM forgotten_devices WHERE device_key = $8)
 		ON CONFLICT DO NOTHING
 		RETURNING id`,
-		e.ID, b.QuestionID, b.OptionID, b.VoterHash, idempotencyKey, voteDedupeKey(b.Vote), at, b.DeviceKey)
+		e.ID, b.QuestionID, b.OptionID, b.VoterHash, idempotencyKey, voteDedupeKey(b.Vote), at, b.DeviceKey, !b.Uncounted)
 	// The mirror side, only when the stored vote is this very ballot: a new
 	// vote, or a retry of it with the same key. Never for a second vote.
 	thisBallot := `EXISTS (SELECT 1 FROM votes WHERE voter_hash = $1 AND idem_key = $2 AND question_id = $3 AND option_id = $4)`
@@ -252,7 +252,8 @@ func (p *pgStore) Accept(ctx context.Context, idempotencyKey string, b Ballot, a
 
 // Tally claims a batch with SKIP LOCKED, marks it tallied and adds it to the
 // counts in one statement, so a crash leaves either all or none of the batch
-// counted, and parallel workers never claim the same vote.
+// counted, and parallel workers never claim the same vote. A vote marked not
+// counted is marked tallied and adds nothing.
 func (p *pgStore) Tally(ctx context.Context, limit int) (int, error) {
 	var n int
 	err := p.pool.QueryRow(ctx, `
@@ -265,10 +266,10 @@ func (p *pgStore) Tally(ctx context.Context, limit int) (int, error) {
 		), marked AS (
 			UPDATE votes SET tallied_at = now()
 			FROM claimed WHERE votes.id = claimed.id
-			RETURNING votes.question_id, votes.option_id
+			RETURNING votes.question_id, votes.option_id, votes.counted
 		), added AS (
 			INSERT INTO vote_tallies (question_id, option_id, count)
-			SELECT question_id, option_id, count(*) FROM marked GROUP BY 1, 2
+			SELECT question_id, option_id, count(*) FROM marked WHERE counted GROUP BY 1, 2
 			ON CONFLICT (question_id, option_id)
 			DO UPDATE SET count = vote_tallies.count + EXCLUDED.count
 		)

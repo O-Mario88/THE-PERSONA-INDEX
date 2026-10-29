@@ -40,6 +40,10 @@ type Ballot struct {
 	DeviceKey string
 	Answer    *MirrorAnswer // a vote: the answer the mirror keeps
 	Rating    *Rating       // a rating: noted on the answer the mirror keeps
+	// Uncounted keeps the ballot out of the shared totals: the phone has not
+	// chosen to add to them. It still holds the one-answer rule and reaches
+	// the mirror.
+	Uncounted bool
 }
 
 // Rating is the tap under the card (that's me, partly, not me), as the
@@ -58,6 +62,7 @@ type VoteEvent struct {
 	AcceptedAt time.Time
 	idemKey    string
 	tallied    bool
+	uncounted  bool
 }
 
 var (
@@ -162,7 +167,7 @@ func (m *memoryStore) Accept(_ context.Context, idempotencyKey string, b Ballot,
 		return VoteEvent{}, ErrDuplicateVote
 	}
 
-	e := VoteEvent{ID: newEventID(), QuestionID: b.QuestionID, OptionID: b.OptionID, VoterHash: b.VoterHash, AcceptedAt: at, idemKey: idempotencyKey}
+	e := VoteEvent{ID: newEventID(), QuestionID: b.QuestionID, OptionID: b.OptionID, VoterHash: b.VoterHash, AcceptedAt: at, idemKey: idempotencyKey, uncounted: b.Uncounted}
 	m.events = append(m.events, e)
 	m.byIdemKey[idem] = len(m.events) - 1
 	m.byDedupe[dedupe] = len(m.events) - 1
@@ -204,14 +209,17 @@ func (m *memoryStore) Tally(_ context.Context, limit int) (int, error) {
 		if e.tallied {
 			continue
 		}
+		e.tallied = true
+		n++
+		if e.uncounted {
+			continue
+		}
 		byOption := m.counts[e.QuestionID]
 		if byOption == nil {
 			byOption = map[string]int{}
 			m.counts[e.QuestionID] = byOption
 		}
 		byOption[e.OptionID]++
-		e.tallied = true
-		n++
 	}
 	return n, nil
 }

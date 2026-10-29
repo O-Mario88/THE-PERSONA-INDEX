@@ -102,6 +102,7 @@ export async function castVote(
   optionId: string,
   idempotencyKey: string,
   sitting?: Sitting,
+  count = false, // added to the shared totals only once the person said yes (prefs.countAnswers)
 ): Promise<{ status: string; eventId: string }> {
   return withDevice((voterId) =>
     request<{ status: string; eventId: string }>('/api/votes', {
@@ -110,7 +111,7 @@ export async function castVote(
         'Content-Type': 'application/json',
         'Idempotency-Key': idempotencyKey,
       },
-      body: JSON.stringify({ questionId, optionId, voterId, ...(sitting ? { sitting } : {}) }),
+      body: JSON.stringify({ questionId, optionId, voterId, count, ...(sitting ? { sitting } : {}) }),
     }),
   )
 }
@@ -421,8 +422,8 @@ export function saveStep(
 export type Verdict = 'me' | 'partly' | 'not_me'
 const VERDICTS: Verdict[] = ['me', 'partly', 'not_me']
 
-export function rateCard(questionId: string, optionId: string, verdict: Verdict): Promise<unknown> {
-  const r: UnsentRating = { key: randomId(), optionId, verdict }
+export function rateCard(questionId: string, optionId: string, verdict: Verdict, count = false): Promise<unknown> {
+  const r: UnsentRating = { key: randomId(), optionId, verdict, count }
   save(unratedPrefix + questionId, JSON.stringify(r))
   return sendRating(questionId, r)
 }
@@ -432,7 +433,7 @@ export function rateCard(questionId: string, optionId: string, verdict: Verdict)
 // connection still reaches the mirror ("Not me" decides what it reads) and
 // can never count twice. An answer from the server, other than "busy", ends
 // it: the tap got there, or never can.
-type UnsentRating = { key: string; optionId: string; verdict: Verdict }
+type UnsentRating = { key: string; optionId: string; verdict: Verdict; count?: boolean }
 const unratedPrefix = 'pi.unrated.'
 
 async function sendRating(questionId: string, r: UnsentRating): Promise<unknown> {
@@ -441,7 +442,7 @@ async function sendRating(questionId: string, r: UnsentRating): Promise<unknown>
       request('/api/ratings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Idempotency-Key': r.key },
-        body: JSON.stringify({ questionId, optionId: r.optionId, verdict: r.verdict, voterId }),
+        body: JSON.stringify({ questionId, optionId: r.optionId, verdict: r.verdict, voterId, count: r.count === true }),
       }),
     )
     remove(unratedPrefix + questionId)

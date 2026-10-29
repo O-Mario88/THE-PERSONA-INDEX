@@ -15,7 +15,7 @@ import { sendUnsent } from '@shared/moves'
 import { carryLine, rememberLine } from '@shared/continuity'
 import { journeyNote, lastMemory, linkLine, personalLine } from '@shared/todayFocus'
 import { forgetPick, isFirstDay, loadHistory, todaysPick, writeFirstOf, type Half } from '@shared/profile'
-import { darkNow, intimacyOn, loadPrefs, pulseOn, regionHere, savePrefs, textScaleOf, type Prefs } from '@shared/prefs'
+import { darkNow, intimacyOn, loadPrefs, pulseOn, regionHere, savePrefs, sharingAsked, textScaleOf, type Prefs } from '@shared/prefs'
 import { cachedPack, fetchPack, regionalFor, regionalToday } from '@shared/regional'
 import { addDays, keys, load as loadKey, remove as removeKey, save as saveKey } from '@shared/storage'
 import { NAME_KEY, WELCOMED } from '@shared/welcomeKeys'
@@ -59,6 +59,7 @@ import { CountryAsk } from './screens/Country'
 import { themeName } from '@shared/themes'
 import { InstallInvite } from './screens/Browser'
 import { AskRemindersQuietly, RemindersOn } from './screens/Reminders'
+import { ShareChoices } from './screens/ShareChoices'
 import { setLanguage, tr, trf } from '@shared/i18n'
 import { backFromGoogle } from './platform/googleWeb'
 import { locale } from '@shared/locale'
@@ -568,20 +569,23 @@ export function Shell({ phoneDark, onRestart, onDayReady }: { phoneDark: boolean
       const offerAccount = canSignIn && !me && !askedSignIn
       const offerAgain = canSignIn && !me && askedSignIn && !offeredAgain && dayN > 1
       // One ask at most at the close (the light-mode review, 2026-10-29): the
-      // reminder offer after the first glimpse, else signing in, then the 18+
-      // question, then where you live, each asked once.
-      const ask: 'reminder' | 'signin' | 'adult' | 'country' | null =
+      // reminder offer after the first glimpse, else what to add to shared
+      // totals (asked once, nothing ticked: Edwin, 2026-10-29), else signing
+      // in, then the 18+ question, then where you live, each asked once.
+      const ask: 'reminder' | 'sharing' | 'signin' | 'adult' | 'country' | null =
         !closing || steps.length === 0
           ? null
           : glimpse
             ? 'reminder'
-            : offerAccount || offerAgain
-              ? 'signin'
-              : hasIntimate && prefs.adult === null && isNewcomer() && dayN > 1
-                ? 'adult'
-                : prefs.country === undefined
-                  ? 'country'
-                  : null
+            : !sharingAsked(prefs)
+              ? 'sharing'
+              : offerAccount || offerAgain
+                ? 'signin'
+                : hasIntimate && prefs.adult === null && isNewcomer() && dayN > 1
+                  ? 'adult'
+                  : prefs.country === undefined
+                    ? 'country'
+                    : null
       body = (
         <Flow
           label={steps.length === 0 ? tr(name) : closing ? trf('{name} close', { name: tr(name) }) : trf('{name} · {n} of {m}', { name: tr(name), n: at + 1, m: steps.length })}
@@ -657,6 +661,7 @@ export function Shell({ phoneDark, onRestart, onDayReady }: { phoneDark: boolean
               }}
             />
           )}
+          {ask === 'sharing' && <ShareChoices prefs={prefs} onSave={changePrefs} />}
           {ask === 'adult' && <AdultGate again onAnswer={(adult) => changePrefs({ ...prefs, adult })} />}
           {ask === 'country' && <CountryAsk onAnswer={(country) => changePrefs({ ...prefs, country })} />}
           {/* Someone who chose "Start without an account" on the Welcome isn't asked again here. */}

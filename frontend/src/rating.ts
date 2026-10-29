@@ -5,6 +5,7 @@
 
 import { PRIVATE_OPTION, rateCard, rememberRated, type Question, type Verdict } from './api'
 import { noteVerdict } from './notebook'
+import { countAnswersOn, loadPrefs } from './prefs'
 import { recordVerdict } from './profile'
 
 export function rateAnswer(q: Pick<Question, 'id' | 'care' | 'local'>, optionId: string, v: Verdict) {
@@ -12,7 +13,7 @@ export function rateAnswer(q: Pick<Question, 'id' | 'care' | 'local'>, optionId:
   recordVerdict(q.id, v)
   noteVerdict(q.id, v)
   if (q.local) return
-  rateCard(q.id, q.care === 'intimate' ? PRIVATE_OPTION : optionId, v).catch(() => {
+  rateCard(q.id, q.care === 'intimate' ? PRIVATE_OPTION : optionId, v, countAnswersOn(loadPrefs())).catch(() => {
     // a lost tap is not worth bothering anyone about
   })
 }

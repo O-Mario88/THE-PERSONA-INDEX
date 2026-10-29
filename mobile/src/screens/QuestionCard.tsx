@@ -45,7 +45,7 @@ import { HELPLINE_LINE } from '@shared/helplineText'
 import { focusPlan, makePlan } from '@shared/notebook'
 import { inOrder } from '@shared/order'
 import { loadPeople, namesLine } from '@shared/people'
-import { crisisHere, DEFAULT_WORDS_DAYS, helplineHere } from '@shared/prefs'
+import { countAnswersOn, crisisHere, DEFAULT_WORDS_DAYS, helplineHere, loadPrefs } from '@shared/prefs'
 import { isLowMood, loadHistory, recalledAnswer, recordAnswer, recordSkip, recordVerdict, threadLine } from '@shared/profile'
 import { isNeed, NEED_PHRASES } from '@shared/needs'
 import { splitReveal } from '@shared/reveal'
@@ -121,7 +121,8 @@ export function QuestionCard({ question, date, sitting, wordsDays = DEFAULT_WORD
     setSending(true)
     setError(null)
     const sent = intimate ? PRIVATE_OPTION : o.id
-    const send = () => castVote(question.id, sent, voteKey(question.id, sent), sitting)
+    // Counted in the shared totals only once the person said yes (prefs.countAnswers).
+    const send = () => castVote(question.id, sent, voteKey(question.id, sent), sitting, countAnswersOn(loadPrefs()))
     try {
       try {
         await send()

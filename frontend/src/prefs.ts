@@ -10,14 +10,17 @@ import { loadJSON, saveJSON } from './storage'
 // sealed in the backup.
 // regional: false turns off the questions about everyday life where the
 // person lives (regional.ts); they are on whenever a country is given.
-// The choices, all in one place on the You page and all on by default
-// (Edwin, 2026-10-28: "everything should be on by default and turned off from
-// the You page"): pulse: false hides every Human Pulse number; appearance is
+// The choices, all in one place on the You page. Those that only change
+// what this phone shows start on (Edwin, 2026-10-28): pulse: false hides
+// every Human Pulse number; appearance is
 // light or dark on every page (Settings; absent is automatic); black: false (older) keeps the evening and night windows off
 // pure black; still: true shows cards at once instead of unfolding them;
 // connect: false turns quiet nods and Answer Together off both ways;
-// whatHelped: false stops a check-in's outcome being added to the anonymous
-// What helped totals (backend/whathelped.go). style and time are My
+// Adding to anything other people see is a clear choice, asked once and off
+// until made (Edwin, 2026-10-29): countAnswers adds answers to the anonymous
+// totals (count on POST /api/votes), whatHelped adds a check-in's outcome to
+// What helped (backend/whathelped.go), countUse adds the anonymous product
+// counts (productCounts.ts). Absent is "not chosen yet", which adds nothing. style and time are My
 // Reflection Style (Edwin's brief, 2026-10-28): what feels most useful, and
 // how much time there usually is; absent is a little of both, a few minutes.
 // textSize scales every word in the app (Settings, Edwin 2026-10-29), on top
@@ -33,7 +36,9 @@ export type Prefs = {
   appearance?: 'light' | 'dark' // light or dark on every page; absent is automatic
   still?: true
   connect?: false
-  whatHelped?: false
+  whatHelped?: boolean
+  countAnswers?: boolean
+  countUse?: boolean
   style?: ReflectionStyle
   time?: ReflectionTime
   lang?: AppLang // the app's language; absent follows the phone (i18n/index.ts)
@@ -70,7 +75,9 @@ export function loadPrefs(): Prefs {
     const appearance = p.appearance === 'light' || p.appearance === 'dark' ? { appearance: p.appearance } : {}
     const still = p.still === true ? { still: true as const } : {}
     const connect = p.connect === false ? { connect: false as const } : {}
-    const whatHelped = p.whatHelped === false ? { whatHelped: false as const } : {}
+    const whatHelped = typeof p.whatHelped === 'boolean' ? { whatHelped: p.whatHelped } : {}
+    const countAnswers = typeof p.countAnswers === 'boolean' ? { countAnswers: p.countAnswers } : {}
+    const countUse = typeof p.countUse === 'boolean' ? { countUse: p.countUse } : {}
     const style = p.style === 'think' || p.style === 'practical' || p.style === 'both' ? { style: p.style } : {}
     const time = p.time === 'minute' || p.time === 'few' || p.time === 'deep' ? { time: p.time } : {}
     const lang = (APP_LANGS as readonly string[]).includes(p.lang ?? '') ? { lang: p.lang } : {}
@@ -87,6 +94,8 @@ export function loadPrefs(): Prefs {
       ...still,
       ...connect,
       ...whatHelped,
+      ...countAnswers,
+      ...countUse,
       ...style,
       ...time,
       ...lang,
@@ -102,8 +111,14 @@ export function savePrefs(p: Prefs) {
 
 export const intimacyOn = (p: Prefs) => p.adult === true && !p.mild
 
-// whatHelpedOn: how a step went is added, without who, to What helped.
-export const whatHelpedOn = (p: Prefs): boolean => p.whatHelped !== false
+// Each adds to a shared total only once the person said yes.
+export const countAnswersOn = (p: Prefs): boolean => p.countAnswers === true
+export const whatHelpedOn = (p: Prefs): boolean => p.whatHelped === true
+export const countUseOn = (p: Prefs): boolean => p.countUse === true
+// The one question about sharing has been answered (ShareChoices.tsx).
+export const sharingAsked = (p: Prefs): boolean => typeof p.countAnswers === 'boolean'
+
+export const withSharing = (p: Prefs, c: { answers: boolean; helped: boolean; use: boolean }): Prefs => ({ ...p, countAnswers: c.answers, whatHelped: c.helped, countUse: c.use })
 
 // The country to tailor to, or null when none was given.
 export const countryOf = (p: Prefs): string | null => (p.country && p.country !== NO_COUNTRY ? p.country : null)

@@ -60,7 +60,7 @@ Postgres, schema in `backend/migrations/`. Every key below is an HMAC made from 
 
 | Table | One row is | Holds | Kept | Deleted by "Delete everywhere" |
 | --- | --- | --- | --- | --- |
-| `votes` | A vote or a card rating, waiting to be counted or kept for the one-vote rule | Question, option, a voter hash that is different for every question, the idempotency key, the time to the hour, when it was counted | `VOTE_RETENTION_DAYS` after it is counted: default 7, never less than 7 (`main.go`) | Yes, found through the phone's voter hashes for every edition still kept (`deviceVoteHashes`) |
+| `votes` | A vote or a card rating, waiting to be counted or kept for the one-vote rule. `counted` is false when the phone has not chosen to add to the totals: the tally then skips it (`012_uncounted_votes.sql`) | Question, option, a voter hash that is different for every question, the idempotency key, the time to the hour, when it was counted | `VOTE_RETENTION_DAYS` after it is counted: default 7, never less than 7 (`main.go`) | Yes, found through the phone's voter hashes for every edition still kept (`deviceVoteHashes`) |
 | `vote_tallies` | One option's count | Question, option, count. No device key of any kind | For good | No: with nothing to link a count to a phone, it is a real total, not personal data |
 | `mirror_answers` | One answer, for the phone's mirror | Mirror key, question, date, morning or evening, theme, option, depth, the tap under the card (`verdict`: me, partly or not_me) | 35 days (`mirrorRetention`, `mirrorstore.go`) | Yes |
 | `mirror_steps` | One small step | Mirror key, question, option, the day it started, its status, whether it was the need step (`007_need_steps.sql`), the hour it last changed | 35 days | Yes |
@@ -145,7 +145,7 @@ Patron (`patron.go`, `frontend/src/patron.ts`) changes what the app makes for th
 
 Private reflection works from the first moment with nothing to switch on: answering, writing, the first experience, the Mirror and the lock.
 
-Adding to anything other people see is a choice the person makes, asked once in plain words after the first sitting and changeable on You. Until they choose, nothing is added:
+Adding to anything other people see is a choice the person makes, asked once in plain words at the end of an early sitting, with nothing ticked (`mobile/src/screens/ShareChoices.tsx`), and changeable on You. Until they choose, nothing is added:
 
 - **Count my answers in the anonymous totals** (the Human Pulse, Growing together, You're not alone). Until they say yes, an answer still reaches their own Mirror (`mirror_answers`) but adds nothing to `votes` or `vote_tallies` (`count: false` on `POST /api/votes`).
 - **Count my steps in What helped** (`what_helped`).
