@@ -21,7 +21,7 @@ const MEMORY_DAYS = 7
 
 export type Memory =
   | { kind: 'writing'; id: string; date: string; when: string; text: string; area: ReflectionArea }
-  | { kind: 'answer'; date: string; when: string; label: string; noticed: string; theme?: string }
+  | { kind: 'answer'; date: string; when: string; label: string; noticed: string; theme?: string; questionId: string; optionId?: string }
 
 // lastMemory is the most recent thing from the past week, before today: your
 // own written words first, else the card from your last answers. Hard words
@@ -30,9 +30,7 @@ export function lastMemory(today: string, h: History, written: Reflection[] = re
   const from = addDays(today, -MEMORY_DAYS)
   const lastAnswer = [...h.answers].filter((a) => a.date < today && a.date >= from).sort((a, b) => b.date.localeCompare(a.date))[0]
   if (lastAnswer?.heavy) return null
-  const words = [...written]
-    .filter((r) => r.date < today && r.date >= from && r.answer.trim() && readWriting(r.answer) === null)
-    .sort((a, b) => b.date.localeCompare(a.date) || b.at - a.at)[0]
+  const words = [...written].filter((r) => r.date < today && r.date >= from && r.answer.trim() && readWriting(r.answer) === null).sort((a, b) => b.date.localeCompare(a.date) || b.at - a.at)[0]
   const card = lastCard(today, h)
   if (words && (!card || words.date >= card.date)) {
     return { kind: 'writing', id: words.id, date: words.date, when: whenWas(words.date, today), text: words.answer.trim(), area: words.area }

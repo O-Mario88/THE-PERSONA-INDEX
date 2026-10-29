@@ -4,15 +4,16 @@
 // together, Our Common Ground, What Helped Us and Support & Celebrate, with
 // at most two quiet "Closer together" cards above them.
 import { useCallback, useEffect, useState } from 'react'
-import { Pressable, Share, View } from 'react-native'
+import { Pressable, ScrollView, Share, View } from 'react-native'
 import { ApiError } from '@shared/api'
 import { loadRings, placeIn, RING_NAMES, RING_NOTES, RINGS, ringOf, type Ring, type Rings } from '@shared/rings'
 import type { Question } from '@shared/api'
 import { createInvite, getCircle, inviteLink, TAG_NAMES, TAGS, type AccountView, type CircleView, type Tag } from '@shared/social'
 import { dayMonth } from '@shared/reflect'
 import { font, radius } from '../theme'
-import { Button, Card, Chip, Page, T, Tinted } from '../ui/kit'
+import { Button, Card, Chip, Page, T } from '../ui/kit'
 import { CardHead, Avatar } from '../ui/parts'
+import { Section } from '../ui/Layout'
 import { CloserTogether, CommonGround, Growing, SupportCelebrate, WhatHelped } from './ConnectMore'
 import { NotAloneSection } from './NotAlone'
 import type { PulseCounts } from '@shared/humanPulse'
@@ -61,16 +62,11 @@ export function Connect({
           <T tone="text2">A little understanding goes a long way.</T>
         </View>
         <NotAloneSection pulse={pulse} focus={focus} onReflect={reflectOn} />
-        <Tinted>
-          <CardHead icon="heart" tone="rose" title="Reach out when you’re ready" />
+        <Section title="Reach out when you’re ready" icon="heart">
           <T tone="text2">Is there someone you’d feel comfortable reconnecting with? Your Circle is here whenever you want it, and friends never see your answers.</T>
           <Button small kind="outline" label="Start your circle" iconAfter="chevron" onPress={onSignIn} />
-        </Tinted>
-        {today && (
-          <Card>
-            <Growing date={today} questions={questions} circle={null} />
-          </Card>
-        )}
+        </Section>
+        {today && <Growing date={today} questions={questions} circle={null} />}
         <Tagline />
       </Page>
     )
@@ -97,6 +93,7 @@ export function Connect({
 
       <Card style={{ gap: 14 }}>
         <T v="h2">Your Circle</T>
+        {friends.length > 0 && <Faces names={friends.map((f) => f.name)} />}
         <View style={{ flexDirection: 'row', gap: 24 }}>
           <Stat n={friends.length} label="People in your circle" />
           <Stat n={circle?.active ?? 0} label="Active this week" />
@@ -119,11 +116,7 @@ export function Connect({
         ))}
       </Card>
 
-      {today && (
-        <Card>
-          <Growing date={today} questions={questions} circle={circle} />
-        </Card>
-      )}
+      {today && <Growing date={today} questions={questions} circle={circle} />}
       {friends.length > 0 && (
         <>
           <Card>
@@ -140,10 +133,27 @@ export function Connect({
 
       <Tagline />
       <T v="small" tone="muted" center>
-        Friends see that you’re connected and the circle tag you gave them. Never your answers, your readings, or who else is here. Anything more is only what you
-        choose to share, with the people you choose.
+        Friends see that you’re connected and the circle tag you gave them. Never your answers, your readings, or who else is here. Anything more is only what you choose to share, with the people you
+        choose.
       </T>
     </Page>
+  )
+}
+
+// The circle as a row of faces, the way the big apps show the people closest
+// to you. Names only; nothing about their answers.
+function Faces({ names }: { names: string[] }) {
+  return (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 14, paddingRight: 8 }}>
+      {names.map((n, i) => (
+        <View key={`${n}-${i}`} style={{ alignItems: 'center', gap: 6, width: 64 }}>
+          <Avatar name={n} size={52} />
+          <T v="tiny" tone="text2" lines={1}>
+            {n.split(' ')[0]}
+          </T>
+        </View>
+      ))}
+    </ScrollView>
   )
 }
 
@@ -215,12 +225,7 @@ function Invite({ circle }: { circle: CircleView | null }) {
   }
   return (
     <View style={{ gap: 14 }}>
-      <CardHead
-        icon="user-plus"
-        tone="purple"
-        v="h2"
-        title="Invite a friend"
-      />
+      <CardHead icon="user-plus" tone="purple" v="h2" title="Invite a friend" />
       <T v="small" tone="muted">
         They see your name and handle, never your answers.
       </T>

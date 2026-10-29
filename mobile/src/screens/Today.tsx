@@ -3,7 +3,7 @@
 // one quiet next step, a way in when something happens, and the Mirror
 // that's coming. Nothing here counts, badges or asks for more.
 import { useState, type ReactNode } from 'react'
-import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native'
+import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native'
 import Svg, { Circle, Defs, LinearGradient, Path, RadialGradient, Rect, Stop } from 'react-native-svg'
 import type { Window } from '@shared/day'
 import { greeting, type Hero } from '@shared/homeHero'
@@ -11,8 +11,10 @@ import { tr } from '@shared/i18n'
 import type { Read } from '@shared/reads/types'
 import type { JourneyNote, Memory } from '@shared/todayFocus'
 import { radius, RAIL_W, useTheme, WIDE } from '../theme'
-import { Button, Card, Chip, Hairline, T } from '../ui/kit'
+import { Button, Card, Chip, T } from '../ui/kit'
 import { Avatar } from '../ui/parts'
+import { Section, Spotlight } from '../ui/Layout'
+import { PulseNote, usePagePulse } from '../ui/Pulse'
 import { Logo } from '../ui/Logo'
 import { Icon } from '../ui/Icon'
 import { KeepMoment } from './KeepMoment'
@@ -61,7 +63,7 @@ export function Today({ date, window: w, name, note, hero, memory, journey, link
       </View>
     </View>
   )
-  const main = <MainCard hero={hero} memory={memory} journey={journey} link={link} tomorrow={tomorrow} onOpen={onOpen} onWrite={onWrite} />
+  const main = <MainCard today={date} hero={hero} memory={memory} journey={journey} link={link} tomorrow={tomorrow} onOpen={onOpen} onWrite={onWrite} />
   const step = <QuietStepCard today={date} onJourney={onJourney} />
   const moment = <NeedAMoment today={date} onWrite={onWrite} />
   const mirror = <MirrorCard today={date} onWrite={onWrite} onInsights={onInsights} />
@@ -142,6 +144,7 @@ function Wash() {
 // tap, so nobody glancing at your phone reads it), then today's questions,
 // shown by the first one waiting.
 function MainCard({
+  today,
   hero,
   memory,
   journey,
@@ -150,6 +153,7 @@ function MainCard({
   onOpen,
   onWrite,
 }: {
+  today: string
   hero: Hero
   memory: Memory | null
   journey: JourneyNote | null
@@ -161,34 +165,27 @@ function MainCard({
   // Smaller on a narrow phone, so the title sits on one line.
   const narrow = useWindowDimensions().width < 400
   return (
-    <Card style={{ gap: 16 }}>
-      {journey ? (
-        <>
-          <JourneyRow lines={journey.lines} />
-          <Hairline />
-        </>
-      ) : (
-        memory && (
-          <>
-            <MemoryRow memory={memory} onWrite={onWrite} />
-            <Hairline />
-          </>
-        )
-      )}
-      <View style={{ gap: 6 }}>
-        <T v="label">{hero.eyebrow}</T>
-        <T v="h2" style={narrow ? { fontSize: 17, lineHeight: 22 } : { fontSize: 19, lineHeight: 24 }}>
-          {hero.title}
-        </T>
-        <T tone="text2">{journey ? hero.sub : (link ?? hero.sub)}</T>
-        {tomorrow ? (
-          <T v="small" tone="muted">
-            {tomorrow}
+    <View style={{ gap: 20 }}>
+      {journey ? <JourneyRow lines={journey.lines} /> : memory && <MemoryRow memory={memory} today={today} onWrite={onWrite} />}
+      {/* Today's sitting: the one bold surface on the page (review, 2026-10-28). */}
+      <Spotlight>
+        <View style={{ gap: 6 }}>
+          <T v="label" tone="onNavy2">
+            {hero.eyebrow}
           </T>
-        ) : null}
-      </View>
-      {hero.action && <Button wide label={hero.action} iconAfter="chevron" onPress={onOpen} />}
-    </Card>
+          <T v="h2" tone="onNavy" style={narrow ? { fontSize: 19, lineHeight: 24 } : { fontSize: 21, lineHeight: 27 }}>
+            {hero.title}
+          </T>
+          <T tone="onNavy2">{journey ? hero.sub : (link ?? hero.sub)}</T>
+          {tomorrow ? (
+            <T v="small" tone="onNavy2">
+              {tomorrow}
+            </T>
+          ) : null}
+        </View>
+        {hero.action && <Button wide kind="warm" label={hero.action} iconAfter="chevron" onPress={onOpen} />}
+      </Spotlight>
+    </View>
   )
 }
 
@@ -209,9 +206,10 @@ function JourneyRow({ lines }: { lines: string[] }) {
   )
 }
 
-function MemoryRow({ memory, onWrite }: { memory: Memory; onWrite: (prompt?: string, followsUp?: string) => void }) {
+function MemoryRow({ memory, today, onWrite }: { memory: Memory; today: string; onWrite: (prompt?: string, followsUp?: string) => void }) {
   const p = useTheme()
   const [open, setOpen] = useState(false)
+  const pulse = usePagePulse(today)
   const label = tr(memory.kind === 'writing' ? 'Your last reflection' : 'Your last answers')
   return (
     <View style={{ gap: 10 }}>
@@ -270,6 +268,7 @@ function MemoryRow({ memory, onWrite }: { memory: Memory; onWrite: (prompt?: str
           <View style={{ gap: 4 }}>
             <T v="h3">You chose “{memory.label}”.</T>
             <T tone="text2">I noticed: {memory.noticed}</T>
+            <PulseNote text={pulse.answer(memory.questionId, memory.optionId)} style={{ marginTop: 4 }} />
           </View>
         ))}
       {/* Remembering leads somewhere: carry on from it in Reflect. */}
@@ -310,45 +309,20 @@ const MOMENTS = [
 ]
 
 function NeedAMoment({ today, onWrite }: { today: string; onWrite: (prompt?: string) => void }) {
-  const p = useTheme()
-  const [open, setOpen] = useState(false)
   const [heavy, setHeavy] = useState(false)
   const [keeping, setKeeping] = useState(false)
   return (
-    <View style={{ gap: 12 }}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityState={{ expanded: open }}
-        onPress={() => setOpen(!open)}
-        hitSlop={8}
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 8,
-          alignSelf: 'flex-start',
-          minHeight: 44,
-          paddingHorizontal: 4,
-        }}
-      >
-        <Icon name="heart" size={18} color={p.accentInk} />
-        <T tone="accent" bold>
-          Need a moment?
-        </T>
-        <View style={{ transform: [{ rotate: open ? '90deg' : '0deg' }] }}>
-          <Icon name="chevron" size={16} color={p.accentInk} />
-        </View>
-      </Pressable>
-      {open && (
+    <Section title="Need a moment?" icon="heart">
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingRight: 8 }} style={{ marginHorizontal: -2 }}>
+        <Chip label="Something feels heavy" on={heavy} onPress={() => setHeavy(!heavy)} />
+        <Chip label="Keep a moment" on={keeping} onPress={() => setKeeping(!keeping)} />
+        {MOMENTS.map((m) => (
+          <Chip key={m.label} label={m.label} onPress={() => onWrite(m.prompt)} />
+        ))}
+        <Chip label="Just write" onPress={() => onWrite()} />
+      </ScrollView>
+      {(keeping || heavy) && (
         <Card style={{ gap: 10 }}>
-          <T v="h3">What's going on?</T>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            <Chip label="Something feels heavy" on={heavy} onPress={() => setHeavy(true)} />
-            <Chip label="Keep a moment" on={keeping} onPress={() => setKeeping(true)} />
-            {MOMENTS.map((m) => (
-              <Chip key={m.label} label={m.label} onPress={() => onWrite(m.prompt)} />
-            ))}
-            <Chip label="Just write" onPress={() => onWrite()} />
-          </View>
           {keeping && <KeepMoment today={today} />}
           {heavy && (
             <>
@@ -364,7 +338,7 @@ function NeedAMoment({ today, onWrite }: { today: string; onWrite: (prompt?: str
           )}
         </Card>
       )}
-    </View>
+    </Section>
   )
 }
 

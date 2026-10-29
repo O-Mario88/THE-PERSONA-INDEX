@@ -3,12 +3,11 @@
 // each card carries the shared Human Pulse line (humanPulse.ts) once it is on,
 // with Connect a tap away; Saved holds the cards they kept. No made-up
 // rows, no scores.
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { View } from 'react-native'
 import { recalledVerdict, type Question, type Verdict } from '@shared/api'
 import { evidenceLabel, forYou, notAloneFor, type ForYouCard } from '@shared/insights'
 import type { PulseCounts } from '@shared/humanPulse'
-import { getOthersHelped, othersLine, type OthersStep } from '@shared/mirrorStory'
 import { NEED_NAMES } from '@shared/needs'
 import { intentions, keepCard, keepIntention, keptCard, keptCards, unkeepCard } from '@shared/notebook'
 import { loadMoves, startMove } from '@shared/moves'
@@ -19,9 +18,10 @@ import { rateAnswer } from '@shared/rating'
 import { splitReveal } from '@shared/reveal'
 import { NOT_ME_REPLY, VERDICT_REPLIES } from '@shared/words'
 import { radius, useTheme } from '../theme'
-import { Button, Card, Chip, Page, T } from '../ui/kit'
+import { Button, Card, Page, Segmented, T } from '../ui/kit'
+import { Tile, TileRow } from '../ui/Layout'
 import { CardHead } from '../ui/parts'
-import { PulseLine } from '../ui/Pulse'
+import { PulseLine, PulseNote, usePagePulse } from '../ui/Pulse'
 import { loadPrefs } from '@shared/prefs'
 import { DepthSwitch, useDeeper } from '../ui/Depth'
 import { HeavyCard, Rate, VerdictRow } from './QuestionCard'
@@ -45,20 +45,12 @@ export function Insights({
   onOpenMirror?: () => void
   onOpenJourney: () => void
 }) {
+  const p = useTheme()
   const [days, setDays] = useState(WEEK)
   const [version, setVersion] = useState(0)
   // Essential or Explore deeper (shared depth.ts), and small practical ideas first for those who asked (My Reflection Style).
   const [deeper, setDeeper] = useDeeper('insights')
   const [practical] = useState(() => loadPrefs().style === 'practical')
-  // What helped others: the anonymous totals, the same for everyone (backend/whathelped.go).
-  const [others, setOthers] = useState<OthersStep[] | null>(null)
-  useEffect(() => {
-    let live = true
-    getOthersHelped().then((s) => live && setOthers(s))
-    return () => {
-      live = false
-    }
-  }, [])
   const cards = useMemo(() => {
     void version
     return forYou(loadHistory(), today, days, questions)
@@ -72,18 +64,18 @@ export function Insights({
     <Page
       aside={
         saved.length > 0 ? (
-        <>
-          {saved.length > 0 && (
-            <>
-              <Card style={{ gap: 10 }}>
-                <CardHead icon="bookmark" tone="purple" v="h2" title="What you've kept" />
-                {saved.slice(0, 3).map((c) => (
-                  <T key={c.questionId}>• {c.headline}</T>
-                ))}
-              </Card>
-            </>
-          )}
-        </>
+          <>
+            {saved.length > 0 && (
+              <>
+                <Card style={{ gap: 10 }}>
+                  <CardHead icon="bookmark" tone="purple" v="h2" title="What you've kept" />
+                  {saved.slice(0, 3).map((c) => (
+                    <T key={c.questionId}>• {c.headline}</T>
+                  ))}
+                </Card>
+              </>
+            )}
+          </>
         ) : undefined
       }
     >
@@ -91,11 +83,21 @@ export function Insights({
         <T v="display">Insights</T>
         <T tone="text2">What I'm learning about you, and what seems to help you.</T>
       </View>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-        {answeredAny && <Chip label="Last 30 days" on={days === MONTH} onPress={() => setDays(days === MONTH ? WEEK : MONTH)} />}
-        <Button kind="text" small label="My journey" iconAfter="arrow" onPress={onOpenJourney} />
-        {onOpenMirror && <Button kind="text" small label="Your Mirrors" iconAfter="arrow" onPress={onOpenMirror} />}
-      </View>
+      {answeredAny && (
+        <Segmented
+          label="How far back"
+          value={days === MONTH ? 'month' : 'week'}
+          onChange={(v) => setDays(v === 'month' ? MONTH : WEEK)}
+          options={[
+            { value: 'week', label: 'This week' },
+            { value: 'month', label: 'Last 30 days' },
+          ]}
+        />
+      )}
+      <TileRow>
+        <Tile icon="leaf" tone="green" title="My journey" sub="What you’ve tried and discovered" onPress={onOpenJourney} />
+        {onOpenMirror && <Tile icon="mirror" tone="purple" title="Your Mirrors" sub="Your weeks, looked back on" onPress={onOpenMirror} />}
+      </TileRow>
       {shown.length > 0 && <DepthSwitch deep={deeper} onChange={setDeeper} center={false} />}
       <AcrossDays today={today} />
       <WhatHelpedYou />
@@ -103,18 +105,21 @@ export function Insights({
       {shown.length === 0 ? (
         <Card>
           <T tone="muted">
-            {days === WEEK ? 'Answer a few questions and I’ll show you here what they say about you, one card at a time.' : 'Nothing from the last 30 days yet. As you answer, I’ll add your cards here.'}
+            {days === WEEK
+              ? 'Answer a few questions and I’ll show you here what they say about you, one card at a time.'
+              : 'Nothing from the last 30 days yet. As you answer, I’ll add your cards here.'}
           </T>
         </Card>
       ) : (
         <>
-          {/* Nothing on Insights is folded away (Edwin, 2026-10-28): today's cards first, then earlier ones. */}
-          {[...fresh, ...earlier].map((c) => (
-            <Card key={c.questionId} style={{ gap: 20 }}>
+          {/* Nothing on Insights is folded away (Edwin, 2026-10-28): today's cards first, then earlier ones.
+              The newest leads, larger, with a warm edge; the rest follow under their own heading. */}
+          {[...fresh, ...earlier].map((c, i) => (
+            <Card key={c.questionId} style={[{ gap: 20 }, i === 0 && { borderTopWidth: 4, borderTopColor: p.brandLime }]}>
               <InsightCard
+                lead={i === 0}
                 card={c}
                 question={questions.find((q) => q.id === c.questionId)}
-                others={others?.find((s) => s.questionId === c.questionId && s.optionId === c.optionId) ?? null}
                 deeper={deeper}
                 practical={practical}
                 today={today}
@@ -131,9 +136,9 @@ export function Insights({
 }
 
 function InsightCard({
+  lead = false,
   card,
   question,
-  others,
   deeper,
   practical,
   today,
@@ -141,9 +146,9 @@ function InsightCard({
   pulseCounts,
   onExplore,
 }: {
+  lead?: boolean // the newest insight, which leads the page: a larger headline
   card: ForYouCard
   question?: Question
-  others: OthersStep | null
   deeper: boolean // Explore deeper: the Human Pulse, what it reached for, the other side, what helped others, keeping it
   practical: boolean // small practical ideas first: the step right after the reading
   today: string
@@ -152,6 +157,7 @@ function InsightCard({
   onExplore: (questionId: string) => void
 }) {
   const p = useTheme()
+  const pulse = usePagePulse(today)
   const reading = card.reveal ? splitReveal(card.reveal) : null
   return (
     <View style={{ gap: 14 }}>
@@ -167,20 +173,18 @@ function InsightCard({
         <>
           {reading && (
             <>
-              <T v="h2" style={{ fontSize: 19, lineHeight: 25 }}>
+              <T v="h2" style={lead ? { fontSize: 23, lineHeight: 29, letterSpacing: -0.4 } : { fontSize: 19, lineHeight: 25 }}>
                 {reading.headline}
               </T>
               {reading.body ? <T tone="text2">{reading.body}</T> : null}
             </>
           )}
-          {practical && card.step && <TryThis card={card} today={today} />}
-          {/* The shared Human Pulse for this answer, and Connect opened on this exact question. */}
+          {/* The shared Human Pulse for this answer on every card (Edwin, 2026-10-29): the short line in
+              Essential, the full one with Connect a tap away in Explore deeper. */}
+          {!deeper && !card.regional && <PulseNote text={pulse.answer(card.questionId, card.optionId)} />}
+          {practical && card.step && <TryThis card={card} today={today} pulse={card.regional ? null : pulse.step(card.questionId, card.optionId)} />}
           {deeper && pulseCounts && !card.regional && (
-            <PulseLine
-              line={notAloneFor(pulseCounts.questions, card.questionId, card.optionId)}
-              stale={pulseCounts.stale}
-              onExplore={() => onExplore(card.questionId)}
-            />
+            <PulseLine line={notAloneFor(pulseCounts.questions, card.questionId, card.optionId)} stale={pulseCounts.stale} onExplore={() => onExplore(card.questionId)} />
           )}
           {deeper && card.need && (
             <View style={{ gap: 6 }}>
@@ -204,16 +208,7 @@ function InsightCard({
               </T>
             </View>
           )}
-          {!practical && card.step && <TryThis card={card} today={today} />}
-          {deeper && card.step && others && (
-            <View style={{ gap: 2 }}>
-              <T v="label">What helped others</T>
-              <T v="small" tone="text2">
-                {othersLine(others)}
-              </T>
-              <T v="tiny">Only from people who chose to report back. Not a promise it will work for you.</T>
-            </View>
-          )}
+          {!practical && card.step && <TryThis card={card} today={today} pulse={card.regional ? null : pulse.step(card.questionId, card.optionId)} />}
           {deeper && <KeepCard card={card} />}
           <CardFit card={card} question={question} onRated={onRated} />
           <T v="tiny">Something to think about, never a diagnosis.</T>
@@ -226,7 +221,7 @@ function InsightCard({
 // TryThis offers the card's small step as the one you're trying, so Today
 // can ask how it went and My Journey and the Mirror can remember it (one
 // system for every step, Edwin, 2026-10-28), or keeps it for later in Reflect.
-function TryThis({ card, today }: { card: ForYouCard; today: string }) {
+function TryThis({ card, today, pulse }: { card: ForYouCard; today: string; pulse: string | null }) {
   const id = `insight-${card.questionId}`
   const step = card.step ?? ''
   const [state, setState] = useState<'open' | 'trying' | 'later'>(() =>
@@ -236,6 +231,12 @@ function TryThis({ card, today }: { card: ForYouCard; today: string }) {
     <View style={{ gap: 10 }}>
       <CardHead icon="bulb" tone="amber" title="Something you could try" />
       <T>{step}</T>
+      {pulse && (
+        <View style={{ gap: 2 }}>
+          <PulseNote text={pulse} />
+          <T v="tiny">Only from people who chose to report back. Not a promise it will work for you.</T>
+        </View>
+      )}
       {state === 'trying' ? (
         <T v="small" tone="muted">
           You’re trying this. I’ll ask you how it went on Today.

@@ -125,7 +125,8 @@ const hovered = (s: { pressed: boolean }) => !!(s as { hovered?: boolean }).hove
 // ---- buttons ----
 
 // 'sprout' is the logo's light leaf with navy words: the welcome's one button.
-type Kind = 'primary' | 'soft' | 'ghost' | 'outline' | 'text' | 'danger' | 'light' | 'sprout'
+// 'warm' is marigold with navy words, for a midnight Spotlight.
+type Kind = 'primary' | 'soft' | 'ghost' | 'outline' | 'text' | 'danger' | 'light' | 'sprout' | 'warm'
 
 export function Button({
   kind = 'primary',
@@ -160,6 +161,7 @@ export function Button({
     danger: { bg: 'transparent', fg: p.danger, border: p.danger },
     light: { bg: p.surface, fg: p.text, border: p.lineStrong },
     sprout: { bg: brand.sprout, fg: brand.onSprout },
+    warm: { bg: brand.marigold, fg: brand.onMarigold },
   }
   const l = look[kind]
   const off = disabled || busy
@@ -171,7 +173,7 @@ export function Button({
       accessibilityLabel={tr(label)}
       disabled={off}
       onPress={() => {
-        if (kind === 'primary' || kind === 'sprout') feel('tap')
+        if (kind === 'primary' || kind === 'sprout' || kind === 'warm') feel('tap')
         onPress()
       }}
       hitSlop={small ? 4 : undefined}

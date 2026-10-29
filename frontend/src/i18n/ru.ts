@@ -374,4 +374,15 @@ export const ru: Record<string, string> = {
   'When a few friends are here, your Outside Mirror can show how the people around you experience you.': 'Когда здесь появятся несколько друзей, твоё Внешнее Зеркало покажет, какими тебя видят люди вокруг.',
   'Explore shared experiences': 'Посмотреть общий опыт',
   'You’re not alone.': 'Ты не один.',
+  // The Human Pulse beside an item (Edwin, 2026-10-29)
+  '{same} of {total} chose the same': '{same} из {total} выбрали то же самое',
+  'A few others chose this too': 'Ещё несколько человек выбрали это',
+  'Of the {total} who tried this and reported back, {helped} said it helped': 'Из {total}, кто попробовал и рассказал, {helped} говорят, что это помогло',
+  '{total} reported back on this step': '{total} рассказали об этом шаге',
+  'of {total} people chose the same answer as you': 'из {total} человек выбрали тот же ответ, что и ты',
+  // Who someone is to you, on Connect (Edwin, 2026-10-29)
+  'Loved ones': 'Близкие',
+  'Workmates': 'Коллеги',
+  'Close friends': 'Близкие друзья',
+  'Classmates': 'Одноклассники',
 }

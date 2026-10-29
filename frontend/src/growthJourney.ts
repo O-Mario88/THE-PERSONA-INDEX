@@ -65,7 +65,10 @@ export function helpedReport(c: CheckIn): HelpedOutcome | null {
 // again?": the old check-in goes, so the next one asks about this try. The
 // note, in the person's own words, stays.
 export function tryAgain(questionId: string, today: string): void {
-  saveJSON(CHECKINS_KEY, all().filter((c) => c.questionId !== questionId))
+  saveJSON(
+    CHECKINS_KEY,
+    all().filter((c) => c.questionId !== questionId),
+  )
   restartMove(questionId, today).catch(() => {
     // offline: sent again the next time the app opens
   })
@@ -166,14 +169,15 @@ export function lifeAreas(moves: Move[], h: History, written: Reflection[], toda
 // "What you've discovered" (Edwin's brief, 2026-10-28): the readings you
 // said sound like you, or partly, newest first; never one you said wasn't
 // you, a heavy one or an intimate one.
-export type Discovery = { date: string; questionId: string; headline: string; verdict: 'me' | 'partly' }
+// optionId is the answer the discovery came from, for the Human Pulse beside it.
+export type Discovery = { date: string; questionId: string; optionId?: string; headline: string; verdict: 'me' | 'partly' }
 
 export function discoveries(h: History, textOf: (questionId: string) => CardText | null = cardTextOf, limit = 30): Discovery[] {
   return h.answers
     .flatMap((a) => {
       if ((a.verdict !== 'me' && a.verdict !== 'partly') || a.heavy || a.theme === 'intimacy') return []
       const reveal = textOf(a.questionId)?.reveal
-      return reveal ? [{ date: a.date, questionId: a.questionId, headline: splitReveal(reveal).headline, verdict: a.verdict }] : []
+      return reveal ? [{ date: a.date, questionId: a.questionId, ...(a.optionId ? { optionId: a.optionId } : {}), headline: splitReveal(reveal).headline, verdict: a.verdict }] : []
     })
     .sort((x, y) => y.date.localeCompare(x.date))
     .slice(0, limit)

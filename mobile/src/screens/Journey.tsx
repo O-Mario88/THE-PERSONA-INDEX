@@ -18,13 +18,14 @@ import { AREA_NAMES, dayMonth } from '@shared/reflect'
 import { DepthSwitch, useDeeper } from '../ui/Depth'
 import { Back, Button, Card, Page, T } from '../ui/kit'
 import { AREA_ICON, AREA_TONE, CardHead, Disc } from '../ui/parts'
+import { PulseNote, usePagePulse } from '../ui/Pulse'
 import { JourneyLine } from './TodayCards'
 
 // Explore deeper shows more of each; Essential the latest few.
 const SHOWN = { deeper: { found: 6, tried: 6, changed: 3, timeline: 20 }, essential: { found: 2, tried: 3, changed: 1, timeline: 5 } }
 
 // One discovery, with "Why am I seeing this?": the answer it came from.
-function Discovered({ d }: { d: Discovery }) {
+function Discovered({ d, pulse }: { d: Discovery; pulse: string | null }) {
   const [open, setOpen] = useState(false)
   const t = cardTextOf(d.questionId)
   return (
@@ -33,6 +34,7 @@ function Discovered({ d }: { d: Discovery }) {
       <T v="small" tone="muted">
         {`${dayMonth(d.date)} · ${d.verdict === 'me' ? 'You said: That’s me' : 'You said: Partly'}`}
       </T>
+      <PulseNote text={pulse} style={{ marginTop: 4 }} />
       {t && (
         <>
           <Button small kind="text" label={open ? 'Hide why' : 'Why am I seeing this?'} onPress={() => setOpen(!open)} style={{ alignSelf: 'flex-start' }} />
@@ -53,6 +55,8 @@ export function Journey({ today, onBack, onWrite }: { today: string; onBack: () 
   const [h] = useState(loadHistory)
   const [written] = useState(reflections)
   const [deeper, setDeeper] = useDeeper('journey')
+  // The Human Pulse beside each discovery and step (Edwin, 2026-10-29).
+  const pulse = usePagePulse(today)
   const shown = deeper ? SHOWN.deeper : SHOWN.essential
   const newest = [...moves].sort((a, b) => b.date.localeCompare(a.date))
   // The open step: not checked in on yet, or kept for later.
@@ -99,7 +103,7 @@ export function Journey({ today, onBack, onWrite }: { today: string; onBack: () 
         {found.length === 0 ? (
           <T tone="text2">When a reading sounds like you, tap “That’s me” under it, and it’s kept here.</T>
         ) : (
-          found.slice(0, shown.found).map((d) => <Discovered key={d.questionId} d={d} />)
+          found.slice(0, shown.found).map((d) => <Discovered key={d.questionId} d={d} pulse={pulse.answer(d.questionId, d.optionId)} />)
         )}
       </Card>
 
@@ -121,6 +125,7 @@ export function Journey({ today, onBack, onWrite }: { today: string; onBack: () 
                     {`Your note: ${note}`}
                   </T>
                 ) : null}
+                {!m.local && <PulseNote text={pulse.step(m.questionId, m.optionId)} style={{ marginTop: 4 }} />}
               </View>
             )
           })

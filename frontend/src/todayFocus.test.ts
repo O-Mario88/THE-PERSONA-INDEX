@@ -31,10 +31,10 @@ describe('the remembered reflection', () => {
     expect(m).toEqual({ kind: 'writing', id: 'r-2026-10-27', date: '2026-10-27', when: 'Yesterday', text: 'I want to stop feeling guilty for resting.', area: 'self' })
   })
 
-  it('falls back to your last card, with what I noticed', () => {
+  it('falls back to your last card, with what I noticed, and the answer it came from for the Human Pulse', () => {
     card('2026-10-26', 'q1')
-    const m = lastMemory('2026-10-28', { answers: [answer('2026-10-26', 'q1')], skips: [] }, [])
-    expect(m).toEqual({ kind: 'answer', date: '2026-10-26', when: 'On Monday', label: 'Take the afternoon off', noticed: 'You protect your rest.', theme: 'rest' })
+    const m = lastMemory('2026-10-28', { answers: [answer('2026-10-26', 'q1', { optionId: 'a' })], skips: [] }, [])
+    expect(m).toEqual({ kind: 'answer', date: '2026-10-26', when: 'On Monday', label: 'Take the afternoon off', noticed: 'You protect your rest.', theme: 'rest', questionId: 'q1', optionId: 'a' })
   })
 
   it('takes whichever is newer, and writing when they are from the same day', () => {
@@ -58,7 +58,9 @@ describe('the remembered reflection', () => {
 
 describe('tying today’s questions to it', () => {
   it('says so when one of today’s questions comes back to the same part of life', () => {
-    expect(linkLine({ kind: 'answer', date: '', when: '', label: '', noticed: '', theme: 'rest' }, ['money', 'rest'])).toBe('One of today’s questions comes back to rest and free time.')
+    expect(linkLine({ kind: 'answer', date: '', when: '', label: '', noticed: '', theme: 'rest', questionId: 'q1' }, ['money', 'rest'])).toBe(
+      'One of today’s questions comes back to rest and free time.',
+    )
     expect(linkLine({ kind: 'writing', id: 'r', date: '', when: '', text: '', area: 'family' }, ['relatives'])).toBe('One of today’s questions comes back to relatives.')
   })
 
@@ -94,7 +96,13 @@ describe('one quiet next step', () => {
   it('puts a small practical idea before something to notice, for someone who asked for practical ideas', () => {
     card('2026-10-27', 'q1')
     saveJSON('pi.insight.q1', { date: '2026-10-27', questionId: 'q1', prompt: 'P', label: 'L', reveal: 'R.', step: 'Take one short walk today.' })
-    const h = { answers: [{ ...answer('2026-10-27', 'q1'), optionId: 'o1' }, { ...answer('2026-10-28', 'q2'), need: 'calm' as const }], skips: [] }
+    const h = {
+      answers: [
+        { ...answer('2026-10-27', 'q1'), optionId: 'o1' },
+        { ...answer('2026-10-28', 'q2'), need: 'calm' as const },
+      ],
+      skips: [],
+    }
     expect(quietStep('2026-10-28', h, [])?.kind).toBe('carry')
     expect(quietStep('2026-10-28', h, [], 'practical')?.kind).toBe('idea')
   })
@@ -152,7 +160,9 @@ describe('from your journey', () => {
 describe('the line under the greeting', () => {
   it('names the day and what you were thinking about, never your words themselves', () => {
     expect(personalLine(3, { kind: 'writing', id: 'r', date: '', when: 'Yesterday', text: 'Private words.', area: 'self' })).toBe('Day 3 with you. Yesterday, you wrote about yourself.')
-    expect(personalLine(5, { kind: 'answer', date: '', when: 'On Monday', label: 'L', noticed: 'N', theme: 'rest' })).toBe('Day 5 with you. On Monday, your answers touched on rest and free time.')
+    expect(personalLine(5, { kind: 'answer', date: '', when: 'On Monday', label: 'L', noticed: 'N', theme: 'rest', questionId: 'q1' })).toBe(
+      'Day 5 with you. On Monday, your answers touched on rest and free time.',
+    )
   })
 
   it('keeps to the day alone when there is nothing to bring back, and says nothing on the first day', () => {

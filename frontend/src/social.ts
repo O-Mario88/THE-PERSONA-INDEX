@@ -23,7 +23,24 @@ export type AccountDetails = { account: AccountView; logins: LoginView[]; sessio
 
 export type Tag = 'work' | 'family' | 'school' | 'friends'
 export const TAGS: Tag[] = ['work', 'family', 'school', 'friends']
-export const TAG_NAMES: Record<Tag, string> = { work: 'Work', family: 'Family', school: 'School', friends: 'Friends' }
+// The tags in Edwin's words (2026-10-29): who someone is to you. The ids the
+// server keeps stay the same.
+export const TAG_NAMES: Record<Tag, string> = { work: 'Workmates', family: 'Loved ones', school: 'Classmates', friends: 'Close friends' }
+
+// Connect is the one place people share anything, and they share it with
+// the people they choose: one tap picks a whole group, and they can add or
+// take away anyone after. Someone you muted is never picked by a group.
+export type Audience = 'loved' | 'work' | 'close'
+export const AUDIENCES: { id: Audience; label: string; tag: Tag }[] = [
+  { id: 'loved', label: 'Loved ones', tag: 'family' },
+  { id: 'work', label: 'Workmates', tag: 'work' },
+  { id: 'close', label: 'Close friends', tag: 'friends' },
+]
+
+export function audienceOf(friends: FriendView[], audience: Audience): string[] {
+  const tag = AUDIENCES.find((a) => a.id === audience)?.tag
+  return friends.filter((f) => f.tag === tag && !f.muted).map((f) => f.id)
+}
 
 export type FriendView = { id: string; name: string; handle?: string; tag: Tag; since: string; muted?: boolean; active: boolean; connect: boolean }
 export type RoomView = { code: string; tag: Tag; inside: number; expires: string; host?: string }
@@ -243,10 +260,8 @@ export const outsideMirror = () => call<OutsideMirror>('/api/friends/mirror')
 export const getNods = (date: string) => call<NodsView>(`/api/nods?date=${date}`)
 export const sendNod = (to: string, card: number, date: string) => call<{ status: string }>('/api/nods', json('POST', { to, card, date }))
 export const getTogethers = () => call<TogetherView[]>('/api/together')
-export const askTogether = (friendId: string, questionId: string, optionId: string) =>
-  call<{ id: string }>('/api/together', json('POST', { friendId, questionId, optionId }))
-export const answerTogether = (id: string, optionId: string) =>
-  call<{ mine: string; theirs: string }>(`/api/together/${encodeURIComponent(id)}`, json('POST', { optionId }))
+export const askTogether = (friendId: string, questionId: string, optionId: string) => call<{ id: string }>('/api/together', json('POST', { friendId, questionId, optionId }))
+export const answerTogether = (id: string, optionId: string) => call<{ mine: string; theirs: string }>(`/api/together/${encodeURIComponent(id)}`, json('POST', { optionId }))
 export const leaveTogether = (id: string) => call<void>(`/api/together/${encodeURIComponent(id)}`, json('DELETE'))
 
 // ---- Closer Together (the new Connect, backend/closer.go) ----

@@ -10,6 +10,7 @@ import { recalledChoice, SKIPPED, type Question } from '@shared/api'
 import { adviceFor, levelLine } from '@shared/advice'
 import { isSaturday, opensAt } from '@shared/day'
 import { checkInFor } from '@shared/growthJourney'
+import { cardTextOf } from '@shared/insights'
 import { sharedNeed } from '@shared/glimpse'
 import { HELPLINE_LINE } from '@shared/helplineText'
 import { movesOn, startMove, startedInEvening, type Move } from '@shared/moves'
@@ -24,7 +25,8 @@ import { sideOf, TRAITS } from '@shared/traits'
 import { GLIMPSE_BALANCED, GLIMPSE_NEXT, QUIET_DAY, ROUTE_ASK, ROUTE_REPLIES, ROUTE_WORDS, routeLead, SUNDAY_LINE } from '@shared/words'
 import { font, radius, useTheme } from '../theme'
 import { B, Button, Chip, feel, Option, T, Tinted } from '../ui/kit'
-import { themeIcon, WeekTiles } from '../ui/parts'
+import { CardHead, themeIcon, WeekTiles } from '../ui/parts'
+import { PulseNote, usePagePulse } from '../ui/Pulse'
 import { CheckIn } from './CheckIn'
 import { OwnIdea } from './QuestionCard'
 
@@ -117,6 +119,7 @@ export function Close(props: Props) {
           {HELPLINE_LINE}
         </T>
       )}
+      {!heavy && <SittingPulse answers={mine} date={date} />}
 
       {props.sitting === 'morning' ? (
         <>
@@ -153,6 +156,29 @@ export function Close(props: Props) {
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
+// The Human Pulse for this sitting's answers (Edwin, 2026-10-29): how many
+// people chose the same, for each answer that has honest counts yet. Never a
+// heavy, regional or intimate answer; nothing at all until there is a number.
+function SittingPulse({ answers, date }: { answers: AnswerRecord[]; date: string }) {
+  const pulse = usePagePulse(date)
+  const rows = answers
+    .filter((a) => !a.heavy && !a.regional && a.optionId && a.theme !== 'intimacy')
+    .map((a) => ({ id: a.questionId, label: cardTextOf(a.questionId)?.label, text: pulse.answer(a.questionId, a.optionId) }))
+    .filter((r): r is { id: string; label: string; text: string } => !!r.label && !!r.text)
+  if (rows.length === 0) return null
+  return (
+    <Tinted style={{ gap: 12 }}>
+      <CardHead icon="people" tone="blue" title="You’re not alone" />
+      {rows.map((r) => (
+        <View key={r.id} style={{ gap: 2 }}>
+          <T bold>“{r.label}”</T>
+          <PulseNote text={r.text} />
+        </View>
+      ))}
+    </Tinted>
+  )
+}
+
 // One thing worth trying, from this sitting's own answers (shared
 // sittingClose.ts): the step already chosen, or one offered with I'll try it,
 // your own idea or Not now. Otherwise, the quiet line passed in, which also
@@ -162,14 +188,17 @@ function TryOne({ date, questions, sitting, otherwise }: { date: string; questio
   const [picked] = useState(() => stepToTry(picksIn(questions)))
   const [think] = useState(() => loadPrefs().style === 'think')
   const [state, setState] = useState<'open' | 'trying' | 'own' | 'planned' | 'later'>(picked?.kind === 'trying' ? 'trying' : 'open')
+  const pulse = usePagePulse(date)
   if (!picked || (think && picked.kind === 'offer' && otherwise)) return <>{otherwise}</>
   const offer = picked.kind === 'offer' ? picked : null
   const option = offer ? questions.find((q) => q.id === offer.questionId)?.options.find((o) => o.id === offer.optionId) : undefined
   const step = offer ? offer.step : picked.kind === 'trying' ? picked.move.step : ''
+  const source = offer ? (offer.local ? null : offer) : picked.kind === 'trying' && !picked.move.local ? picked.move : null
   return (
     <Tinted style={{ gap: 10 }}>
       <T v="eyebrow">{state === 'trying' ? 'You’re trying' : 'One thing worth trying'}</T>
       <T v="h3">{step}</T>
+      {source && <PulseNote text={pulse.step(source.questionId, source.optionId)} />}
       {state === 'open' && offer && (
         <View style={{ flexDirection: 'row', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
           <Button

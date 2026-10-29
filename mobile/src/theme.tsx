@@ -152,6 +152,8 @@ export const brand = {
   onNight: '#ffffff',
   onNight2: '#dce4ea',
   sprout: '#c1e863', // the logo's light leaf: the progress bar and the welcome button
+  marigold: '#f4a258', // the button on a midnight Spotlight, in light and dark alike
+  onMarigold: '#013d5a', // navy words on orange, never black (Edwin, 2026-10-28)
   onSprout: '#0b1c2c',
   track: '#e9e5dd', // the empty part of the bar, on the sunrise
   ink: '#12283a', // words on the sunrise

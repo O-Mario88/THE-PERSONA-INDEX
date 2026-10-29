@@ -2,12 +2,18 @@
 // your own answers that others shared, with real anonymous counts. It works
 // with no friends at all. Opened from an insight or a question, the question
 // you were reading comes first.
-import { View } from 'react-native'
-import { pulseWords, sharedMoments, type PulseCounts } from '@shared/humanPulse'
+import { Text, View } from 'react-native'
+import { pulseShort, pulseWords, sharedMoments, type PulseCounts } from '@shared/humanPulse'
+import { trf } from '@shared/i18n'
 import { cardTextOf } from '@shared/insights'
 import { loadHistory } from '@shared/profile'
-import { Button, Card, Hairline, T } from '../ui/kit'
+import { count } from '@shared/pulse'
+import { brand, font } from '../theme'
+import { Icon } from '../ui/Icon'
+import { Button, Card, RowGroup, T } from '../ui/kit'
+import { Spotlight } from '../ui/Layout'
 import { CardHead } from '../ui/parts'
+import { PulseNote } from '../ui/Pulse'
 
 const SHOWN = 3
 
@@ -24,36 +30,65 @@ export function NotAloneSection({ pulse, focus, onReflect }: { pulse: PulseCount
   }
   const moments = pulse ? sharedMoments(pulse.questions, loadHistory()) : []
   const ordered = [...moments.filter((m) => m.questionId === focus), ...moments.filter((m) => m.questionId !== focus)].slice(0, SHOWN)
+  const [lead, ...rest] = ordered
+  const leadCard = lead ? cardTextOf(lead.questionId) : null
   return (
-    <Card style={{ gap: 14 }}>
-      <View style={{ gap: 6 }}>
-        <T v="label">For you today</T>
-        <CardHead icon="people" tone="blue" v="h2" title="You’re not alone in figuring things out" />
-      </View>
-      {ordered.length === 0 ? (
-        <T tone="text2">Once 20 people have answered a question you answered, you’ll see here how many chose the same as you.</T>
-      ) : (
-        ordered.map((m, i) => {
-          const card = cardTextOf(m.questionId)
-          return (
-            <View key={m.questionId} style={{ gap: 4 }}>
-              {i > 0 && <Hairline style={{ marginBottom: 10 }} />}
-              {m.questionId === focus && <T v="label" tone="accent">The question you were reading</T>}
-              {card && (
-                <T v="small" tone="muted">
-                  {card.prompt}
+    <View style={{ gap: 14 }}>
+      {/* The home of the Human Pulse: one big, honest number first (review, 2026-10-28). */}
+      <Spotlight>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Icon name="people" size={18} color={brand.marigold} />
+          <T v="label" tone="onNavy2">
+            {lead?.questionId === focus ? 'The question you were reading' : 'For you today'}
+          </T>
+        </View>
+        {lead && leadCard ? (
+          <View style={{ gap: 6 }}>
+            {lead.line.kind === 'count' ? (
+              <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
+                <Text style={{ fontFamily: font.bold, fontSize: 44, lineHeight: 50, letterSpacing: -1, color: brand.marigold }}>{count(lead.line.same)}</Text>
+                <T tone="onNavy" bold style={{ fontSize: 16, lineHeight: 21, flexShrink: 1 }}>
+                  {trf('of {total} people chose the same answer as you', { total: count(lead.line.total) })}
                 </T>
-              )}
-              {card && <T bold>You chose “{card.label}”.</T>}
-              <T tone="text2">{pulseWords(m.line)}</T>
-            </View>
-          )
-        })
+              </View>
+            ) : (
+              <T v="h2" tone="onNavy">
+                {pulseWords(lead.line)}
+              </T>
+            )}
+            <T tone="onNavy2">
+              {leadCard.prompt} You chose “{leadCard.label}”.
+            </T>
+          </View>
+        ) : (
+          <View style={{ gap: 6 }}>
+            <T v="h2" tone="onNavy">
+              You’re not alone in figuring things out
+            </T>
+            <T tone="onNavy2">Once 20 people have answered a question you answered, you’ll see here how many chose the same as you.</T>
+          </View>
+        )}
+        {lead && onReflect && <Button small kind="warm" icon="pencil" label="Reflect on this, privately" onPress={onReflect} style={{ alignSelf: 'flex-start' }} />}
+      </Spotlight>
+      {rest.length > 0 && (
+        <RowGroup>
+          {rest.map((m) => {
+            const card = cardTextOf(m.questionId)
+            return (
+              <View key={m.questionId} style={{ gap: 4, paddingVertical: 14, paddingHorizontal: 16 }}>
+                {card && (
+                  <T v="small" tone="muted">
+                    {card.prompt}
+                  </T>
+                )}
+                {card && <T bold>You chose “{card.label}”.</T>}
+                <PulseNote text={pulseShort(m.line, (t, v = {}) => trf(t, v))} />
+              </View>
+            )
+          })}
+        </RowGroup>
       )}
-      {ordered.length > 0 && onReflect && <Button small kind="text" icon="pencil" label="Reflect on this, privately" onPress={onReflect} style={{ alignSelf: 'flex-start' }} />}
-      <T v="tiny">
-        {pulse && pulse.stale ? 'From the last time you were online. ' : ''}People who chose the same answer, not necessarily people who feel the same.
-      </T>
-    </Card>
+      <T v="tiny">{pulse && pulse.stale ? 'From the last time you were online. ' : ''}People who chose the same answer, not necessarily people who feel the same.</T>
+    </View>
   )
 }

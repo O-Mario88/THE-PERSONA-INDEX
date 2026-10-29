@@ -135,6 +135,11 @@ describe('what you have discovered', () => {
     ])
   })
 
+  it('keeps the answer each discovery came from, so the Human Pulse can sit beside it', () => {
+    const h = { answers: [{ ...answer('2026-10-20', 'q1', 'work-career'), optionId: 'b', verdict: 'me' as const }], skips: [] }
+    expect(discoveries(h, text)[0].optionId).toBe('b')
+  })
+
   it('puts discoveries on the timeline with the steps', () => {
     const items = journeyHistory([move('2026-10-26', 'q9', 'Ask for help')], [], [], 30, [{ date: '2026-10-27', questionId: 'q1', headline: 'You protect your rest.', verdict: 'me' }])
     expect(items[0]).toEqual({ date: '2026-10-27', title: 'You said “You protect your rest” sounds like you' })

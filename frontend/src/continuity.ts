@@ -13,20 +13,27 @@ import { addDays } from './storage'
 
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 // whenWas names a day in the past week: "Yesterday", or "On Monday".
-export const whenWas = (date: string, today: string): string =>
-  date === addDays(today, -1) ? 'Yesterday' : `On ${WEEKDAYS[new Date(`${date}T00:00:00Z`).getUTCDay()]}`
+export const whenWas = (date: string, today: string): string => (date === addDays(today, -1) ? 'Yesterday' : `On ${WEEKDAYS[new Date(`${date}T00:00:00Z`).getUTCDay()]}`)
 
 // The most recent answer before today, from the past week, that had a card:
 // what the person chose and what the app noticed then. Null after a heavy
 // answer, so a hard day is never brought back unasked.
-export function lastCard(today: string, h: History): { date: string; label: string; noticed: string; theme?: string } | null {
+// questionId and optionId name the answer, for the Human Pulse beside it.
+export function lastCard(today: string, h: History): { date: string; label: string; noticed: string; theme?: string; questionId: string; optionId?: string } | null {
   const from = addDays(today, -7)
   const earlier = [...h.answers].filter((a) => a.date < today && a.date >= from).sort((a, b) => b.date.localeCompare(a.date))
   if (earlier[0]?.heavy) return null
   for (const a of earlier) {
     const card = cardTextOf(a.questionId)
     if (!card || card.heavy || !card.reveal) continue
-    return { date: card.date, label: card.label, noticed: splitReveal(card.reveal).headline, ...(card.theme ? { theme: card.theme } : {}) }
+    return {
+      date: card.date,
+      label: card.label,
+      noticed: splitReveal(card.reveal).headline,
+      ...(card.theme ? { theme: card.theme } : {}),
+      questionId: a.questionId,
+      ...(a.optionId ? { optionId: a.optionId } : {}),
+    }
   }
   return null
 }

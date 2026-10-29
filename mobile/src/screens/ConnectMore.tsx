@@ -17,6 +17,8 @@ import { count } from '@shared/pulse'
 import { ringOf, type Rings } from '@shared/rings'
 import {
   getCircle,
+  AUDIENCES,
+  audienceOf,
   getCommon,
   getReachOuts,
   getShares,
@@ -498,12 +500,7 @@ export function WhatHelped() {
 
       {sent.length > 0 && (
         <View style={{ gap: 10 }}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityState={{ expanded: showMine }}
-            onPress={() => setShowMine(!showMine)}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
-          >
+          <Pressable accessibilityRole="button" accessibilityState={{ expanded: showMine }} onPress={() => setShowMine(!showMine)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <T bold>What you’ve shared ({sent.length})</T>
             <View style={{ transform: [{ rotate: showMine ? '90deg' : '0deg' }] }}>
               <Icon name="chevron" size={16} color={p.text} />
@@ -516,13 +513,7 @@ export function WhatHelped() {
                 <T v="small" tone="muted">
                   {themeName(s.theme)} · with {s.to.length ? s.to.join(', ') : 'no one now'}
                 </T>
-                <Button
-                  kind="text"
-                  small
-                  label="Withdraw"
-                  onPress={() => withdrawShare(s.id).then(refresh, () => setError('That didn’t go through.'))}
-                  style={{ alignSelf: 'flex-start' }}
-                />
+                <Button kind="text" small label="Withdraw" onPress={() => withdrawShare(s.id).then(refresh, () => setError('That didn’t go through.'))} style={{ alignSelf: 'flex-start' }} />
               </View>
             ))}
         </View>
@@ -545,7 +536,11 @@ function HelpedCard({ share: s, title }: { share: ShareView; title: string }) {
           </T>
         </View>
       </View>
-      {title ? <T v="eyebrow" tone="muted">{title}</T> : null}
+      {title ? (
+        <T v="eyebrow" tone="muted">
+          {title}
+        </T>
+      ) : null}
       <T style={{ fontFamily: font.semibold, fontSize: 18, lineHeight: 24 }}>“{s.text}”</T>
       {s.why ? (
         <View style={{ flexDirection: 'row', gap: 10 }}>
@@ -695,6 +690,16 @@ export function ShareComposer({ kind, text: initial, onDone, onCancel }: { kind:
       <T v="small" bold>
         Who sees it
       </T>
+      {/* A whole group in one tap: loved ones, workmates or close friends (Edwin, 2026-10-29). */}
+      {friends && friends.length > 0 && AUDIENCES.some((a) => audienceOf(friends, a.id).length > 0) && (
+        <Chips>
+          {AUDIENCES.filter((a) => audienceOf(friends, a.id).length > 0).map((a) => {
+            const ids = audienceOf(friends, a.id)
+            const all = ids.every((id) => to.includes(id))
+            return <Chip key={a.id} label={a.label} icon="people" on={all} onPress={() => setTo(all ? to.filter((x) => !ids.includes(x)) : [...new Set([...to, ...ids])])} />
+          })}
+        </Chips>
+      )}
       {friends === null ? (
         <T v="small" tone="muted">
           Finding your circle…
@@ -770,7 +775,9 @@ export function ReachOutPicker({ kind, onDone, onCancel }: { kind: ReachKind; on
           Add someone to your circle first.
         </T>
       )}
-      {friends?.map((f) => <PickFriend key={f.id} radio name={f.name} on={to === f.id} onPress={() => setTo(f.id)} />)}
+      {friends?.map((f) => (
+        <PickFriend key={f.id} radio name={f.name} on={to === f.id} onPress={() => setTo(f.id)} />
+      ))}
       <T v="small" bold>
         Say
       </T>
@@ -854,12 +861,7 @@ export function NodPicker({ date, title }: { date: string; title?: string }) {
       </T>
       <Chips>
         {friends.map((f) => (
-          <Chip
-            key={f.id}
-            label={`${f.name}${already.includes(f.id) ? ' · sent' : ''}`}
-            on={to === f.id}
-            onPress={already.includes(f.id) ? undefined : () => setTo(to === f.id ? null : f.id)}
-          />
+          <Chip key={f.id} label={`${f.name}${already.includes(f.id) ? ' · sent' : ''}`} on={to === f.id} onPress={already.includes(f.id) ? undefined : () => setTo(to === f.id ? null : f.id)} />
         ))}
       </Chips>
       {to && (

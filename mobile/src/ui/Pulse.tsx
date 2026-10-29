@@ -2,10 +2,14 @@
 // frontend/src/humanPulse.ts): one line with the same words everywhere, and
 // one fetch a day shared by every page that asks.
 import { useEffect, useState } from 'react'
-import { View } from 'react-native'
-import { loadPulse, pulseWords, type PulseCounts } from '@shared/humanPulse'
+import { Text, View, type StyleProp, type ViewStyle } from 'react-native'
+import { answerPulse, loadPulse, pulseWords, stepPulse, type PulseCounts } from '@shared/humanPulse'
+import { tr, trf } from '@shared/i18n'
 import type { NotAloneLine } from '@shared/insights'
-import { useTheme } from '../theme'
+import { getOthersHelped, type OthersStep } from '@shared/mirrorStory'
+import { loadPrefs, pulseOn } from '@shared/prefs'
+import { font, useTheme } from '../theme'
+import { Icon } from './Icon'
 import { Button, T } from './kit'
 import { Disc } from './parts'
 
@@ -24,6 +28,50 @@ export function usePulse(date: string | undefined, on: boolean): PulseCounts | n
     }
   }, [date, on])
   return on ? counts : null
+}
+
+// The What helped totals for steps, fetched once and shared by every page.
+let othersLoading: Promise<OthersStep[] | null> | null = null
+export function useOthersSteps(on: boolean): OthersStep[] | null {
+  const [steps, setSteps] = useState<OthersStep[] | null>(null)
+  useEffect(() => {
+    if (!on) return
+    let live = true
+    if (!othersLoading) othersLoading = getOthersHelped()
+    othersLoading.then((s) => live && setSteps(s))
+    return () => {
+      live = false
+    }
+  }, [on])
+  return on ? steps : null
+}
+
+// usePagePulse gives a page the Human Pulse for any item built from one of
+// the person's answers (Edwin, 2026-10-29: every item you can relate to
+// others carries it): how many chose the same answer, and what the people
+// who tried a step found. Nothing while the Pulse is switched off on You.
+export function usePagePulse(today: string | undefined) {
+  const on = pulseOn(loadPrefs())
+  const counts = usePulse(today, on)
+  const steps = useOthersSteps(on)
+  const t = (template: string, vars: Record<string, string | number> = {}) => trf(template, vars)
+  return {
+    answer: (questionId: string, optionId?: string) => answerPulse(counts?.questions ?? null, questionId, optionId, t),
+    step: (questionId: string, optionId?: string) => stepPulse(steps, questionId, optionId, t),
+  }
+}
+
+// PulseNote: the Pulse beside an item, one quiet line with the people icon.
+// Nothing at all when there is nothing honest to say.
+export function PulseNote({ text, style }: { text: string | null; style?: StyleProp<ViewStyle> }) {
+  const p = useTheme()
+  if (!text) return null
+  return (
+    <View accessible accessibilityLabel={`${tr('You’re not alone.')} ${text}`} style={[{ flexDirection: 'row', alignItems: 'center', gap: 6 }, style]}>
+      <Icon name="people" size={15} color={p.blue} />
+      <Text style={{ flex: 1, fontFamily: font.medium, fontSize: 13, lineHeight: 17, color: p.text2 }}>{text}</Text>
+    </View>
+  )
 }
 
 // PulseLine: "37 of 140 people chose the same answer as you.", with a way to

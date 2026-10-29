@@ -2,7 +2,7 @@
 // coming, and today's read. Each draws only from your own days and shows
 // nothing rather than something generic.
 import { useState } from 'react'
-import { View } from 'react-native'
+import { Pressable, View } from 'react-native'
 import { tryAgain } from '@shared/growthJourney'
 import { startMove } from '@shared/moves'
 import type { ReflectionArea } from '@shared/notebook'
@@ -13,8 +13,11 @@ import type { Read } from '@shared/reads/types'
 import { AREA_NAMES } from '@shared/reflect'
 import { load, loadJSON, saveJSON } from '@shared/storage'
 import { nextMirror, quietStep, type QuietStep } from '@shared/todayFocus'
-import { radius, useTheme } from '../theme'
-import { Button, Card, Chip, RowLink, T } from '../ui/kit'
+import { lift, radius, useTheme } from '../theme'
+import { Button, Card, Chip, feel, RowLink, T } from '../ui/kit'
+import { Icon } from '../ui/Icon'
+import { Section } from '../ui/Layout'
+import { PulseNote, usePagePulse } from '../ui/Pulse'
 import { CheckIn } from './CheckIn'
 
 // One quiet next step: how a step you said you'd try went, else one thing to
@@ -29,11 +32,15 @@ const STEP_LABEL: Record<QuietStep['kind'], string> = {
 export function QuietStepCard({ today, onJourney }: { today: string; onJourney: () => void }) {
   const [step] = useState(() => quietStep(today, loadHistory(), undefined, loadPrefs().style))
   const [said, setSaid] = useState<string | null>(null)
+  const pulse = usePagePulse(today)
   if (!step) return null
+  // What the people who tried the same step found (the Human Pulse, Edwin 2026-10-29).
+  const source = step.kind === 'idea' ? step : step.kind === 'carry' ? null : step.move.local ? null : step.move
   return (
     <Card style={{ gap: 10 }}>
       <T v="label">{STEP_LABEL[step.kind]}</T>
       {said ? <T tone="text2">{said}</T> : <StepBody today={today} step={step} onSaid={setSaid} />}
+      {source && <PulseNote text={pulse.step(source.questionId, source.optionId)} />}
       <Button small kind="text" label="See your journey" iconAfter="arrow" onPress={onJourney} style={{ alignSelf: 'flex-start' }} />
     </Card>
   )
@@ -106,8 +113,7 @@ export function MirrorCard({ today, onWrite, onInsights }: { today: string; onWr
   const when = m.days === 1 ? 'tomorrow' : `in ${m.days} days`
   const dots = [...m.answered, ...Array<boolean>(m.days).fill(false)]
   return (
-    <Card style={{ gap: 12 }}>
-      <T v="label">{m.first ? `Your first Mirror · ${when}` : `Your Sunday Mirror · ${when}`}</T>
+    <Section title={m.first ? `Your first Mirror · ${when}` : `Your Sunday Mirror · ${when}`} icon="mirror">
       <View accessibilityLabel={`${m.answered.filter(Boolean).length} days answered this week`} style={{ flexDirection: 'row', gap: 6 }}>
         {dots.map((d, i) => (
           <View key={i} style={{ flex: 1, height: 8, borderRadius: radius.pill, backgroundColor: d ? p.lime : p.surface3 }} />
@@ -116,7 +122,7 @@ export function MirrorCard({ today, onWrite, onInsights }: { today: string; onWr
       <T tone="text2">{m.lean ? `So far, your answers lean towards ${m.lean}.` : 'Each day you answer adds to it. A missed day takes nothing away.'}</T>
       {!m.first && <JourneyLine today={today} onWrite={onWrite} />}
       <Button small kind="text" label="See what I’ve noticed" iconAfter="arrow" onPress={onInsights} style={{ alignSelf: 'flex-start' }} />
-    </Card>
+    </Section>
   )
 }
 
@@ -165,6 +171,47 @@ export function JourneyLine({ today, onWrite }: { today: string; onWrite: (promp
 
 const OPENED = 'pi.read.'
 
+// A reading as an editorial tile: a warm square with the book on the left,
+// the title beside it.
+function ReadTile({ title, label, onPress }: { title: string; label: string; onPress: () => void }) {
+  const p = useTheme()
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${label}. ${title}`}
+      onPress={() => {
+        feel('tap')
+        onPress()
+      }}
+      style={(s) => [
+        {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 14,
+          padding: 14,
+          borderRadius: radius.lg,
+          backgroundColor: p.surface,
+          borderColor: p.line,
+          borderWidth: p.dark ? 1 : 0,
+          opacity: s.pressed ? 0.85 : 1,
+        },
+        lift(p),
+      ]}
+    >
+      <View style={{ width: 56, height: 56, borderRadius: radius.md, backgroundColor: p.amberWash, alignItems: 'center', justifyContent: 'center' }}>
+        <Icon name="notebook" size={24} color={p.amberInk} />
+      </View>
+      <View style={{ flex: 1, gap: 3 }}>
+        <T v="label">{label}</T>
+        <T v="h3" lines={2}>
+          {title}
+        </T>
+      </View>
+      <Icon name="chevron" size={18} color={p.muted} />
+    </Pressable>
+  )
+}
+
 // Today's read: a card in the wide screen's right-hand column, one quiet row
 // at the foot of the phone's Today.
 export function TodaysRead({ date, themes, intimacy, onRead, compact }: { date: string; themes: string[]; intimacy: boolean; onRead: (r: Read) => void; compact?: boolean }) {
@@ -181,7 +228,7 @@ export function TodaysRead({ date, themes, intimacy, onRead, compact }: { date: 
   )
   if (!read) return null
   const again = load(OPENED + read.slug) === date
-  if (compact) return <RowLink label={read.title} sub={`Something to read · ${minutes(read)} min`} onPress={() => onRead(read)} />
+  if (compact) return <ReadTile title={read.title} label={`Something to read · ${minutes(read)} min`} onPress={() => onRead(read)} />
   return (
     <Card style={{ gap: 10 }}>
       <T v="label">{`Something to read · ${minutes(read)} min`}</T>

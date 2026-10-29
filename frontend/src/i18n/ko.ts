@@ -374,4 +374,15 @@ export const ko: Record<string, string> = {
   'When a few friends are here, your Outside Mirror can show how the people around you experience you.': '친구 몇 명이 함께하면, 바깥 미러가 주변 사람들이 당신을 어떻게 느끼는지 보여 줄 수 있어요.',
   'Explore shared experiences': '함께 나눈 경험 살펴보기',
   'You’re not alone.': '당신은 혼자가 아니에요.',
+  // The Human Pulse beside an item (Edwin, 2026-10-29)
+  '{same} of {total} chose the same': '{total}명 중 {same}명이 같은 답을 골랐어요',
+  'A few others chose this too': '몇몇 사람도 같은 답을 골랐어요',
+  'Of the {total} who tried this and reported back, {helped} said it helped': '해 보고 결과를 알려 준 {total}명 중 {helped}명이 도움이 됐다고 했어요',
+  '{total} reported back on this step': '{total}명이 이 걸음에 대해 알려 줬어요',
+  'of {total} people chose the same answer as you': '명이 {total}명 중에서 당신과 같은 답을 골랐어요',
+  // Who someone is to you, on Connect (Edwin, 2026-10-29)
+  'Loved ones': '소중한 사람들',
+  'Workmates': '직장 동료',
+  'Close friends': '가까운 친구',
+  'Classmates': '반 친구',
 }

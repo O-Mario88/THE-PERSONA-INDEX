@@ -374,4 +374,15 @@ export const es: Record<string, string> = {
   'When a few friends are here, your Outside Mirror can show how the people around you experience you.': 'Cuando haya algunos amigos aquí, tu Espejo Exterior podrá mostrar cómo te viven las personas a tu alrededor.',
   'Explore shared experiences': 'Explorar experiencias compartidas',
   'You’re not alone.': 'No estás solo.',
+  // The Human Pulse beside an item (Edwin, 2026-10-29)
+  '{same} of {total} chose the same': '{same} de {total} eligieron lo mismo',
+  'A few others chose this too': 'Unos pocos más eligieron esto también',
+  'Of the {total} who tried this and reported back, {helped} said it helped': 'De los {total} que lo probaron y contaron cómo les fue, {helped} dijeron que les ayudó',
+  '{total} reported back on this step': '{total} contaron cómo les fue con este paso',
+  'of {total} people chose the same answer as you': 'de {total} personas eligieron la misma respuesta que tú',
+  // Who someone is to you, on Connect (Edwin, 2026-10-29)
+  'Loved ones': 'Seres queridos',
+  'Workmates': 'Compañeros de trabajo',
+  'Close friends': 'Amigos cercanos',
+  'Classmates': 'Compañeros de clase',
 }
