@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { planReminders, reminderSettings, saveReminderSettings, REMINDERS_OFF, type ReminderSettings } from './reminders'
+import { planReminders, reminderSettings, REMINDERS_OFF, REMINDERS_ON, setReminderTimes, type ReminderSettings } from './reminders'
 
 const on = (o: Partial<ReminderSettings>): ReminderSettings => ({ ...REMINDERS_OFF, ...o })
 // 2026-10-27 is a Tuesday; 2026-11-01 is the Sunday after.
@@ -49,17 +49,28 @@ describe('planReminders', () => {
   })
 })
 
+// Edwin, 2026-10-29: "Morning 3, evening 3, Sunday mirror and checking should
+// be enabled by default and automatic. it should not be toggle manually."
 describe('reminder settings', () => {
   beforeEach(() => localStorage.clear())
 
-  it('start off, and keep what was saved', () => {
-    expect(reminderSettings()).toEqual(REMINDERS_OFF)
-    saveReminderSettings(on({ evening: true, eveningAt: 20 * 60 }))
-    expect(reminderSettings()).toEqual(on({ evening: true, eveningAt: 20 * 60 }))
+  it('are all on from the start, at the usual times', () => {
+    expect(reminderSettings()).toEqual(REMINDERS_ON)
+    expect(REMINDERS_ON).toMatchObject({ morning: true, evening: true, sunday: true, intentions: true })
   })
 
-  it('read a damaged copy as off', () => {
+  it('keep a chosen time, and stay on', () => {
+    setReminderTimes({ eveningAt: 20 * 60 })
+    expect(reminderSettings()).toEqual({ ...REMINDERS_ON, eveningAt: 20 * 60 })
+  })
+
+  it('stay on even where an older copy had them switched off', () => {
+    localStorage.setItem('pi.reminders.v1', JSON.stringify({ morning: false, morningAt: 7 * 60, evening: false, eveningAt: 19 * 60, sunday: false, intentions: false }))
+    expect(reminderSettings()).toEqual({ ...REMINDERS_ON, morningAt: 7 * 60 })
+  })
+
+  it('read a damaged copy as on, at the usual times', () => {
     localStorage.setItem('pi.reminders.v1', '{"morning":"yes","morningAt":"8"}')
-    expect(reminderSettings()).toEqual(REMINDERS_OFF)
+    expect(reminderSettings()).toEqual(REMINDERS_ON)
   })
 })

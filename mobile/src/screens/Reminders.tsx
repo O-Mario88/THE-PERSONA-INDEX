@@ -1,33 +1,53 @@
-// Reminders in Settings, under "More settings": a quiet nudge at a time the person picks, planned on this
-// phone (platform/reminders.ts). Off until turned on.
+// Reminders on You: the morning three, the evening three, the Sunday Mirror
+// and the check-ins, always on with nothing to switch (Edwin, 2026-10-29),
+// planned on this phone (platform/reminders.ts). The person can pick the
+// morning and evening times; the phone's own settings can silence them.
 import { useEffect, useState } from 'react'
-import { View } from 'react-native'
+import { Linking, View } from 'react-native'
 import { clock } from '@shared/day'
 import { CHECK_IN_AT, SUNDAY_AT, eveningMinutes, morningMinutes, type ReminderSettings } from '@shared/reminders'
-import { reminderSettings, remindersAvailable, remindersDenied, updateReminders } from '../platform/reminders'
+import { askForReminders, changeReminderTimes, reminderPermission, reminderSettings, remindersAvailable, type ReminderPermission } from '../platform/reminders'
 import { load, save } from '@shared/storage'
 import { canPrompt, iosSafari, promptInstall } from '@shared/pwa/install'
-import { Button, Card, Chip, T, Toggle } from '../ui/kit'
+import { Button, Card, Chip, T } from '../ui/kit'
 
 const MORNING_TIMES = [6 * 60, 7 * 60, 8 * 60, 9 * 60, 10 * 60, 12 * 60]
 const EVENING_TIMES = [17 * 60 + 30, 18 * 60 + 30, 19 * 60, 20 * 60, 21 * 60, 22 * 60]
 
+// What the phone allows, kept fresh while the page is open.
+function usePermission(): [ReminderPermission | null, (p: ReminderPermission) => void] {
+  const [perm, setPerm] = useState<ReminderPermission | null>(null)
+  useEffect(() => {
+    let live = true
+    reminderPermission().then((p) => live && setPerm(p), () => {})
+    return () => {
+      live = false
+    }
+  }, [])
+  return [perm, setPerm]
+}
+
+// When the phone says no, the way back is its own settings.
+function PhoneSaysNo() {
+  return (
+    <View style={{ gap: 8 }}>
+      <T v="small" tone="muted">
+        Notifications are off for The Persona Index in your phone’s settings, so reminders can’t show yet.
+      </T>
+      <Button small kind="secondary" label="Open phone settings" onPress={() => Linking.openSettings().catch(() => {})} />
+    </View>
+  )
+}
+
 export function ReminderSettingsView() {
   const [s, setS] = useState<ReminderSettings>(reminderSettings)
-  const [denied, setDenied] = useState(false)
-
-  useEffect(() => {
-    remindersDenied().then(setDenied, () => {})
-  }, [])
-
+  const [perm, setPerm] = usePermission()
   if (!remindersAvailable) return null
 
-  async function change(next: ReminderSettings) {
-    const prev = s
+  async function pick(which: 'morning' | 'evening', m: number) {
+    const next = which === 'morning' ? { ...s, morningAt: m } : { ...s, eveningAt: m }
     setS(next)
-    const ok = await updateReminders(next)
-    if (!ok) setS(prev)
-    setDenied(!ok)
+    await changeReminderTimes(which === 'morning' ? { morningAt: m } : { eveningAt: m })
   }
 
   const times = (which: 'morning' | 'evening') => {
@@ -36,86 +56,68 @@ export function ReminderSettingsView() {
     return (
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }} accessibilityLabel={`Time for the ${which} three`}>
         {list.map((m) => (
-          <Chip key={m} label={clock(m)} on={now === m} onPress={() => change(which === 'morning' ? { ...s, morningAt: m } : { ...s, eveningAt: m })} />
+          <Chip key={m} label={clock(m)} on={now === m} onPress={() => pick(which, m)} />
         ))}
       </View>
     )
   }
 
   return (
-    <View style={{ gap: 10 }}>
+    <View style={{ gap: 12 }}>
       <T v="eyebrow">Reminders</T>
       <T v="small" tone="muted">
-        A quiet nudge at a time you choose. They only ever say what is waiting, never a word of your answers or your writing, and they are set on this phone.
+        {`Your morning three, your evening three, your Sunday Mirror at ${clock(SUNDAY_AT)}, and a check-in at ${clock(CHECK_IN_AT)} on the day something you tried comes up. They only ever say what is waiting, never a word of your answers or your writing.`}
       </T>
-      <Toggle label="Morning three" note={s.morning ? 'Every question day.' : 'Off.'} value={s.morning} onChange={(on) => change({ ...s, morning: on })} />
-      {s.morning && times('morning')}
-      <Toggle label="Evening three" note={s.evening ? 'Every question day.' : 'Off.'} value={s.evening} onChange={(on) => change({ ...s, evening: on })} />
-      {s.evening && times('evening')}
-      <Toggle label="Sunday Mirror" note={`Sunday at ${clock(SUNDAY_AT)}, when your week is ready.`} value={s.sunday} onChange={(on) => change({ ...s, sunday: on })} />
-      <Toggle
-        label="Check-ins on what you wanted to try"
-        note={`On the day Reflect checks in, at ${clock(CHECK_IN_AT)}.`}
-        value={s.intentions}
-        onChange={(on) => change({ ...s, intentions: on })}
-      />
-      {denied && (
-        <T v="small" tone="danger">
-          Notifications are off for this app in your phone’s settings, so reminders can’t show.
-        </T>
-      )}
+      <T v="h3">Morning three</T>
+      {times('morning')}
+      <T v="h3">Evening three</T>
+      {times('evening')}
+      {perm === 'off' && <PhoneSaysNo />}
+      {perm === 'unasked' && <Button small kind="secondary" label="Allow reminders on this phone" onPress={async () => setPerm(await askForReminders())} />}
     </View>
   )
 }
 
-// Asked once, at the close of the very first sitting (Edwin, 2026-10-27:
-// "would it bring you back tomorrow?"). Yes turns on the morning and evening
-// nudges; Not now is remembered and the switches stay in Settings.
-export const REMINDERS_ASKED = 'pi.reminders.asked'
-
-export function ReminderAsk() {
-  const [answer, setAnswer] = useState<string | null>(() => load(REMINDERS_ASKED))
-  if (!remindersAvailable) return answer ? null : <ComeBackOnWeb onAnswer={(x) => (save(REMINDERS_ASKED, x), setAnswer(x))} />
-  if (answer && answer !== 'yes-now') return null
-  if (answer === 'yes-now')
-    return (
-      <Card>
-        <T bold>Done. I'll let you know when your next questions open.</T>
-        <T v="small" tone="muted">
-          You can change the times in Settings.
-        </T>
-      </Card>
-    )
+// At the close of the first sitting: the phone is asked once, by itself, and
+// the person sees when they'll hear from the app. On the website, where
+// there are no reminders, the next best thing.
+export function RemindersOn() {
+  const [perm, setPerm] = useState<ReminderPermission | null>(null)
+  const [web, setWeb] = useState<string | null>(() => load(REMINDERS_ASKED))
+  useEffect(() => {
+    if (!remindersAvailable) return
+    let live = true
+    askForReminders().then((p) => live && setPerm(p), () => {})
+    return () => {
+      live = false
+    }
+  }, [])
+  if (!remindersAvailable) return web ? null : <ComeBackOnWeb onAnswer={(x) => (save(REMINDERS_ASKED, x), setWeb(x))} />
+  if (perm === null || perm === 'none') return null
+  if (perm === 'off') return <Card><PhoneSaysNo /></Card>
   const s = reminderSettings()
   return (
-    <Card style={{ gap: 12 }}>
-      <T v="h3">Do you want me to let you know when your next three open?</T>
-      <T tone="text2">
-        Morning at {clock(s.morningAt)} and evening at {clock(s.eveningAt)}. Nothing else, and never a word of your answers.
+    <Card style={{ gap: 6 }}>
+      <T v="h3">I’ll let you know when your next three open</T>
+      <T v="small" tone="muted">
+        {`Morning at ${clock(morningMinutes(s))} and evening at ${clock(eveningMinutes(s))}, with your Sunday Mirror and a check-in on what you try. Change the times on You.`}
       </T>
-      <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
-        <Button
-          small
-          label="Yes, remind me"
-          onPress={async () => {
-            await updateReminders({ ...s, morning: true, evening: true })
-            save(REMINDERS_ASKED, 'yes')
-            setAnswer('yes-now')
-          }}
-        />
-        <Button
-          small
-          kind="secondary"
-          label="Not now"
-          onPress={() => {
-            save(REMINDERS_ASKED, 'no')
-            setAnswer('no')
-          }}
-        />
-      </View>
     </Card>
   )
 }
+
+// At any later close, for someone whose phone was never asked (people who
+// said "Not now" before reminders were automatic): the phone asks once, by
+// itself. Nothing is shown here.
+export function AskRemindersQuietly() {
+  useEffect(() => {
+    if (remindersAvailable) askForReminders().catch(() => {})
+  }, [])
+  return null
+}
+
+// Remembers the website's bookmark ask, so it is asked once.
+export const REMINDERS_ASKED = 'pi.reminders.asked'
 
 // On the website there are no reminders, so the next best thing: keep the
 // app one tap away. On a phone, add it to the home screen (shared

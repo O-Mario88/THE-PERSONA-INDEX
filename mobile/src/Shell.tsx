@@ -56,7 +56,7 @@ import { ReadScreen } from './screens/ReadScreen'
 import { CountryAsk } from './screens/Country'
 import { themeName } from '@shared/themes'
 import { InstallInvite } from './screens/Browser'
-import { ReminderAsk } from './screens/Reminders'
+import { AskRemindersQuietly, RemindersOn } from './screens/Reminders'
 import { setLanguage, tr, trf } from '@shared/i18n'
 import { backFromGoogle } from './platform/googleWeb'
 import { locale } from '@shared/locale'
@@ -631,7 +631,7 @@ export function Shell({ phoneDark, onRestart, onDayReady }: { phoneDark: boolean
                 dayWithYou={weekOne ? dayN : undefined}
               />
             ))}
-          {ask === 'reminder' && <ReminderAsk />}
+          {ask === 'reminder' ? <RemindersOn /> : closing && steps.length > 0 && <AskRemindersQuietly />}
           {ask === 'signin' && (
             <AccountOffer
               cards={steps.length}

@@ -1,7 +1,9 @@
 // Reminders, planned on the phone, for the app on iPhone, Android and Mac
 // (the website has none; mobile/src/platform/reminders.ts hands them to the
-// system). Off
-// until the person turns one on. The plan covers the week ahead, one
+// system). The morning three, the evening three, the Sunday Mirror and the
+// check-ins are always on, with nothing to switch (Edwin, 2026-10-29); the
+// person can choose the morning and evening times, and the phone's own
+// settings can silence them. The plan covers the week ahead, one
 // notification per day per kind, so today's can be dropped once its sitting
 // is done; the app plans again whenever it opens or a sitting is finished.
 // The text never carries a word of the person's answers or writing, and
@@ -20,6 +22,7 @@ export type ReminderSettings = {
 }
 
 export const REMINDERS_OFF: ReminderSettings = { morning: false, morningAt: 8 * 60, evening: false, eveningAt: 19 * 60, sunday: false, intentions: false }
+export const REMINDERS_ON: ReminderSettings = { morning: true, morningAt: 8 * 60, evening: true, eveningAt: 19 * 60, sunday: true, intentions: true }
 
 export type PlannedReminder = { id: string; date: string; minutes: number; title: string; body: string; opens: 'today' | 'mirrors' | 'reflect' }
 
@@ -37,24 +40,18 @@ export const anyOn = (s: ReminderSettings) => s.morning || s.evening || s.sunday
 export const morningMinutes = (s: ReminderSettings) => Math.min(Math.max(s.morningAt, MORNING_OPENS), EVENING_OPENS - 30)
 export const eveningMinutes = (s: ReminderSettings) => Math.min(Math.max(s.eveningAt, EVENING_OPENS), 23 * 60 + 30)
 
-// Reminders belong to a phone, so they are never backed up.
+// Reminders belong to a phone, so they are never backed up. Only the chosen
+// times are kept; every reminder is on, whatever an older copy said.
 export function reminderSettings(): ReminderSettings {
   const v = loadJSON(KEY)
-  if (!v || typeof v !== 'object') return { ...REMINDERS_OFF }
-  const o = v as Partial<ReminderSettings>
+  const o = (v && typeof v === 'object' ? v : {}) as Partial<ReminderSettings>
   const num = (x: unknown, d: number) => (typeof x === 'number' && Number.isFinite(x) ? Math.round(x) : d)
-  return {
-    morning: o.morning === true,
-    morningAt: num(o.morningAt, REMINDERS_OFF.morningAt),
-    evening: o.evening === true,
-    eveningAt: num(o.eveningAt, REMINDERS_OFF.eveningAt),
-    sunday: o.sunday === true,
-    intentions: o.intentions === true,
-  }
+  return { ...REMINDERS_ON, morningAt: num(o.morningAt, REMINDERS_ON.morningAt), eveningAt: num(o.eveningAt, REMINDERS_ON.eveningAt) }
 }
 
-export function saveReminderSettings(s: ReminderSettings) {
-  saveJSON(KEY, s)
+export function setReminderTimes(times: Partial<Pick<ReminderSettings, 'morningAt' | 'eveningAt'>>) {
+  const s = reminderSettings()
+  saveJSON(KEY, { morningAt: times.morningAt ?? s.morningAt, eveningAt: times.eveningAt ?? s.eveningAt })
 }
 
 const isSunday = (iso: string) => new Date(`${iso}T12:00:00Z`).getUTCDay() === 0
