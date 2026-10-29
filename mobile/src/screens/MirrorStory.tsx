@@ -85,6 +85,7 @@ import { PrepareSheet } from './ConversationSheet'
 import { PairWeekCard } from './WalkAlongside'
 import { CircleLine, InConnection, MirrorPatterns, MirrorThreads, showConnection } from './MirrorBits'
 import { locale } from '@shared/locale'
+import { shows } from '@shared/release'
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
@@ -811,7 +812,7 @@ export function SundayMirror({
 
       <Section id="ms-alone" icon="people" tone="blue" title="The moments we share">
         {/* Alongside the one person someone walks with (Edwin's brief, 2026-10-29). */}
-        <PairWeekCard from={m.from} />
+        {shows('walkAlongside') && <PairWeekCard from={m.from} />}
         {pulse && alone.length > 0 && (
           <>
             <NotAloneView picks={alone} />

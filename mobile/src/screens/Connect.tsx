@@ -18,6 +18,7 @@ import { CloserTogether, CommonGround, Growing, SupportCelebrate, WhatHelped } f
 import { NotAloneSection } from './NotAlone'
 import { WalkAlongside } from './WalkAlongside'
 import type { PulseCounts } from '@shared/humanPulse'
+import { shows } from '@shared/release'
 
 export function Connect({
   me,
@@ -82,7 +83,7 @@ export function Connect({
       <PageHeader title="Connect" line="A little understanding goes a long way." />
       <NotAloneSection pulse={pulse} focus={focus} onReflect={reflectOn} />
       {error ? <T tone="danger">{error}</T> : null}
-      {friends.length > 0 && <CloserTogether friends={friends} rings={rings} />}
+      {shows('circleExtras') && friends.length > 0 && <CloserTogether friends={friends} rings={rings} />}
 
       <Card style={{ gap: 14 }}>
         <T v="h2">Your Circle</T>
@@ -109,10 +110,10 @@ export function Connect({
         ))}
       </Card>
 
-      {/* Walk alongside one person (Edwin's brief, 2026-10-29). */}
-      <WalkAlongside friends={friends.filter((f) => !f.muted)} />
+      {/* Walk alongside one person (Edwin's brief, 2026-10-29), held back in the first release (release.ts). */}
+      {shows('walkAlongside') && <WalkAlongside friends={friends.filter((f) => !f.muted)} />}
       {today && <Growing date={today} questions={questions} circle={circle} />}
-      {friends.length > 0 && (
+      {shows('circleExtras') && friends.length > 0 && (
         <>
           <Card>
             <CommonGround friends={friends} />

@@ -14,6 +14,7 @@ import { radius, useTheme } from '../theme'
 import { Icon, type IconName } from '../ui/Icon'
 import { Back, Button, Card, Page, T, Tinted } from '../ui/kit'
 import { Mark } from '../ui/Logo'
+import { plansOffered } from '@shared/release'
 
 const web = Platform.OS === 'web'
 
@@ -62,6 +63,9 @@ export function PatronPage({ onBack }: { onBack: () => void }) {
     },
     ...(web ? [{ title: 'A prepaid pass', sub: 'No recurring charge: pay once, by Mobile Money or a card.', plans: ['pass_90', 'pass_365'] as PatronPlan[] }] : []),
   ]
+  // One paid tier and prepaid access in the first release (release.ts).
+  const offered = plansOffered(web)
+  const shownChoices = choices.map((c) => ({ ...c, plans: c.plans.filter((plan) => offered.includes(plan)) })).filter((c) => c.plans.length > 0)
 
   async function take(plan: PatronPlan) {
     setBusy(plan)
@@ -132,7 +136,7 @@ export function PatronPage({ onBack }: { onBack: () => void }) {
         <T v="small">{ALWAYS_FREE}</T>
       </Tinted>
 
-      {choices.map((c) => (
+      {shownChoices.map((c) => (
         <View key={c.title} style={{ gap: 10, padding: 18, borderRadius: radius.lg, borderWidth: 1, borderColor: p.line, backgroundColor: p.surface }}>
           <T v="h2">{c.title}</T>
           <T v="small" tone="text2">
