@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { audienceOf, excerptOf, HELPFUL, sentencesOf, togetherResult } from './sharing'
+import { audienceOf, excerptOf, HELPFUL, sentencesOf, startingAudience, togetherResult } from './sharing'
 import type { FriendView, RTQuestion } from './social'
 
 // Edwin, 2026-10-29: ordinary reflections stay private; after saving, the
@@ -28,6 +28,15 @@ describe('sharing a part of a reflection', () => {
     const friends = [friend('ama'), friend('kofi', { muted: true }), friend('joel', { connect: false }), friend('nia')]
     expect(audienceOf('inner', ['ama', 'kofi', 'joel'], [], friends)).toEqual(['ama'])
     expect(audienceOf('people', ['ama'], ['nia', 'kofi'], friends)).toEqual(['nia'])
+  })
+
+  // Found on the iPhone: with nobody in the Inner Circle, the sheet started on
+  // it anyway, so Share went nowhere until the person noticed and switched.
+  it('starts on the Inner Circle only when someone there can receive it', () => {
+    const friends = [friend('ama'), friend('kofi', { muted: true })]
+    expect(startingAudience(['ama'], friends)).toBe('inner')
+    expect(startingAudience(['kofi'], friends)).toBe('people')
+    expect(startingAudience([], friends)).toBe('people')
   })
 })
 

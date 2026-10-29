@@ -289,7 +289,11 @@ function Writing({
   const [kept, setKept] = useState(false)
   // After saving (Edwin, 2026-10-29): keep it private, or share a part of it.
   const [savedText, setSavedText] = useState('')
-  const [privacy, setPrivacy] = useState<'asking' | 'private' | 'sharing' | 'talking'>('asking')
+  const [privacy, setPrivacy] = useState<'asking' | 'private' | 'shared'>('asking')
+  const [sheet, setSheet] = useState<'share' | 'talk' | null>(null)
+  const [sharedWith, setSharedWith] = useState(0)
+  // Only sending counts as shared; closing the sheet without sending leaves the choice open.
+  const shared = (people: number) => (setSharedWith(people), setPrivacy('shared'))
 
   function save() {
     if (!text.trim()) return
@@ -335,17 +339,20 @@ function Writing({
             </T>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
               <Button small kind="secondary" label="Keep it private" onPress={() => setPrivacy('private')} />
-              <Button small kind="secondary" label="Share a part of it" onPress={() => setPrivacy('sharing')} />
-              <Button small kind="secondary" label="Reflect on it with someone" onPress={() => setPrivacy('talking')} />
+              <Button small kind="secondary" label="Share a part of it" onPress={() => setSheet('share')} />
+              <Button small kind="secondary" label="Reflect on it with someone" onPress={() => setSheet('talk')} />
             </View>
           </View>
         ) : privacy === 'private' ? (
           <T v="small" tone="muted">
             Kept private. Only you can see it.
           </T>
+        ) : privacy === 'shared' ? (
+          <T v="small" tone="muted">
+            {`A part of it went to ${sharedWith === 1 ? '1 person' : `${sharedWith} people`}. The rest stays private. You can take it back on You, under What you’ve shared.`}
+          </T>
         ) : null}
-        {privacy === 'sharing' && <ShareSheet kind="reflection" text={savedText} onClose={() => setPrivacy('private')} />}
-        {privacy === 'talking' && <ShareSheet kind="reflection" text={savedText} initialMode="talk" onClose={() => setPrivacy('private')} />}
+        {sheet && <ShareSheet kind="reflection" text={savedText} initialMode={sheet === 'talk' ? 'talk' : 'share'} onSent={shared} onClose={() => setSheet(null)} />}
         {!kept ? (
           <>
             <T v="small" bold>

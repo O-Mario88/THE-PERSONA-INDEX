@@ -41,6 +41,12 @@ export function audienceOf(audience: ShareAudience, inner: string[], picked: str
   return open.filter((f) => ids.includes(f.id)).map((f) => f.id)
 }
 
+// Where the share sheet starts: the Inner Circle only when someone there can
+// receive it, so Share never quietly goes nowhere.
+export function startingAudience(inner: string[], friends: FriendView[]): ShareAudience {
+  return audienceOf('inner', inner, [], friends).length > 0 ? 'inner' : 'people'
+}
+
 // What reflecting together shows once both revealed (Edwin, 2026-10-29): a
 // matching answer is named as exactly that, a different one is as welcome,
 // and one question to ask each other. Never "more alike", never a score.

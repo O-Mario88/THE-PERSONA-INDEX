@@ -7,7 +7,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Modal, Platform, Pressable, ScrollView, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { audienceOf, excerptOf, HELPFUL, sentencesOf } from '@shared/sharing'
+import { audienceOf, excerptOf, HELPFUL, sentencesOf, startingAudience } from '@shared/sharing'
 import { innerCircle, INNER_CIRCLE } from '@shared/rings'
 import { getCircle, getShares, postShare, removeSharePerson, withdrawShare, type FriendView, type SentShareView, type ShareAudience, type ShareKind, type ShareMode } from '@shared/social'
 import { dayMonth } from '@shared/reflect'
@@ -20,7 +20,19 @@ import { KIND_LABEL, MODE_LINE } from './SharedWithYou'
 
 const TEXT_MAX = 500
 
-export function ShareSheet({ kind, text, onClose, initialMode = 'share' }: { kind: ShareKind; text: string; onClose: () => void; initialMode?: ShareMode }) {
+export function ShareSheet({
+  kind,
+  text,
+  onClose,
+  onSent = () => {},
+  initialMode = 'share',
+}: {
+  kind: ShareKind
+  text: string
+  onClose: () => void
+  onSent?: (people: number) => void // so the screen behind says it was shared, not kept private
+  initialMode?: ShareMode
+}) {
   const p = useTheme()
   const insets = useSafeAreaInsets()
   const me = useAccount()
@@ -37,10 +49,13 @@ export function ShareSheet({ kind, text, onClose, initialMode = 'share' }: { kin
   useEffect(() => {
     if (!me) return
     getCircle().then(
-      (c) => setFriends(c.friends),
+      (c) => {
+        setFriends(c.friends)
+        setAudience(startingAudience(inner, c.friends))
+      },
       () => setFriends([]),
     )
-  }, [me])
+  }, [me, inner])
 
   const excerpt = (words ?? excerptOf(sentences, picked)).slice(0, TEXT_MAX)
   const to = friends ? audienceOf(audience, inner, people, friends) : []
@@ -53,6 +68,7 @@ export function ShareSheet({ kind, text, onClose, initialMode = 'share' }: { kin
       await postShare({ kind, text: excerpt.trim(), mode, replies, audience, to })
       feel('done')
       setState('sent')
+      onSent(to.length)
     } catch {
       setState('failed')
     }
@@ -117,7 +133,7 @@ export function ShareSheet({ kind, text, onClose, initialMode = 'share' }: { kin
               <Avatar name={f.name} size={32} />
               <T style={{ flex: 1 }}>{f.name}</T>
               <T bold tone="accent">
-                {people.includes(f.id) ? '✓' : ''}
+                {people.includes(f.id) ? '✓ Chosen' : 'Choose'}
               </T>
             </Pressable>
           ))}
@@ -184,7 +200,7 @@ export function ShareSheet({ kind, text, onClose, initialMode = 'share' }: { kin
         >
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <T v="title" style={{ flex: 1 }}>
-              Share a part of it
+              {initialMode === 'talk' ? 'Reflect on it with someone' : 'Share a part of it'}
             </T>
             <Button kind="text" label="Close" onPress={onClose} />
           </View>
