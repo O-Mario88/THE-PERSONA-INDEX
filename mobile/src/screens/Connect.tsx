@@ -1,28 +1,46 @@
 // Connect: a place to feel understood by people you trust (Edwin,
-// 2026-10-29). No feed, no activity status. Your people, each a Connection or
-// in your Inner Circle (kept on this device only), and inviting a friend.
+// 2026-10-29). Three places and a clear end: With your people (your list,
+// each a Connection or in your Inner Circle, kept on this device only, and
+// what each chose to share with you), Shared with you (a small inbox with
+// private replies, ending "You're caught up"), and You're not alone
+// (anonymous totals, kept visually apart from friends). No feed, no activity
+// status, no counts of anything but your own people. The fuller Circle
+// (Common Ground, Support & Celebrate, walking alongside) waits (release.ts).
 import { useCallback, useEffect, useState } from 'react'
-import { ScrollView, Share, View } from 'react-native'
+import { Share, View } from 'react-native'
 import { ApiError } from '@shared/api'
-import { CONNECTION, INNER_CIRCLE, innerCircle, setInner } from '@shared/rings'
 import type { Question } from '@shared/api'
-import { createInvite, getCircle, inviteLink, TAG_NAMES, TAGS, type AccountView, type CircleView, type Tag } from '@shared/social'
+import type { PulseCounts } from '@shared/humanPulse'
+import { CAUGHT_UP, inboxOf, markSeen, type InboxEntry } from '@shared/inbox'
 import { dayMonth } from '@shared/reflect'
+import { CIRCLE_ACCESS, INNER_CIRCLE, innerCircle, setInner } from '@shared/rings'
+import {
+  createInvite,
+  getCircle,
+  getShares,
+  inviteLink,
+  postNote,
+  removeSharePerson,
+  TAG_NAMES,
+  TAGS,
+  type AccountView,
+  type CircleView,
+  type FriendView,
+  type SharesView,
+  type Tag,
+} from '@shared/social'
 import { radius } from '../theme'
-import { Button, Card, Chip, Page, PageHeader, T } from '../ui/kit'
+import { Back, Button, Card, Chip, Page, PageHeader, RowGroup, RowLink, T, Tinted } from '../ui/kit'
 import { CardHead, Avatar } from '../ui/parts'
 import { Section } from '../ui/Layout'
-import { CloserTogether, CommonGround, Growing, SupportCelebrate, WhatHelped } from './ConnectMore'
 import { NotAloneSection } from './NotAlone'
-import { WalkAlongside } from './WalkAlongside'
-import type { PulseCounts } from '@shared/humanPulse'
-import { shows } from '@shared/release'
+import { KIND_LABEL, ReceivedCard, RepliesCard } from './SharedWithYou'
+
+const REFRESH_MS = 30_000 // while Connect is open, new items and replies show without leaving it
 
 export function Connect({
   me,
   onSignIn,
-  today,
-  questions = [],
   pulse = false,
   focus = null,
   onWrite = () => {},
@@ -37,101 +55,165 @@ export function Connect({
 }) {
   const reflectOn = () => onWrite('When you saw how others answered, what did you notice? Does it change how you see your own answer?')
   const [circle, setCircle] = useState<CircleView | null>(null)
+  const [shares, setShares] = useState<SharesView | null>(null)
+  const [entries, setEntries] = useState<InboxEntry[] | null>(null)
   const [error, setError] = useState('')
-  const [inner, setInnerIds] = useState<string[]>(innerCircle)
+  const [view, setView] = useState<'home' | 'people'>('home')
   const refresh = useCallback(() => {
     getCircle().then(
       (c) => {
         setCircle(c)
         setError('')
       },
-      (e) => setError(e instanceof ApiError && e.status === 401 ? '' : 'I couldn’t load your circle. Try again in a moment.'),
+      (e) => setError(e instanceof ApiError && e.status === 401 ? '' : 'I couldn’t load your people just now. Try again in a moment.'),
     )
+    getShares().then(setShares, () => {})
   }, [])
   useEffect(() => {
-    if (me) refresh()
+    if (!me) return
+    refresh()
+    const timer = setInterval(refresh, REFRESH_MS)
+    return () => clearInterval(timer)
   }, [me, refresh])
+  // What is new is worked out once per load, then remembered as seen.
+  useEffect(() => {
+    if (!shares) return
+    const next = inboxOf(shares)
+    setEntries(next)
+    markSeen(next)
+  }, [shares])
+
+  const notAlone = (
+    <Section title="You’re not alone" icon="globe">
+      <T v="small" tone="muted">
+        Anonymous totals from everyone who answered. Never from the people you know, and never who.
+      </T>
+      <NotAloneSection pulse={pulse} focus={focus} onReflect={reflectOn} />
+    </Section>
+  )
 
   if (!me) {
     return (
       <Page>
-        {/* Connect is complete with no friends at all (Edwin, 2026-10-28): shared
-            experiences first, and the circle as an open door, never a lock. */}
-        <PageHeader title="Connect" line="A little understanding goes a long way." />
-        <NotAloneSection pulse={pulse} focus={focus} onReflect={reflectOn} />
-        <Section title="Reach out when you’re ready" icon="heart">
-          <T tone="text2">Is there someone you’d feel comfortable reconnecting with? Your Circle is here whenever you want it, and friends never see your answers.</T>
-          <Button small kind="secondary" label="Start your circle" iconAfter="chevron" onPress={onSignIn} />
+        <PageHeader title="Connect" line="Feel understood by the people you trust." />
+        <Section title="With your people" icon="people">
+          <Card style={{ gap: 10 }}>
+            <T tone="text2">Share a part of what you write with someone you trust, and reflect together. Everything stays private until you choose to share it, and friends never see your answers.</T>
+            <Button small kind="secondary" label="Start your circle" iconAfter="chevron" onPress={onSignIn} />
+          </Card>
         </Section>
-        {today && <Growing date={today} questions={questions} circle={null} />}
+        {notAlone}
       </Page>
     )
   }
 
   const friends = circle?.friends ?? []
+  if (view === 'people') return <People friends={friends} shares={shares} onBack={() => setView('home')} onChanged={refresh} />
+
+  const anyNew = (entries ?? []).some((e) => e.isNew)
   return (
-    <Page
-      aside={
-        <Card>
-          <Invite circle={circle} />
-        </Card>
-      }
-    >
-      <PageHeader title="Connect" line="A little understanding goes a long way." />
-      <NotAloneSection pulse={pulse} focus={focus} onReflect={reflectOn} />
+    <Page>
+      <PageHeader title="Connect" line="Feel understood by the people you trust." />
       {error ? <T tone="danger">{error}</T> : null}
-      {shows('circleExtras') && friends.length > 0 && <CloserTogether friends={friends} inner={inner} />}
 
-      <Card style={{ gap: 14 }}>
-        <T v="h2">{`Your people · ${friends.length}`}</T>
-        {friends.length > 0 && <Faces names={friends.map((f) => f.name)} />}
-        <T v="small" tone="muted">
-          {`Everyone here is a ${CONNECTION}. Add the people closest to you to your ${INNER_CIRCLE}. Who is in it stays on this phone: nobody, the server included, ever learns it.`}
-        </T>
-        {friends.map((f) => (
-          <Friend key={f.id} name={f.name} sub={TAG_NAMES[f.tag]} inner={inner.includes(f.id)} onInner={(on) => setInnerIds(setInner(f.id, on))} />
-        ))}
-      </Card>
+      <Section title="With your people" icon="people">
+        <RowGroup>
+          <RowLink inGroup label={`Your people · ${friends.length}`} sub="Who they are to you, what they chose to share with you, and reflecting together" onPress={() => setView('people')} />
+        </RowGroup>
+      </Section>
 
-      {/* Walk alongside one person (Edwin's brief, 2026-10-29), held back in the first release (release.ts). */}
-      {shows('walkAlongside') && <WalkAlongside friends={friends.filter((f) => !f.muted)} />}
-      {today && <Growing date={today} questions={questions} circle={circle} />}
-      {shows('circleExtras') && friends.length > 0 && (
-        <>
-          <Card>
-            <CommonGround friends={friends} />
-          </Card>
-          <Card>
-            <WhatHelped />
-          </Card>
-          <Card>
-            <SupportCelebrate today={today} />
-          </Card>
-        </>
-      )}
+      <Section title="Shared with you" icon="heart">
+        {(entries ?? []).map((e) =>
+          e.kind === 'received' ? <ReceivedCard key={e.id} share={e.share} isNew={e.isNew} onChanged={refresh} /> : <RepliesCard key={e.id} share={e.share} isNew={e.isNew} onChanged={refresh} />,
+        )}
+        {entries && entries.length === 0 && <T tone="text2">Nothing shared with you yet. When someone you trust shares something with you, it shows here, for you alone.</T>}
+        {entries && (
+          <T v="small" tone="muted" center>
+            {anyNew ? 'That’s everything new.' : CAUGHT_UP}
+          </T>
+        )}
+      </Section>
+
+      {notAlone}
 
       <T v="small" tone="muted" center>
-        Friends see that you’re connected and the circle tag you gave them. Never your answers, your readings, or who else is here. Anything more is only what you choose to share, with the people you
-        choose.
+        Friends see your name and anything you deliberately send them. Never your answers, your journal, or who is in your Inner Circle.
       </T>
     </Page>
   )
 }
 
-// The circle as a row of faces, the way the big apps show the people closest
-// to you. Names only; nothing about their answers.
-function Faces({ names }: { names: string[] }) {
+// Your people: everyone you are connected with, each a Connection or in your
+// Inner Circle, with the last thing they chose to share with you. No status,
+// no last seen, no rankings.
+function People({ friends, shares, onBack, onChanged }: { friends: FriendView[]; shares: SharesView | null; onBack: () => void; onChanged: () => void }) {
+  const [inner, setInnerIds] = useState<string[]>(innerCircle)
+  const [note, setNote] = useState('')
+  // Leaving the Inner Circle ends access to what was shared with it, quietly.
+  async function placeInner(id: string, on: boolean) {
+    setInnerIds(setInner(id, on))
+    setNote('')
+    if (on || !shares) return
+    const shared = shares.sent.filter((s) => s.audience === 'inner' && s.people.some((x) => x.id === id))
+    await Promise.all(shared.map((s) => removeSharePerson(s.id, id).catch(() => {})))
+    if (shared.length) {
+      setNote('They no longer see what you shared with your Inner Circle. Anything they already read can’t be taken back.')
+      onChanged()
+    }
+  }
+  const lastFrom = (id: string) => shares?.received.find((s) => s.from.id === id)
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 14, paddingRight: 8 }}>
-      {names.map((n, i) => (
-        <View key={`${n}-${i}`} style={{ alignItems: 'center', gap: 6, width: 64 }}>
-          <Avatar name={n} size={52} />
-          <T v="tiny" tone="text2" lines={1}>
-            {n.split(' ')[0]}
-          </T>
-        </View>
-      ))}
-    </ScrollView>
+    <Page>
+      <Back onPress={onBack} />
+      <PageHeader title={`Your people · ${friends.length}`} line="A small, private list. Nobody else sees it." />
+      <Card style={{ gap: 10 }}>
+        {CIRCLE_ACCESS.map((a) => (
+          <View key={a.who} style={{ gap: 2 }}>
+            <T bold>{a.who}</T>
+            <T v="small" tone="text2">
+              {a.sees}
+            </T>
+          </View>
+        ))}
+        <T v="small" tone="muted">
+          {`Who is in your ${INNER_CIRCLE} stays on this phone. Adding someone shows them nothing you shared before.`}
+        </T>
+      </Card>
+      {note ? (
+        <Tinted tone="blue">
+          <T v="small">{note}</T>
+        </Tinted>
+      ) : null}
+      {friends.map((f) => {
+        const last = lastFrom(f.id)
+        return (
+          <Card key={f.id} style={{ gap: 10 }}>
+            <Friend name={f.name} sub={TAG_NAMES[f.tag]} inner={inner.includes(f.id)} onInner={(on) => placeInner(f.id, on)} />
+            {last ? (
+              <View style={{ gap: 4 }}>
+                <T v="small" tone="muted">{`${KIND_LABEL[last.kind]} · Shared with you`}</T>
+                <T v="quote">{`“${last.text}”`}</T>
+                {last.replies && (
+                  <Button
+                    small
+                    kind="text"
+                    label="Send encouragement"
+                    onPress={() => postNote(last.id, { kind: 'encourage' }).then(onChanged, () => setNote('That didn’t go through. Try again in a moment.'))}
+                    style={{ alignSelf: 'flex-start' }}
+                  />
+                )}
+              </View>
+            ) : (
+              <T v="small" tone="muted">{`Nothing shared with you yet. What ${f.name.split(' ')[0]} chooses to share shows here.`}</T>
+            )}
+          </Card>
+        )
+      })}
+      {friends.length === 0 && <T tone="text2">Nobody here yet. Invite someone you trust below.</T>}
+      <Card>
+        <Invite />
+      </Card>
+    </Page>
   )
 }
 
@@ -152,15 +234,12 @@ function Friend({ name, sub, inner, onInner }: { name: string; sub: string; inne
   )
 }
 
-// Invite one friend: a link for them, named by the tag the person gives
-// them. Three active friends unlock the Outside Mirror.
-function Invite({ circle }: { circle: CircleView | null }) {
+// Invite one friend: a link for them, named by the tag the person gives them.
+function Invite() {
   const [tag, setTag] = useState<Tag>('friends')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [until, setUntil] = useState('')
-  const active = circle?.active ?? 0
-  const need = circle?.need ?? 3
   async function invite() {
     setBusy(true)
     setError('')
@@ -180,8 +259,6 @@ function Invite({ circle }: { circle: CircleView | null }) {
       <T v="small" tone="muted">
         They see your name and handle, never your answers.
       </T>
-      {/* No counts and nothing locked: the Outside Mirror is a possibility, not a target. */}
-      {active < need && <T tone="text2">When a few friends are here, your Outside Mirror can show how the people around you experience you.</T>}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         {TAGS.map((t) => (
           <Chip key={t} label={TAG_NAMES[t]} on={tag === t} onPress={() => setTag(t)} />
