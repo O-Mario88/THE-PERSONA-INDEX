@@ -27,7 +27,7 @@ import { week } from '@shared/tapestry'
 import { themeName } from '@shared/themes'
 import { sideOf, TRAITS } from '@shared/traits'
 import { GLIMPSE_BALANCED, GLIMPSE_NEXT, QUIET_DAY, ROUTE_ASK, ROUTE_REPLIES, ROUTE_WORDS, routeLead } from '@shared/words'
-import { brand, font, radius, useTheme, typeScale } from '../theme'
+import { brand, radius, useTheme, typeScale } from '../theme'
 import { B, Button, Chip, feel, Option, T, Tinted } from '../ui/kit'
 import { CardHead, themeIcon, WeekTiles } from '../ui/parts'
 import { PatronNote } from '../ui/Patron'
@@ -344,12 +344,15 @@ function Glimpse({ answers, history, date, name }: { answers: AnswerRecord[]; hi
   const need = sharedNeed(answers)
   return (
     <Tinted>
-      <T v="eyebrow">Your first glimpse</T>
-      <T v="h3">{name ? `${name}, here’s what your first answers hint at.` : 'Here’s what your first answers hint at.'}</T>
-      {top && (
-        <T style={{ fontFamily: font.semibold }}>
+      {/* The finding is the headline; who it's for sits above it, quietly
+          (the light-mode review, 2026-10-29: two bold lines read as one). */}
+      <T v="eyebrow">{name ? `${name}, your first glimpse` : 'Your first glimpse'}</T>
+      {top ? (
+        <T v="h2">
           {cap(top.quality)}, with {top.with}.
         </T>
+      ) : (
+        <T v="h2">Here’s what your first answers hint at.</T>
       )}
       {points.length === 0 ? (
         <T>{GLIMPSE_BALANCED}</T>

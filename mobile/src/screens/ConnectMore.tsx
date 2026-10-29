@@ -229,14 +229,17 @@ export function Growing({ date, questions, circle }: { date: string; questions: 
   return (
     <View style={{ gap: 14 }}>
       <Head title="Growing together" sub="How people are showing up today, so you know you are not alone in it." />
+      {/* One number sits in a row beside its icon; several share the width. */}
       <View style={{ flexDirection: 'row', gap: 12 }}>
         {tiles.map((t) => (
-          <View key={t.name} style={{ flex: 1, gap: 6 }}>
+          <View key={t.name} style={tiles.length === 1 ? { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 } : { flex: 1, gap: 6 }}>
             <Disc icon={t.icon} tone={t.tone} size={40} />
-            <T v="title">{t.n}</T>
-            <T v="small" tone="muted">
-              {t.name}
-            </T>
+            <View style={{ flexShrink: 1 }}>
+              <T v="title">{t.n}</T>
+              <T v="small" tone="muted">
+                {t.name}
+              </T>
+            </View>
           </View>
         ))}
       </View>
