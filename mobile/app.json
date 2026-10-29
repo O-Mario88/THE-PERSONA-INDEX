@@ -62,7 +62,7 @@
         "expo-speech-recognition",
         {
           "microphonePermission": "Lets you speak instead of typing. Your words are turned into text on this phone, and no recording is kept.",
-          "speechRecognitionPermission": "Your speech is recognised on this phone only, so your words never leave it.",
+          "speechRecognitionPermission": "Your speech is turned into words on this phone only, and no recording is kept.",
           "androidSpeechServicePackages": [
             "com.google.android.as",
             "com.google.android.tts",

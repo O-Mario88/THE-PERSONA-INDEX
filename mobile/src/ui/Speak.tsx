@@ -5,6 +5,9 @@
 // no waveform), the words appear as they come, and at the end the person
 // keeps their exact words or a distilled version, both shown side by side.
 // Speech is recognised on the phone (platform/voice.ts); no audio is kept.
+// That promise covers speech becoming words and nothing after it: kept words
+// go where the person puts them, like typed words (docs/data-map.md, "What
+// the voice promise covers").
 import { useEffect, useRef, useState } from 'react'
 import { AccessibilityInfo, Animated, Easing, Modal, Pressable, ScrollView, View, useWindowDimensions } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -72,12 +75,12 @@ export function SpeakInstead({ onText }: { onText: (text: string) => void }) {
       {note === 'patron' && <PatronNote text="Speaking instead of typing is part of The Persona Index Patron. Your three free tries are used." />}
       {note === 'model' && (
         <T v="small" tone="muted">
-          Your phone is fetching its own speech model, so your words never leave it. Try again in a minute.
+          Your phone is fetching its own speech model, so speech can become words on the phone itself. Try again in a minute.
         </T>
       )}
       {note === 'nomodel' && (
         <T v="small" tone="muted">
-          Speaking needs your phone’s own speech model, so your words never leave it. Tap Speak instead when you’d like to fetch it.
+          Speaking needs your phone’s own speech model, so speech becomes words on the phone itself. Tap Speak instead when you’d like to fetch it.
         </T>
       )}
       {note === 'denied' && (
@@ -172,7 +175,7 @@ function ListenSheet({ onClose }: { onClose: (text: string | null) => void }) {
                   {phase.ending ? 'Finishing…' : 'Listening'}
                 </T>
                 <T v="small" tone="muted" center>
-                  Say it the way it comes. It stays on this phone, and no recording is kept.
+                  Say it the way it comes. Your speech becomes words here on this phone, and no recording is kept.
                 </T>
               </View>
               <ScrollView style={{ maxHeight: 180 }}>
@@ -198,6 +201,10 @@ function ListenSheet({ onClose }: { onClose: (text: string | null) => void }) {
               <T v="h3">Which would you like to keep?</T>
               <Choice label="Your exact words" text={phase.exact} action="Keep my exact words" onKeep={() => close(phase.exact)} />
               {phase.clear && phase.clear !== phase.exact && <Choice label="A clearer thought, in your words" text={phase.clear} action="Keep this" onKeep={() => close(phase.clear)} />}
+              {/* The voice promise covers speech becoming words, nothing after it (docs/data-map.md). */}
+              <T v="small" tone="muted">
+                Both were made on this phone. Once kept, the words go wherever you put them, exactly like typing.
+              </T>
               <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 20 }}>
                 <Button kind="text" label="Speak again" onPress={() => setRound((n) => n + 1)} />
                 <Button kind="text" label="Cancel" onPress={() => close(null)} />
