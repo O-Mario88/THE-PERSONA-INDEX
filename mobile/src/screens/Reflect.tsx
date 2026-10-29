@@ -324,9 +324,12 @@ function Writing({
       {reading?.kind === 'crisis' && <HeavyCard />}
       {reading?.kind === 'hard' && <KinderCard reading={reading} onWrite={() => onKinder(saved)} />}
       <Tinted>
-        <T tone="leaf" bold>
-          ✓ Saved, on this phone. It comes back on Today, and in your Sunday Mirror.
-        </T>
+        <View style={{ flexDirection: 'row', gap: 8, alignItems: 'flex-start' }}>
+          <Icon name="check" size={18} color={p.leaf} width={2.4} />
+          <T tone="leaf" bold style={{ flex: 1 }}>
+            Saved, on this phone. It comes back on Today, and in your Sunday Mirror.
+          </T>
+        </View>
         {!kept ? (
           <>
             <T v="small" bold>

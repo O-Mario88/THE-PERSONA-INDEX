@@ -83,6 +83,17 @@ export function Insights({
       }
     >
       <PageHeader title="Insights" line="What I'm learning about you, and what seems to help you." />
+      <TileRow>
+        <Tile icon="leaf" tone="green" title="My journey" sub="What you’ve tried and discovered" onPress={onOpenJourney} />
+        {onOpenMirror && <Tile icon="mirror" tone="purple" title="Your Mirrors" sub="Your weeks, looked back on" onPress={onOpenMirror} />}
+      </TileRow>
+      <AcrossDays today={today} />
+      <WhatHelpedYou />
+      {/* Each control sits with the cards it changes (the light-mode review, 2026-10-29). */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginTop: 16 }}>
+        <T v="h2">For You</T>
+        {shown.length > 0 && <DepthSwitch deep={deeper} onChange={setDeeper} center={false} />}
+      </View>
       {answeredAny && (
         <Segmented
           label="How far back"
@@ -94,14 +105,6 @@ export function Insights({
           ]}
         />
       )}
-      <TileRow>
-        <Tile icon="leaf" tone="green" title="My journey" sub="What you’ve tried and discovered" onPress={onOpenJourney} />
-        {onOpenMirror && <Tile icon="mirror" tone="purple" title="Your Mirrors" sub="Your weeks, looked back on" onPress={onOpenMirror} />}
-      </TileRow>
-      {shown.length > 0 && <DepthSwitch deep={deeper} onChange={setDeeper} center={false} />}
-      <AcrossDays today={today} />
-      <WhatHelpedYou />
-      <T v="h2">For You</T>
       {shown.length === 0 ? (
         <EmptyState
           scene="dawn"

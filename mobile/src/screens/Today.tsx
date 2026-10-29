@@ -308,16 +308,16 @@ const MOMENTS = [
 function NeedAMoment({ today, onWrite }: { today: string; onWrite: (prompt?: string) => void }) {
   const [heavy, setHeavy] = useState(false)
   const [keeping, setKeeping] = useState(false)
+  const [more, setMore] = useState(false)
   return (
     <Section title="Need a moment?" icon="heart">
-      {/* Wrapped, never cut off at the edge (the light-mode review, 2026-10-29). */}
+      {/* Wrapped, never cut off at the edge, and the less-used ones behind More
+          (the light-mode review, 2026-10-29). */}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         <Chip label="Something feels heavy" on={heavy} onPress={() => setHeavy(!heavy)} />
         <Chip label="Keep a moment" on={keeping} onPress={() => setKeeping(!keeping)} />
-        {MOMENTS.map((m) => (
-          <Chip key={m.label} label={m.label} onPress={() => onWrite(m.prompt)} />
-        ))}
         <Chip label="Just write" onPress={() => onWrite()} />
+        {more ? MOMENTS.map((m) => <Chip key={m.label} label={m.label} onPress={() => onWrite(m.prompt)} />) : <Chip label="More" icon="chevron" onPress={() => setMore(true)} />}
       </View>
       {(keeping || heavy) && (
         <Card style={{ gap: 10 }}>

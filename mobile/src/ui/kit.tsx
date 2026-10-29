@@ -123,6 +123,14 @@ export function B({ children }: { children: ReactNode }) {
 // a phone never sets it.
 const hovered = (s: { pressed: boolean }) => !!(s as { hovered?: boolean }).hovered
 
+// A clear ring round whatever has the keyboard's focus, on the website, an
+// iPad or a Mac with a keyboard (the light-mode review, 2026-10-29). A tap
+// never shows it: React Native for Web sets "focused" for the keyboard only
+// in browsers that know :focus-visible.
+const focused = (s: { pressed: boolean }) => !!(s as { focused?: boolean }).focused
+const ring = (p: Palette, s: { pressed: boolean }): ViewStyle =>
+  Platform.OS === 'web' && focused(s) ? ({ outlineWidth: 2, outlineStyle: 'solid', outlineColor: p.accentInk, outlineOffset: 2 } as ViewStyle) : {}
+
 // ---- buttons ----
 
 // One button system (the light-mode review, 2026-10-29): 'primary' (navy),
@@ -197,6 +205,7 @@ export function Button({
           // A small press-down, the way the big apps answer a tap.
           transform: [{ scale: s.pressed && !off && kind !== 'text' ? 0.97 : 1 }],
         },
+        ring(p, s),
         style,
       ]}
     >
@@ -229,6 +238,7 @@ export function RowLink({ label, sub, onPress, icon, inGroup }: { label: string;
         inGroup
           ? { borderWidth: 0, borderRadius: 0, backgroundColor: hovered(s) || s.pressed ? p.surface2 : 'transparent' }
           : { borderColor: hovered(s) ? p.lineStrong : p.line, backgroundColor: hovered(s) ? p.surface2 : p.surface, opacity: s.pressed ? 0.8 : 1 },
+        ring(p, s),
       ]}
     >
       {icon}
@@ -278,7 +288,7 @@ export function Segmented<V extends string>({ options, value, onChange, label }:
               feel('select')
               onChange(o.value)
             }}
-            style={styles.segment}
+            style={(s) => [styles.segment, ring(p, s)]}
           >
             {/* The chosen one sits raised: white in light, a lighter step in dark. Always drawn and shown by
                 opacity, so Android keeps its round corners. */}
@@ -314,7 +324,7 @@ export function Option({ label, onPress, disabled, chosen, icon }: { label: stri
       onPressOut={() => setDown(false)}
       style={(s) => {
         const lit = on || (hovered(s) && !disabled)
-        return [styles.option, { backgroundColor: lit ? p.accentWash : p.surface, borderColor: lit ? p.accentLine : p.line, opacity: disabled ? 0.6 : 1 }]
+        return [styles.option, { backgroundColor: lit ? p.accentWash : p.surface, borderColor: lit ? p.accentLine : p.line, opacity: disabled ? 0.6 : 1 }, ring(p, s)]
       }}
     >
       <View style={[styles.optionRing, { borderColor: chosen ? p.lime : p.control, backgroundColor: chosen ? p.lime : p.surface }]}>
@@ -339,7 +349,7 @@ export function Radio({ label, checked, onPress }: { label: string; checked: boo
         feel('select')
         onPress()
       }}
-      style={(s) => [styles.radio, { borderTopColor: p.line, backgroundColor: hovered(s) || s.pressed ? p.surface2 : 'transparent' }]}
+      style={(s) => [styles.radio, { borderTopColor: p.line, backgroundColor: hovered(s) || s.pressed ? p.surface2 : 'transparent' }, ring(p, s)]}
     >
       <Text style={{ flex: 1, fontFamily: checked ? font.bold : font.medium, ...typeScale.body, color: p.text }}>{tr(label)}</Text>
       {checked ? <Icon name="check" size={20} color={p.lime} width={2.4} /> : null}
@@ -404,6 +414,7 @@ export function Chip({ label, on, onPress, icon }: { label: string; on?: boolean
         feel('select')
         onPress()
       }}
+      style={(s) => [{ borderRadius: radius.sm }, ring(p, s)]}
     >
       {body}
     </Pressable>

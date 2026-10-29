@@ -478,6 +478,7 @@ function fitTile(s: { me: number; partly: number; rated: number }): [string, str
 }
 
 function Glance({ m }: { m: MirrorData }) {
+  const p = useTheme()
   const active = m.days.map((d, i) => i < m.stats.daysSoFar && d.answers.length > 0)
   let run = 0
   let best = 0
@@ -513,7 +514,7 @@ function Glance({ m }: { m: MirrorData }) {
                 {weekday(d.date)}
               </T>
               <View style={{ flex: 1, flexDirection: 'row', gap: 4 }}>
-                {review ? <T v="small">🪞</T> : d.answers.length === 0 ? <Sq kind={future ? 'later' : 'missed'} /> : d.answers.map((a, j) => <Sq key={j} kind={a.depth} />)}
+                {review ? <Icon name="mirror" size={16} color={p.accentInk} /> : d.answers.length === 0 ? <Sq kind={future ? 'later' : 'missed'} /> : d.answers.map((a, j) => <Sq key={j} kind={a.depth} />)}
               </View>
               <T v="tiny" tone="muted">
                 {review ? 'Review' : `#${d.edition}`}
