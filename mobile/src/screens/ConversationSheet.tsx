@@ -24,6 +24,10 @@ import {
   sheetDates,
   sheetGate,
   sheetHTML,
+  keepBrief,
+  keptBriefs,
+  removeBrief,
+  type KeptBrief,
   wordsChoices,
   type BriefFor,
   type Sheet,
@@ -68,10 +72,18 @@ const RANGES: { value: string; label: string }[] = [
 
 const DISCUSS_MAX = 600
 
-// The entry on My Journey and at the bottom of the Sunday Mirror.
+const BRIEFS_SHOWN = 3
+
+// The entry on My Journey and at the bottom of the Sunday Mirror, and below
+// it the briefs already made: readable, printable and removable whatever the
+// plan (Edwin, 2026-10-29: nothing made is lost after cancelling).
 export function PrepareSheet({ today }: { today: string }) {
   const p = useTheme()
   const [open, setOpen] = useState(false)
+  const [briefs, setBriefs] = useState(keptBriefs)
+  const [all, setAll] = useState(false)
+  const [viewing, setViewing] = useState<KeptBrief | null>(null)
+  const shown = all ? briefs : briefs.slice(0, BRIEFS_SHOWN)
   return (
     <>
       <RowLink
@@ -80,15 +92,97 @@ export function PrepareSheet({ today }: { today: string }) {
         icon={<Icon name="doc" size={22} color={p.accentInk} />}
         onPress={() => setOpen(true)}
       />
-      {open && <ConversationSheet today={today} onClose={() => setOpen(false)} />}
+      {briefs.length > 0 && (
+        <View style={{ gap: 8 }}>
+          <T v="h3">Your briefs</T>
+          <RowGroup>
+            {shown.map((b) => (
+              <RowLink key={b.id} inGroup label={briefTitle(b.sheet.for)} sub={sheetDates(b.sheet)} onPress={() => setViewing(b)} />
+            ))}
+          </RowGroup>
+          {briefs.length > BRIEFS_SHOWN && <Button small kind="text" label={all ? 'Show fewer' : `Show all ${briefs.length}`} onPress={() => setAll(!all)} style={{ alignSelf: 'flex-start' }} />}
+        </View>
+      )}
+      {open && (
+        <ConversationSheet
+          today={today}
+          onKept={() => setBriefs(keptBriefs())}
+          onClose={() => {
+            setBriefs(keptBriefs())
+            setOpen(false)
+          }}
+        />
+      )}
+      {viewing && (
+        <BriefViewer
+          brief={viewing}
+          onClose={() => setViewing(null)}
+          onRemove={() => {
+            removeBrief(viewing.id)
+            setBriefs(keptBriefs())
+            setViewing(null)
+          }}
+        />
+      )}
     </>
+  )
+}
+
+// A brief made earlier: read it, print or share it, or remove it.
+function BriefViewer({ brief, onClose, onRemove }: { brief: KeptBrief; onClose: () => void; onRemove: () => void }) {
+  const p = useTheme()
+  const insets = useSafeAreaInsets()
+  const [shared, setShared] = useState<Shared>('idle')
+  const [removing, setRemoving] = useState(false)
+  async function share() {
+    setShared('busy')
+    try {
+      setShared((await sharePage(brief.sheet)) ? 'done' : 'failed')
+    } catch {
+      setShared('failed')
+    }
+  }
+  return (
+    <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+      <View style={{ flex: 1, backgroundColor: p.bg }}>
+        <ScrollView
+          contentContainerStyle={{
+            paddingHorizontal: gutter,
+            paddingTop: Platform.OS === 'ios' ? 20 : Math.max(insets.top, 16) + 4,
+            paddingBottom: insets.bottom + 40,
+            gap: 16,
+            width: '100%',
+            maxWidth: 640,
+            alignSelf: 'center',
+          }}
+        >
+          <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
+            <Button kind="text" label="Close" onPress={onClose} />
+          </View>
+          <SheetView sheet={brief.sheet} />
+          <Button wide icon="share" label={web ? 'Print or save as PDF' : 'Share or print'} busy={shared === 'busy'} onPress={share} />
+          <T v="small" tone={shared === 'failed' ? 'danger' : 'muted'} center>
+            {shared === 'failed' ? 'I couldn’t make the file just now. Please try again.' : 'Kept on this phone. Nobody else has a copy unless you share it.'}
+          </T>
+          {removing ? (
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center', alignItems: 'center' }}>
+              <T v="small">Remove this brief from this phone?</T>
+              <Button small kind="danger" label="Remove" onPress={onRemove} />
+              <Button small kind="text" label="Keep it" onPress={() => setRemoving(false)} />
+            </View>
+          ) : (
+            <Button kind="text" label="Remove this brief" onPress={() => setRemoving(true)} />
+          )}
+        </ScrollView>
+      </View>
+    </Modal>
   )
 }
 
 type Shared = 'idle' | 'busy' | 'done' | 'failed'
 type Stage = 'who' | 'about' | 'edit' | 'preview'
 
-export function ConversationSheet({ today, onClose }: { today: string; onClose: () => void }) {
+export function ConversationSheet({ today, onClose, onKept }: { today: string; onClose: () => void; onKept?: () => void }) {
   const p = useTheme()
   const insets = useSafeAreaInsets()
   const [stage, setStage] = useState<Stage>('who')
@@ -100,6 +194,8 @@ export function ConversationSheet({ today, onClose }: { today: string; onClose: 
   const [shared, setShared] = useState<Shared>('idle')
   // The free brief, once made, can be edited and remade while this stays open.
   const [unlocked, setUnlocked] = useState(false)
+  // The brief is kept on the phone each time it is previewed, edits included.
+  const [keptId, setKeptId] = useState<string | undefined>()
   const data = useMemo(() => ({ history: loadHistory(), moves: loadMoves(), checks: checkIns(), intentions: intentions(), written: reflections() }), [])
   const choices = useMemo(() => wordsChoices(data.written, addDays(today, -(range - 1)), today), [data, range, today])
   const gate = unlocked ? 'open' : sheetGate(today)
@@ -279,7 +375,15 @@ export function ConversationSheet({ today, onClose }: { today: string; onClose: 
               <EditPart n={3} title={SECTION_TITLES[2]} lines={sheet.felt} onLines={(felt) => setSheet({ ...sheet, felt })} empty={SHEET_EMPTY.felt} />
               <EditPart n={4} title={SECTION_TITLES[3]} lines={sheet.tried} onLines={(tried) => setSheet({ ...sheet, tried })} empty={SHEET_EMPTY.tried} />
               <EditPart n={5} title={SECTION_TITLES[4]} lines={sheet.bring} onLines={(bring) => setSheet({ ...sheet, bring })} empty={SHEET_EMPTY.bring} numbered />
-              <Button wide label="Preview it" onPress={() => setStage('preview')} />
+              <Button
+                wide
+                label="Preview it"
+                onPress={() => {
+                  setKeptId(keepBrief(sheet, keptId))
+                  onKept?.()
+                  setStage('preview')
+                }}
+              />
             </>
           )}
 
@@ -292,7 +396,7 @@ export function ConversationSheet({ today, onClose }: { today: string; onClose: 
                   ? 'I couldn’t make the file just now. Please try again.'
                   : shared === 'done'
                     ? 'Ready. Nobody else has a copy unless you share it.'
-                    : 'Read it from here during the conversation, or share it as a PDF before you meet.'}
+                    : 'Kept on this phone, under Your briefs. Read it from here during the conversation, or share it as a PDF before you meet.'}
               </T>
             </>
           )}

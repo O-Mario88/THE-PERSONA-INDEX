@@ -21,9 +21,16 @@ const web = Platform.OS === 'web'
 const OUTCOMES: { icon: IconName; title: string; line: string }[] = [
   { icon: 'doc', title: 'Prepare for a conversation', line: 'A short brief for your partner, manager, mentor, counsellor or a friend, whenever you need one. Your first is free.' },
   { icon: 'bulb', title: 'Remember what helps me', line: 'When something similar happens again, I bring back the step you said helped and the day you tried it. Only ever from what you told me.' },
-  { icon: 'refresh', title: 'Show me what is changing', line: 'Echoes across three months, six months and a year, and Mirrors across months and years, told honestly: mixed or unchanged included.' },
+  {
+    icon: 'refresh',
+    title: 'Show me what is changing',
+    line: 'Echoes that set today’s answer beside the same question three months, six months or a year ago, told honestly: mixed or unchanged included.',
+  },
 ]
-const ALSO = ['Speak instead, as often as you like', 'Walking alongside one person, each week', 'A quiet app icon and a guest PIN']
+const ALSO = ['Speak instead, as often as you like']
+// Never behind the paywall (Edwin, 2026-10-29: keep trust outside it).
+const ALWAYS_FREE =
+  'Always free: help with a difficult moment, your notebook, the weekly Mirror, the lock, the cover, the quiet icon and the guest PIN, Download my book, and deleting everything. If you stop, everything you made stays yours to read and download.'
 
 type Choice = { title: string; sub: string; plans: PatronPlan[] }
 
@@ -120,6 +127,10 @@ export function PatronPage({ onBack }: { onBack: () => void }) {
           ))}
         </View>
       </Card>
+
+      <Tinted tone="accent">
+        <T v="small">{ALWAYS_FREE}</T>
+      </Tinted>
 
       {choices.map((c) => (
         <View key={c.title} style={{ gap: 10, padding: 18, borderRadius: radius.lg, borderWidth: 1, borderColor: p.line, backgroundColor: p.surface }}>

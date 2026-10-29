@@ -1,5 +1,21 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { BRIEF_FOR, briefTitle, linesOf, makeSheet, SECTION_TITLES, SHEET_EMPTY, SHEET_FOOTER, sheetDates, sheetGate, sheetHTML, wordsChoices, type SheetInput } from './conversationSheet'
+import {
+  BRIEF_FOR,
+  briefTitle,
+  keepBrief,
+  keptBriefs,
+  linesOf,
+  makeSheet,
+  removeBrief,
+  SECTION_TITLES,
+  SHEET_EMPTY,
+  SHEET_FOOTER,
+  sheetDates,
+  sheetGate,
+  sheetHTML,
+  wordsChoices,
+  type SheetInput,
+} from './conversationSheet'
 import type { CheckIn } from './growthJourney'
 import type { CardText } from './insights'
 import type { Move } from './moves'
@@ -239,5 +255,36 @@ describe('who can make a brief', () => {
     expect(sheetGate(TODAY)).toBe('patron')
     savePatron({ plan: 'monthly', until: '2026-11-28' })
     expect(sheetGate(TODAY)).toBe('open')
+  })
+})
+
+// Edwin, 2026-10-29: "If someone cancels, stop generating premium outputs;
+// let them retain and export what they already created."
+describe('the briefs a person made', () => {
+  const sheet = () => makeSheet(input({ picked: ['moment-1'] }))
+
+  it('keeps each brief on the phone, newest first, and keeps the person’s edits when it is kept again', () => {
+    const first = keepBrief(sheet(), undefined, 1000)
+    const second = keepBrief({ ...sheet(), for: 'manager' }, undefined, 2000)
+    expect(keptBriefs().map((b) => b.id)).toEqual([second, first])
+    keepBrief({ ...sheet(), discuss: 'Edited after the first look.' }, first, 3000)
+    expect(keptBriefs().map((b) => b.id)).toEqual([first, second])
+    expect(keptBriefs()[0].sheet.discuss).toBe('Edited after the first look.')
+  })
+
+  it('stays readable after Patron ends, and goes when the person removes it', () => {
+    savePatron({ plan: 'monthly', until: '2026-10-28' })
+    const id = keepBrief(sheet(), undefined, 1000)
+    expect(sheetGate(TODAY)).not.toBe('open')
+    expect(keptBriefs().map((b) => b.id)).toEqual([id])
+    removeBrief(id)
+    expect(keptBriefs()).toEqual([])
+  })
+
+  it('reads a damaged copy as no briefs', () => {
+    localStorage.setItem('pi.briefs.v1', '{"not":"a list"}')
+    expect(keptBriefs()).toEqual([])
+    localStorage.setItem('pi.briefs.v1', JSON.stringify([{ id: 'x', at: 1, sheet: { discuss: 3 } }]))
+    expect(keptBriefs()).toEqual([])
   })
 })

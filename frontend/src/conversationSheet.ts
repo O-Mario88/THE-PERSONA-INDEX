@@ -23,7 +23,7 @@ import { freeLeft, isPatron } from './patron'
 import type { AnswerRecord, History } from './profile'
 import { AREA_NAMES, areaOf } from './reflect'
 import { splitReveal } from './reveal'
-import { addDays } from './storage'
+import { addDays, loadJSON, saveJSON } from './storage'
 
 export type SheetRange = 7 | 14 | 30
 export const SHEET_RANGES: readonly SheetRange[] = [7, 14, 30]
@@ -109,6 +109,57 @@ export function sheetDates(s: Pick<Sheet, 'from' | 'to'>): string {
 // ---- who can make a brief ----
 
 // trial: the one free brief; patron: briefs are part of Patron.
+// The briefs a person made, kept on this phone (Edwin, 2026-10-29: after
+// cancelling, keep and export what you already made). Readable, printable and
+// in "Download my book" whatever the plan; sealed only in the backup's journal
+// copy, like the rest of the person's writing.
+export const BRIEFS_KEY = 'pi.briefs.v1'
+const BRIEFS_MAX = 30
+export type KeptBrief = { id: string; at: number; sheet: Sheet }
+
+const strings = (v: unknown): v is string[] => Array.isArray(v) && v.every((x) => typeof x === 'string')
+const isWords = (v: unknown): v is SheetWords => {
+  const w = v as SheetWords
+  return !!w && typeof w.date === 'string' && typeof w.text === 'string' && (w.question === null || typeof w.question === 'string')
+}
+const isSheet = (v: unknown): v is Sheet => {
+  const s = v as Sheet
+  return (
+    !!s &&
+    typeof s.from === 'string' &&
+    typeof s.to === 'string' &&
+    SHEET_RANGES.includes(s.range) &&
+    BRIEF_FOR.some((f) => f.id === s.for) &&
+    (s.name === null || typeof s.name === 'string') &&
+    typeof s.discuss === 'string' &&
+    Array.isArray(s.moments) &&
+    s.moments.every(isWords) &&
+    strings(s.felt) &&
+    strings(s.tried) &&
+    strings(s.bring)
+  )
+}
+
+export function keptBriefs(): KeptBrief[] {
+  const v = loadJSON(BRIEFS_KEY)
+  if (!Array.isArray(v)) return []
+  return v.filter((b): b is KeptBrief => !!b && typeof b.id === 'string' && typeof b.at === 'number' && isSheet(b.sheet)).sort((a, b) => b.at - a.at)
+}
+
+// keepBrief keeps a brief, or the person's newer edit of one, and says its id.
+export function keepBrief(sheet: Sheet, id?: string, at: number = Date.now()): string {
+  const key = id ?? `brief-${at}`
+  saveJSON(BRIEFS_KEY, [{ id: key, at, sheet }, ...keptBriefs().filter((b) => b.id !== key)].slice(0, BRIEFS_MAX))
+  return key
+}
+
+export function removeBrief(id: string) {
+  saveJSON(
+    BRIEFS_KEY,
+    keptBriefs().filter((b) => b.id !== id),
+  )
+}
+
 export type SheetGate = 'open' | 'trial' | 'patron'
 
 export function sheetGate(today: string): SheetGate {

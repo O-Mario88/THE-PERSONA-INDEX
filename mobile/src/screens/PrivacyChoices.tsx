@@ -2,18 +2,17 @@
 // Keep it mild (Edwin's brief, 2026-10-29; every on/off switch lives in that
 // card, 2026-10-28). On the website the lock is the browser's passkey lock;
 // the cover, the quiet icon and the guest PIN belong to the phone apps.
-// The lock and the cover are free; the quiet icon and the guest PIN are part
-// of Patron. Inside the guest space nothing mentions a guest PIN.
+// All of it is free (Edwin, 2026-10-29: "keep trust outside the paywall"):
+// the lock, the cover, the quiet icon and the guest PIN protect the people
+// who need them most. Inside the guest space nothing mentions a guest PIN.
 import { useEffect, useState } from 'react'
 import { Image, Modal, Platform, Pressable, View } from 'react-native'
 import { appLock, saveAppLock, sealPin, type AppLock, type QuietIcon } from '@shared/appLock'
-import { isPatron } from '@shared/patron'
 import { applyCover, checkName, chosenIcon, confirmOwner, homeScreenIcon, ownerCheck, quietIconsHere, setQuietIcon, type OwnerCheck } from '../platform/applock'
 import { currentSpace, wipeGuest } from '../platform/setup'
 import { brand, useTheme, typeScale } from '../theme'
 import { PinPad } from '../ui/AppLockGate'
 import { Button, T, Toggle } from '../ui/kit'
-import { PatronNote } from '../ui/Patron'
 import { WebLockSettings } from './Browser'
 
 const android = Platform.OS === 'android'
@@ -24,11 +23,6 @@ const ICONS: { id: QuietIcon; label: string; under: string; src: number }[] = [
   { id: 'horizon', label: 'A horizon', under: android ? 'Today' : 'A horizon', src: require('../../assets/quiet/horizon.png') },
 ]
 
-const todayHere = () => {
-  const d = new Date()
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
-
 export function PrivacyLockChoices() {
   return Platform.OS === 'web' ? <WebLockSettings /> : <PhoneLockChoices />
 }
@@ -37,7 +31,6 @@ function PhoneLockChoices() {
   const [lock, setLock] = useState<AppLock>(appLock)
   const [check, setCheck] = useState<OwnerCheck | null>(null)
   const [note, setNote] = useState<string | null>(null)
-  const [patronFor, setPatronFor] = useState<'icon' | 'guest' | null>(null)
   const [settingUp, setSettingUp] = useState(false)
   const [icon, setIcon] = useState<QuietIcon>(() => chosenIcon(appLock().icon))
   const guestSpace = currentSpace() === 'guest'
@@ -49,8 +42,6 @@ function PhoneLockChoices() {
     saveAppLock(next)
     setLock(next)
   }
-  const patron = () => isPatron(todayHere())
-
   async function turnLock(on: boolean) {
     setNote(null)
     if (on && check === 'none') return setNote('Set up a screen lock on your phone first, then come back here.')
@@ -68,8 +59,6 @@ function PhoneLockChoices() {
   }
 
   async function pickIcon(id: QuietIcon) {
-    if (id !== 'usual' && !patron()) return setPatronFor('icon')
-    setPatronFor(null)
     if (await setQuietIcon(id)) {
       setIcon(id)
       save({ ...lock, icon: id })
@@ -77,8 +66,6 @@ function PhoneLockChoices() {
   }
 
   async function startGuest() {
-    if (!patron()) return setPatronFor('guest')
-    setPatronFor(null)
     if ((await confirmOwner('Set up a guest PIN')) === 'ok') setSettingUp(true)
   }
 
@@ -133,7 +120,6 @@ function PhoneLockChoices() {
               Your home screen shows it once you leave the app.
             </T>
           )}
-          {patronFor === 'icon' && <PatronNote text="A quiet app icon is part of The Persona Index Patron." />}
         </View>
       )}
       {!guestSpace && (
@@ -156,7 +142,6 @@ function PhoneLockChoices() {
           ) : (
             <Button small kind="secondary" label="Set up a guest PIN" onPress={startGuest} />
           )}
-          {patronFor === 'guest' && <PatronNote text="A guest PIN is part of The Persona Index Patron." />}
         </View>
       )}
       {settingUp && (

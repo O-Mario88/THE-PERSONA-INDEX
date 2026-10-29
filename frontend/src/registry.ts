@@ -82,6 +82,7 @@ export const REGISTRY: Entry[] = [
   { key: 'pi.reminders.v1', what: 'The times you chose for your morning and evening reminders in the phone app', backup: 'never', merge: 'local', download: false },
   { key: 'pi.mirror.day', what: 'The day of the week you chose for your Mirror', backup: 'always', merge: 'local', download: true },
   { key: 'pi.welcomeback.v1', what: 'The day you last saw “Welcome back” after a break, so it is said once for each break', backup: 'always', merge: 'local', download: false },
+  { key: 'pi.briefs.v1', what: 'The briefs you made to bring to a conversation, with your edits', backup: 'journal', merge: 'local', download: true },
   { key: 'pi.journey.v1', what: 'The one area of your life you chose to look at after your first Mirror, and since when', backup: 'always', merge: 'local', download: true },
   { key: 'pi.pulse.notalone', what: 'The last Human Pulse counts this phone fetched (anonymous totals, the same for everyone), kept for when it is offline', backup: 'never', merge: 'local', download: false },
   { key: 'pi.invite.later', what: 'The day you said "Not now" to inviting a friend from Today, so it waits a week before asking again', backup: 'never', merge: 'local', download: false },
