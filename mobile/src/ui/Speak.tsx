@@ -21,7 +21,7 @@ const todayHere = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-type Note = 'patron' | 'model' | 'denied' | null
+type Note = 'patron' | 'model' | 'nomodel' | 'denied' | null
 
 // Spoken words go after anything already written, within the box's limit.
 export function addSpoken(current: string, spoken: string, max?: number): string {
@@ -46,8 +46,9 @@ export function SpeakInstead({ onText }: { onText: (text: string) => void }) {
 
   async function begin() {
     if (ready === 'model') {
-      await downloadModel().catch(() => {})
       setNote('model')
+      const fetched = await downloadModel()
+      setNote(fetched === 'no' ? 'nomodel' : fetched === 'done' ? null : 'model')
       setReady(await voiceReady())
       return
     }
@@ -72,6 +73,11 @@ export function SpeakInstead({ onText }: { onText: (text: string) => void }) {
       {note === 'model' && (
         <T v="small" tone="muted">
           Your phone is fetching its own speech model, so your words never leave it. Try again in a minute.
+        </T>
+      )}
+      {note === 'nomodel' && (
+        <T v="small" tone="muted">
+          Speaking needs your phone’s own speech model, so your words never leave it. Tap Speak instead when you’d like to fetch it.
         </T>
       )}
       {note === 'denied' && (

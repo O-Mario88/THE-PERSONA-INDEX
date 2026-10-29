@@ -39,8 +39,19 @@ export async function voiceReady(): Promise<VoiceReady> {
   }
 }
 
-export async function downloadModel(): Promise<void> {
-  if (Platform.OS === 'android') await ExpoSpeechRecognitionModule.androidTriggerOfflineModelDownload({ locale: speechTag() })
+// Asks the phone to fetch its own speech model; Android asks the person
+// first, with the size. done: it's on the phone; fetching: it's on its way
+// (Android 13 only says it showed its prompt); no: they said no, or it failed.
+export type ModelFetch = 'done' | 'fetching' | 'no'
+
+export async function downloadModel(): Promise<ModelFetch> {
+  if (Platform.OS !== 'android') return 'no'
+  try {
+    const r = await ExpoSpeechRecognitionModule.androidTriggerOfflineModelDownload({ locale: speechTag() })
+    return r.status === 'download_success' ? 'done' : 'fetching'
+  } catch {
+    return 'no'
+  }
 }
 
 // The phone's own question, for the microphone only. Recognition on the
