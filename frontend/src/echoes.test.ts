@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { Question } from './api'
-import { echoes, echoFor, echoLines, echoesSeen, findEcho, keepEcho, noteEchoSeen, readEcho, seedEchoes, withEcho } from './echoes'
+import { ECHO_FELT, echoes, echoFor, echoLines, echoesSeen, feltLine, feltReply, findEcho, keepEcho, noteEchoSeen, readEcho, seedEchoes, withEcho } from './echoes'
+import { voiceProblems } from './voice'
 import type { CheckIn } from './growthJourney'
 import type { Move } from './moves'
 import { savePatron } from './patron'
@@ -87,7 +88,9 @@ describe('the echo at the close', () => {
   const today = q(TODAY, 'colleagues-late', 'colleagues')
   const from = { bank: 'colleagues-late', date: '2026-07-30', optionId: 'yes', label: 'Say yes and stay', need: 'belonging' as const }
 
-  it('names both answers when they differ, and asks how the shift feels', () => {
+  // Edwin's brief, 2026-10-29: Echoes are honest, mixed results and no change
+  // included; growth is never assumed.
+  it('names both answers when they differ, and asks whether something changed without assuming it did', () => {
     const r = readEcho(today, 'no', from, 90, [], [])
     expect(r).toMatchObject({ kind: 'shift', before: 'Say yes and stay', after: 'Say no, kindly' })
     expect(echoLines(r)).toEqual({
@@ -96,23 +99,46 @@ describe('the echo at the close', () => {
         'On 30 July, you were asked this same question.',
         'Back then, you chose “Say yes and stay”, reaching for being close to people.',
         'Today, you chose “Say no, kindly”, reaching for being respected.',
-        'How does that shift feel?',
+        'Has something changed, or was today just different?',
       ],
     })
   })
 
-  it('calls the same answer a steady thread, and brings back the step that helped last time', () => {
+  it('calls the same answer the same, and brings back the step that helped last time', () => {
     const moves: Move[] = [{ date: '2026-07-30', questionId: '2026-07-30-colleagues-late', optionId: 'yes', step: 'Leave on time once this week.', status: 'helped' }]
     const checks: CheckIn[] = [{ questionId: '2026-07-30-colleagues-late', date: '2026-08-02', tried: 'yes', outcome: 'helped', feeling: 'lighter' }]
     const r = readEcho(today, 'yes', from, 90, moves, checks)
     expect(echoLines(r)).toEqual({
-      title: 'A steady thread · 3 months',
+      title: 'The same answer · 3 months',
       lines: ['Both on 30 July and today, you chose “Say yes and stay”.', 'Last time this came up, the step that helped was “Leave on time once this week”.'],
     })
   })
 
+  it('says plainly when nothing has moved and no step helped', () => {
+    expect(echoLines(readEcho(today, 'yes', from, 90, [], []))).toEqual({
+      title: 'The same answer · 3 months',
+      lines: ['Both on 30 July and today, you chose “Say yes and stay”.', 'No change here, and that is worth knowing too.'],
+    })
+  })
+
+  it('offers three honest answers to a change: changed, some of each, or just a different day', () => {
+    expect(ECHO_FELT.map((f) => f.label)).toEqual(['Something has changed', 'Some of each', 'Not really, just a different day'])
+    expect(ECHO_FELT.map((f) => feltReply(f.id))).toEqual([
+      'Kept in My journey, as a change you noticed.',
+      'Kept in My journey, as partly changed.',
+      'Kept in My journey. Some days are simply different days.',
+    ])
+    expect(ECHO_FELT.map((f) => feltLine(f.id))).toEqual(['You said something has changed.', 'You said it’s some of each.', 'You said that was just a different day.'])
+    for (const f of ECHO_FELT) for (const line of [f.label, feltReply(f.id), feltLine(f.id)]) expect(voiceProblems(line), line).toEqual([])
+  })
+
   it('keeps what the person said about it, for My Journey', () => {
-    noteEchoSeen({ date: TODAY, questionId: today.id, from: '2026-07-30', milestone: 90, before: 'Say yes and stay', after: 'Say no, kindly', felt: 'grown' })
-    expect(echoesSeen()).toEqual([{ date: TODAY, questionId: today.id, from: '2026-07-30', milestone: 90, before: 'Say yes and stay', after: 'Say no, kindly', felt: 'grown' }])
+    noteEchoSeen({ date: TODAY, questionId: today.id, from: '2026-07-30', milestone: 90, before: 'Say yes and stay', after: 'Say no, kindly', felt: 'mixed' })
+    expect(echoesSeen()).toEqual([{ date: TODAY, questionId: today.id, from: '2026-07-30', milestone: 90, before: 'Say yes and stay', after: 'Say no, kindly', felt: 'mixed' }])
+  })
+
+  it('reads an older “feels true to how I’ve grown” as something changed', () => {
+    localStorage.setItem('pi.echoseen.v1', JSON.stringify([{ date: TODAY, questionId: today.id, from: '2026-07-30', milestone: 90, before: 'a', after: 'b', felt: 'grown' }]))
+    expect(echoesSeen()[0].felt).toBe('changed')
   })
 })

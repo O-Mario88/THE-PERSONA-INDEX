@@ -81,7 +81,7 @@ const TABS: { tab: Tab; name: string; icon: IconName }[] = [
   { tab: 'account', name: 'You', icon: 'you' },
 ]
 
-const SIGNUP_POINTS = ['Your first glimpse and every answer, kept', 'Three new questions each morning and evening', 'Your first mirror on Sunday', 'Your notebook stays encrypted']
+const SIGNUP_POINTS = ['Your first glimpse and every answer, kept', 'Three new questions each morning and evening', 'A Mirror of your week, every week', 'Your notebook stays encrypted']
 const SIGNIN_ASKED = 'pi.signin.asked'
 // One gentle second offer, from the second day, for someone who chose Start without an account.
 const SIGNIN_AGAIN = 'pi.signin.again'

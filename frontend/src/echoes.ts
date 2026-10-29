@@ -2,8 +2,9 @@
 // to day it rarely feels like growth. Once a week at most, a sitting brings
 // back a question the person answered about a month, three months, six
 // months or a year ago, without saying so, so the answer is today's. At the
-// close, the echo sets the two answers side by side: a shift, and how it
-// feels to them, or a steady thread, with the step that helped last time.
+// close, the echo sets the two answers side by side: a different answer,
+// and what the person makes of it (changed, some of each, or just a
+// different day), or the same answer, with the step that helped last time.
 //
 // The answers it remembers are kept on the phone (a small note of each: the
 // question, the day, the choice and what it reached for), for about a year,
@@ -172,11 +173,16 @@ export const echoSpan = (m: Milestone): string => SPAN[m]
 const day = (date: string, m: Milestone) => dateOf(date, m >= 180 ? { day: 'numeric', month: 'long', year: 'numeric' } : { day: 'numeric', month: 'long' })
 const reaching = (n?: Need) => (n ? `, reaching for ${NEED_PHRASES[n]}` : '')
 
+// Honest both ways (Edwin's brief, 2026-10-29): the same answer is called the
+// same, and a different one is asked about, never taken as growth.
 export function echoLines(r: EchoReading): { title: string; lines: string[] } {
   if (r.kind === 'steady')
     return {
-      title: `A steady thread · ${SPAN[r.milestone]}`,
-      lines: [`Both on ${day(r.fromDate, r.milestone)} and today, you chose “${r.before}”.`, ...(r.step ? [`Last time this came up, the step that helped was “${words(r.step)}”.`] : [])],
+      title: `The same answer · ${SPAN[r.milestone]}`,
+      lines: [
+        `Both on ${day(r.fromDate, r.milestone)} and today, you chose “${r.before}”.`,
+        r.step ? `Last time this came up, the step that helped was “${words(r.step)}”.` : 'No change here, and that is worth knowing too.',
+      ],
     }
   return {
     title: `An echo from ${AGO[r.milestone]}`,
@@ -184,17 +190,50 @@ export function echoLines(r: EchoReading): { title: string; lines: string[] } {
       `On ${day(r.fromDate, r.milestone)}, you were asked this same question.`,
       `Back then, you chose “${r.before}”${reaching(r.beforeNeed)}.`,
       `Today, you chose “${r.after}”${reaching(r.afterNeed)}.`,
-      'How does that shift feel?',
+      'Has something changed, or was today just different?',
     ],
   }
 }
 
+// What the person makes of a different answer: something changed, some of
+// each, or just a different day.
+export type EchoFelt = 'changed' | 'mixed' | 'different'
+
+export const ECHO_FELT: { id: EchoFelt; label: string }[] = [
+  { id: 'changed', label: 'Something has changed' },
+  { id: 'mixed', label: 'Some of each' },
+  { id: 'different', label: 'Not really, just a different day' },
+]
+
+const FELT_REPLY: Record<EchoFelt, string> = {
+  changed: 'Kept in My journey, as a change you noticed.',
+  mixed: 'Kept in My journey, as partly changed.',
+  different: 'Kept in My journey. Some days are simply different days.',
+}
+const FELT_LINE: Record<EchoFelt, string> = {
+  changed: 'You said something has changed.',
+  mixed: 'You said it’s some of each.',
+  different: 'You said that was just a different day.',
+}
+export const feltReply = (f: EchoFelt): string => FELT_REPLY[f]
+export const feltLine = (f: EchoFelt): string => FELT_LINE[f]
+
 // What the person said about an echo, kept for My Journey.
-export type EchoSeen = { date: string; questionId: string; from: string; milestone: Milestone; before: string; after: string; felt?: 'grown' | 'different' }
+export type EchoSeen = { date: string; questionId: string; from: string; milestone: Milestone; before: string; after: string; felt?: EchoFelt }
+
+// An older "Feels true to how I've grown" reads as something changed.
+const feltOf = (v: unknown): EchoFelt | undefined => (v === 'grown' ? 'changed' : v === 'changed' || v === 'mixed' || v === 'different' ? v : undefined)
 
 export function echoesSeen(): EchoSeen[] {
   const v = loadJSON(ECHO_SEEN)
-  return Array.isArray(v) ? v.filter((e) => e && typeof e.date === 'string' && typeof e.questionId === 'string' && typeof e.before === 'string') : []
+  if (!Array.isArray(v)) return []
+  return v
+    .filter((e) => e && typeof e.date === 'string' && typeof e.questionId === 'string' && typeof e.before === 'string')
+    .map((e) => {
+      const { felt, ...rest } = e as EchoSeen & { felt?: unknown }
+      const f = feltOf(felt)
+      return f ? { ...rest, felt: f } : rest
+    })
 }
 
 export function noteEchoSeen(e: EchoSeen): void {

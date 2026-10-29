@@ -7,7 +7,7 @@
 // part of life or a change with nothing behind it says so instead of guessing.
 import { useState } from 'react'
 import { View } from 'react-native'
-import { echoesSeen, echoSpan } from '@shared/echoes'
+import { echoesSeen, echoSpan, feltLine } from '@shared/echoes'
 import { growthPairs } from '@shared/growth'
 import { cardTextOf } from '@shared/insights'
 import { checkInFor, checkIns, discoveries, journeyHistory, lifeAreas, noteFor, outcomeLine, type Discovery } from '@shared/growthJourney'
@@ -163,7 +163,7 @@ export function Journey({ today, onBack, onWrite }: { today: string; onBack: () 
             </T>
             {e.felt && (
               <T v="small" tone="muted">
-                {e.felt === 'grown' ? 'You said it feels true to how you’ve grown.' : 'You said that was just a different day.'}
+                {feltLine(e.felt)}
               </T>
             )}
           </View>

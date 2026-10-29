@@ -8,12 +8,14 @@ import { NEEDS, reachingLine } from './needs'
 
 // Saturday looks ahead to Sunday, the review day.
 export const SUNDAY_LINE = 'Tomorrow is Sunday: no new questions, just your week in the mirror.'
+// When the Mirror comes on another day (mirrorDay.ts), Sunday is simply quiet.
+export const QUIET_SUNDAY_LINE = 'Tomorrow is Sunday: no new questions, a day to rest.'
 
 // The first glimpse, after a person's first three answers (DayClose.tsx).
 export const GLIMPSE_BALANCED =
   'Your first answers were balanced, with no single leaning standing out yet. That is a picture too, and each day adds to it.'
 export const GLIMPSE_NEXT =
-  'Three answers are a hint, not a verdict. Each day sharpens it, and on Sunday it becomes your first mirror.'
+  'Three answers are a hint, not a verdict. Each day sharpens it, and your first Mirror brings it together.'
 
 export const QUIET_DAY = 'Tomorrow, notice one moment that feels easy and one that feels heavy. Both tell you something.'
 

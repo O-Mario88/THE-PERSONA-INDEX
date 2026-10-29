@@ -11,7 +11,8 @@ import { goodThings, keepGoodThings } from '@shared/notebook'
 import { inOrder } from '@shared/order'
 import { count, getPulse, PULSE_MIN, sameAs, shareOf, showsSplit, type Pulse } from '@shared/pulse'
 import { themeName } from '@shared/themes'
-import { SUNDAY_LINE } from '@shared/words'
+import { QUIET_SUNDAY_LINE, SUNDAY_LINE } from '@shared/words'
+import { mirrorDay, SUNDAY } from '@shared/mirrorDay'
 import { font, radius, useTheme, typeScale } from '../theme'
 import { Button, Chip, T, Tinted, Private } from '../ui/kit'
 import { Upcoming } from './Close'
@@ -152,7 +153,7 @@ export function Night({ date, tomorrowThemes, onClose }: { date: string; tomorro
       <View style={{ gap: 16 }}>
         <T v="display">That's your day.</T>
         {picked.length > 0 && <T tone="muted">Kept in your notebook: {picked.join(' · ')}.</T>}
-        {isSaturday(date) ? <T>{SUNDAY_LINE}</T> : <Upcoming label="Tomorrow" themes={tomorrowThemes} />}
+        {isSaturday(date) ? <T>{mirrorDay() === SUNDAY ? SUNDAY_LINE : QUIET_SUNDAY_LINE}</T> : <Upcoming label="Tomorrow" themes={tomorrowThemes} />}
         <T style={{ fontFamily: font.semibold, ...typeScale.heading }}>
           {isSaturday(date) ? 'Sleep well. Tomorrow is for looking back: your week will be waiting in your mirror.' : `Sleep well. Your next three open at ${opensAt('morning')}.`}
         </T>

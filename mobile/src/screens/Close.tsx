@@ -10,7 +10,7 @@ import { View } from 'react-native'
 import { recalledChoice, SKIPPED, type Question } from '@shared/api'
 import { adviceFor, levelLine } from '@shared/advice'
 import { isSaturday, opensAt } from '@shared/day'
-import { echoesSeen, echoFor, echoLines, echoSpan, FREE_MILESTONE, noteEchoSeen, readEcho } from '@shared/echoes'
+import { ECHO_FELT, echoesSeen, echoFor, echoLines, echoSpan, feltReply, FREE_MILESTONE, noteEchoSeen, readEcho, type EchoFelt } from '@shared/echoes'
 import { checkInFor, checkIns } from '@shared/growthJourney'
 import { cardTextOf } from '@shared/insights'
 import { sharedNeed } from '@shared/glimpse'
@@ -177,11 +177,11 @@ function EchoCard({ questions, date }: { questions: Question[]; date: string }) 
   const open = !!found && (found.e.milestone === FREE_MILESTONE || isPatron(date))
   const [reading] = useState(() => (found && open ? readEcho(found.q, found.chose, found.e.from, found.e.milestone, loadMoves(), checkIns()) : null))
   const [felt, setFelt] = useState(() => (found ? echoesSeen().find((x) => x.questionId === found.q.id)?.felt : undefined))
-  const note = (f?: 'grown' | 'different') => {
+  const note = (f?: EchoFelt) => {
     if (!found || !reading) return
     noteEchoSeen({ date, questionId: found.q.id, from: reading.fromDate, milestone: reading.milestone, before: reading.before, after: reading.after, ...(f ? { felt: f } : {}) })
   }
-  // A steady thread is kept as soon as it shows; a shift once they say how it feels.
+  // The same answer is kept as soon as it shows; a different one once they say what they make of it.
   useEffect(() => {
     if (reading?.kind === 'steady') note()
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -194,7 +194,7 @@ function EchoCard({ questions, date }: { questions: Question[]; date: string }) 
       />
     )
   const { title, lines } = echoLines(reading)
-  const choose = (f: 'grown' | 'different') => {
+  const choose = (f: EchoFelt) => {
     feel('select')
     setFelt(f)
     note(f)
@@ -212,12 +212,13 @@ function EchoCard({ questions, date }: { questions: Question[]; date: string }) 
       {reading.kind === 'shift' &&
         (felt ? (
           <T v="small" style={{ color: brand.onNight2 }}>
-            {felt === 'grown' ? 'Kept in My journey, as a change you can see.' : 'Kept in My journey. Some days are simply different days.'}
+            {feltReply(felt)}
           </T>
         ) : (
           <View style={{ gap: 8, marginTop: 4 }}>
-            <Button wide kind="warm" label="Feels true to how I’ve grown" onPress={() => choose('grown')} />
-            <Button wide kind="secondary" label="Today was just a different day" onPress={() => choose('different')} />
+            {ECHO_FELT.map((f) => (
+              <Button key={f.id} wide kind="secondary" label={f.label} onPress={() => choose(f.id)} />
+            ))}
           </View>
         ))}
       {reading.kind === 'steady' && (
