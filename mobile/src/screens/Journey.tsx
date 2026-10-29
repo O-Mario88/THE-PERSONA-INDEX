@@ -7,6 +7,7 @@
 // part of life or a change with nothing behind it says so instead of guessing.
 import { useState } from 'react'
 import { View } from 'react-native'
+import { echoesSeen, echoSpan } from '@shared/echoes'
 import { growthPairs } from '@shared/growth'
 import { cardTextOf } from '@shared/insights'
 import { checkInFor, checkIns, discoveries, journeyHistory, lifeAreas, noteFor, outcomeLine, type Discovery } from '@shared/growthJourney'
@@ -70,6 +71,8 @@ export function Journey({ today, onBack, onWrite }: { today: string; onBack: () 
   // What's changed: your own words come in only if you let your reflections into your Mirrors.
   const changed = growthPairs(h, written, today, undefined, { reflections: reflectSettings().reflectionsInMirror }).slice(0, shown.changed)
   const areas = lifeAreas(moves, h, written, today, checks)
+  // Seasonal Echoes the person saw, newest first (echoes.ts).
+  const [echoed] = useState(() => [...echoesSeen()].reverse().slice(0, shown.changed + 2))
   const timeline = journeyHistory(moves, written, checks, shown.timeline, found)
 
   return (
@@ -137,7 +140,7 @@ export function Journey({ today, onBack, onWrite }: { today: string; onBack: () 
 
       <Card style={{ gap: 12 }}>
         <CardHead icon="refresh" tone="blue" title="What’s changed" />
-        {changed.length === 0 ? (
+        {changed.length === 0 && echoed.length === 0 ? (
           <T tone="text2">Nothing to say yet. Once your answers about the same part of life differ over time, the earlier and the more recent show here side by side.</T>
         ) : (
           changed.map((g) => (
@@ -154,6 +157,19 @@ export function Journey({ today, onBack, onWrite }: { today: string; onBack: () 
             </View>
           ))
         )}
+        {echoed.map((e) => (
+          <View key={`echo-${e.questionId}`} style={{ gap: 4 }}>
+            <T v="label">{`An echo across ${echoSpan(e.milestone)}`}</T>
+            <T tone="text2">
+              {e.before === e.after ? `On ${dayMonth(e.from)} and on ${dayMonth(e.date)}, you chose “${e.before}”.` : `On ${dayMonth(e.from)} you chose “${e.before}”. On ${dayMonth(e.date)}, “${e.after}”.`}
+            </T>
+            {e.felt && (
+              <T v="small" tone="muted">
+                {e.felt === 'grown' ? 'You said it feels true to how you’ve grown.' : 'You said that was just a different day.'}
+              </T>
+            )}
+          </View>
+        ))}
         <T v="tiny">A different answer isn’t better or worse. It’s a sign of how things have moved.</T>
       </Card>
 

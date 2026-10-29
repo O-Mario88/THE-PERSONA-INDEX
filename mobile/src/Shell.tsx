@@ -18,7 +18,8 @@ import { darkNow, intimacyOn, loadPrefs, pulseOn, regionHere, savePrefs, type Pr
 import { cachedPack, fetchPack, regionalFor, regionalToday } from '@shared/regional'
 import { addDays, keys, load as loadKey, remove as removeKey, save as saveKey } from '@shared/storage'
 import { NAME_KEY, WELCOMED } from '@shared/welcomeKeys'
-import { pruneCardTexts } from '@shared/insights'
+import { cardTextOf, pruneCardTexts } from '@shared/insights'
+import { seedEchoes } from '@shared/echoes'
 import { CONNECT_OPEN_KEY, dayWithYou, glimpseHere, inWeekOne, isNewcomer, markStarted, needsAccount, SHOW_ALL_KEY } from '@shared/firstWeek'
 import { signInMethods, type AccountView } from '@shared/social'
 import { pullSync } from '@shared/sync'
@@ -168,6 +169,8 @@ export function Shell({ phoneDark, onRestart, onDayReady }: { phoneDark: boolean
   // The 12-word backup, when it is on: changes are sealed and sent a little
   // after they happen (vault.ts).
   useEffect(() => startBackups(), [])
+  // Seasonal Echoes remember answers from before they existed too (echoes.ts).
+  useEffect(() => seedEchoes(loadHistory(), (id) => cardTextOf(id)?.label, date), [date])
   // A tapped reminder opens where it said: the day's sitting, the Mirrors or Reflect.
   const onReminder = useRef<(w: Opens) => void>(() => {})
   useEffect(() => startReminders((w) => onReminder.current(w)), [])

@@ -9,11 +9,14 @@ import { View } from 'react-native'
 import { recalledChoice, SKIPPED, type Question } from '@shared/api'
 import { adviceFor, levelLine } from '@shared/advice'
 import { isSaturday, opensAt } from '@shared/day'
-import { checkInFor } from '@shared/growthJourney'
+import { echoesSeen, echoFor, echoLines, echoSpan, FREE_MILESTONE, noteEchoSeen, readEcho } from '@shared/echoes'
+import { checkInFor, checkIns } from '@shared/growthJourney'
 import { cardTextOf } from '@shared/insights'
 import { sharedNeed } from '@shared/glimpse'
 import { HELPLINE_LINE } from '@shared/helplineText'
-import { movesOn, startMove, startedInEvening, type Move } from '@shared/moves'
+import { dateOf } from '@shared/locale'
+import { loadMoves, movesOn, startMove, startedInEvening, type Move } from '@shared/moves'
+import { isPatron } from '@shared/patron'
 import { loadPrefs } from '@shared/prefs'
 import { heavyPause, isLowMood, loadHistory, recordRoute, type AnswerRecord, type History, type Route } from '@shared/profile'
 import { NEED_PHRASES, type Need } from '@shared/needs'
@@ -23,9 +26,10 @@ import { week } from '@shared/tapestry'
 import { themeName } from '@shared/themes'
 import { sideOf, TRAITS } from '@shared/traits'
 import { GLIMPSE_BALANCED, GLIMPSE_NEXT, QUIET_DAY, ROUTE_ASK, ROUTE_REPLIES, ROUTE_WORDS, routeLead, SUNDAY_LINE } from '@shared/words'
-import { font, radius, useTheme } from '../theme'
+import { brand, font, radius, useTheme } from '../theme'
 import { B, Button, Chip, feel, Option, T, Tinted } from '../ui/kit'
 import { CardHead, themeIcon, WeekTiles } from '../ui/parts'
+import { PatronNote } from '../ui/Patron'
 import { PulseNote, usePagePulse } from '../ui/Pulse'
 import { CheckIn } from './CheckIn'
 import { OwnIdea } from './QuestionCard'
@@ -124,6 +128,7 @@ export function Close(props: Props) {
       {props.sitting === 'morning' ? (
         <>
           {glimpseFor ? <Glimpse answers={mine} history={history} date={date} name={glimpseFor.name} /> : <Thread answers={mine} history={history} date={date} paused={paused} />}
+          {!heavy && <EchoCard questions={questions} date={date} />}
           {!heavy && <TryOne date={date} questions={questions} sitting="morning" otherwise={props.carry ? <Carry text={props.carry} /> : null} />}
           {eveningThemes && <Upcoming label={`Your evening three · ${opensAt('evening')}`} themes={eveningThemes} note={`Go about your day. They'll be waiting for you at ${opensAt('evening')}.`} />}
         </>
@@ -133,6 +138,7 @@ export function Close(props: Props) {
           <TodaysCheckIns date={date} steps={pending} />
           {/* One question at the close at most: how the morning's choice went, only when no step is waiting. */}
           {!paused && pending.length === 0 && <RouteCheck date={date} morning={props.morning} />}
+          {!heavy && <EchoCard questions={questions} date={date} />}
           {heavy ? (
             <ForTomorrow answers={dayAnswers} history={history} date={date} paused={paused} />
           ) : (
@@ -155,6 +161,79 @@ export function Close(props: Props) {
 }
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
+
+// Seasonal Echoes (Edwin's brief, 2026-10-29): when one of this sitting's
+// questions came back from a month, three months, six months or a year ago,
+// its two answers side by side. A month-old echo is free; a longer one is
+// part of Patron, and without it only says that an echo is here.
+function EchoCard({ questions, date }: { questions: Question[]; date: string }) {
+  const [found] = useState(() => {
+    for (const q of questions) {
+      const e = echoFor(q.id, date)
+      const chose = recalledChoice(q.id)
+      if (e && chose && chose !== SKIPPED) return { q, e, chose }
+    }
+    return null
+  })
+  const open = !!found && (found.e.milestone === FREE_MILESTONE || isPatron(date))
+  const [reading] = useState(() => (found && open ? readEcho(found.q, found.chose, found.e.from, found.e.milestone, loadMoves(), checkIns()) : null))
+  const [felt, setFelt] = useState(() => (found ? echoesSeen().find((x) => x.questionId === found.q.id)?.felt : undefined))
+  const note = (f?: 'grown' | 'different') => {
+    if (!found || !reading) return
+    noteEchoSeen({ date, questionId: found.q.id, from: reading.fromDate, milestone: reading.milestone, before: reading.before, after: reading.after, ...(f ? { felt: f } : {}) })
+  }
+  // A steady thread is kept as soon as it shows; a shift once they say how it feels.
+  useEffect(() => {
+    if (reading?.kind === 'steady') note()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+  if (!found) return null
+  if (!open || !reading)
+    return (
+      <PatronNote
+        text={`You answered one of these questions on ${dateOf(found.e.from.date, { day: 'numeric', month: 'long' })} too. Seeing how your answer has moved across ${echoSpan(found.e.milestone)} is part of The Persona Index Patron.`}
+      />
+    )
+  const { title, lines } = echoLines(reading)
+  const choose = (f: 'grown' | 'different') => {
+    feel('select')
+    setFelt(f)
+    note(f)
+  }
+  return (
+    <View style={{ backgroundColor: brand.night, borderRadius: radius.xl, padding: 20, gap: 10 }}>
+      <T v="eyebrow" style={{ color: brand.sprout }}>
+        {title}
+      </T>
+      {lines.map((l) => (
+        <T key={l} style={{ color: brand.onNight, fontSize: 16, lineHeight: 22 }}>
+          {l}
+        </T>
+      ))}
+      {reading.kind === 'shift' &&
+        (felt ? (
+          <T v="small" style={{ color: brand.onNight2 }}>
+            {felt === 'grown' ? 'Kept in My journey, as a change you can see.' : 'Kept in My journey. Some days are simply different days.'}
+          </T>
+        ) : (
+          <View style={{ gap: 8, marginTop: 4 }}>
+            <Button wide kind="warm" label="Feels true to how I’ve grown" onPress={() => choose('grown')} />
+            <Button wide kind="light" label="Today was just a different day" onPress={() => choose('different')} />
+          </View>
+        ))}
+      {reading.kind === 'steady' && (
+        <T v="small" style={{ color: brand.onNight2 }}>
+          Kept in My journey.
+        </T>
+      )}
+      {!isPatron(date) && (
+        <T v="tiny" style={{ color: brand.onNight2 }}>
+          Echoes across 3 months, 6 months and a year are part of Patron.
+        </T>
+      )}
+    </View>
+  )
+}
 
 // The Human Pulse for this sitting's answers (Edwin, 2026-10-29): how many
 // people chose the same, for each answer that has honest counts yet. Never a
