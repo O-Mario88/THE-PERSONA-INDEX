@@ -57,7 +57,47 @@
           "color": "#013d5a"
         }
       ],
-      "expo-asset"
+      "expo-asset",
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Lets you speak instead of typing. Your words are turned into text on this phone, and no recording is kept.",
+          "speechRecognitionPermission": "Your speech is recognised on this phone only, so your words never leave it.",
+          "androidSpeechServicePackages": [
+            "com.google.android.as",
+            "com.google.android.tts",
+            "com.google.android.googlequicksearchbox"
+          ]
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Lets you open your private space with Face ID."
+        }
+      ],
+      "./plugins/withQuietLabels",
+      [
+        "expo-alternate-app-icons",
+        [
+          {
+            "name": "Pebble",
+            "ios": "./assets/quiet/pebble.png",
+            "android": {
+              "foregroundImage": "./assets/quiet/pebble-foreground.png",
+              "backgroundColor": "#0b1c2c"
+            }
+          },
+          {
+            "name": "Horizon",
+            "ios": "./assets/quiet/horizon.png",
+            "android": {
+              "foregroundImage": "./assets/quiet/horizon-foreground.png",
+              "backgroundColor": "#f6f1e8"
+            }
+          }
+        ]
+      ]
     ],
     "experiments": {
       "tsconfigPaths": false

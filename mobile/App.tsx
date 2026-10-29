@@ -15,6 +15,7 @@ import { light } from './src/theme'
 import { Shell } from './src/Shell'
 import { WebLockGate } from './src/screens/Browser'
 import { Launch } from './src/screens/Launch'
+import { AppLockGate } from './src/ui/AppLockGate'
 
 SplashScreen.preventAutoHideAsync().catch(() => {})
 
@@ -47,7 +48,10 @@ export default function App() {
           // Hidden from screen readers while the launch covers it (Android; iOS uses the launch's modal flag).
           <View style={{ flex: 1 }} importantForAccessibility={launched ? 'auto' : 'no-hide-descendants'}>
             <WebLockGate onLocked={showable}>
-              <Shell key={epoch} phoneDark={scheme === 'dark'} onRestart={() => setEpoch((n) => n + 1)} onDayReady={showable} />
+              {/* The phone apps' privacy curtain; opening the other space draws the app afresh. */}
+              <AppLockGate onLocked={showable} onSpace={() => setEpoch((n) => n + 1)}>
+                <Shell key={epoch} phoneDark={scheme === 'dark'} onRestart={() => setEpoch((n) => n + 1)} onDayReady={showable} />
+              </AppLockGate>
             </WebLockGate>
           </View>
         )}

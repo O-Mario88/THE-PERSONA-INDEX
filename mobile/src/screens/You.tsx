@@ -17,6 +17,7 @@ import { forgetSession, patchAccount, signOut, type AccountView } from '@shared/
 import { Back, Button, Card, Chip, Field, Page, RowGroup, RowLink, T, Tinted, Toggle } from '../ui/kit'
 import { Avatar } from '../ui/parts'
 import { DownloadButtons } from './BookDownloads'
+import { PrivacyLockChoices } from './PrivacyChoices'
 
 const KEPT: [string, string][] = [
   ['Readings, plans, Notebook', 'Encrypted · until you delete'],
@@ -198,6 +199,8 @@ export function You({
             onChange={(on) => onChange({ ...prefs, mild: on })}
           />
         )}
+        {/* The privacy curtain (Edwin's brief, 2026-10-29): lock, cover, quiet icon, guest PIN. */}
+        <PrivacyLockChoices />
         <ReminderSettingsView />
       </Card>
 

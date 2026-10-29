@@ -55,6 +55,7 @@ import { rateAnswer } from '@shared/rating'
 import { CRISIS_LINE, focusTouch, HEAVY_HEADLINE, HEAVY_THANKS, LOCAL_NOTE, NO_PEOPLE, NOT_ME_REPLY, peopleAsk, SWAP_NOTE, VERDICT_REPLIES } from '@shared/words'
 import { font, lift, radius, useTheme } from '../theme'
 import { B, Button, Chip, Field, Option, T, Tinted, Private } from '../ui/kit'
+import { addSpoken, SpeakInstead } from '../ui/Speak'
 
 export type Done = 'answered' | 'skipped'
 
@@ -197,6 +198,7 @@ export function QuestionCard({ question, date, sitting, wordsDays = DEFAULT_WORD
             placeholder="Say it the way it really is for you."
             onChangeText={editDraft}
           />
+          <SpeakInstead onText={(t) => editDraft(addSpoken(draft, t, max))} />
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
             <View style={{ flex: 1 }}>
               <Private>Kept on this phone. The app never sends it.</Private>

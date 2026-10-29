@@ -10,6 +10,7 @@ import { setMoveStatus, type Move } from '@shared/moves'
 import { loadPrefs, whatHelpedOn } from '@shared/prefs'
 import { addDays } from '@shared/storage'
 import { Button, Chip, Field, Private, T } from '../ui/kit'
+import { addSpoken, SpeakInstead } from '../ui/Speak'
 
 const TRIED: [Tried, string][] = [
   ['yes', 'Yes, I tried it'],
@@ -121,6 +122,7 @@ export function CheckIn({ move, today, onDone, from }: { move: Step; today: stri
       {tried && outcome && feeling && (
         <>
           <Field label="Anything you’d like to remember? (optional)" placeholder="What happened, or what did you notice?" value={note} onChangeText={writeNote} maxLength={280} multiline />
+          <SpeakInstead onText={(t) => writeNote(addSpoken(note, t, 280))} />
           <Private>Only on this phone. Never shared.</Private>
           <Button label="Save" onPress={() => finish({ tried, outcome, feeling }, REPLIES[outcome])} style={{ alignSelf: 'flex-start' }} />
         </>

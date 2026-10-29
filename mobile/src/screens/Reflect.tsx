@@ -24,6 +24,7 @@ import { font, radius, useTheme } from '../theme'
 import { Button, Card, Page, T, Tinted, Private } from '../ui/kit'
 import { AREA_ICON, AREA_TONE, CardHead, Disc } from '../ui/parts'
 import { Icon } from '../ui/Icon'
+import { addSpoken, SpeakInstead } from '../ui/Speak'
 
 const SPAN_DAYS: Record<ReflectionPeriod, number> = { day: 0, week: 6, month: 30 }
 const THIS: Record<ReflectionPeriod, string> = { day: 'today', week: 'this week', month: 'this month' }
@@ -417,6 +418,13 @@ function Writing({
           </T>
         </View>
       </View>
+      <SpeakInstead
+        onText={(t) => {
+          const next = addSpoken(text, t)
+          setText(next)
+          saveDraft(space, next)
+        }}
+      />
       <Private>{PRIVACY_LINE}</Private>
       <Button label="Save reflection" iconAfter="arrow" disabled={!text.trim()} onPress={save} />
     </Tinted>

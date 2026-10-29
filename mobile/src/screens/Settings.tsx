@@ -12,7 +12,6 @@ import { Back, Button, Card, Field, Page, Radio, RowLink, Segmented, T } from '.
 import { Icon } from '../ui/Icon'
 import { BackupSettings } from './Backup'
 import { CountrySelect } from './Country'
-import { WebLockSettings } from './Browser'
 import { LANGS } from '@shared/i18n'
 
 const withoutLang = ({ lang: _, ...rest }: Prefs): Prefs => rest
@@ -142,7 +141,6 @@ export function Settings({
                 <Button small kind="soft" label="Show every section now" onPress={onShowAll} />
               </View>
             )}
-            <WebLockSettings />
             <BackupSettings onRestored={onRestored} />
           </View>
         )}

@@ -7,6 +7,7 @@ import { recalledDraft, saveDraft } from '@shared/api'
 import { keepMoment, MOMENT_MAX } from '@shared/moments'
 import { PRIVACY_LINE } from '@shared/words'
 import { Button, Field, Private, T } from '../ui/kit'
+import { addSpoken, SpeakInstead } from '../ui/Speak'
 
 const DRAFT = 'moment'
 
@@ -26,6 +27,13 @@ export function KeepMoment({ today }: { today: string }) {
         onChangeText={(t) => {
           setText(t)
           saveDraft(DRAFT, t)
+        }}
+      />
+      <SpeakInstead
+        onText={(t) => {
+          const next = addSpoken(text, t, MOMENT_MAX)
+          setText(next)
+          saveDraft(DRAFT, next)
         }}
       />
       <Private>{PRIVACY_LINE}</Private>

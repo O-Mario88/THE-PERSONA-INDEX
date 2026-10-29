@@ -86,6 +86,7 @@ export const REGISTRY: Entry[] = [
   { key: 'pi.install.v1', what: 'Whether you were invited to add the app to your home screen', backup: 'never', merge: 'local', download: false },
   { key: 'pi.patron.v1', what: 'Whether you are a Patron and until when, as the server last said', backup: 'never', merge: 'local', download: false },
   { key: 'pi.free.v1', what: 'How many free tries of Patron features you have used, such as speaking instead of typing', backup: 'always', merge: 'local', download: true },
+  { key: 'pi.applock.v1', what: "The app's lock on this phone: whether it is on, the cover, the quiet icon, and your PINs, sealed", backup: 'never', merge: 'local', download: false },
 ]
 
 // entryFor finds the registry entry a key belongs to, or null.
