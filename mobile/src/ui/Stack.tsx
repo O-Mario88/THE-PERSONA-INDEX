@@ -110,5 +110,6 @@ export function Enter({ children }: { children: ReactNode }) {
 
 const styles = StyleSheet.create({
   // The edge of a page sliding over another casts a soft shadow, as on iPhone.
-  page: { boxShadow: '-8px 0 24px rgba(0, 0, 0, 0.12)' },
+  // Android apps don't, and a blur that size is costly to draw there.
+  page: Platform.OS === 'android' ? {} : { boxShadow: '-8px 0 24px rgba(0, 0, 0, 0.12)' },
 })
