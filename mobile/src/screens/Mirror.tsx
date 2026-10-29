@@ -92,7 +92,7 @@ import {
 } from '@shared/words'
 import { font, radius, type Palette, useTheme, typeScale } from '../theme'
 import { Icon } from '../ui/Icon'
-import { Button, Chip, Field, Hairline, T, Tinted } from '../ui/kit'
+import { Button, Chip, Field, Hairline, PageHeader, T, Tinted } from '../ui/kit'
 import { CheckIn } from './CheckIn'
 import { Box, Chips, Eyebrow, Note, Quote } from './MirrorBits'
 import { PeriodStory, SundayMirror, YearMirror, type Host } from './MirrorStory'
@@ -153,10 +153,7 @@ export function Mirror({ today, onOpenKept, onCircle, onRead, onOpenChoices, onW
 
   return (
     <View style={{ gap: 20 }} accessibilityLabel={`Your ${adjOf(span)} mirror`}>
-      <View style={{ gap: 4 }}>
-        <T v="display">Mirrors</T>
-        <T tone="text2">A clearer view of your journey.</T>
-      </View>
+      <PageHeader title="Mirrors" line="A clearer view of your journey." />
       <View style={{ flexDirection: 'row', gap: 4, padding: 4, borderRadius: radius.md, backgroundColor: p.surface2 }} accessibilityRole="tablist">
         {SPANS.map((s) => (
           <Pressable

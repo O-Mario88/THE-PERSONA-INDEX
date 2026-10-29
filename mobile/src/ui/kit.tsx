@@ -179,7 +179,8 @@ export function Button({
         if (filled) feel('tap')
         onPress()
       }}
-      hitSlop={small ? 4 : undefined}
+      // Every button takes a 44-point tap, even where it looks smaller.
+      hitSlop={kind === 'text' ? { top: 4, bottom: 4, left: 8, right: 8 } : small ? 3 : undefined}
       style={(s) => [
         styles.btn,
         {
@@ -396,6 +397,7 @@ export function Chip({ label, on, onPress, icon }: { label: string; on?: boolean
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ selected: !!on }}
+      hitSlop={4}
       onPress={() => {
         feel('select')
         onPress()
@@ -476,11 +478,14 @@ export function Page({
         key={refresh}
         ref={scrollRef}
         style={{ flex: 1 }}
+        // The spacing rhythm (the light-mode review, 2026-10-29): 20 at the
+        // sides (16 on a small phone), 16 between cards, and a Section adds
+        // its own room above, so the page reads in groups, not a list.
         contentContainerStyle={{
-          paddingHorizontal: wide ? 40 : gutter,
+          paddingHorizontal: wide ? 40 : width < 360 ? 16 : gutter,
           paddingTop: wide ? 32 : Math.max(insets.top, 20) + 8,
           paddingBottom: wide ? Math.max(bottom, 40) : bottom,
-          gap: 20,
+          gap: 16,
           maxWidth: (wide ? FEED : 640) + (wide ? 80 : 0) + extra,
           width: '100%',
           alignSelf: 'center',
@@ -490,8 +495,8 @@ export function Page({
       >
         {rail ? (
           <View style={{ flexDirection: 'row', gap: 24, alignItems: 'flex-start' }}>
-            <View style={{ flex: 1, gap: 20 }}>{children}</View>
-            <View style={{ width: RAIL_W, gap: 20 }}>{aside}</View>
+            <View style={{ flex: 1, gap: 16 }}>{children}</View>
+            <View style={{ width: RAIL_W, gap: 16 }}>{aside}</View>
           </View>
         ) : (
           <>
@@ -502,6 +507,21 @@ export function Page({
       </ScrollView>
       {/* The page colour behind the status bar, so words don't scroll under the clock. */}
       <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: insets.top, backgroundColor: p.bg }} />
+    </View>
+  )
+}
+
+// The same header on every tab and inner page (the light-mode review,
+// 2026-10-29): the page's title, one line under it, and an action on the
+// right when there is one. Today keeps its own greeting.
+export function PageHeader({ title, line, action }: { title: string; line?: string; action?: ReactNode }) {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 4 }}>
+      <View style={{ flex: 1, gap: 4 }}>
+        <T v="display">{title}</T>
+        {line ? <T tone="text2">{line}</T> : null}
+      </View>
+      {action}
     </View>
   )
 }
@@ -614,7 +634,7 @@ const styles = StyleSheet.create({
   rowLink: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderRadius: radius.lg, paddingHorizontal: 20, paddingVertical: 18 },
   group: { borderRadius: radius.lg, overflow: 'hidden' },
   segmented: { flexDirection: 'row', padding: 3, borderRadius: radius.sm, gap: 3 },
-  segment: { flex: 1, minHeight: 36, alignItems: 'center', justifyContent: 'center', borderRadius: 8, paddingHorizontal: 8 },
+  segment: { flex: 1, minHeight: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 8, paddingHorizontal: 8 },
   segmentFill: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 8 },
   radio: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 48, paddingVertical: 12, paddingHorizontal: 4, borderTopWidth: StyleSheet.hairlineWidth },
   option: { flexDirection: 'row', alignItems: 'center', gap: 16, minHeight: 64, borderWidth: 1.5, borderRadius: radius.md, paddingHorizontal: 20, paddingVertical: 16 },

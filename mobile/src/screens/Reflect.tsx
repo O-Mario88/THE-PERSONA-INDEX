@@ -22,7 +22,7 @@ import { Notebook } from './Notebook'
 import { KeepMoment } from './KeepMoment'
 import { HeavyCard } from './QuestionCard'
 import { font, radius, useTheme, typeScale } from '../theme'
-import { Button, Card, Page, T, Tinted, Private } from '../ui/kit'
+import { Button, Card, Page, PageHeader, Private, T, Tinted } from '../ui/kit'
 import { AREA_ICON, AREA_TONE, CardHead, Disc } from '../ui/parts'
 import { Icon } from '../ui/Icon'
 import { addSpoken, SpeakInstead } from '../ui/Speak'
@@ -168,10 +168,7 @@ export function Reflect({
         </>
       }
     >
-      <View style={{ gap: 4 }}>
-        <T v="display">Reflect</T>
-        <T tone="text2">{name ? `A quiet space for your thoughts, ${name}.` : 'A quiet space for your thoughts.'}</T>
-      </View>
+      <PageHeader title="Reflect" line={name ? `A quiet space for your thoughts, ${name}.` : 'A quiet space for your thoughts.'} />
 
       <View style={{ flexDirection: 'row', backgroundColor: p.surface, borderColor: p.line, borderWidth: 1, borderRadius: radius.md, padding: 4 }}>
         {(Object.keys(PERIOD_NAMES) as ReflectionPeriod[]).map((pd) => {

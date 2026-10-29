@@ -18,7 +18,7 @@ import { rateAnswer } from '@shared/rating'
 import { splitReveal } from '@shared/reveal'
 import { NOT_ME_REPLY, VERDICT_REPLIES } from '@shared/words'
 import { radius, useTheme } from '../theme'
-import { Button, Card, Page, Segmented, T } from '../ui/kit'
+import { Button, Card, Page, PageHeader, Segmented, T } from '../ui/kit'
 import { Tile, TileRow } from '../ui/Layout'
 import { CardHead } from '../ui/parts'
 import { PulseLine, PulseNote, usePagePulse } from '../ui/Pulse'
@@ -79,10 +79,7 @@ export function Insights({
         ) : undefined
       }
     >
-      <View style={{ gap: 4 }}>
-        <T v="display">Insights</T>
-        <T tone="text2">What I'm learning about you, and what seems to help you.</T>
-      </View>
+      <PageHeader title="Insights" line="What I'm learning about you, and what seems to help you." />
       {answeredAny && (
         <Segmented
           label="How far back"

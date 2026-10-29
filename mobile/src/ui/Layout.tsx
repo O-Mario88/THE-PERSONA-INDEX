@@ -18,7 +18,7 @@ type Tone = 'green' | 'blue' | 'amber' | 'rose' | 'purple'
 export function Section({ title, icon, action, children, style }: { title?: string; icon?: IconName; action?: ReactNode; children: ReactNode; style?: StyleProp<ViewStyle> }) {
   const p = useTheme()
   return (
-    <View style={[{ gap: 10 }, style]}>
+    <View style={[{ gap: 12, marginTop: 16 }, style]}>
       {(title || action) && (
         <View style={styles.sectionHead}>
           <View style={styles.sectionTitle}>

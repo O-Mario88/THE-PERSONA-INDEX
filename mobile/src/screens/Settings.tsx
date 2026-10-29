@@ -8,7 +8,7 @@ import { appearanceOf, textSizeOf, withAppearance, withTextSize, WORDS_DAYS, typ
 import { MAX_NAME } from '@shared/welcomeKeys'
 import { COUNTRY_SETTING } from '@shared/words'
 import { font, lift, radius, useTheme } from '../theme'
-import { Back, Button, Card, feel, Field, Page, Radio, RowLink, Segmented, T } from '../ui/kit'
+import { Back, Button, Card, feel, Field, Page, PageHeader, Radio, RowLink, Segmented, T } from '../ui/kit'
 import { Icon } from '../ui/Icon'
 import { BackupSettings } from './Backup'
 import { CountrySelect } from './Country'
@@ -82,10 +82,7 @@ export function Settings({
   return (
     <Page>
       <Back onPress={onBack} />
-      <View style={{ gap: 6 }}>
-        <T v="display">Settings</T>
-        <T tone="text2">Everything here is optional. Change it whenever you like.</T>
-      </View>
+      <PageHeader title="Settings" line="Everything here is optional. Change it whenever you like." />
 
       <Card style={{ gap: 10 }}>
         <T v="eyebrow">Your name</T>

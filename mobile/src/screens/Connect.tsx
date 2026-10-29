@@ -11,7 +11,7 @@ import type { Question } from '@shared/api'
 import { createInvite, getCircle, inviteLink, TAG_NAMES, TAGS, type AccountView, type CircleView, type Tag } from '@shared/social'
 import { dayMonth } from '@shared/reflect'
 import { radius } from '../theme'
-import { Button, Card, Chip, Page, T } from '../ui/kit'
+import { Button, Card, Chip, Page, PageHeader, T } from '../ui/kit'
 import { CardHead, Avatar } from '../ui/parts'
 import { Section } from '../ui/Layout'
 import { CloserTogether, CommonGround, Growing, SupportCelebrate, WhatHelped } from './ConnectMore'
@@ -58,10 +58,7 @@ export function Connect({
       <Page>
         {/* Connect is complete with no friends at all (Edwin, 2026-10-28): shared
             experiences first, and the circle as an open door, never a lock. */}
-        <View style={{ gap: 4 }}>
-          <T v="display">Connect</T>
-          <T tone="text2">A little understanding goes a long way.</T>
-        </View>
+        <PageHeader title="Connect" line="A little understanding goes a long way." />
         <NotAloneSection pulse={pulse} focus={focus} onReflect={reflectOn} />
         <Section title="Reach out when you’re ready" icon="heart">
           <T tone="text2">Is there someone you’d feel comfortable reconnecting with? Your Circle is here whenever you want it, and friends never see your answers.</T>
@@ -82,11 +79,7 @@ export function Connect({
         </Card>
       }
     >
-      <View style={{ gap: 4 }}>
-        <T v="label">Connect{me.handle ? ` · @${me.handle}` : ''}</T>
-        <T v="display">Connect</T>
-        <T tone="text2">A little understanding goes a long way.</T>
-      </View>
+      <PageHeader title="Connect" line="A little understanding goes a long way." />
       <NotAloneSection pulse={pulse} focus={focus} onReflect={reflectOn} />
       {error ? <T tone="danger">{error}</T> : null}
       {friends.length > 0 && <CloserTogether friends={friends} rings={rings} />}

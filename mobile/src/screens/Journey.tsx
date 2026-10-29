@@ -17,7 +17,7 @@ import { reflections } from '@shared/notebook'
 import { loadHistory } from '@shared/profile'
 import { AREA_NAMES, dayMonth } from '@shared/reflect'
 import { DepthSwitch, useDeeper } from '../ui/Depth'
-import { Back, Button, Card, Page, T } from '../ui/kit'
+import { Back, Button, Card, Page, PageHeader, T } from '../ui/kit'
 import { AREA_ICON, AREA_TONE, CardHead, Disc } from '../ui/parts'
 import { PulseNote, usePagePulse } from '../ui/Pulse'
 import { PrepareSheet } from './ConversationSheet'
@@ -79,10 +79,7 @@ export function Journey({ today, onBack, onWrite }: { today: string; onBack: () 
   return (
     <Page>
       <Back onPress={onBack} />
-      <View style={{ gap: 4 }}>
-        <T v="display">My journey</T>
-        <T tone="text2">Little steps. Meaningful discoveries. What you’ve tried, and what you’re learning about yourself.</T>
-      </View>
+      <PageHeader title="My journey" line="Little steps. Meaningful discoveries. What you’ve tried, and what you’re learning about yourself." />
       {/* The conversation sheet (Edwin's brief, 2026-10-29), at the top of My Journey. */}
       <PrepareSheet today={today} />
       <DepthSwitch deep={deeper} onChange={setDeeper} center={false} />

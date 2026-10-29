@@ -159,7 +159,7 @@ export const typeScale = {
 
 // A 4px grid, a 24px gutter, and the radii of the web app.
 export const space = { 1: 4, 2: 8, 3: 12, 4: 16, 5: 20, 6: 24, 8: 32, 10: 40 } as const
-export const gutter = 24
+export const gutter = 20
 // From this width a browser or a Mac window gets the sidebar instead of the
 // tab bar.
 export const WIDE = 900
