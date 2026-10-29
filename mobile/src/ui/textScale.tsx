@@ -24,14 +24,17 @@ export function scaleText(style: StyleProp<TextStyle>, scale: number): StyleProp
   return [style, { ...(fontSize ? { fontSize: fontSize * scale } : {}), ...(lineHeight ? { lineHeight: lineHeight * scale } : {}) }]
 }
 
-// maxScale caps the growth where space is fixed, such as the tab bar.
-export function Text({ style, maxScale, ...rest }: TextProps & { maxScale?: number }) {
+// maxScale caps the growth where space is fixed, such as the tab bar. The
+// phone's own text size is followed up to 200% (the light-mode review,
+// 2026-10-29); headings ask for less, so a page still fits.
+const PHONE_MAX = 2
+export function Text({ style, maxScale, maxFontSizeMultiplier, ...rest }: TextProps & { maxScale?: number }) {
   const scale = Math.min(useTextScale(), maxScale ?? Number.POSITIVE_INFINITY)
-  return <RNText {...rest} style={scaleText(style, scale)} />
+  return <RNText {...rest} maxFontSizeMultiplier={maxFontSizeMultiplier ?? PHONE_MAX} style={scaleText(style, scale)} />
 }
 
 // A ref, when given, travels in the props to the field itself.
-export function TextInput({ style, ...rest }: TextInputProps) {
+export function TextInput({ style, maxFontSizeMultiplier, ...rest }: TextInputProps) {
   const scale = useTextScale()
-  return <RNTextInput {...rest} style={scaleText(style, scale)} />
+  return <RNTextInput {...rest} maxFontSizeMultiplier={maxFontSizeMultiplier ?? PHONE_MAX} style={scaleText(style, scale)} />
 }

@@ -96,6 +96,7 @@ export function T({
     <Text
       numberOfLines={lines}
       accessibilityRole={v === 'display' || v === 'title' || v === 'h2' ? 'header' : undefined}
+      maxFontSizeMultiplier={v === 'display' || v === 'title' ? 1.5 : undefined}
       lineBreakStrategyIOS={words.ios}
       style={[VARIANTS[v], { color: toneColor(p, t) }, bold && { fontFamily: font.bold }, center && { textAlign: 'center' }, words.style, style]}
     >
@@ -396,6 +397,7 @@ export function Chip({ label, on, onPress, icon }: { label: string; on?: boolean
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={tr(label)}
       accessibilityState={{ selected: !!on }}
       hitSlop={4}
       onPress={() => {
