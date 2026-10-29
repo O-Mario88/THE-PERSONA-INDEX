@@ -1,7 +1,7 @@
 // The quieter cards on Today: one next step of your own, the Mirror that's
 // coming, and today's read. Each draws only from your own days and shows
 // nothing rather than something generic.
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Pressable, View } from 'react-native'
 import { tryAgain } from '@shared/growthJourney'
 import { startMove } from '@shared/moves'
@@ -17,12 +17,15 @@ import { mirrorDay, mirrorName } from '@shared/mirrorDay'
 import { nextMirror, quietStep, type QuietStep } from '@shared/todayFocus'
 import { dismissWelcomeBack, welcomeBack, WELCOME_BACK, WELCOME_BACK_LINE } from '@shared/welcomeBack'
 import { lift, radius, useTheme } from '../theme'
-import { Button, Card, Chip, feel, RowLink, T } from '../ui/kit'
+import { Button, Card, Chip, feel, RowGroup, RowLink, T } from '../ui/kit'
 import { Icon } from '../ui/Icon'
 import { Section } from '../ui/Layout'
 import { PulseNote, usePagePulse } from '../ui/Pulse'
 import { CheckIn } from './CheckIn'
 import { countEvent } from '@shared/productCounts'
+import { inboxOf } from '@shared/inbox'
+import { getOutside, getReflectTogether, getShares } from '@shared/social'
+import { useAccount } from '@shared/useAccount'
 
 // One quiet next step: how a step you said you'd try went, else one thing to
 // carry from today's answers, else a small idea from your own recent cards.
@@ -140,6 +143,43 @@ function StepCheckIn({ intention, today, onSaid }: { intention: Intention; today
         ))}
       </View>
     </>
+  )
+}
+
+// From your people (Edwin, 2026-10-29): at most one card on Today, below the
+// personal next step, and only when something new arrived from someone you
+// trust. It never says who is active, and opening Connect is the only action.
+export function PeopleCard({ onConnect }: { onConnect: () => void }) {
+  const me = useAccount()
+  const [line, setLine] = useState<{ name: string; text: string } | null>(null)
+  useEffect(() => {
+    if (!me) return
+    let live = true
+    Promise.all([getShares(), getReflectTogether(), getOutside()]).then(
+      ([sh, rt, out]) => {
+        const e = inboxOf(sh, rt.items, out).find((x) => x.isNew)
+        if (!live || !e) return
+        const name = (n: string) => n.split(' ')[0]
+        if (e.kind === 'received') setLine({ name: e.share.from.name, text: `${name(e.share.from.name)} shared something with you.` })
+        else if (e.kind === 'replies') setLine({ name: e.share.people.find((p) => p.notes.some((n) => !n.mine))?.name ?? '', text: 'Someone replied to what you shared.' })
+        else if (e.kind === 'together')
+          setLine({ name: e.item.with.name, text: e.item.mine ? `${name(e.item.with.name)} answered your question.` : `${name(e.item.with.name)} invited you to reflect together.` })
+        else if (e.kind === 'invite') setLine({ name: e.invite.from.name, text: `${name(e.invite.from.name)} asked you for a note.` })
+        else setLine({ name: e.note.from.name, text: `${name(e.note.from.name)} wrote you a note.` })
+      },
+      () => {},
+    )
+    return () => {
+      live = false
+    }
+  }, [me])
+  if (!line) return null
+  return (
+    <Section title="From your people" icon="heart">
+      <RowGroup>
+        <RowLink inGroup label={line.text} sub="Only you can see it, on Connect" onPress={onConnect} />
+      </RowGroup>
+    </Section>
   )
 }
 

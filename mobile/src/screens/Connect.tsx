@@ -16,11 +16,13 @@ import { dayMonth } from '@shared/reflect'
 import { CIRCLE_ACCESS, INNER_CIRCLE, innerCircle, setInner } from '@shared/rings'
 import {
   createInvite,
+  disconnect,
   getCircle,
   getOutside,
   getReflectTogether,
   getShares,
   inviteLink,
+  patchFriend,
   postNote,
   removeSharePerson,
   TAG_NAMES,
@@ -186,6 +188,9 @@ function People({
   const [inner, setInnerIds] = useState<string[]>(innerCircle)
   const [reflecting, setReflecting] = useState<FriendView | null>(null)
   const [askingNote, setAskingNote] = useState<FriendView | null>(null)
+  const [removing, setRemoving] = useState<string | null>(null)
+  // Muting and removing are quiet: the other person is never told.
+  const quietly = (p: Promise<unknown>) => p.then(onChanged, () => setNote('That didn’t go through. Try again in a moment.'))
   const [note, setNote] = useState('')
   // Leaving the Inner Circle ends access to what was shared with it, quietly.
   async function placeInner(id: string, on: boolean) {
@@ -250,6 +255,21 @@ function People({
                 {prompts.length > 0 && <Button small kind="text" label="Ask for a note" onPress={() => setAskingNote(f)} />}
               </View>
             )}
+            {removing === f.id ? (
+              <View style={{ gap: 6 }}>
+                <T v="small">{`Remove ${f.name.split(' ')[0]} from your people? They aren’t told, and what you shared with them ends in the app.`}</T>
+                <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+                  <Button small kind="danger" label="Remove" onPress={() => (setRemoving(null), quietly(disconnect(f.id)))} />
+                  <Button small kind="text" label="Keep" onPress={() => setRemoving(null)} />
+                </View>
+              </View>
+            ) : (
+              <View style={{ flexDirection: 'row', gap: 16, flexWrap: 'wrap' }}>
+                <Button small kind="text" label={f.muted ? 'Unmute' : 'Mute'} onPress={() => quietly(patchFriend(f.id, { muted: !f.muted }))} />
+                <Button small kind="text" label="Remove" onPress={() => setRemoving(f.id)} />
+              </View>
+            )}
+            {f.muted && <T v="tiny" tone="muted">{`Muted: you won’t see what ${f.name.split(' ')[0]} shares. They aren’t told.`}</T>}
           </Card>
         )
       })}

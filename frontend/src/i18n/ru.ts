@@ -375,11 +375,11 @@ export const ru: Record<string, string> = {
   'Explore shared experiences': 'Посмотреть общий опыт',
   'You’re not alone.': 'Ты не один.',
   // The Human Pulse beside an item (Edwin, 2026-10-29)
-  '{same} of {total} chose the same': '{same} из {total} выбрали то же самое',
+  'Others chose this too: {same} of {total} respondents': 'Другие тоже выбрали это: {same} из {total} ответивших',
   'A few others chose this too': 'Ещё несколько человек выбрали это',
   'Of the {total} who tried this and reported back, {helped} said it helped': 'Из {total}, кто попробовал и рассказал, {helped} говорят, что это помогло',
   '{total} reported back on this step': '{total} рассказали об этом шаге',
-  'of {total} people chose the same answer as you': 'из {total} человек выбрали тот же ответ, что и ты',
+  'of {total} respondents chose this too': 'из {total} ответивших тоже выбрали это',
   // Who someone is to you, on Connect (Edwin, 2026-10-29)
   'Loved ones': 'Близкие',
   'Workmates': 'Коллеги',

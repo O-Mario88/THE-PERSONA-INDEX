@@ -88,6 +88,9 @@ import { locale } from '@shared/locale'
 import { shows } from '@shared/release'
 import { noteMirrorWeek } from '@shared/productCounts'
 import { ShareSheet } from './ShareSheet'
+import { connectionWeek, saySupport, SUPPORT_ASK, supportFor, type SupportAnswer } from '@shared/connectionWeek'
+import { getOutside, getReflectTogether, getShares } from '@shared/social'
+import { useAccount } from '@shared/useAccount'
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
@@ -635,6 +638,53 @@ function WeekFocus({ from, today, choices }: { from: string; today: string; choi
   )
 }
 
+// Connection this week (Edwin, 2026-10-29): only what actually happened
+// between you and people you trust, by name, and, if you received support,
+// whether it helped. Shown only when something happened, and only signed in.
+function ConnectionThisWeek({ from, to, support, onSupport }: { from: string; to: string; support: SupportAnswer | null; onSupport: (a: SupportAnswer) => void }) {
+  const me = useAccount()
+  const [week, setWeek] = useState<{ lines: string[]; received: boolean } | null>(null)
+  useEffect(() => {
+    if (!me) return
+    let live = true
+    Promise.all([getShares(), getReflectTogether(), getOutside()]).then(
+      ([sh, rt, out]) => live && setWeek(connectionWeek(sh, rt, out, from, to)),
+      () => {},
+    )
+    return () => {
+      live = false
+    }
+  }, [me, from, to])
+  if (!week || week.lines.length === 0) return null
+  const answers: [SupportAnswer, string][] = [
+    ['helped', 'It helped'],
+    ['some', 'A little'],
+    ['no', 'Not really'],
+  ]
+  return (
+    <Section id="ms-connection" icon="heart" tone="rose" title="Connection this week" note="Only what happened between you and people you trust.">
+      {week.lines.map((l) => (
+        <T key={l} tone="text2">
+          {l}
+        </T>
+      ))}
+      {week.received &&
+        (support ? (
+          <Fine>{support === 'no' ? 'You said it didn’t help much this time. That’s worth knowing too.' : 'You said it helped. I’ll remember that, under what helped.'}</Fine>
+        ) : (
+          <View style={{ gap: 8 }}>
+            <T bold>{SUPPORT_ASK}</T>
+            <Row>
+              {answers.map(([a, label]) => (
+                <Chip key={a} label={label} onPress={() => onSupport(a)} />
+              ))}
+            </Row>
+          </View>
+        ))}
+    </Section>
+  )
+}
+
 // Two reading depths: the essential Mirror, and the whole of it.
 function Deeper({ deep, children }: { deep: boolean; children: ReactNode }) {
   return deep ? (
@@ -765,9 +815,12 @@ export function SundayMirror({
   // Never a step they said made things harder, unless they choose it again.
   const held = heldBack(loadMoves(), checks)
   const direction = weekDirection({ from: m.from, history, helped, nextStep: m.nextSteps.find((s) => !held.has(stepKey(s.step)))?.step })
-  const connected = showConnection(m.from, m.to)
   const recurring = recurringOf(written, m.from, m.to)
-  const said = saidHelped(helped)
+  // Support from people you trust counts as something that helped once the
+  // person says so (Connection this week, Edwin 2026-10-29).
+  const [support, setSupport] = useState(() => supportFor(m.from))
+  const supportItem: HelpedItem[] = support === 'helped' || support === 'some' ? [{ text: 'Support from people you trust', outcome: support, date: m.to, source: 'plan', times: 1 }] : []
+  const said = [...saidHelped(helped), ...supportItem]
   const open = stillOpen(helped)
   const focus = focusChoices(direction, helped)
 
@@ -844,12 +897,15 @@ export function SundayMirror({
         </Section>
       )}
 
-      {connected && (
-        <Section id="ms-connection" icon="heart" tone="rose" title="Your week in connection">
-          <InConnection from={m.from} to={m.to} span="week" />
-          <CircleLine own={m.traits} />
-        </Section>
-      )}
+      <ConnectionThisWeek
+        from={m.from}
+        to={m.to}
+        support={support}
+        onSupport={(a) => {
+          saySupport(m.from, a)
+          setSupport(a)
+        }}
+      />
 
       <DepthSwitch deep={deep} onChange={setDeep} />
       <Deeper deep={deep}>{deeper}</Deeper>

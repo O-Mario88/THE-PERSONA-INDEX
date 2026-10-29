@@ -49,7 +49,7 @@ export function NotAloneSection({ pulse, focus, onReflect }: { pulse: PulseCount
               <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
                 <Text style={{ fontFamily: font.bold, ...typeScale.figure, letterSpacing: -1, color: brand.marigold }}>{count(lead.line.same)}</Text>
                 <T tone="onNavy" bold style={{ flexShrink: 1 }}>
-                  {trf('of {total} people chose the same answer as you', { total: count(lead.line.total) })}
+                  {trf('of {total} respondents chose this too', { total: count(lead.line.total) })}
                 </T>
               </View>
             ) : (

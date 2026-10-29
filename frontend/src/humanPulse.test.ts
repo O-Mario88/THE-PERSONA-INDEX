@@ -27,8 +27,10 @@ const counts: NotAloneQuestion[] = [
 const answer = (date: string, questionId: string, extra: Record<string, unknown> = {}) => ({ date, questionId, theme: 'rest', depth: 2, traits: {}, optionId: 'a', ...extra })
 
 describe('one Human Pulse, worded the same on every page', () => {
+  // Edwin, 2026-10-29: factual words, "Others chose this too: 37 of 140
+  // respondents.", never implying a common answer is healthier.
   it('says exactly how many chose the same answer, never more than that', () => {
-    expect(pulseWords({ kind: 'count', same: 37, total: 140 })).toBe('37 of 140 people chose the same answer as you.')
+    expect(pulseWords({ kind: 'count', same: 37, total: 140 })).toBe('Others chose this too: 37 of 140 respondents.')
     expect(pulseWords({ kind: 'few' })).toBe('A few others chose this answer too.')
     expect(pulseWords({ kind: 'forming' })).toBeNull()
   })
@@ -39,14 +41,14 @@ describe('one Human Pulse, worded the same on every page', () => {
 // beside an item; the words stay as precise as the long one.
 describe('the Human Pulse beside an item', () => {
   it('says it briefly, in the same terms: the same answer, never the same feeling', () => {
-    expect(pulseShort({ kind: 'count', same: 37, total: 140 })).toBe('37 of 140 chose the same')
+    expect(pulseShort({ kind: 'count', same: 37, total: 140 })).toBe('Others chose this too: 37 of 140 respondents')
     expect(pulseShort({ kind: 'few' })).toBe('A few others chose this too')
     expect(pulseShort({ kind: 'forming' })).toBeNull()
     expect(pulseShort(null)).toBeNull()
   })
 
   it('finds the line for one of your answers, and says nothing before the counts are honest', () => {
-    expect(answerPulse(counts, 'q1', 'a')).toBe('37 of 140 chose the same')
+    expect(answerPulse(counts, 'q1', 'a')).toBe('Others chose this too: 37 of 140 respondents')
     expect(answerPulse(counts, 'q2', 'b')).toBe('A few others chose this too')
     expect(answerPulse(counts, 'q9', 'a')).toBeNull()
     expect(answerPulse(null, 'q1', 'a')).toBeNull()
@@ -76,7 +78,7 @@ describe('the Human Pulse beside an item', () => {
 
   it('can be put into another language whole, numbers and all', () => {
     const t = (template: string, vars: Record<string, string | number> = {}) => `«${template}»${JSON.stringify(vars)}`
-    expect(pulseShort({ kind: 'count', same: 37, total: 140 }, t)).toBe('«{same} of {total} chose the same»{"same":"37","total":"140"}')
+    expect(pulseShort({ kind: 'count', same: 37, total: 140 }, t)).toBe('«Others chose this too: {same} of {total} respondents»{"same":"37","total":"140"}')
   })
 })
 

@@ -375,11 +375,11 @@ export const ja: Record<string, string> = {
   'Explore shared experiences': 'みんなの経験を見る',
   'You’re not alone.': 'あなたはひとりではありません。',
   // The Human Pulse beside an item (Edwin, 2026-10-29)
-  '{same} of {total} chose the same': '{total}人中{same}人が同じ答えを選びました',
+  'Others chose this too: {same} of {total} respondents': 'ほかの人も選んでいます：回答者{total}人中{same}人',
   'A few others chose this too': 'ほかにも数人が同じ答えを選びました',
   'Of the {total} who tried this and reported back, {helped} said it helped': '試して結果を教えてくれた{total}人のうち、{helped}人が役に立ったと答えました',
   '{total} reported back on this step': '{total}人がこの一歩について教えてくれました',
-  'of {total} people chose the same answer as you': '人が、{total}人の中であなたと同じ答えを選びました',
+  'of {total} respondents chose this too': '人が、回答者{total}人の中でこれを選びました',
   // Who someone is to you, on Connect (Edwin, 2026-10-29)
   'Loved ones': '大切な人',
   'Workmates': '職場の仲間',

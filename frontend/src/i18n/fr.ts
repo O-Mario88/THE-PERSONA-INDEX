@@ -308,11 +308,11 @@ export const fr: Record<string, string> = {
   'Explore shared experiences': 'Explorer les expériences partagées',
   'You’re not alone.': 'Tu n\'es pas seul.',
   // The Human Pulse beside an item (Edwin, 2026-10-29)
-  '{same} of {total} chose the same': '{same} sur {total} ont choisi la même chose',
+  'Others chose this too: {same} of {total} respondents': 'D’autres ont aussi choisi ceci : {same} sur {total} répondants',
   'A few others chose this too': 'Quelques autres ont aussi choisi ceci',
   'Of the {total} who tried this and reported back, {helped} said it helped': 'Sur les {total} qui ont essayé et l’ont raconté, {helped} disent que ça a aidé',
   '{total} reported back on this step': '{total} ont raconté comment ce pas s’est passé',
-  'of {total} people chose the same answer as you': 'sur {total} personnes ont choisi la même réponse que toi',
+  'of {total} respondents chose this too': 'sur {total} répondants ont aussi choisi ceci',
   // Who someone is to you, on Connect (Edwin, 2026-10-29)
   'Loved ones': 'Proches',
   'Workmates': 'Collègues',

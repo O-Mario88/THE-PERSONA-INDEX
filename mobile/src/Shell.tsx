@@ -720,6 +720,7 @@ export function Shell({ phoneDark, onRestart, onDayReady }: { phoneDark: boolean
             onWrite={write}
             onInsights={() => goTab('insights')}
             onMirror={() => open('mirror')}
+            onConnect={() => goTab('circle')}
             onSense={(start) => setSense({ start })}
           >
             {!weekOne && <InviteNudge today={set.date} signedIn={!!me} onOpen={() => goTab('circle')} />}

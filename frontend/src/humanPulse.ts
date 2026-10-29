@@ -33,9 +33,10 @@ export async function loadPulse(date: string): Promise<PulseCounts | null> {
 }
 
 // pulseWords is the one sentence every page uses, or null when there is
-// nothing honest to say yet.
+// nothing honest to say yet. Factual words (Edwin, 2026-10-29): others chose
+// this too, never that a common answer is better or a rare one lonelier.
 export function pulseWords(line: NotAloneLine): string | null {
-  if (line.kind === 'count') return `${count(line.same)} of ${count(line.total)} people chose the same answer as you.`
+  if (line.kind === 'count') return `Others chose this too: ${count(line.same)} of ${count(line.total)} respondents.`
   if (line.kind === 'few') return 'A few others chose this answer too.'
   return null
 }
@@ -44,7 +45,7 @@ export function pulseWords(line: NotAloneLine): string | null {
 // 2026-10-29: every item you can relate to others carries the Pulse). The
 // templates are looked up whole, so another language can order them its own
 // way; `t` is the app's translator (i18n trf), plain filling by default.
-export const PULSE_COUNT = '{same} of {total} chose the same'
+export const PULSE_COUNT = 'Others chose this too: {same} of {total} respondents'
 export const PULSE_FEW = 'A few others chose this too'
 export const STEP_HELPED = 'Of the {total} who tried this and reported back, {helped} said it helped'
 export const STEP_REPORTED = '{total} reported back on this step'

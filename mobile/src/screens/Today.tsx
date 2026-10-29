@@ -19,7 +19,7 @@ import { Logo } from '../ui/Logo'
 import { Icon } from '../ui/Icon'
 import { KeepMoment } from './KeepMoment'
 import { HeavyCard } from './QuestionCard'
-import { MirrorCard, QuietStepCard, TodaysRead, WelcomeBackCard } from './TodayCards'
+import { MirrorCard, PeopleCard, QuietStepCard, TodaysRead, WelcomeBackCard } from './TodayCards'
 import { STARTS, type SenseStart } from '@shared/makeSense'
 
 interface TodayProps {
@@ -41,6 +41,7 @@ interface TodayProps {
   onWrite: (prompt?: string, followsUp?: string) => void
   onInsights: () => void
   onMirror?: () => void
+  onConnect?: () => void
   onSense: (start: SenseStart) => void // help making sense of something (MakeSense.tsx)
   children?: ReactNode
 }
@@ -64,6 +65,7 @@ export function Today({
   onWrite,
   onInsights,
   onMirror,
+  onConnect,
   onSense,
   children,
 }: TodayProps) {
@@ -86,6 +88,8 @@ export function Today({
   )
   const main = <MainCard today={date} hero={hero} memory={memory} journey={journey} link={link} tomorrow={tomorrow} onOpen={onOpen} onWrite={onWrite} />
   const step = <QuietStepCard today={date} />
+  // One optional card from your people, below the personal next step.
+  const people = onConnect ? <PeopleCard onConnect={onConnect} /> : null
   const back = <WelcomeBackCard today={date} onStart={hero.action ? onOpen : undefined} onWrite={onWrite} />
   const moment = <NeedAMoment today={date} onWrite={onWrite} onSense={onSense} />
   const mirror = <MirrorCard today={date} onWrite={onWrite} onInsights={onInsights} onMirror={onMirror} />
@@ -98,6 +102,7 @@ export function Today({
             {back}
             {main}
             {step}
+            {people}
             {moment}
             {children}
           </View>
@@ -115,6 +120,7 @@ export function Today({
       {back}
       {main}
       {step}
+      {people}
       {moment}
       {mirror}
       <TodaysRead compact date={date} themes={themes} intimacy={intimacy} onRead={onRead} />
