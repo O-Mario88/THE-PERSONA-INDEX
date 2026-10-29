@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { CAUGHT_UP, inboxOf, markSeen, type InboxEntry } from './inbox'
-import type { NoteView, RTItem, SentShareView, ShareView, SharesView } from './social'
+import type { NoteView, OutsideView, RTItem, SentShareView, ShareView, SharesView } from './social'
 
 // Edwin, 2026-10-29: "Shared with you" is a small inbox, replies grouped under
 // the item they answer, and when everything has been seen it simply says so.
@@ -75,5 +75,23 @@ describe('Shared with you', () => {
     markSeen(first)
     expect(inboxOf(none, [item({ mine: 'quiet', iRevealed: true })])[0].isNew).toBe(false)
     expect(inboxOf(none, [item({ mine: 'quiet', iRevealed: true, theirs: 'practical' })])[0].isNew).toBe(true)
+  })
+
+  it('brings in an invitation to write someone a note, and a note written about you until you keep or dismiss it', () => {
+    const ama = { id: 'ama', name: 'Ama', tag: 'friends' as const, since: '2026-10-01', active: false, connect: true }
+    const outside = (extra: Partial<OutsideView>): OutsideView => ({ prompts: [], asked: [], invitations: [], notes: [], ...extra })
+    const box = inboxOf(
+      shares([]),
+      [],
+      outside({
+        invitations: [{ id: 'o1', from: ama, promptId: 'ease', date: '2026-10-29' }],
+        notes: [{ id: 'o2', from: ama, promptId: 'appreciate', text: 'You remember the small things.', kept: false, date: '2026-10-29' }],
+      }),
+    )
+    expect(box.map((e) => [e.kind, e.id, e.isNew])).toEqual([
+      ['invite', 'o1', true],
+      ['note', 'o2', true],
+    ])
+    expect(inboxOf(shares([]), [], outside({ notes: [{ id: 'o2', from: ama, promptId: 'appreciate', text: 'x', kept: true, date: '2026-10-29' }] }))).toEqual([])
   })
 })

@@ -139,6 +139,7 @@ type Server struct {
 	pairs           PairStore            // two people walking alongside each other (pair.go)
 	productCounts   ProductCountStore    // anonymous daily product counts (productcounts.go)
 	reflectTogether ReflectTogetherStore // reflect together (reflecttogether.go)
+	outsideNotes    OutsideNoteStore     // the Outside Mirror as named notes (outsidenotes.go)
 	friends         friendBank           // friend questions (friends.go)
 	signIn          SignInConfig
 	// patronCfg is what Patron offers here: test purchases, the Founding places (patron.go).
@@ -198,6 +199,7 @@ func NewServer(clock func() time.Time, bank QuestionBank, store Store, devices *
 		pairs:           store,
 		productCounts:   store,
 		reflectTogether: store,
+		outsideNotes:    store,
 		patronCfg:       PatronConfig{FoundingLimit: defaultFoundingLimit},
 		friends:         mustFriendBank(),
 		devices:         devices,
@@ -298,6 +300,11 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("POST /api/reflect-together/{id}/answer", s.AnswerReflectTogether)
 	mux.HandleFunc("POST /api/reflect-together/{id}/reveal", s.RevealReflectTogether)
 	mux.HandleFunc("DELETE /api/reflect-together/{id}", s.LeaveReflectTogether)
+	mux.HandleFunc("GET /api/outside", s.GetOutside)
+	mux.HandleFunc("POST /api/outside", s.AskOutside)
+	mux.HandleFunc("POST /api/outside/{id}/write", s.WriteOutside)
+	mux.HandleFunc("POST /api/outside/{id}/decline", s.DeclineOutside)
+	mux.HandleFunc("POST /api/outside/{id}/keep", s.KeepOutside)
 	mux.HandleFunc("GET /api/common", s.GetCommon)
 
 	// Patron (patron.go) and walking alongside one person (pair.go).

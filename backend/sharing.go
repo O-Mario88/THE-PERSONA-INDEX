@@ -262,7 +262,7 @@ func (p *pgStore) PutShareNote(ctx context.Context, n ShareNote) error {
 
 func (p *pgStore) ShareNotes(ctx context.Context, shareID string) ([]ShareNote, error) {
 	rows, err := p.pool.Query(ctx, `SELECT id, share_id, with_account, sender, kind, body, created_at FROM share_notes
-		WHERE share_id = $1 ORDER BY created_at, id`, shareID)
+		WHERE share_id = $1 ORDER BY created_at, seq`, shareID)
 	if err != nil {
 		return nil, fmt.Errorf("share notes: %w", err)
 	}

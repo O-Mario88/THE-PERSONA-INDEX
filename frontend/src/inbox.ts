@@ -2,7 +2,7 @@
 // friends chose to share with this person, and the replies to what this
 // person shared, each grouped under its item. What has been seen is kept on
 // this phone only, so the page can end with "You're caught up".
-import type { RTItem, SentShareView, ShareView, SharesView } from './social'
+import type { OutsideInvite, OutsideNote, OutsideView, RTItem, SentShareView, ShareView, SharesView } from './social'
 import { loadJSON, saveJSON } from './storage'
 
 export const CAUGHT_UP = 'You’re caught up. Come back whenever you need.'
@@ -13,6 +13,8 @@ export type InboxEntry =
   | { kind: 'received'; id: string; share: ShareView; size: number; isNew: boolean }
   | { kind: 'replies'; id: string; share: SentShareView; size: number; isNew: boolean }
   | { kind: 'together'; id: string; item: RTItem; size: number; isNew: boolean }
+  | { kind: 'invite'; id: string; invite: OutsideInvite; size: number; isNew: boolean }
+  | { kind: 'note'; id: string; note: OutsideNote; size: number; isNew: boolean }
 
 function seen(): Record<string, number> {
   const v = loadJSON(KEY)
@@ -29,7 +31,9 @@ const repliesSize = (s: SentShareView) => s.people.reduce((n, p) => n + p.notes.
 // person answers, reveals or keeps theirs private.
 const togetherSize = (t: RTItem) => 1 + (t.theyAnswered ? 1 : 0) + (t.theirs ? 1 : 0) + (t.theyKept ? 1 : 0)
 
-export function inboxOf(shares: SharesView, together: RTItem[] = []): InboxEntry[] {
+// An invitation to write someone a note, and a note written about this
+// person until they keep or dismiss it (the Outside Mirror).
+export function inboxOf(shares: SharesView, together: RTItem[] = [], outside?: OutsideView): InboxEntry[] {
   const was = seen()
   const fresh = (id: string, size: number) => size > (was[id] ?? 0)
   return [
@@ -47,6 +51,8 @@ export function inboxOf(shares: SharesView, together: RTItem[] = []): InboxEntry
       const size = togetherSize(item)
       return { kind: 'together' as const, id: item.id, item, size, isNew: fresh(item.id, size) }
     }),
+    ...(outside?.invitations ?? []).map((invite) => ({ kind: 'invite' as const, id: invite.id, invite, size: 1, isNew: fresh(invite.id, 1) })),
+    ...(outside?.notes ?? []).filter((n) => !n.kept).map((note) => ({ kind: 'note' as const, id: note.id, note, size: 1, isNew: fresh(note.id, 1) })),
   ]
 }
 

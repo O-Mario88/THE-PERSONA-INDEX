@@ -168,6 +168,7 @@ func (m *memoryStore) DeleteAccount(_ context.Context, id string) error {
 	maps.DeleteFunc(s.together, func(_ string, t Together) bool { return t.Asker == id || t.Invitee == id })
 	m.closer.forgetAccount(id)
 	m.forgetReflectTogether(id)
+	m.forgetOutsideNotes(id)
 	return nil
 }
 

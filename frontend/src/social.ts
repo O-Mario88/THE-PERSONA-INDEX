@@ -334,6 +334,20 @@ export const answerReflectTogether = (id: string, optionId: string) => call<void
 export const revealReflectTogether = (id: string, reveal: boolean) => call<void>(`/api/reflect-together/${encodeURIComponent(id)}/reveal`, json('POST', { reveal }))
 export const leaveReflectTogether = (id: string) => call<void>(`/api/reflect-together/${encodeURIComponent(id)}`, json('DELETE'))
 
+// The Outside Mirror as named notes (Edwin, 2026-10-29): a person invites a
+// friend with a concrete prompt; the friend writes a short note with their
+// name on it, or declines; the person keeps it, dismisses it, or reflects.
+export type OutsidePrompt = { id: string; text: string }
+export type OutsideAsk = { id: string; with: FriendView; promptId: string; date: string }
+export type OutsideInvite = { id: string; from: FriendView; promptId: string; date: string }
+export type OutsideNote = { id: string; from: FriendView; promptId: string; text: string; kept: boolean; date: string }
+export type OutsideView = { prompts: OutsidePrompt[]; asked: OutsideAsk[]; invitations: OutsideInvite[]; notes: OutsideNote[] }
+export const getOutside = () => call<OutsideView>('/api/outside')
+export const askOutside = (friendId: string, promptId: string) => call<{ id: string }>('/api/outside', json('POST', { friendId, promptId }))
+export const writeOutside = (id: string, text: string) => call<void>(`/api/outside/${encodeURIComponent(id)}/write`, json('POST', { text }))
+export const declineOutside = (id: string) => call<void>(`/api/outside/${encodeURIComponent(id)}/decline`, json('POST'))
+export const keepOutside = (id: string, keep: boolean) => call<void>(`/api/outside/${encodeURIComponent(id)}/keep`, json('POST', { keep }))
+
 // A private reply in the thread between the author and one person; the author names whose thread.
 export const postNote = (shareId: string, n: { kind: NoteKind; text?: string; with?: string }) => call<{ id: string }>(`/api/shares/${encodeURIComponent(shareId)}/notes`, json('POST', n))
 // Ends one person's access to an item, quietly, with their thread.
