@@ -258,13 +258,15 @@ export function Shell({ phoneDark, onRestart, onDayReady }: { phoneDark: boolean
   )
   const evening: Progress | null = hasEvening ? (eveningReady ? progressOf(eveningQs) : 'none') : null
 
-  // Opening the app in a sitting's own window with questions left goes
-  // straight to them; otherwise it opens on Today.
+  // The app opens on Today, where the questions are one tap away and "Need a
+  // moment?" is in reach for a hard day (Edwin's brief, 2026-10-29: help with
+  // a difficult moment, a weekly benefit rather than a daily obligation). A
+  // new day or part of the day closes a sitting left open.
   const [flowFor, setFlowFor] = useState('')
   const flowKey = set ? `${set.date}|${win}` : ''
   if (set && flowFor !== flowKey) {
     setFlowFor(flowKey)
-    setFlow(set.review ? null : win === 'morning' && morning !== 'done' ? 'morning' : win === 'evening' && evening !== null && evening !== 'done' ? 'evening' : null)
+    setFlow(null)
   }
 
   const sitting: Sitting | null = flow === 'morning' ? 'morning' : flow === 'evening' ? 'evening' : null
@@ -390,9 +392,9 @@ export function Shell({ phoneDark, onRestart, onDayReady }: { phoneDark: boolean
     const next = qs.find((q) => !recalledChoice(q.id))
     return next && next.care !== 'intimate' ? next.prompt : null
   }
-  const plainHero = set ? heroFor({ date: set.date, window: win, review: !!set.review, morning, evening, pulse: prefs.pulse !== false, friend: null, mirrorOn: mirrorDay() }) : null
+  const plainHero = set ? heroFor({ date: set.date, window: win, review: !!set.review, morning, evening, friend: null, mirrorOn: mirrorDay() }) : null
   const preview = plainHero?.opens === 'morning' ? nextPrompt(morningQs) : plainHero?.opens === 'evening' ? nextPrompt(eveningQs) : null
-  const hero = set && preview ? heroFor({ date: set.date, window: win, review: !!set.review, morning, evening, pulse: prefs.pulse !== false, friend: null, preview, mirrorOn: mirrorDay() }) : plainHero
+  const hero = set && preview ? heroFor({ date: set.date, window: win, review: !!set.review, morning, evening, friend: null, preview, mirrorOn: mirrorDay() }) : plainHero
 
   // Focused Today: what you said last time, tied to the sitting on offer
   // only when one of its questions truly comes back to it (todayFocus.ts).

@@ -1,7 +1,8 @@
 // The Persona Index Patron (Edwin's brief, 2026-10-29): honest choices in the
-// app's own voice, with no countdown, crossed-out price or fake discount. The
-// app stays free every day; Patron keeps it independent and ad-free and opens
-// the longer view. On a phone, plans are bought through the App Store or
+// app's own voice, with no countdown, crossed-out price or fake discount. Help
+// with a difficult moment stays free every day; Patron is built around three
+// outcomes: preparing for a conversation, remembering what helps, and showing
+// what is changing. On a phone, plans are bought through the App Store or
 // Google Play; prepaid passes with Mobile Money or a card are on the website
 // (a phone app may not point to other ways to pay). Until payments are set
 // up, a development server takes test purchases, so everything can be tried.
@@ -10,19 +11,19 @@ import { Platform, View } from 'react-native'
 import { ApiError } from '@shared/api'
 import { clearTestPurchases, PLAN_PRICES, patronLine, patronStatus, refreshPatron, testPurchase, type PatronInfo, type PatronPlan } from '@shared/patron'
 import { radius, useTheme } from '../theme'
-import { Icon } from '../ui/Icon'
+import { Icon, type IconName } from '../ui/Icon'
 import { Back, Button, Card, Page, T, Tinted } from '../ui/kit'
 import { Mark } from '../ui/Logo'
 
 const web = Platform.OS === 'web'
 
-const ADDS = [
-  'Conversation sheets across 14 and 30 days',
-  'Speak instead, as often as you like',
-  'Echoes across 3 months, 6 months and a year',
-  'Walking alongside one person, on Sundays',
-  'A quiet app icon and a guest PIN',
+// The three outcomes Patron is for (Edwin's brief, 2026-10-29), then the rest.
+const OUTCOMES: { icon: IconName; title: string; line: string }[] = [
+  { icon: 'doc', title: 'Prepare for a conversation', line: 'A short brief for your partner, manager, mentor, counsellor or a friend, whenever you need one. Your first is free.' },
+  { icon: 'bulb', title: 'Remember what helps me', line: 'When something similar happens again, I bring back the step you said helped and the day you tried it. Only ever from what you told me.' },
+  { icon: 'refresh', title: 'Show me what is changing', line: 'Echoes across three months, six months and a year, and Mirrors across months and years, told honestly: mixed or unchanged included.' },
 ]
+const ALSO = ['Speak instead, as often as you like', 'Walking alongside one person, each week', 'A quiet app icon and a guest PIN']
 
 type Choice = { title: string; sub: string; plans: PatronPlan[] }
 
@@ -45,7 +46,7 @@ export function PatronPage({ onBack }: { onBack: () => void }) {
   }, [])
 
   const choices: Choice[] = [
-    { title: 'Patron', sub: 'Everything above, for as long as you like. Stop any time.', plans: ['monthly', 'yearly'] },
+    { title: 'Patron', sub: 'All of the above, for as long as you like. Stop any time.', plans: ['monthly', 'yearly'] },
     { title: 'Duo', sub: 'Patron for you and the one person you walk alongside, on one plan.', plans: ['duo_monthly', 'duo_yearly'] },
     {
       title: 'Founding Member: keep it forever',
@@ -83,7 +84,7 @@ export function PatronPage({ onBack }: { onBack: () => void }) {
       <View style={{ gap: 8 }}>
         <Mark size={40} />
         <T v="display">The Persona Index Patron</T>
-        <T tone="text2">The app stays free to use every day. Patron keeps it independent and free of ads, and opens the longer view of your own story.</T>
+        <T tone="text2">Help with a difficult moment is free, every day. Patron is the part that remembers across your weeks, and it keeps the app independent and free of ads.</T>
       </View>
 
       {line && (
@@ -92,16 +93,32 @@ export function PatronPage({ onBack }: { onBack: () => void }) {
         </Tinted>
       )}
 
-      <Card style={{ gap: 10 }}>
-        <T v="h3">What Patron adds</T>
-        {ADDS.map((a) => (
-          <View key={a} style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}>
-            <Icon name="check" size={18} color={p.leaf} width={2.2} />
-            <T tone="text2" style={{ flex: 1 }}>
-              {a}
-            </T>
+      <Card style={{ gap: 16 }}>
+        <T v="h3">What Patron is for</T>
+        {OUTCOMES.map((o) => (
+          <View key={o.title} style={{ flexDirection: 'row', gap: 12, alignItems: 'flex-start' }}>
+            <Icon name={o.icon} size={22} color={p.accentInk} />
+            <View style={{ flex: 1, gap: 2 }}>
+              <T bold>{o.title}</T>
+              <T v="small" tone="text2">
+                {o.line}
+              </T>
+            </View>
           </View>
         ))}
+        <View style={{ gap: 6, borderTopWidth: 1, borderTopColor: p.line, paddingTop: 12 }}>
+          <T v="small" bold tone="muted">
+            Also
+          </T>
+          {ALSO.map((a) => (
+            <View key={a} style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}>
+              <Icon name="check" size={18} color={p.leaf} width={2.2} />
+              <T v="small" tone="text2" style={{ flex: 1 }}>
+                {a}
+              </T>
+            </View>
+          ))}
+        </View>
       </Card>
 
       {choices.map((c) => (

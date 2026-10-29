@@ -1,6 +1,6 @@
 // What Today's card offers in each window, and the greeting above it: shared
 // by the app's Today screen (mobile/src/screens/Today.tsx and Shell.tsx).
-import { clock, MORNING_CLOSES, opensAt, WINDOW_INFO, type OpenWindow, type Window } from './day'
+import { clock, EVENING_OPENS, MORNING_CLOSES, opensAt, WINDOW_INFO, type OpenWindow, type Window } from './day'
 import { windowsDone } from './windows'
 import { dayName, mirrorName, SUNDAY } from './mirrorDay'
 
@@ -57,14 +57,16 @@ function sitting(which: 'morning' | 'evening', eyebrow: string, started: boolean
 
 // heroFor says what Today's main card offers: the open sitting first, even
 // after its own window (the morning three stay open until the evening, the
-// evening three until midnight), then whatever the hour brings.
+// evening three until midnight). Otherwise a calm day (Edwin's brief,
+// 2026-10-29: a weekly benefit, not a daily obligation): nothing more is
+// announced after the morning until the evening, except today's friend, and
+// three good things wait at night without being asked for.
 export function heroFor({
   date,
   window: w,
   review,
   morning,
   evening,
-  pulse,
   friend,
   preview,
   mirrorOn = SUNDAY,
@@ -74,7 +76,6 @@ export function heroFor({
   review: boolean
   morning: Progress
   evening: Progress | null
-  pulse: boolean
   friend?: string | null // today's friend, once the circle has three
   preview?: string | null // the open sitting's next question, never an intimate one
   mirrorOn?: number // the day the person chose for their Mirror (mirrorDay.ts)
@@ -103,38 +104,32 @@ export function heroFor({
     return { eyebrow: 'Rest', title: 'The night is yours', sub: `Your morning three open at ${clock(5 * 60)}. Nothing to do until then but rest.`, opens: null }
   }
   const info = WINDOW_INFO[w]
+  const morningDone = {
+    eyebrow: 'Morning done',
+    title: 'Your three are answered',
+    sub: `Your evening three open at ${clock(EVENING_OPENS)}. Nothing else is asked of you before then.`,
+    action: 'See your morning',
+    opens: 'morning' as const,
+  }
+  const restOfDay = 'Nothing else is asked of you today.'
   const timed = { eyebrow: `Open now · closes ${clock(info.closes % (24 * 60))}` }
   if ((w === 'midday' || w === 'afternoon') && morning !== 'done') return sitting('morning', `Still open · until ${clock(MORNING_CLOSES)}`, morning === 'started', preview)
   if (w === 'night' && evening && evening !== 'done') return sitting('evening', 'Still open · until midnight', evening === 'started', preview)
   switch (w) {
     case 'morning':
-      return morning === 'done'
-        ? { eyebrow: 'Morning done', title: 'Your three are answered', sub: `Midday opens at ${clock(WINDOW_INFO.midday.opens)}, with a reminder of your step.`, action: 'See your morning', opens: 'morning' }
-        : sitting('morning', `Today’s questions · closes ${clock(info.closes)}`, morning === 'started', preview)
+      return morning === 'done' ? morningDone : sitting('morning', `Today’s questions · closes ${clock(info.closes)}`, morning === 'started', preview)
     case 'midday':
-      return {
-        ...timed,
-        title: friend ? `Today's friend is ${friend}` : 'Your midday check',
-        sub: friend ? 'One question, then a reminder of your step.' : 'A reminder of your morning step, then today’s read.',
-        action: 'Open',
-        opens: 'midday',
-      }
+      return friend ? { ...timed, title: `Today’s friend is ${friend}`, sub: 'One question, then a reminder of your step.', action: 'Open', opens: 'midday' } : morningDone
     case 'afternoon':
-      return {
-        ...timed,
-        title: pulse ? 'The afternoon pulse' : 'A quiet afternoon',
-        sub: pulse ? 'How everyone else handled this morning’s questions.' : `Today’s read, and nothing else until ${clock(17 * 60)}.`,
-        action: 'Open',
-        opens: 'afternoon',
-      }
+      return morningDone
     case 'evening':
-      if (!evening) return { ...timed, title: "That's today's questions", sub: `Three good things open at ${clock(21 * 60)}.`, opens: null }
+      if (!evening) return { eyebrow: 'Evening', title: 'That’s today’s questions', sub: restOfDay, opens: null }
       return evening === 'done'
-        ? { eyebrow: 'Evening done', title: 'Your evening three are answered', sub: `The night wind-down opens at ${clock(WINDOW_INFO.night.opens)}.`, action: 'See your evening', opens: 'evening' }
+        ? { eyebrow: 'Evening done', title: 'Your evening three are answered', sub: restOfDay, action: 'See your evening', opens: 'evening' }
         : sitting('evening', `This evening’s questions · closes ${clock(info.closes)}`, evening === 'started', preview)
     case 'night':
       if (windowsDone(date).night !== undefined)
         return { eyebrow: 'Night done', title: "That's your day", sub: `Sleep well. Your morning three open at ${opensAt('morning')}.`, opens: null }
-      return { ...timed, title: 'Three good things from today', sub: 'Then a quiet nod, if you like, and tomorrow.', action: 'Open', opens: 'night' }
+      return { eyebrow: 'Evening done', title: 'That’s today’s questions', sub: restOfDay, action: 'Three good things, if you like', opens: 'night' }
   }
 }

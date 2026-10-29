@@ -170,7 +170,7 @@ export function You({
       <Card style={{ gap: 8 }}>
         <T v="h2">The Persona Index Patron</T>
         <T v="small" tone="muted">
-          {patronLine(patronStatus()) ?? 'Keep the app independent and free of ads, and open the longer view of your own story.'}
+          {patronLine(patronStatus()) ?? 'Prepare for a conversation, remember what helps you and see what is changing, while keeping the app independent and free of ads.'}
         </T>
         <Button small kind="secondary" label="See Patron" onPress={openPatron} />
       </Card>
