@@ -1,7 +1,9 @@
 // Where a Patron feature begins (Edwin's brief, 2026-10-29): one calm line
 // saying what Patron adds, in the app's own voice. Never a countdown, a
-// crossed-out price or a fake discount.
+// crossed-out price or a fake discount. It's gone once the person is a Patron.
 import { View } from 'react-native'
+import { localDate } from '@shared/day'
+import { isPatron } from '@shared/patron'
 import { radius, useTheme } from '../theme'
 import { Button, T } from './kit'
 import { Mark } from './Logo'
@@ -19,6 +21,7 @@ export function openPatron(): void {
 export function PatronNote({ text, onOpen }: { text: string; onOpen?: () => void }) {
   const p = useTheme()
   const open = onOpen ?? (opener ? openPatron : undefined)
+  if (isPatron(localDate())) return null
   return (
     <View style={{ gap: 8, padding: 14, borderRadius: radius.md, backgroundColor: p.accentWash, borderWidth: 1, borderColor: p.accentLine }}>
       <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>

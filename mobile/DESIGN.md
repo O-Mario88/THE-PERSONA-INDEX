@@ -195,12 +195,44 @@ Edwin's design (2026-10-29), four pages, the same in light and dark:
 4. **Welcome** (first time only). Over the same sunrise: the logo, "A more
    intentional you, starts here." in the phone's serif, an optional first
    name and the lime "Begin My Journey" button (`src/screens/Welcome.tsx`).
+5. **Signing in** (Edwin, 2026-10-29). On cream, "Welcome, [name]" and "Keep
+   your journey with you": Apple (iPhone) and Google once their sign-in is
+   set up on the server, or a 6-digit code by email, phone or WhatsApp, with
+   "Start without an account" one tap below (`src/screens/SignUp.tsx`). The
+   name from the welcome fills in the display name. From the second day the
+   first-week sittings still ask for a free account (`firstWeek.ts`).
 
 The stages and their timing live in `frontend/src/launch.ts`, with tests:
 each line stays long enough to read, the whole launch is about three and a
 half seconds when everything is quick, and a slow network never holds anyone
 on the loading page for more than six seconds. Reduced motion keeps the fades
 and drops the movement.
+
+## Patron and what it opens
+
+Edwin's brief (2026-10-29). The app stays free every day; Patron keeps it
+independent and opens the longer view.
+
+- **The Patron page** (`src/screens/PatronPage.tsx`): plain choices with their
+  prices, never a countdown, a crossed-out price or a fake discount. Plans go
+  through the App Store or Google Play on a phone; prepaid passes (Mobile Money
+  or a card) only on the website, since a phone app may not point elsewhere.
+- **A Patron note** (`PatronNote`, `src/ui/Patron.tsx`): a pale green card
+  with the sprout, one sentence and "See Patron", shown only where someone
+  reached for something Patron opens, and gone once they're a Patron.
+- **The conversation sheet** (`src/screens/ConversationSheet.tsx`): the page is
+  paper whatever the theme, a midnight band with the sprout, then four
+  numbered boxes and Good things, in Geist, one A4 page as a PDF.
+- **Speak instead** (`src/ui/Speak.tsx`): the screen dims to a slow breathing
+  glow with the words appearing as they come; no waveform, no ticking clock.
+  Then the exact words and the clearer thought side by side.
+- **The quiet icons**: the sprout, a pebble and a horizon, as tiles under
+  Privacy and choices. Android names them Notes and Today and changes the icon
+  once the person leaves the app (it would close the app otherwise); an
+  iPhone keeps the app's name and changes it at once.
+- **An echo** sits at The Close before "One thing worth trying": a midnight
+  card with then and now, and two answers, "Feels true to how I've grown" or
+  "Today was just a different day".
 
 ## On the website
 

@@ -133,7 +133,7 @@ function PhoneLockChoices() {
               Your home screen shows it once you leave the app.
             </T>
           )}
-          {patronFor === 'icon' && !patron() && <PatronNote text="A quiet app icon is part of The Persona Index Patron." />}
+          {patronFor === 'icon' && <PatronNote text="A quiet app icon is part of The Persona Index Patron." />}
         </View>
       )}
       {!guestSpace && (
@@ -156,7 +156,7 @@ function PhoneLockChoices() {
           ) : (
             <Button small kind="soft" label="Set up a guest PIN" onPress={startGuest} />
           )}
-          {patronFor === 'guest' && !patron() && <PatronNote text="A guest PIN is part of The Persona Index Patron." />}
+          {patronFor === 'guest' && <PatronNote text="A guest PIN is part of The Persona Index Patron." />}
         </View>
       )}
       {settingUp && (
