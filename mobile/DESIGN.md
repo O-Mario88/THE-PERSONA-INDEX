@@ -81,8 +81,30 @@ in dark.
   sit in one `RowGroup` with hairlines between them, not a card each. `Tinted` draws the same card (no coloured fills since
   2026-10-28); colour lives in the small icon disc of `CardHead`, which puts
   the icon beside the title and the words full width below.
+- **Layouts** (`src/ui/Layout.tsx`, 2026-10-29): pages mix cards with a
+  `Section` (open on the page, no box), `Tile`s in a `TileRow` (2-up, for
+  places to go) and one `Spotlight` per page (deep blue with a low sun, light
+  words and a marigold `warm` button): today's sitting on Today, the Human
+  Pulse on Connect. Need a moment? is one sideways row of chips; the coming
+  Mirror sits open; a reading is a tile with a warm square.
 - **Progress**: segments under a sitting, and the dots towards Sunday's
   Mirror on Today (filled where you answered; a missed day takes nothing away).
+
+## The Human Pulse
+
+Every item built from one of your own answers carries the Pulse (Edwin,
+2026-10-29), from the same counts on every page (`frontend/src/humanPulse.ts`,
+`src/ui/Pulse.tsx`): beside it, "384 of 1,240 chose the same"
+(`PulseNote`); beside a step, "Of the 2,480 who tried this and reported
+back, 1,760 said it helped". After an answer and in Explore deeper it is the
+full "You're not alone." line; at the end of a sitting, each answer has its
+line; on Connect it leads with one big number. It covers Insights cards and
+steps, My journey's discoveries and steps, Today's remembered answers and
+step, and the close of a sitting. Nothing shows until a question has 20
+answers, and heavy, regional and intimate answers are never counted.
+Everywhere else is the anonymous Pulse only: Connect is the one place people
+share anything, with the people they choose, a whole group (Loved ones,
+Workmates, Close friends) in one tap.
 
 ## Moving around
 
