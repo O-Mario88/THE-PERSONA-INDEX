@@ -65,6 +65,7 @@ import { readFor } from '@shared/reads/reads'
 import type { Read } from '@shared/reads/types'
 import { outsideMirror, type OutsideMirror as OutsideMirrorData } from '@shared/social'
 import { addDays } from '@shared/storage'
+import { isMirrorDay, mirrorName, readyBack } from '@shared/mirrorDay'
 import { THEMES, themeName } from '@shared/themes'
 import { honestLine, sideOf, TRAITS } from '@shared/traits'
 import { useAccount } from '@shared/useAccount'
@@ -119,7 +120,8 @@ type Nav = { onOpenKept: () => void; onCircle?: () => void; onRead?: (r: Read) =
 export function Mirror({ today, onOpenKept, onCircle, onRead, onOpenChoices, onWrite, jumpTo }: { today: string; onOpenChoices?: () => void; onWrite?: (prompt: string) => void; jumpTo?: (v: Host) => void } & Nav) {
   const p = useTheme()
   const [span, setSpan] = useState<Span>('week')
-  const [back, setBack] = useState(0)
+  // On the Mirror day, the week that Mirror shows (mirrorDay.ts).
+  const [back, setBack] = useState(() => (isMirrorDay(today) ? readyBack() : 0))
   const [state, setState] = useState<State>({ kind: 'loading' })
   const [attempt, setAttempt] = useState(0)
   const reload = useCallback(() => setAttempt((n) => n + 1), [])
@@ -390,7 +392,7 @@ function MirrorPage({ m, today, reload, onCircle, onRead }: { m: MirrorData; tod
               accessibilityRole="button"
               accessibilityLabel="Share the card"
               hitSlop={8}
-              onPress={() => Share.share({ message: `Week ${m.week} · My Sunday Mirror\n${shareName}${line ? `\n${line}` : ''}` })}
+              onPress={() => Share.share({ message: `Week ${m.week} · My ${mirrorName()}\n${shareName}${line ? `\n${line}` : ''}` })}
               style={{ width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.12)' }}
             >
               <Icon name="share" size={18} color={p.onNavy} />

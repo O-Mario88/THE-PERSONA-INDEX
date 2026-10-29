@@ -14,6 +14,7 @@ import { radius, useTheme, typeScale } from '../theme'
 import { Button, Card, RowGroup, RowLink, T } from '../ui/kit'
 import { CardHead } from '../ui/parts'
 import { PatronNote } from '../ui/Patron'
+import { mirrorName } from '@shared/mirrorDay'
 
 const ABOUT = 'Each Sunday you’d both see where your weeks rhymed and differed, from what your answers reached for. Never your answers or your words.'
 
@@ -86,7 +87,7 @@ export function WalkAlongside({ friends }: { friends: FriendView[] }) {
       )}
       {pair.state === 'walking' && (
         <>
-          <T tone="text2">{`Walking alongside ${name}${pair.since ? ` since ${dayMonth(pair.since)}` : ''}. Your Sunday Mirror shows where your weeks rhymed.`}</T>
+          <T tone="text2">{`Walking alongside ${name}${pair.since ? ` since ${dayMonth(pair.since)}` : ''}. Your ${mirrorName()} shows where your weeks rhymed.`}</T>
           <Button small kind="text" label="Stop walking alongside" busy={busy} onPress={() => act(endPair)} />
         </>
       )}

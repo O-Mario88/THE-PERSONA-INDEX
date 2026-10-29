@@ -6,6 +6,7 @@
 import * as Notifications from 'expo-notifications'
 import { AppState, Platform } from 'react-native'
 import { localDate, type Sitting } from '@shared/day'
+import { mirrorDay, setMirrorDay } from '@shared/mirrorDay'
 import { intentions } from '@shared/notebook'
 import { REMINDER_PREFIX, planReminders, reminderSettings, setReminderTimes, type PlannedReminder, type ReminderSettings } from '@shared/reminders'
 import { onChange } from '@shared/storage'
@@ -36,7 +37,7 @@ function plan(now = new Date()): PlannedReminder[] {
   const due = intentions()
     .filter((i) => !i.check)
     .map((i) => i.checkOn)
-  return planReminders(reminderSettings(), today, now.getHours() * 60 + now.getMinutes(), done, due)
+  return planReminders(reminderSettings(), today, now.getHours() * 60 + now.getMinutes(), done, due, mirrorDay())
 }
 
 let running: Promise<void> = Promise.resolve()
@@ -89,6 +90,12 @@ export async function askForReminders(): Promise<ReminderPermission> {
 export async function changeReminderTimes(times: Partial<Pick<ReminderSettings, 'morningAt' | 'eveningAt'>>): Promise<void> {
   setReminderTimes(times)
   await schedule()
+}
+
+// A new Mirror day moves its reminder; on the website it only moves the Mirror.
+export async function changeMirrorDay(day: number): Promise<void> {
+  setMirrorDay(day)
+  if (native) await schedule()
 }
 
 // startReminders plans again whenever the app comes back, a sitting is done

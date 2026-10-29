@@ -40,11 +40,33 @@ interface TodayProps {
   rail?: boolean // a right-hand column beside the feed, on a very wide screen
   onWrite: (prompt?: string, followsUp?: string) => void
   onInsights: () => void
+  onMirror?: () => void
   onSense: (start: SenseStart) => void // help making sense of something (MakeSense.tsx)
   children?: ReactNode
 }
 
-export function Today({ date, window: w, name, note, hero, memory, journey, link, tomorrow, onOpen, onAccount, themes, intimacy, onRead, rail, onWrite, onInsights, onSense, children }: TodayProps) {
+export function Today({
+  date,
+  window: w,
+  name,
+  note,
+  hero,
+  memory,
+  journey,
+  link,
+  tomorrow,
+  onOpen,
+  onAccount,
+  themes,
+  intimacy,
+  onRead,
+  rail,
+  onWrite,
+  onInsights,
+  onMirror,
+  onSense,
+  children,
+}: TodayProps) {
   const { width } = useWindowDimensions()
   const header = (
     <View style={styles.header}>
@@ -65,7 +87,7 @@ export function Today({ date, window: w, name, note, hero, memory, journey, link
   const main = <MainCard today={date} hero={hero} memory={memory} journey={journey} link={link} tomorrow={tomorrow} onOpen={onOpen} onWrite={onWrite} />
   const step = <QuietStepCard today={date} />
   const moment = <NeedAMoment today={date} onWrite={onWrite} onSense={onSense} />
-  const mirror = <MirrorCard today={date} onWrite={onWrite} onInsights={onInsights} />
+  const mirror = <MirrorCard today={date} onWrite={onWrite} onInsights={onInsights} onMirror={onMirror} />
   if (rail) {
     return (
       <View style={{ gap: 20 }}>

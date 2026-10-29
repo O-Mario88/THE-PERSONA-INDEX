@@ -1,7 +1,8 @@
 // Reminders, planned on the phone, for the app on iPhone, Android and Mac
 // (the website has none; mobile/src/platform/reminders.ts hands them to the
-// system). The morning three, the evening three, the Sunday Mirror and the
-// check-ins are always on, with nothing to switch (Edwin, 2026-10-29); the
+// system). The morning three, the evening three, the Mirror (on Sunday, or
+// the day the person chose) and the check-ins are always on, with nothing to
+// switch (Edwin, 2026-10-29); the
 // person can choose the morning and evening times, and the phone's own
 // settings can silence them. The plan covers the week ahead, one
 // notification per day per kind, so today's can be dropped once its sitting
@@ -11,6 +12,7 @@
 
 import { addDays, loadJSON, saveJSON } from './storage'
 import { EVENING_OPENS, MORNING_OPENS, type Sitting } from './day'
+import { isMirrorDay, mirrorName, SUNDAY, weekdayOf } from './mirrorDay'
 
 export type ReminderSettings = {
   morning: boolean
@@ -54,14 +56,15 @@ export function setReminderTimes(times: Partial<Pick<ReminderSettings, 'morningA
   saveJSON(KEY, { morningAt: times.morningAt ?? s.morningAt, eveningAt: times.eveningAt ?? s.eveningAt })
 }
 
-const isSunday = (iso: string) => new Date(`${iso}T12:00:00Z`).getUTCDay() === 0
-
+// The Mirror comes on the day the person chose (mirrorDay.ts), Sunday unless
+// they changed it; Sunday never brings questions, whichever day that is.
 export function planReminders(
   s: ReminderSettings,
   today: string,
   minutesNow: number,
   doneToday: ReadonlySet<Sitting>,
   intentionDays: readonly string[],
+  mirrorOn = SUNDAY,
 ): PlannedReminder[] {
   if (!anyOn(s)) return []
   const out: PlannedReminder[] = []
@@ -70,17 +73,17 @@ export function planReminders(
     const day = addDays(today, i)
     const isToday = i === 0
     const later = (m: number) => !isToday || m > minutesNow
-    if (isSunday(day)) {
-      if (s.sunday && later(SUNDAY_AT))
-        out.push({ id: `${REMINDER_PREFIX}sunday.${day}`, date: day, minutes: SUNDAY_AT, opens: 'mirrors', title: 'Your Sunday Mirror is ready', body: 'A look back at your week, set only against your own.' })
-    } else {
-      const m = morningMinutes(s)
-      if (s.morning && later(m) && !(isToday && doneToday.has('morning')))
-        out.push({ id: `${REMINDER_PREFIX}morning.${day}`, date: day, minutes: m, opens: 'today', title: 'Your morning three are waiting', body: 'Two minutes, then the day is yours.' })
-      const e = eveningMinutes(s)
-      if (s.evening && later(e) && !(isToday && doneToday.has('evening')))
-        out.push({ id: `${REMINDER_PREFIX}evening.${day}`, date: day, minutes: e, opens: 'today', title: 'Your evening three are waiting', body: 'A quiet look back at the day.' })
+    const questions = weekdayOf(day) !== SUNDAY
+    const m = morningMinutes(s)
+    if (questions && s.morning && later(m) && !(isToday && doneToday.has('morning')))
+      out.push({ id: `${REMINDER_PREFIX}morning.${day}`, date: day, minutes: m, opens: 'today', title: 'Your morning three are waiting', body: 'Two minutes, then the day is yours.' })
+    if (s.sunday && isMirrorDay(day, mirrorOn) && later(SUNDAY_AT)) {
+      const body = mirrorOn === SUNDAY ? 'A look back at your week, set only against your own.' : 'A look back at last week, set only against your own.'
+      out.push({ id: `${REMINDER_PREFIX}mirror.${day}`, date: day, minutes: SUNDAY_AT, opens: 'mirrors', title: `Your ${mirrorName(mirrorOn)} is ready`, body })
     }
+    const e = eveningMinutes(s)
+    if (questions && s.evening && later(e) && !(isToday && doneToday.has('evening')))
+      out.push({ id: `${REMINDER_PREFIX}evening.${day}`, date: day, minutes: e, opens: 'today', title: 'Your evening three are waiting', body: 'A quiet look back at the day.' })
     if (s.intentions && due.has(day) && later(CHECK_IN_AT))
       out.push({ id: `${REMINDER_PREFIX}checkin.${day}`, date: day, minutes: CHECK_IN_AT, opens: 'today', title: 'A gentle check-in', body: 'How did the step you wanted to try go? Only you see it.' })
   }

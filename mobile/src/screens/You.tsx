@@ -11,7 +11,7 @@ import { followTime } from '@shared/depth'
 import { countryOf, loadPrefs, pulseOn, whatHelpedOn, type Prefs, type ReflectionStyle, type ReflectionTime } from '@shared/prefs'
 import { regionOf } from '@shared/regions'
 import { REGIONAL_SWITCH } from '@shared/words'
-import { ReminderSettingsView } from './Reminders'
+import { MirrorDayPicker, ReminderSettingsView } from './Reminders'
 import { loadHistory } from '@shared/profile'
 import { forgetSession, patchAccount, signOut, type AccountView } from '@shared/social'
 import { Back, Button, Card, Chip, Field, Page, RowGroup, RowLink, T, Tinted, Toggle } from '../ui/kit'
@@ -213,6 +213,7 @@ export function You({
         {/* The privacy curtain (Edwin's brief, 2026-10-29): lock, cover, quiet icon, guest PIN. */}
         <PrivacyLockChoices />
         <ReminderSettingsView />
+        <MirrorDayPicker />
       </Card>
 
       <RowGroup>

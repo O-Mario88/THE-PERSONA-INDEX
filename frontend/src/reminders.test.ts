@@ -20,10 +20,24 @@ describe('planReminders', () => {
       'reminder.morning.2026-10-29',
       'reminder.morning.2026-10-30',
       'reminder.morning.2026-10-31',
-      'reminder.sunday.2026-11-01',
+      'reminder.mirror.2026-11-01',
       'reminder.morning.2026-11-02',
     ])
-    expect(p.find((r) => r.id.includes('sunday'))).toMatchObject({ minutes: 10 * 60, opens: 'mirrors' })
+    expect(p.find((r) => r.id.includes('mirror'))).toMatchObject({ minutes: 10 * 60, opens: 'mirrors', title: 'Your Sunday Mirror is ready' })
+  })
+
+  it('plans the Mirror on the day the person chose, about the week just gone, and nothing on a quiet Sunday', () => {
+    const p = planReminders(on({ morning: true, sunday: true }), TUE, 6 * 60, new Set(), [], 3)
+    expect(p.map((r) => r.id)).toEqual([
+      'reminder.morning.2026-10-27',
+      'reminder.morning.2026-10-28',
+      'reminder.mirror.2026-10-28',
+      'reminder.morning.2026-10-29',
+      'reminder.morning.2026-10-30',
+      'reminder.morning.2026-10-31',
+      'reminder.morning.2026-11-02',
+    ])
+    expect(p.find((r) => r.id.includes('mirror'))).toMatchObject({ minutes: 10 * 60, opens: 'mirrors', title: 'Your Wednesday Mirror is ready', body: 'A look back at last week, set only against your own.' })
   })
 
   it('drops today once its time has passed or its sitting is done', () => {

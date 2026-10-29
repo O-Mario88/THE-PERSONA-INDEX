@@ -124,13 +124,31 @@ describe('the coming Mirror', () => {
   it('counts down to the first Sunday Mirror with a dot for each day since you started', () => {
     localStorage.setItem('pi.started', '2026-10-27')
     const h = { answers: [answer('2026-10-27', 'a')], skips: [] }
-    expect(nextMirror('2026-10-29', h)).toEqual({ days: 3, answered: [true, false, false], first: true, lean: null })
+    expect(nextMirror('2026-10-29', h)).toEqual({ days: 3, answered: [true, false, false], ahead: 3, first: true, lean: null })
   })
 
   it('counts this week only, from Monday, once the first Mirror has been', () => {
     localStorage.setItem('pi.started', '2026-10-01')
     const h = { answers: [answer('2026-10-26', 'a'), answer('2026-10-28', 'b')], skips: [] }
-    expect(nextMirror('2026-10-28', h)).toMatchObject({ days: 4, answered: [true, false, true], first: false })
+    expect(nextMirror('2026-10-28', h)).toMatchObject({ days: 4, answered: [true, false, true], ahead: 4, first: false })
+  })
+
+  // A Wednesday Mirror (Edwin's brief, 2026-10-29: choose your Mirror day)
+  // shows the week that has just finished, so its dots are that week's.
+  it('counts down to the chosen day, with the dots of the week that Mirror will show', () => {
+    localStorage.setItem('pi.started', '2026-10-01')
+    const h = { answers: [answer('2026-10-20', 'a'), answer('2026-10-22', 'b'), answer('2026-10-27', 'c')], skips: [] }
+    // Monday the 26th: Wednesday's Mirror shows the week of the 19th, all of it past.
+    expect(nextMirror('2026-10-26', h, 3)).toMatchObject({ days: 2, answered: [false, true, false, true, false, false, false], ahead: 0, first: false })
+    // Thursday the 29th: next Wednesday's shows this week, three days still to come.
+    expect(nextMirror('2026-10-29', h, 3)).toMatchObject({ days: 6, answered: [false, true, false, false], ahead: 3 })
+    // Sunday is an ordinary day when the Mirror comes on Wednesday.
+    expect(nextMirror('2026-11-01', h, 3)).toMatchObject({ days: 3, ahead: 0 })
+  })
+
+  it('says the Mirror is ready on the chosen day', () => {
+    localStorage.setItem('pi.started', '2026-10-01')
+    expect(nextMirror('2026-10-28', { answers: [answer('2026-10-21', 'a')], skips: [] }, 3)).toMatchObject({ days: 0, ready: true, answered: [false, false, true, false, false, false, false] })
   })
 
   it('steps aside on Sunday, when the Mirror itself is ready', () => {

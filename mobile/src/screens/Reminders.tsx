@@ -1,12 +1,14 @@
-// Reminders on You: the morning three, the evening three, the Sunday Mirror
-// and the check-ins, always on with nothing to switch (Edwin, 2026-10-29),
-// planned on this phone (platform/reminders.ts). The person can pick the
-// morning and evening times; the phone's own settings can silence them.
+// Reminders on You: the morning three, the evening three, the Mirror and the
+// check-ins, always on with nothing to switch (Edwin, 2026-10-29), planned on
+// this phone (platform/reminders.ts). The person can pick the morning and
+// evening times and the Mirror's day; the phone's own settings can silence
+// them.
 import { useEffect, useState } from 'react'
 import { Linking, View } from 'react-native'
 import { clock } from '@shared/day'
 import { CHECK_IN_AT, SUNDAY_AT, eveningMinutes, morningMinutes, type ReminderSettings } from '@shared/reminders'
-import { askForReminders, changeReminderTimes, reminderPermission, reminderSettings, remindersAvailable, type ReminderPermission } from '../platform/reminders'
+import { dayName, MIRROR_DAYS, mirrorDay, mirrorName, SUNDAY } from '@shared/mirrorDay'
+import { askForReminders, changeMirrorDay, changeReminderTimes, reminderPermission, reminderSettings, remindersAvailable, type ReminderPermission } from '../platform/reminders'
 import { load, save } from '@shared/storage'
 import { canPrompt, iosSafari, promptInstall } from '@shared/pwa/install'
 import { Button, Card, Chip, T } from '../ui/kit'
@@ -66,7 +68,7 @@ export function ReminderSettingsView() {
     <View style={{ gap: 12 }}>
       <T v="eyebrow">Reminders</T>
       <T v="small" tone="muted">
-        {`Your morning three, your evening three, your Sunday Mirror at ${clock(SUNDAY_AT)}, and a check-in at ${clock(CHECK_IN_AT)} on the day something you tried comes up. They only ever say what is waiting, never a word of your answers or your writing.`}
+        {`Your morning three, your evening three, your ${mirrorName()} at ${clock(SUNDAY_AT)}, and a check-in at ${clock(CHECK_IN_AT)} on the day something you tried comes up. They only ever say what is waiting, never a word of your answers or your writing.`}
       </T>
       <T v="h3">Morning three</T>
       {times('morning')}
@@ -74,6 +76,34 @@ export function ReminderSettingsView() {
       {times('evening')}
       {perm === 'off' && <PhoneSaysNo />}
       {perm === 'unasked' && <Button small kind="secondary" label="Allow reminders on this phone" onPress={async () => setPerm(await askForReminders())} />}
+    </View>
+  )
+}
+
+// The Mirror's day (Edwin's brief, 2026-10-29: "choose Mirror day"), on
+// every platform: on the website it moves the Mirror and Today's countdown,
+// in the app its reminder too.
+export function MirrorDayPicker() {
+  const [day, setDay] = useState(mirrorDay)
+  return (
+    <View style={{ gap: 8 }}>
+      <T v="h3">Mirror day</T>
+      <T v="small" tone="muted">
+        {day === SUNDAY ? 'Your Mirror comes on Sunday and looks back at the week it ends.' : `Your Mirror comes on ${dayName(day)} and looks back at the week before.`}
+      </T>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }} accessibilityLabel="Mirror day">
+        {MIRROR_DAYS.map((d) => (
+          <Chip
+            key={d}
+            label={dayName(d, 'short')}
+            on={d === day}
+            onPress={() => {
+              setDay(d)
+              changeMirrorDay(d).catch(() => {})
+            }}
+          />
+        ))}
+      </View>
     </View>
   )
 }
@@ -100,7 +130,7 @@ export function RemindersOn() {
     <Card style={{ gap: 6 }}>
       <T v="h3">I’ll let you know when your next three open</T>
       <T v="small" tone="muted">
-        {`Morning at ${clock(morningMinutes(s))} and evening at ${clock(eveningMinutes(s))}, with your Sunday Mirror and a check-in on what you try. Change the times on You.`}
+        {`Morning at ${clock(morningMinutes(s))} and evening at ${clock(eveningMinutes(s))}, with your ${mirrorName()} and a check-in on what you try. Change the times on You.`}
       </T>
     </Card>
   )

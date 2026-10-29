@@ -69,6 +69,7 @@ import {
   type Span,
   type Story,
 } from '@shared/mirrorStory'
+import { mirrorName } from '@shared/mirrorDay'
 import { leanings, periodName, weekRange } from '@shared/mirrorText'
 import { focusChoices, FOCUS_NEXT, matteredOf, recurringOf, saidHelped, stillOpen, WEEK_QUESTIONS, type FocusChoice } from '@shared/mirrorWeek'
 import { checkIntention, intentions, reflections } from '@shared/notebook'
@@ -764,7 +765,7 @@ export function SundayMirror({
   const open = stillOpen(helped)
   const focus = focusChoices(direction, helped)
 
-  const eyebrow = back === 0 ? 'Your Sunday Mirror' : `Your Sunday Mirror · ${weekRange(m.from)}`
+  const eyebrow = back === 0 ? `Your ${mirrorName()}` : `Your ${mirrorName()} · ${weekRange(m.from)}`
   const meta = m.stats.answers > 0 ? `${m.stats.answers} ${m.stats.answers === 1 ? 'answer' : 'answers'} on ${say(m.stats.daysActive)} ${m.stats.daysActive === 1 ? 'day' : 'days'}` : undefined
 
   return (

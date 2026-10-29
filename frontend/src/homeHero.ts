@@ -2,6 +2,7 @@
 // by the app's Today screen (mobile/src/screens/Today.tsx and Shell.tsx).
 import { clock, MORNING_CLOSES, opensAt, WINDOW_INFO, type OpenWindow, type Window } from './day'
 import { windowsDone } from './windows'
+import { dayName, mirrorName, SUNDAY } from './mirrorDay'
 
 export type Progress = 'none' | 'started' | 'done'
 
@@ -66,6 +67,7 @@ export function heroFor({
   pulse,
   friend,
   preview,
+  mirrorOn = SUNDAY,
 }: {
   date: string
   window: Window
@@ -75,7 +77,19 @@ export function heroFor({
   pulse: boolean
   friend?: string | null // today's friend, once the circle has three
   preview?: string | null // the open sitting's next question, never an intimate one
+  mirrorOn?: number // the day the person chose for their Mirror (mirrorDay.ts)
 }): Hero & { opens: OpenWindow | 'mirror' | null } {
+  // Sunday brings no questions. When the Mirror comes on another day, Sunday
+  // is simply quiet, with this week so far there to look at.
+  if (review && mirrorOn !== SUNDAY) {
+    return {
+      eyebrow: 'Sunday · no questions today',
+      title: 'A quiet day',
+      sub: `Your ${mirrorName(mirrorOn)} comes on ${dayName(mirrorOn)}. Fresh questions arrive tomorrow at ${clock(5 * 60)}.`,
+      action: 'See your week so far',
+      opens: 'mirror',
+    }
+  }
   if (review) {
     return {
       eyebrow: 'Sunday · the day for looking back',

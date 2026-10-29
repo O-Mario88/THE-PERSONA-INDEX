@@ -305,7 +305,7 @@ export function weekStory(input: {
     return {
       headline: 'A quiet week so far.',
       paragraphs: [
-        'Your Sunday Mirror is built from your own answers, so there is nothing to say about this week yet. Two or three days of questions is enough to start.',
+        'Your Mirror is built from your own answers, so there is nothing to say about this week yet. Two or three days of questions is enough to start.',
       ],
       evidence: [],
     }

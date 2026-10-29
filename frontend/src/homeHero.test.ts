@@ -39,4 +39,11 @@ describe('the main card on Today', () => {
   it('opens the Mirror on Sunday', () => {
     expect(heroFor({ ...base, window: 'morning', morning: 'none', review: true }).opens).toBe('mirror')
   })
+
+  it('keeps Sunday quiet when the Mirror comes on another day', () => {
+    const h = heroFor({ ...base, window: 'morning', morning: 'none', review: true, mirrorOn: 3 })
+    expect(h).toMatchObject({ title: 'A quiet day', action: 'See your week so far', opens: 'mirror' })
+    expect(h.sub).toContain('Your Wednesday Mirror comes on Wednesday.')
+    expect(h.title).not.toContain('ready')
+  })
 })

@@ -48,6 +48,7 @@ import { SignUp } from './screens/SignUp'
 import { Today } from './screens/Today'
 import { Reflect } from './screens/Reflect'
 import { Insights } from './screens/Insights'
+import { mirrorDay } from '@shared/mirrorDay'
 import { Journey } from './screens/Journey'
 import { Connect } from './screens/Connect'
 import { KeptScreen, You } from './screens/You'
@@ -389,9 +390,9 @@ export function Shell({ phoneDark, onRestart, onDayReady }: { phoneDark: boolean
     const next = qs.find((q) => !recalledChoice(q.id))
     return next && next.care !== 'intimate' ? next.prompt : null
   }
-  const plainHero = set ? heroFor({ date: set.date, window: win, review: !!set.review, morning, evening, pulse: prefs.pulse !== false, friend: null }) : null
+  const plainHero = set ? heroFor({ date: set.date, window: win, review: !!set.review, morning, evening, pulse: prefs.pulse !== false, friend: null, mirrorOn: mirrorDay() }) : null
   const preview = plainHero?.opens === 'morning' ? nextPrompt(morningQs) : plainHero?.opens === 'evening' ? nextPrompt(eveningQs) : null
-  const hero = set && preview ? heroFor({ date: set.date, window: win, review: !!set.review, morning, evening, pulse: prefs.pulse !== false, friend: null, preview }) : plainHero
+  const hero = set && preview ? heroFor({ date: set.date, window: win, review: !!set.review, morning, evening, pulse: prefs.pulse !== false, friend: null, preview, mirrorOn: mirrorDay() }) : plainHero
 
   // Focused Today: what you said last time, tied to the sitting on offer
   // only when one of its questions truly comes back to it (todayFocus.ts).
@@ -708,6 +709,7 @@ export function Shell({ phoneDark, onRestart, onDayReady }: { phoneDark: boolean
             rail={rail}
             onWrite={write}
             onInsights={() => goTab('insights')}
+            onMirror={() => open('mirror')}
             onSense={(start) => setSense({ start })}
           >
             {!weekOne && <InviteNudge today={set.date} signedIn={!!me} onOpen={() => goTab('circle')} />}

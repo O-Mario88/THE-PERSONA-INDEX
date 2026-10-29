@@ -26,6 +26,7 @@ import { Button, Card, Page, PageHeader, Private, Segmented, T, Tinted } from '.
 import { AREA_ICON, AREA_TONE, CardHead, Disc } from '../ui/parts'
 import { Icon } from '../ui/Icon'
 import { addSpoken, SpeakInstead } from '../ui/Speak'
+import { mirrorName } from '@shared/mirrorDay'
 
 const SPAN_DAYS: Record<ReflectionPeriod, number> = { day: 0, week: 6, month: 30 }
 const THIS: Record<ReflectionPeriod, string> = { day: 'today', week: 'this week', month: 'this month' }
@@ -318,7 +319,7 @@ function Writing({
         <View style={{ flexDirection: 'row', gap: 8, alignItems: 'flex-start' }}>
           <Icon name="check" size={18} color={p.leaf} width={2.4} />
           <T tone="leaf" bold style={{ flex: 1 }}>
-            Saved, on this phone. It comes back on Today, and in your Sunday Mirror.
+            {`Saved, on this phone. It comes back on Today, and in your ${mirrorName()}.`}
           </T>
         </View>
         {!kept ? (

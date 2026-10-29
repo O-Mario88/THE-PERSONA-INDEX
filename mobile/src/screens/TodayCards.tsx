@@ -13,6 +13,7 @@ import { minutes, todaysRead } from '@shared/reads/reads'
 import type { Read } from '@shared/reads/types'
 import { AREA_NAMES } from '@shared/reflect'
 import { load, loadJSON, saveJSON } from '@shared/storage'
+import { mirrorDay, mirrorName } from '@shared/mirrorDay'
 import { nextMirror, quietStep, type QuietStep } from '@shared/todayFocus'
 import { lift, radius, useTheme } from '../theme'
 import { Button, Card, Chip, feel, RowLink, T } from '../ui/kit'
@@ -139,17 +140,27 @@ function StepCheckIn({ intention, today, onSaid }: { intention: Intention; today
   )
 }
 
-// The Mirror that's coming: how far away, a dot for each day this week
-// (filled where you answered, nothing lost on a missed day), and what your
-// answers lean towards so far.
-export function MirrorCard({ today, onWrite, onInsights }: { today: string; onWrite: (prompt?: string) => void; onInsights: () => void }) {
+// The Mirror that's coming, on the day the person chose: how far away, a dot
+// for each day of the week it will show (filled where you answered, nothing
+// lost on a missed day), and what your answers lean towards so far. On the
+// day itself, a way in.
+export function MirrorCard({ today, onWrite, onInsights, onMirror }: { today: string; onWrite: (prompt?: string) => void; onInsights: () => void; onMirror?: () => void }) {
   const p = useTheme()
-  const [m] = useState(() => nextMirror(today, loadHistory()))
+  const [day] = useState(mirrorDay)
+  const [m] = useState(() => nextMirror(today, loadHistory(), day))
   if (!m) return null
   const when = m.days === 1 ? 'tomorrow' : `in ${m.days} days`
-  const dots = [...m.answered, ...Array<boolean>(m.days).fill(false)]
+  const dots = [...m.answered, ...Array<boolean>(m.ahead).fill(false)]
+  const title = m.ready ? `Your ${mirrorName(day)} is ready` : m.first ? `Your first Mirror · ${when}` : `Your ${mirrorName(day)} · ${when}`
+  if (m.ready)
+    return (
+      <Section title={title} icon="mirror">
+        <T tone="text2">Last week, set only against your own: what mattered, what kept coming up and what helped.</T>
+        <Button small label="Open your Mirror" iconAfter="arrow" onPress={onMirror ?? onInsights} style={{ alignSelf: 'flex-start' }} />
+      </Section>
+    )
   return (
-    <Section title={m.first ? `Your first Mirror · ${when}` : `Your Sunday Mirror · ${when}`} icon="mirror">
+    <Section title={title} icon="mirror">
       <View accessibilityLabel={`${m.answered.filter(Boolean).length} days answered this week`} style={{ flexDirection: 'row', gap: 6 }}>
         {dots.map((d, i) => (
           <View key={i} style={{ flex: 1, height: 8, borderRadius: radius.pill, backgroundColor: d ? p.lime : p.surface3 }} />

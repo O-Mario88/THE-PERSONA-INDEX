@@ -15,6 +15,7 @@ import type { ReflectionStyle } from './prefs'
 import type { History } from './profile'
 import { AREA_NAMES, areaOf } from './reflect'
 import { addDays } from './storage'
+import { SUNDAY, weekdayOf } from './mirrorDay'
 import { themeName } from './themes'
 
 const MEMORY_DAYS = 7
@@ -145,21 +146,33 @@ export function quietStep(today: string, h: History, moves: Move[] = loadMoves()
   return style === 'practical' ? (idea() ?? carry()) : (carry() ?? idea())
 }
 
-export type MirrorPreview = { days: number; answered: boolean[]; first: boolean; lean: string | null }
+// days: until the Mirror; answered: a dot for each day of the week it will
+// show, from when you started up to today; ahead: that week's days still to
+// come. ready: today is the Mirror day and its week is whole.
+export type MirrorPreview = { days: number; answered: boolean[]; ahead: number; first: boolean; lean: string | null; ready?: true }
 
-// nextMirror counts down to Sunday's Mirror: a dot for each day this week
-// since you started, filled where you answered (nothing lost on a missed
-// day), and what this week's answers lean towards so far. Null on Sunday,
-// when the Mirror itself is ready.
-export function nextMirror(today: string, h: History): MirrorPreview | null {
-  const weekday = new Date(`${today}T00:00:00Z`).getUTCDay()
-  if (weekday === 0) return null
-  const monday = addDays(today, 1 - weekday)
+// nextMirror counts down to the Mirror on the chosen day (mirrorDay.ts,
+// Sunday unless changed): a dot for each day of the week that Mirror will
+// show since you started, filled where you answered (nothing lost on a missed
+// day), and what that week's answers lean towards so far. A Sunday Mirror
+// shows the week it ends; on any other day the Mirror shows the week just
+// gone. Null on Sunday when the Mirror is Sunday's: Today's main card has it.
+export function nextMirror(today: string, h: History, mirrorOn = SUNDAY): MirrorPreview | null {
+  const weekday = weekdayOf(today)
+  if (mirrorOn === SUNDAY && weekday === SUNDAY) return null
+  const days = (mirrorOn - weekday + 7) % 7
+  const on = addDays(today, days)
+  const mondayOfOn = addDays(on, 1 - (weekdayOf(on) || 7))
+  const monday = mirrorOn === SUNDAY ? mondayOfOn : addDays(mondayOfOn, -7)
+  const sunday = addDays(monday, 6)
   const started = startedOn(today, h)
   const start = started > monday ? started : monday
+  const last = today < sunday ? today : sunday
   const answeredOn = new Set(h.answers.map((a) => a.date))
   const answered: boolean[] = []
-  for (let d = start; d <= today; d = addDays(d, 1)) answered.push(answeredOn.has(d))
-  const week = { answers: h.answers.filter((a) => a.date >= start), skips: h.skips }
-  return { days: 7 - weekday, answered, first: started >= addDays(today, -weekday), lean: acrossDays(today, week).lean }
+  for (let d = start; d <= last; d = addDays(d, 1)) answered.push(answeredOn.has(d))
+  const week = { answers: h.answers.filter((a) => a.date >= start && a.date <= sunday), skips: h.skips }
+  const ahead = today < sunday ? Math.round((Date.parse(sunday) - Date.parse(today)) / 86400000) : 0
+  const preview: MirrorPreview = { days, answered, ahead, first: started >= addDays(monday, -1), lean: acrossDays(last, week).lean }
+  return days === 0 ? { ...preview, ready: true } : preview
 }
