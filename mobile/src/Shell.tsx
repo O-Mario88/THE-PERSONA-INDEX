@@ -325,6 +325,21 @@ export function Shell({ phoneDark, onRestart, onDayReady }: { phoneDark: boolean
     if (set && flow && flow !== 'morning' && flow !== 'evening') markWindow(set.date, flow)
     setFlow(null)
   }
+  // The welcome's way in, with or without an account.
+  function beginJourney(name: string) {
+    saveKey(WELCOMED, '1')
+    markStarted(date)
+    if (name) {
+      saveKey(NAME_KEY, name)
+      setLocalName(name)
+    }
+    setWelcome(false)
+    // The first questions straight away, whatever the hour they're open.
+    if (set && !set.review) {
+      if (morning !== 'done' && canSit('morning')) setFlow('morning')
+      else if (evening !== null && evening !== 'done' && canSit('evening')) setFlow('evening')
+    }
+  }
   const afterSignIn = (acc: AccountView) => {
     saveKey(SIGNIN_ASKED, '1')
     setAskedSignIn(true)
@@ -459,18 +474,14 @@ export function Shell({ phoneDark, onRestart, onDayReady }: { phoneDark: boolean
     body = (
       <Welcome
         onBegin={(name) => {
-          saveKey(WELCOMED, '1')
-          markStarted(date)
-          if (name) {
-            saveKey(NAME_KEY, name)
-            setLocalName(name)
-          }
-          setWelcome(false)
-          // The first questions straight away, whatever the hour they're open.
-          if (set && !set.review) {
-            if (morning !== 'done' && canSit('morning')) setFlow('morning')
-            else if (evening !== null && evening !== 'done' && canSit('evening')) setFlow('evening')
-          }
+          // They chose to start without an account: no second offer after the first sitting.
+          saveKey(SIGNIN_ASKED, '1')
+          setAskedSignIn(true)
+          beginJourney(name)
+        }}
+        onSignedIn={(acc, name) => {
+          afterSignIn(acc)
+          beginJourney(name || acc.name)
         }}
       />
     )

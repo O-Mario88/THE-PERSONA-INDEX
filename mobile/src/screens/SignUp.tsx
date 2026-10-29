@@ -32,7 +32,7 @@ type Step = { at: 'start' } | { at: 'code'; address: string; kind: 'email' | 'ph
 
 export type SignUpPage = { label: string; title: string; lead: string; head: string; points?: string[] }
 
-export function SignUp({ page, onDone, onNotNow, notNow }: { page: SignUpPage; onDone: (me: AccountView) => void; onNotNow: () => void; notNow: string }) {
+export function SignUp({ page, onDone, onNotNow, notNow, name: given = '' }: { page: SignUpPage; onDone: (me: AccountView) => void; onNotNow: () => void; notNow: string; name?: string }) {
   const p = useTheme()
   const insets = useSafeAreaInsets()
   const [methods, setMethods] = useState<SignInMethods | null>(null)
@@ -41,7 +41,7 @@ export function SignUp({ page, onDone, onNotNow, notNow }: { page: SignUpPage; o
   const [via, setVia] = useState<'email' | 'phone' | 'whatsapp'>('email')
   const [address, setAddress] = useState('')
   const [code, setCode] = useState('')
-  const [name, setName] = useState('')
+  const [name, setName] = useState(given)
   const [handle, setHandle] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')

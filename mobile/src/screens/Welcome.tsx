@@ -2,6 +2,11 @@
 // as the loading page it follows, the logo, "A more intentional you, starts
 // here.", an optional first name and one clear action. Light in dark mode
 // too, like the sunrise behind it. The name stays on this phone (Shell.tsx).
+//
+// Then signing in (Edwin's brief of 2026-10-29): Apple, Google, or a 6-digit
+// code to an email or phone, so the Notebook, a Patron plan and the backup
+// follow the person to every device. Starting without an account stays one
+// tap away: the app works fully without one (and Apple asks that it does).
 import { useState } from 'react'
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -12,16 +17,39 @@ import { brand, light, serif, ThemeProvider } from '../theme'
 import { Dawn } from '../ui/Dawn'
 import { Button, Field, koreanBreaks, T } from '../ui/kit'
 import { Lockup } from '../ui/Logo'
+import { SignUp } from './SignUp'
+import type { AccountView } from '@shared/social'
 
 const COLUMN = 380
 const ASK = 'First, what should we call you?'
 
-export function Welcome({ onBegin }: { onBegin: (name: string) => void }) {
+export function Welcome({ onBegin, onSignedIn }: { onBegin: (name: string) => void; onSignedIn: (me: AccountView, name: string) => void }) {
   const [name, setName] = useState('')
+  const [account, setAccount] = useState(false)
   const insets = useSafeAreaInsets()
   const { width } = useWindowDimensions()
   const column = Math.min(width - 48, COLUMN)
-  const begin = () => onBegin(name.trim())
+  const begin = () => setAccount(true)
+  if (account) {
+    const first = name.trim()
+    return (
+      <ThemeProvider palette={light}>
+        <StatusBar style="dark" />
+        <SignUp
+          page={{
+            label: first ? `Welcome, ${first}` : 'Welcome',
+            title: 'Keep your journey with you',
+            lead: 'Sign in so your Notebook, any Patron plan and your backup follow you to every device. There’s no password to remember.',
+            head: 'Continue with',
+          }}
+          name={first}
+          notNow="Start without an account"
+          onNotNow={() => onBegin(first)}
+          onDone={(me) => onSignedIn(me, first)}
+        />
+      </ThemeProvider>
+    )
+  }
   return (
     <ThemeProvider palette={light}>
       <StatusBar style="dark" />
