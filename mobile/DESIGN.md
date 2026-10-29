@@ -203,8 +203,9 @@ Edwin's design (2026-10-29), four pages, the same in light and dark:
    your journey with you": Apple (iPhone) and Google once their sign-in is
    set up on the server, or a 6-digit code by email, phone or WhatsApp, with
    "Start without an account" one tap below (`src/screens/SignUp.tsx`). The
-   name from the welcome fills in the display name. From the second day the
-   first-week sittings still ask for a free account (`firstWeek.ts`).
+   name from the welcome fills in the display name. Starting without one keeps
+   its word: the app goes on working, with one gentle offer at a close from
+   the second day (the light-mode review, 2026-10-29).
 
 The stages and their timing live in `frontend/src/launch.ts`, with tests:
 each line stays long enough to read, the whole launch is about three and a

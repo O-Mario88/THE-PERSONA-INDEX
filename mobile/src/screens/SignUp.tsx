@@ -214,7 +214,12 @@ export function SignUp({ page, onDone, onNotNow, notNow, name: given = '' }: { p
               <T tone="muted">It works for 10 minutes. Nothing to type back, just the six digits.</T>
               <Field
                 value={code}
-                onChangeText={(t) => setCode(t.replace(/\D/g, '').slice(0, 6))}
+                onChangeText={(t) => {
+                  const digits = t.replace(/\D/g, '').slice(0, 6)
+                  setCode(digits)
+                  // A code that's typed, pasted or filled in from the message goes straight through.
+                  if (digits.length === 6 && !busy) run(async () => finish((await verifyCode(step.address, digits)).account))
+                }}
                 keyboardType="number-pad"
                 textContentType="oneTimeCode"
                 autoComplete="one-time-code"

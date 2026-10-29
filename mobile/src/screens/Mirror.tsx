@@ -92,7 +92,7 @@ import {
 } from '@shared/words'
 import { font, radius, type Palette, useTheme, typeScale } from '../theme'
 import { Icon } from '../ui/Icon'
-import { Button, Chip, Field, Hairline, PageHeader, T, Tinted } from '../ui/kit'
+import { Button, Chip, Field, Hairline, LoadingPage, PageHeader, T, Tinted } from '../ui/kit'
 import { CheckIn } from './CheckIn'
 import { Box, Chips, Eyebrow, Note, Quote } from './MirrorBits'
 import { PeriodStory, SundayMirror, YearMirror, type Host } from './MirrorStory'
@@ -178,11 +178,7 @@ export function Mirror({ today, onOpenKept, onCircle, onRead, onOpenChoices, onW
         <StepButton icon="back" label={`An earlier ${span}`} disabled={back >= mostBack(span)} onPress={() => step(1)} />
         <StepButton icon="arrow" label={`A later ${span}`} disabled={back === 0} onPress={() => step(-1)} />
       </View>
-      {state.kind === 'loading' && (
-        <T tone="muted" center style={{ paddingVertical: 32 }}>
-          Putting your {span} together…
-        </T>
-      )}
+      {state.kind === 'loading' && <LoadingPage label={`Putting your ${span} together…`} />}
       {state.kind === 'error' && (
         <View style={{ gap: 12 }}>
           <T>I couldn't load your mirror just now.</T>

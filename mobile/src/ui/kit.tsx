@@ -1,6 +1,6 @@
 // The parts every screen is built from (mobile/DESIGN.md): type, buttons,
 // fields, choices, chips, hairlines and the page itself.
-import { Children, useEffect, useRef, useState, type ComponentRef, type ReactNode, type Ref } from 'react'
+import { Children, createContext, useCallback, useContext, useEffect, useRef, useState, type ComponentRef, type ReactNode, type Ref } from 'react'
 import * as Haptics from 'expo-haptics'
 import {
   AccessibilityInfo,
@@ -451,6 +451,16 @@ export const FEED = 680
 // wideMax for a page that draws its own right-hand column. A page can hand
 // its side cards over as `aside`: from RAIL_AT they stand in a right-hand
 // column, as on Facebook's home; narrower, they follow the page.
+// Each tab keeps where it was scrolled to when you come back to it, and the
+// open tab, tapped again, scrolls back to the top, as on iPhone and Android
+// (the light-mode review, 2026-10-29). The Shell names the tab a page is for.
+export const PageMemory = createContext<string | null>(null)
+const scrolledTo = new Map<string, number>()
+const toTop = new Set<() => void>()
+export function scrollOpenPageToTop(): void {
+  toTop.forEach((go) => go())
+}
+
 export function Page({
   children,
   aside,
@@ -472,12 +482,39 @@ export function Page({
   const wide = width >= WIDE
   const rail = !!aside && width >= RAIL_AT
   const extra = rail ? RAIL_W + 24 : (wideMax ?? 0)
+  const memory = useContext(PageMemory)
+  const own = useRef<ComponentRef<typeof ScrollView> | null>(null)
+  const restored = useRef(false)
+  const setRef = useCallback(
+    (v: ComponentRef<typeof ScrollView> | null) => {
+      own.current = v
+      if (typeof scrollRef === 'function') scrollRef(v)
+      else if (scrollRef) (scrollRef as { current: ComponentRef<typeof ScrollView> | null }).current = v
+    },
+    [scrollRef],
+  )
+  useEffect(() => {
+    if (!memory) return
+    const go = () => own.current?.scrollTo({ y: 0, animated: !calm })
+    toTop.add(go)
+    return () => {
+      toTop.delete(go)
+    }
+  }, [memory])
   return (
     <View style={{ flex: 1, backgroundColor: p.bg }}>
       <ScrollView
         key={refresh}
-        ref={scrollRef}
+        ref={setRef}
         style={{ flex: 1 }}
+        scrollEventThrottle={64}
+        onScroll={memory ? (e) => scrolledTo.set(memory, e.nativeEvent.contentOffset.y) : undefined}
+        onContentSizeChange={() => {
+          if (!memory || restored.current) return
+          restored.current = true
+          const y = scrolledTo.get(memory)
+          if (y) own.current?.scrollTo({ y, animated: false })
+        }}
         // The spacing rhythm (the light-mode review, 2026-10-29): 20 at the
         // sides (16 on a small phone), 16 between cards, and a Section adds
         // its own room above, so the page reads in groups, not a list.
@@ -561,6 +598,39 @@ function useEaseIn() {
     return () => clearTimeout(done)
   }, [v])
   return { opacity: v, transform: [{ translateY: v.interpolate({ inputRange: [0, 1], outputRange: [8, 0] }) }] }
+}
+
+// Placeholder shapes in the shape of what's coming, while a page loads (the
+// light-mode review, 2026-10-29: words like "Getting things ready…" read as
+// a page that isn't finished). They breathe gently unless the phone asks for
+// less motion, and say "Loading" to a screen reader.
+export function Placeholder({ height, width = '100%', round = radius.lg, style }: { height: number; width?: number | `${number}%`; round?: number; style?: StyleProp<ViewStyle> }) {
+  const p = useTheme()
+  const v = useRef(new Animated.Value(1)).current
+  useEffect(() => {
+    if (calm) return
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(v, { toValue: 0.55, duration: 700, useNativeDriver: Platform.OS !== 'web' }),
+        Animated.timing(v, { toValue: 1, duration: 700, useNativeDriver: Platform.OS !== 'web' }),
+      ]),
+    )
+    loop.start()
+    return () => loop.stop()
+  }, [v])
+  return <Animated.View style={[{ height, width, borderRadius: round, backgroundColor: p.surface3, opacity: v }, style]} />
+}
+
+// A page's worth of placeholders: a header, a main card and two lines.
+export function LoadingPage({ label }: { label: string }) {
+  return (
+    <View accessible accessibilityRole="progressbar" accessibilityLabel={tr(label)} style={{ gap: 16 }}>
+      <Placeholder height={150} />
+      <Placeholder height={210} round={radius.xl} />
+      <Placeholder height={18} width="70%" round={6} />
+      <Placeholder height={18} width="45%" round={6} />
+    </View>
+  )
 }
 
 // In light mode a card is white on the cream page with only its soft lift, no

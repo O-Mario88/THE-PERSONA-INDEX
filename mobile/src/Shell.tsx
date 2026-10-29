@@ -31,7 +31,7 @@ import { startReminders, type Opens } from './platform/reminders'
 import { markWindow } from '@shared/windows'
 import type { Read } from '@shared/reads/types'
 import { dark as darkPalette, font, light as lightPalette, radius, RAIL_AT, RAIL_W, ThemeProvider, useTheme, WIDE, typeScale } from './theme'
-import { Back, Button, feel, Page, PrivacyLine, T, Tinted } from './ui/kit'
+import { Back, Button, feel, LoadingPage, Page, PageMemory, PrivacyLine, scrollOpenPageToTop, T, Tinted } from './ui/kit'
 import { Icon, type IconName } from './ui/Icon'
 import { CardHead } from './ui/parts'
 import { usePulse } from './ui/Pulse'
@@ -79,6 +79,8 @@ const TABS: { tab: Tab; name: string; icon: IconName }[] = [
 
 const SIGNUP_POINTS = ['Your first glimpse and every answer, kept', 'Three new questions each morning and evening', 'Your first mirror on Sunday', 'Your notebook stays encrypted']
 const SIGNIN_ASKED = 'pi.signin.asked'
+// One gentle second offer, from the second day, for someone who chose Start without an account.
+const SIGNIN_AGAIN = 'pi.signin.again'
 
 const themesOf = (qs: Question[]) => qs.map((q) => q.theme).filter((t): t is string => !!t)
 
@@ -188,7 +190,11 @@ export function Shell({ phoneDark, onRestart, onDayReady }: { phoneDark: boolean
       live = false
     }
   }, [])
-  const accountFirst = canSignIn && needsAccount(!!me, date)
+  // The first week asks for a free account from the second day (firstWeek.ts), but never of
+  // someone who chose Start without an account on the Welcome: they keep going, with one gentle
+  // offer at a close instead (the light-mode review, 2026-10-29).
+  const accountFirst = canSignIn && needsAccount(!!me, date) && !askedSignIn
+  const [offeredAgain, setOfferedAgain] = useState(() => !!loadKey(SIGNIN_AGAIN))
 
   useEffect(() => {
     let live = true
@@ -548,6 +554,7 @@ export function Shell({ phoneDark, onRestart, onDayReady }: { phoneDark: boolean
       const remember = rememberLine(set.date, loadHistory())
       const carry = closing ? carryLine(set.date, loadHistory()) : null
       const offerAccount = canSignIn && !me && !askedSignIn
+      const offerAgain = canSignIn && !me && askedSignIn && !offeredAgain && dayN > 1
       // One ask at most at the close (the light-mode review, 2026-10-29): the
       // reminder offer after the first glimpse, else signing in, then the 18+
       // question, then where you live, each asked once.
@@ -556,7 +563,7 @@ export function Shell({ phoneDark, onRestart, onDayReady }: { phoneDark: boolean
           ? null
           : glimpse
             ? 'reminder'
-            : offerAccount
+            : offerAccount || offerAgain
               ? 'signin'
               : hasIntimate && prefs.adult === null && isNewcomer() && dayN > 1
                 ? 'adult'
@@ -624,21 +631,19 @@ export function Shell({ phoneDark, onRestart, onDayReady }: { phoneDark: boolean
             ))}
           {ask === 'reminder' && <ReminderAsk />}
           {ask === 'signin' && (
-            <Tinted>
-              <T v="h2">Your {steps.length === 3 ? 'three cards are' : 'cards are'} on this phone. Keep them everywhere.</T>
-              <T tone="text2">Signing in syncs your Notebook across devices. No password, just a 6-digit code.</T>
-              <View style={{ flexDirection: 'row', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
-                <Button small label="Sign in" onPress={() => open('signin')} />
-                <Button
-                  kind="text"
-                  label="Not now"
-                  onPress={() => {
-                    saveKey(SIGNIN_ASKED, '1')
-                    setAskedSignIn(true)
-                  }}
-                />
-              </View>
-            </Tinted>
+            <AccountOffer
+              cards={steps.length}
+              // The second offer is made once: kept as made when it shows, and gone once the close is left.
+              onShown={() => askedSignIn && saveKey(SIGNIN_AGAIN, '1')}
+              onGone={() => askedSignIn && setOfferedAgain(true)}
+              onSignIn={() => open('signin')}
+              onNotNow={() => {
+                saveKey(SIGNIN_ASKED, '1')
+                saveKey(SIGNIN_AGAIN, '1')
+                setAskedSignIn(true)
+                setOfferedAgain(true)
+              }}
+            />
           )}
           {ask === 'adult' && <AdultGate again onAnswer={(adult) => changePrefs({ ...prefs, adult })} />}
           {ask === 'country' && <CountryAsk onAnswer={(country) => changePrefs({ ...prefs, country })} />}
@@ -713,9 +718,7 @@ export function Shell({ phoneDark, onRestart, onDayReady }: { phoneDark: boolean
             />
           </View>
         ) : (
-          <T tone="muted" center>
-            Getting today's questions ready…
-          </T>
+          <LoadingPage label="Getting today's questions ready…" />
         )}
       </Page>
     )
@@ -761,7 +764,7 @@ export function Shell({ phoneDark, onRestart, onDayReady }: { phoneDark: boolean
             />
           )}
           <View style={{ flex: 1 }}>
-            {sittingOpen ? <Enter key={flow}>{body}</Enter> : body}
+            <PageMemory.Provider value={sittingOpen ? null : rootTab}>{sittingOpen ? <Enter key={flow}>{body}</Enter> : body}</PageMemory.Provider>
             {stackTop && (
               <PushedPage key={stackTop} leaving={!isInner(tab)} wide={wide} onBack={goBack} onGone={() => setStackTop(null)}>
                 {innerPage(stackTop)}
@@ -772,6 +775,27 @@ export function Shell({ phoneDark, onRestart, onDayReady }: { phoneDark: boolean
         </View>
       </TextScaleProvider>
     </ThemeProvider>
+  )
+}
+
+// The offer to sign in at a close: shown once, then never again, whether or
+// not it was answered.
+function AccountOffer({ cards, onShown, onGone, onSignIn, onNotNow }: { cards: number; onShown: () => void; onGone: () => void; onSignIn: () => void; onNotNow: () => void }) {
+  const once = useRef({ onShown, onGone })
+  useEffect(() => {
+    once.current.onShown()
+    const gone = once.current.onGone
+    return () => gone()
+  }, [])
+  return (
+    <Tinted>
+      <T v="h2">Your {cards === 3 ? 'three cards are' : 'cards are'} on this phone. Keep them everywhere.</T>
+      <T tone="text2">Signing in syncs your Notebook across devices. No password, just a 6-digit code.</T>
+      <View style={{ flexDirection: 'row', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+        <Button small label="Sign in" onPress={onSignIn} />
+        <Button kind="text" label="Not now" onPress={onNotNow} />
+      </View>
+    </Tinted>
   )
 }
 
@@ -795,6 +819,7 @@ function TabBar({ tab, onTab, shown }: { tab: View_; onTab: (t: Tab) => void; sh
             accessibilityState={{ selected: on }}
             onPress={() => {
               feel('select')
+              if (on && !isInner(tab)) scrollOpenPageToTop()
               onTab(t.tab)
             }}
             style={{ flex: 1, alignItems: 'center', gap: 3, paddingVertical: 2 }}
