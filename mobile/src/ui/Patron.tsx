@@ -33,7 +33,7 @@ export function PatronNote({ text, onOpen }: { text: string; onOpen?: () => void
       <T v="small" tone="text2">
         {text}
       </T>
-      {open && <Button small kind="soft" label="See Patron" onPress={open} />}
+      {open && <Button small kind="secondary" label="See Patron" onPress={open} />}
     </View>
   )
 }

@@ -162,7 +162,7 @@ export function Reflect({
             <View style={{ gap: 10 }}>
               <CardHead icon="pin" tone="rose" title="Something I noticed" />
               <T tone="muted">{consider.text}</T>
-              <Button small kind="soft" label="Reflect on this" iconAfter="arrow" onPress={() => setChosen(fromNoticed(consider, period))} style={{ alignSelf: 'flex-start' }} />
+              <Button small kind="secondary" label="Reflect on this" iconAfter="arrow" onPress={() => setChosen(fromNoticed(consider, period))} style={{ alignSelf: 'flex-start' }} />
             </View>
           )}
         </>
@@ -348,7 +348,7 @@ function Writing({
             </T>
             <Button
               small
-              kind="outline"
+              kind="secondary"
               label="Keep it"
               disabled={!intention.trim()}
               onPress={() => {

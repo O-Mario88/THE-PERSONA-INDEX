@@ -151,10 +151,10 @@ function PhoneLockChoices() {
               <T v="small" bold>
                 On. On the lock screen, tap Use a PIN to type either PIN.
               </T>
-              <Button small kind="outline" label="Remove the guest PIN" onPress={removeGuest} />
+              <Button small kind="secondary" label="Remove the guest PIN" onPress={removeGuest} />
             </>
           ) : (
-            <Button small kind="soft" label="Set up a guest PIN" onPress={startGuest} />
+            <Button small kind="secondary" label="Set up a guest PIN" onPress={startGuest} />
           )}
           {patronFor === 'guest' && <PatronNote text="A guest PIN is part of The Persona Index Patron." />}
         </View>

@@ -193,7 +193,7 @@ export function Settings({
                 <T v="small" tone="muted">
                   For your first week the app keeps to Today, Reflect and Insights. Connect and your Mirrors arrive as they fill in.
                 </T>
-                <Button small kind="soft" label="Show every section now" onPress={onShowAll} />
+                <Button small kind="secondary" label="Show every section now" onPress={onShowAll} />
               </View>
             )}
             <BackupSettings onRestored={onRestored} />

@@ -73,7 +73,7 @@ export function DownloadButtons({ today, mild, data = false }: { today: string; 
 
   return (
     <View style={{ gap: 8 }}>
-      <Button wide kind="soft" icon="download" label={busy && state.which === 'book' ? 'Making your book…' : 'Download my book'} busy={busy && state.which === 'book'} disabled={busy} onPress={() => run('book')} />
+      <Button wide kind="secondary" icon="download" label={busy && state.which === 'book' ? 'Making your book…' : 'Download my book'} busy={busy && state.which === 'book'} disabled={busy} onPress={() => run('book')} />
       {data && (
         <Button
           kind="text"

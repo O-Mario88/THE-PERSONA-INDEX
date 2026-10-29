@@ -29,7 +29,7 @@ const STEP_LABEL: Record<QuietStep['kind'], string> = {
   carry: 'One thing worth trying',
   idea: 'One thing worth trying',
 }
-export function QuietStepCard({ today, onJourney }: { today: string; onJourney: () => void }) {
+export function QuietStepCard({ today }: { today: string }) {
   const [step] = useState(() => quietStep(today, loadHistory(), undefined, loadPrefs().style))
   const [said, setSaid] = useState<string | null>(null)
   const pulse = usePagePulse(today)
@@ -41,7 +41,6 @@ export function QuietStepCard({ today, onJourney }: { today: string; onJourney: 
       <T v="label">{STEP_LABEL[step.kind]}</T>
       {said ? <T tone="text2">{said}</T> : <StepBody today={today} step={step} onSaid={setSaid} />}
       {source && <PulseNote text={pulse.step(source.questionId, source.optionId)} />}
-      <Button small kind="text" label="See your journey" iconAfter="arrow" onPress={onJourney} style={{ alignSelf: 'flex-start' }} />
     </Card>
   )
 }
@@ -55,7 +54,7 @@ function StepBody({ today, step, onSaid }: { today: string; step: QuietStep; onS
           From what today’s answers reached for.
         </T>
         <View style={{ flexDirection: 'row' }}>
-          <Button small kind="outline" label="I’ll keep this in mind" onPress={() => onSaid('It’s with you today. Nothing else to do.')} />
+          <Button small kind="secondary" label="I’ll keep this in mind" onPress={() => onSaid('It’s with you today. Nothing else to do.')} />
         </View>
       </>
     )
@@ -70,7 +69,7 @@ function StepBody({ today, step, onSaid }: { today: string; step: QuietStep; onS
         <View style={{ flexDirection: 'row' }}>
           <Button
             small
-            kind="outline"
+            kind="secondary"
             label="I'll try it"
             onPress={() => {
               startMove(today, step.questionId, step.optionId, step.step).catch(() => {})
@@ -88,7 +87,7 @@ function StepBody({ today, step, onSaid }: { today: string; step: QuietStep; onS
         <View style={{ flexDirection: 'row', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
           <Button
             small
-            kind="outline"
+            kind="secondary"
             label="I’ll try it again"
             onPress={() => {
               tryAgain(step.move.questionId, today)

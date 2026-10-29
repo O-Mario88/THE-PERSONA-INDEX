@@ -495,7 +495,7 @@ export function WhatHelped() {
           onCancel={() => setComposing(false)}
         />
       ) : (
-        <Button small kind="outline" label="Share what helped you" onPress={() => setComposing(true)} style={{ alignSelf: 'flex-start' }} />
+        <Button small kind="secondary" label="Share what helped you" onPress={() => setComposing(true)} style={{ alignSelf: 'flex-start' }} />
       )}
 
       {sent.length > 0 && (
@@ -590,7 +590,7 @@ export function SupportCelebrate({ today }: { today?: string }) {
               <T v="small" tone="muted">
                 A small message can make a big difference.
               </T>
-              <Button small kind="soft" label="Reach out" iconAfter="arrow" onPress={() => setOpen('encourage')} style={{ alignSelf: 'flex-start' }} />
+              <Button small kind="secondary" label="Reach out" iconAfter="arrow" onPress={() => setOpen('encourage')} style={{ alignSelf: 'flex-start' }} />
             </Tinted>
           )}
           <Tinted tone="amber">
@@ -598,7 +598,7 @@ export function SupportCelebrate({ today }: { today?: string }) {
             <T v="small" tone="muted">
               Made progress on something that matters? Tell someone who matters.
             </T>
-            <Button small kind="soft" label="Share a win" iconAfter="arrow" onPress={() => setOpen('celebrate')} style={{ alignSelf: 'flex-start' }} />
+            <Button small kind="secondary" label="Share a win" iconAfter="arrow" onPress={() => setOpen('celebrate')} style={{ alignSelf: 'flex-start' }} />
           </Tinted>
           <Button kind="text" small label="Having a hard week? Ask someone for support" onPress={() => setOpen('support')} style={{ alignSelf: 'flex-start' }} />
         </>

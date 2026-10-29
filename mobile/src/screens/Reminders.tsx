@@ -105,7 +105,7 @@ export function ReminderAsk() {
         />
         <Button
           small
-          kind="ghost"
+          kind="secondary"
           label="Not now"
           onPress={() => {
             save(REMINDERS_ASKED, 'no')
@@ -142,7 +142,7 @@ function ComeBackOnWeb({ onAnswer }: { onAnswer: (answer: string) => void }) {
         ) : (
           <Button small label={phone ? "I've added it" : "I've bookmarked it"} onPress={() => { onAnswer('added'); setDone(true) }} />
         )}
-        <Button small kind="ghost" label="Not now" onPress={() => onAnswer('no')} />
+        <Button small kind="secondary" label="Not now" onPress={() => onAnswer('no')} />
       </View>
     </Card>
   )

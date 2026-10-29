@@ -10,7 +10,7 @@ import { loadRings, placeIn, RING_NAMES, RING_NOTES, RINGS, ringOf, type Ring, t
 import type { Question } from '@shared/api'
 import { createInvite, getCircle, inviteLink, TAG_NAMES, TAGS, type AccountView, type CircleView, type Tag } from '@shared/social'
 import { dayMonth } from '@shared/reflect'
-import { font, radius } from '../theme'
+import { radius } from '../theme'
 import { Button, Card, Chip, Page, T } from '../ui/kit'
 import { CardHead, Avatar } from '../ui/parts'
 import { Section } from '../ui/Layout'
@@ -65,10 +65,9 @@ export function Connect({
         <NotAloneSection pulse={pulse} focus={focus} onReflect={reflectOn} />
         <Section title="Reach out when you’re ready" icon="heart">
           <T tone="text2">Is there someone you’d feel comfortable reconnecting with? Your Circle is here whenever you want it, and friends never see your answers.</T>
-          <Button small kind="outline" label="Start your circle" iconAfter="chevron" onPress={onSignIn} />
+          <Button small kind="secondary" label="Start your circle" iconAfter="chevron" onPress={onSignIn} />
         </Section>
         {today && <Growing date={today} questions={questions} circle={null} />}
-        <Tagline />
       </Page>
     )
   }
@@ -134,7 +133,6 @@ export function Connect({
         </>
       )}
 
-      <Tagline />
       <T v="small" tone="muted" center>
         Friends see that you’re connected and the circle tag you gave them. Never your answers, your readings, or who else is here. Anything more is only what you choose to share, with the people you
         choose.
@@ -249,13 +247,5 @@ function Invite({ circle }: { circle: CircleView | null }) {
         </T>
       ) : null}
     </View>
-  )
-}
-
-function Tagline() {
-  return (
-    <T style={{ fontFamily: font.semibold, fontSize: 18, lineHeight: 25 }} center>
-      A little closer. A little stronger. Together.
-    </T>
   )
 }

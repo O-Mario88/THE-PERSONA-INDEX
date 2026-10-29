@@ -195,7 +195,7 @@ export function Night({ date, tomorrowThemes, onClose }: { date: string; tomorro
       <Private>Kept in your notebook, on this phone only.</Private>
       <Button
         wide
-        kind="outline"
+        kind="secondary"
         label="Close the day"
         onPress={() => {
           if (picked.length > 0) keepGoodThings(date, picked)

@@ -67,7 +67,7 @@ export function WalkAlongside({ friends }: { friends: FriendView[] }) {
               <Button small kind="text" label="Cancel" onPress={() => setChoosing(false)} />
             </>
           ) : (
-            <Button small kind="soft" label="Choose someone" busy={busy} onPress={() => setChoosing(true)} />
+            <Button small kind="secondary" label="Choose someone" busy={busy} onPress={() => setChoosing(true)} />
           )}
         </>
       )}

@@ -398,8 +398,8 @@ export function HeavyCard() {
       {people?.helps && <T>What helps, in your words: “{people.helps}”</T>}
       {names.length > 0 && (
         <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
-          <Button small kind="light" icon="chat" label="WhatsApp" onPress={() => Linking.openURL(`https://wa.me/?text=${encodeURIComponent(draft)}`)} />
-          <Button small kind="outline" icon="sms" label="SMS" onPress={() => Linking.openURL(`sms:?&body=${encodeURIComponent(draft)}`)} />
+          <Button small kind="secondary" icon="chat" label="WhatsApp" onPress={() => Linking.openURL(`https://wa.me/?text=${encodeURIComponent(draft)}`)} />
+          <Button small kind="secondary" icon="sms" label="SMS" onPress={() => Linking.openURL(`sms:?&body=${encodeURIComponent(draft)}`)} />
         </View>
       )}
       {names.length === 0 && <T>{NO_PEOPLE}</T>}

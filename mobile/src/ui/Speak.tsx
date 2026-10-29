@@ -224,7 +224,7 @@ function Choice({ label, text, action, onKeep }: { label: string; text: string; 
     <View style={{ gap: 8, padding: 14, borderRadius: radius.md, borderWidth: 1, borderColor: p.line, backgroundColor: p.bg }}>
       <T v="label">{label}</T>
       <T style={{ fontSize: 16, lineHeight: 22 }}>{text}</T>
-      <Button small kind="soft" label={action} onPress={onKeep} />
+      <Button small kind="secondary" label={action} onPress={onKeep} />
     </View>
   )
 }

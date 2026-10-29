@@ -547,6 +547,22 @@ export function Shell({ phoneDark, onRestart, onDayReady }: { phoneDark: boolean
       // The app shows it remembers: the sitting opens with an earlier answer.
       const remember = rememberLine(set.date, loadHistory())
       const carry = closing ? carryLine(set.date, loadHistory()) : null
+      const offerAccount = canSignIn && !me && !askedSignIn
+      // One ask at most at the close (the light-mode review, 2026-10-29): the
+      // reminder offer after the first glimpse, else signing in, then the 18+
+      // question, then where you live, each asked once.
+      const ask: 'reminder' | 'signin' | 'adult' | 'country' | null =
+        !closing || steps.length === 0
+          ? null
+          : glimpse
+            ? 'reminder'
+            : offerAccount
+              ? 'signin'
+              : hasIntimate && prefs.adult === null && isNewcomer() && dayN > 1
+                ? 'adult'
+                : prefs.country === undefined
+                  ? 'country'
+                  : null
       body = (
         <Flow
           label={steps.length === 0 ? tr(name) : closing ? trf('{name} close', { name: tr(name) }) : trf('{name} · {n} of {m}', { name: tr(name), n: at + 1, m: steps.length })}
@@ -606,20 +622,8 @@ export function Shell({ phoneDark, onRestart, onDayReady }: { phoneDark: boolean
                 dayWithYou={weekOne ? dayN : undefined}
               />
             ))}
-          {/* The questions lead somewhere: everything they add up to lives in Insights. */}
-          {closing && steps.length > 0 && (
-            <Button
-              kind="text"
-              label="See what your answers add up to"
-              iconAfter="arrow"
-              onPress={() => {
-                setFlow(null)
-                goTab('insights')
-              }}
-            />
-          )}
-          {closing && steps.length > 0 && glimpse && <ReminderAsk />}
-          {closing && steps.length > 0 && !me && !askedSignIn && !glimpse && canSignIn && (
+          {ask === 'reminder' && <ReminderAsk />}
+          {ask === 'signin' && (
             <Tinted>
               <T v="h2">Your {steps.length === 3 ? 'three cards are' : 'cards are'} on this phone. Keep them everywhere.</T>
               <T tone="text2">Signing in syncs your Notebook across devices. No password, just a 6-digit code.</T>
@@ -636,22 +640,10 @@ export function Shell({ phoneDark, onRestart, onDayReady }: { phoneDark: boolean
               </View>
             </Tinted>
           )}
-          {closing && steps.length > 0 && hasIntimate && prefs.adult === null && isNewcomer() && dayN > 1 && !glimpse && <AdultGate again onAnswer={(adult) => changePrefs({ ...prefs, adult })} />}
-          {closing && steps.length > 0 && prefs.country === undefined && !glimpse && <CountryAsk onAnswer={(country) => changePrefs({ ...prefs, country })} />}
-          {glimpse && (
-            <View style={{ gap: 12, alignItems: 'center' }}>
-              <Button wide label={canSignIn && !me ? 'Keep going' : 'Back to today'} onPress={() => (canSignIn && !me ? setSignup(true) : closeFlow())} style={{ alignSelf: 'stretch' }} />
-              <Button
-                kind="text"
-                label="Invite one friend who knows you well"
-                onPress={() => {
-                  saveKey(CONNECT_OPEN_KEY, '1')
-                  setFlow(null)
-                  goTab('circle')
-                }}
-              />
-            </View>
-          )}
+          {ask === 'adult' && <AdultGate again onAnswer={(adult) => changePrefs({ ...prefs, adult })} />}
+          {ask === 'country' && <CountryAsk onAnswer={(country) => changePrefs({ ...prefs, country })} />}
+          {/* Someone who chose "Start without an account" on the Welcome isn't asked again here. */}
+          {glimpse && <Button wide label={offerAccount ? 'Keep going' : 'Back to today'} onPress={() => (offerAccount ? setSignup(true) : closeFlow())} />}
           {closing && steps.length > 0 && !glimpse && <Button wide label="Back to today" onPress={closeFlow} />}
           <PrivacyLine onKept={() => open('kept')} onSettings={() => open('settings')} />
         </Flow>
@@ -696,7 +688,6 @@ export function Shell({ phoneDark, onRestart, onDayReady }: { phoneDark: boolean
               else if (hero.opens) setFlow(hero.opens)
             }}
             onAccount={() => goTab('account')}
-            onJourney={() => open('journey')}
             themes={themesOf([...morningQs, ...eveningQs])}
             intimacy={intimacyOn(prefs)}
             onRead={openRead}
@@ -706,7 +697,6 @@ export function Shell({ phoneDark, onRestart, onDayReady }: { phoneDark: boolean
           >
             {!weekOne && <InviteNudge today={set.date} signedIn={!!me} onOpen={() => goTab('circle')} />}
             <InstallInvite today={set.date} />
-            <PrivacyLine onKept={() => open('kept')} onSettings={() => open('settings')} />
           </Today>
         ) : state.kind === 'empty' ? (
           <T>No questions today yet. Check back soon.</T>
@@ -868,7 +858,7 @@ function AdultGate({ again, onAnswer }: { again?: boolean; onAnswer: (adult: boo
       <T tone="muted">Some questions are about intimacy and sex. They are frank, never graphic, and only kept as "a private answer".{again ? ' You can change this any time in Settings.' : ''}</T>
       <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
         <Button small label="Yes, I'm 18 or older" onPress={() => onAnswer(true)} />
-        <Button small kind="ghost" label="No" onPress={() => onAnswer(false)} />
+        <Button small kind="secondary" label="No" onPress={() => onAnswer(false)} />
       </View>
     </Tinted>
   )
@@ -886,7 +876,7 @@ function InviteNudge({ today, signedIn, onOpen }: { today: string; signedIn: boo
       <CardHead icon="heart" tone="rose" title="Reach out when you’re ready" />
       <T tone="text2">Is there someone you’d feel comfortable reconnecting with? Your Circle is here whenever you want it, and friends never see your answers.</T>
       <View style={{ flexDirection: 'row', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
-        <Button small kind="outline" label={signedIn ? 'Invite a friend' : 'Start your circle'} iconAfter="chevron" onPress={onOpen} />
+        <Button small kind="secondary" label={signedIn ? 'Invite a friend' : 'Start your circle'} iconAfter="chevron" onPress={onOpen} />
         <Button
           small
           kind="text"

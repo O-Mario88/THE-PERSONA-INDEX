@@ -1,9 +1,10 @@
 // The close of a sitting, one reflection after a conversation (Edwin's
-// brief, 2026-10-28): the midnight card with this week's tiles, then the
-// first glimpse (first sitting only) or today's thread, how today's steps
-// went (the same check-in as everywhere), one thing worth trying from the
-// sitting's own answers, and what comes next. Nothing is scored, shared or
-// set against anyone else.
+// brief, 2026-10-28): the midnight card with this week's tiles and when the
+// next three open, then the first glimpse (first sitting only) or today's
+// thread, how today's steps went (the same check-in as everywhere), and one
+// thing worth trying from the sitting's own answers. Three things, not seven
+// (the light-mode review, 2026-10-29). Nothing is scored, shared or set
+// against anyone else.
 import { useEffect, useState, type ReactNode } from 'react'
 import { View } from 'react-native'
 import { recalledChoice, SKIPPED, type Question } from '@shared/api'
@@ -25,7 +26,7 @@ import { stepToTry, type SittingPick } from '@shared/sittingClose'
 import { week } from '@shared/tapestry'
 import { themeName } from '@shared/themes'
 import { sideOf, TRAITS } from '@shared/traits'
-import { GLIMPSE_BALANCED, GLIMPSE_NEXT, QUIET_DAY, ROUTE_ASK, ROUTE_REPLIES, ROUTE_WORDS, routeLead, SUNDAY_LINE } from '@shared/words'
+import { GLIMPSE_BALANCED, GLIMPSE_NEXT, QUIET_DAY, ROUTE_ASK, ROUTE_REPLIES, ROUTE_WORDS, routeLead } from '@shared/words'
 import { brand, font, radius, useTheme } from '../theme'
 import { B, Button, Chip, feel, Option, T, Tinted } from '../ui/kit'
 import { CardHead, themeIcon, WeekTiles } from '../ui/parts'
@@ -64,6 +65,16 @@ const answersIn = (h: History, questions: Question[], date: string): AnswerRecor
 
 const COUNT = ['No', 'One', 'Two', 'Three', 'Four', 'Five', 'Six']
 
+const listOf = (xs: string[]) => (xs.length <= 1 ? (xs[0] ?? '') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`)
+
+// When the next three open, and what they're about, on the midnight card.
+function nextLine(date: string, eveningThemes: string[] | null, tomorrowThemes: string[]): string {
+  const about = (themes: string[]) => (themes.length ? `: ${listOf(themes.map(themeName))}` : '')
+  if (eveningThemes) return `Your evening three open at ${opensAt('evening')}${about(eveningThemes)}.`
+  if (isSaturday(date)) return 'Sleep well. Tomorrow is for looking back: your week will be waiting in your mirror.'
+  return `Sleep well. Your next three open at ${opensAt('morning')}${about(tomorrowThemes)}.`
+}
+
 function summaryLine(answers: AnswerRecord[], sitting: 'morning' | 'evening'): string {
   const n = answers.length
   const when = sitting === 'morning' ? 'this morning' : 'this evening'
@@ -80,7 +91,6 @@ export function Close(props: Props) {
   const [history] = useState(loadHistory)
   const mine = answersIn(history, questions, date)
   const eveningThemes = props.sitting === 'morning' ? props.eveningThemes : null
-  const endsDay = !eveningThemes
   const heavy = mine.some((a) => a.heavy || isLowMood(a.theme, a.depth))
   const [paused] = useState(() => heavyPause(history, date))
   // Finishing a sitting gets a small "done" under the finger, unless it was a heavy one.
@@ -113,9 +123,7 @@ export function Close(props: Props) {
         <T v="title" tone="onNavy" style={{ fontSize: 23, lineHeight: 28 }}>
           {summaryLine(mine, sitting)}
         </T>
-        <T v="small" tone="onNavy2">
-          Today’s tile is woven. Your week comes together in Sunday’s Mirror, and a missed day takes nothing away.
-        </T>
+        <T tone="onNavy2">{nextLine(date, eveningThemes, tomorrowThemes)}</T>
       </View>
 
       {heavy && (
@@ -130,7 +138,6 @@ export function Close(props: Props) {
           {glimpseFor ? <Glimpse answers={mine} history={history} date={date} name={glimpseFor.name} /> : <Thread answers={mine} history={history} date={date} paused={paused} />}
           {!heavy && <EchoCard questions={questions} date={date} />}
           {!heavy && <TryOne date={date} questions={questions} sitting="morning" otherwise={props.carry ? <Carry text={props.carry} /> : null} />}
-          {eveningThemes && <Upcoming label={`Your evening three · ${opensAt('evening')}`} themes={eveningThemes} note={`Go about your day. They'll be waiting for you at ${opensAt('evening')}.`} />}
         </>
       ) : (
         <>
@@ -147,14 +154,6 @@ export function Close(props: Props) {
         </>
       )}
 
-      {endsDay && (
-        <>
-          {isSaturday(date) ? <T>{SUNDAY_LINE}</T> : <Upcoming label="Tomorrow" themes={tomorrowThemes} />}
-          <T style={{ fontFamily: font.semibold, fontSize: 18, lineHeight: 25 }}>
-            {isSaturday(date) ? 'Sleep well. Tomorrow is for looking back: your week will be waiting in your mirror.' : `Sleep well. Your next three open at ${opensAt('morning')}.`}
-          </T>
-        </>
-      )}
       <T v="tiny">Something to think about, never a diagnosis.</T>
     </View>
   )
@@ -218,7 +217,7 @@ function EchoCard({ questions, date }: { questions: Question[]; date: string }) 
         ) : (
           <View style={{ gap: 8, marginTop: 4 }}>
             <Button wide kind="warm" label="Feels true to how I’ve grown" onPress={() => choose('grown')} />
-            <Button wide kind="light" label="Today was just a different day" onPress={() => choose('different')} />
+            <Button wide kind="secondary" label="Today was just a different day" onPress={() => choose('different')} />
           </View>
         ))}
       {reading.kind === 'steady' && (

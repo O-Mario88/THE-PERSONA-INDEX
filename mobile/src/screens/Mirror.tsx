@@ -955,7 +955,7 @@ function NextWeek({ m, today, reload }: { m: MirrorData; today: string; reload: 
             {s.edition > 0 && ` · from Edition #${s.edition}`}
           </ThemeMeta>
           <T>{s.step}</T>
-          <Button small kind="soft" label="Start this step" onPress={() => start(s)} style={{ alignSelf: 'flex-start' }} />
+          <Button small kind="secondary" label="Start this step" onPress={() => start(s)} style={{ alignSelf: 'flex-start' }} />
         </View>
       ))}
       {error && <T tone="danger">That didn't save. Please try again.</T>}

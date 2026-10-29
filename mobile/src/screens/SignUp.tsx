@@ -150,7 +150,7 @@ export function SignUp({ page, onDone, onNotNow, notNow, name: given = '' }: { p
                 />
               )}
               {methods && providers.google && (
-                <Button wide kind="outline" label="Continue with Google" disabled={busy} onPress={() => withID('google', () => googleToken(methods))} />
+                <Button wide kind="secondary" label="Continue with Google" disabled={busy} onPress={() => withID('google', () => googleToken(methods))} />
               )}
               {codes && oneTap && (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>

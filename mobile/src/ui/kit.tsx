@@ -123,9 +123,12 @@ const hovered = (s: { pressed: boolean }) => !!(s as { hovered?: boolean }).hove
 
 // ---- buttons ----
 
-// 'sprout' is the logo's light leaf with navy words: the welcome's one button.
-// 'warm' is marigold with navy words, for a midnight Spotlight.
-type Kind = 'primary' | 'soft' | 'ghost' | 'outline' | 'text' | 'danger' | 'light' | 'sprout' | 'warm'
+// One button system (the light-mode review, 2026-10-29): 'primary' (navy),
+// 'secondary' (white with a quiet edge), 'text' (a link), 'danger', and
+// 'warm', marigold with navy words, for the one main button on a midnight
+// card. 'sprout', the logo's light leaf with navy words, is the Welcome's
+// one brand moment and is used nowhere else.
+type Kind = 'primary' | 'secondary' | 'text' | 'danger' | 'sprout' | 'warm'
 
 export function Button({
   kind = 'primary',
@@ -153,18 +156,18 @@ export function Button({
   const p = useTheme()
   const look: Record<Kind, { bg: string; fg: string; border?: string }> = {
     primary: { bg: p.btn, fg: p.onBtn },
-    soft: { bg: p.accentWash, fg: p.accentInk },
-    ghost: { bg: p.surface2, fg: p.text },
-    outline: { bg: 'transparent', fg: p.text, border: p.lineStrong },
+    secondary: { bg: p.surface, fg: p.text, border: p.lineStrong },
     text: { bg: 'transparent', fg: p.accentInk },
     danger: { bg: 'transparent', fg: p.danger, border: p.danger },
-    light: { bg: p.surface, fg: p.text, border: p.lineStrong },
     sprout: { bg: brand.sprout, fg: brand.onSprout },
     warm: { bg: brand.marigold, fg: brand.onMarigold },
   }
   const l = look[kind]
   const off = disabled || busy
-  const fg = off && kind === 'primary' ? p.muted : l.fg
+  // A filled button that isn't ready yet stays itself, only fainter, so it
+  // never passes for a second button.
+  const filled = kind === 'primary' || kind === 'sprout' || kind === 'warm'
+  const fg = l.fg
   return (
     <Pressable
       accessibilityRole="button"
@@ -172,14 +175,14 @@ export function Button({
       accessibilityLabel={tr(label)}
       disabled={off}
       onPress={() => {
-        if (kind === 'primary' || kind === 'sprout' || kind === 'warm') feel('tap')
+        if (filled) feel('tap')
         onPress()
       }}
       hitSlop={small ? 4 : undefined}
       style={(s) => [
         styles.btn,
         {
-          backgroundColor: off && kind === 'primary' ? p.surface3 : hovered(s) && !off && (kind === 'outline' || kind === 'light' || kind === 'ghost') ? p.surface2 : l.bg,
+          backgroundColor: hovered(s) && !off && kind === 'secondary' ? p.surface2 : l.bg,
           borderColor: l.border ?? 'transparent',
           borderWidth: l.border ? 1 : 0,
           // Curved corners, never a pill, and compact (Edwin, 2026-10-28).
@@ -187,7 +190,7 @@ export function Button({
           paddingHorizontal: kind === 'text' ? 0 : small ? 14 : 20,
           alignSelf: wide ? 'stretch' : 'flex-start',
           borderRadius: radius.sm,
-          opacity: s.pressed ? 0.85 : hovered(s) && !off && (kind === 'primary' || kind === 'soft') ? 0.92 : 1,
+          opacity: off && filled ? 0.4 : off ? 0.5 : s.pressed ? 0.85 : hovered(s) && filled ? 0.92 : 1,
           // A small press-down, the way the big apps answer a tap.
           transform: [{ scale: s.pressed && !off && kind !== 'text' ? 0.97 : 1 }],
         },
@@ -375,10 +378,14 @@ export function Toggle({ label, note, value, onChange }: { label: string; note?:
   )
 }
 
+// A chip you can tap is white with an edge, navy once chosen; one that only
+// names something (a theme, a group) is a quiet tag with no edge, so the two
+// never look alike.
 export function Chip({ label, on, onPress, icon }: { label: string; on?: boolean; onPress?: () => void; icon?: IconName }) {
   const p = useTheme()
+  const tappable = !!onPress
   const body = (
-    <View style={[styles.chip, { backgroundColor: on ? p.lime : p.surface2 }]}>
+    <View style={[styles.chip, { backgroundColor: on ? p.lime : tappable ? p.surface : p.surface2, borderWidth: 1, borderColor: on ? p.lime : tappable ? p.lineStrong : 'transparent' }]}>
       {icon ? <Icon name={icon} size={16} color={on ? p.onLime : p.text2} /> : null}
       <Text style={{ fontFamily: on ? font.bold : font.semibold, fontSize: 14, color: on ? p.onLime : p.text }}>{tr(label)}</Text>
     </View>

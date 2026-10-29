@@ -148,7 +148,7 @@ export function BackupSettings({ onRestored }: { onRestored: () => void }) {
             server, where I can't open them.
           </Muted>
           <Button
-            kind="soft"
+            kind="secondary"
             label="Back up with a 12-word phrase"
             onPress={() => {
               setError(null)
@@ -178,7 +178,7 @@ export function BackupSettings({ onRestored }: { onRestored: () => void }) {
             </View>
           ) : (
             <>
-              <Button kind="soft" label="Show my phrase" onPress={() => setMode({ kind: 'show' })} />
+              <Button kind="secondary" label="Show my phrase" onPress={() => setMode({ kind: 'show' })} />
               <Button kind="text" small label="Turn off backup" onPress={() => setMode({ kind: 'confirm-off' })} style={{ alignSelf: 'flex-start' }} />
             </>
           )}

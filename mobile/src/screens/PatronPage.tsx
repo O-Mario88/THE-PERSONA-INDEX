@@ -116,7 +116,7 @@ export function PatronPage({ onBack }: { onBack: () => void }) {
               {test && (
                 <Button
                   small
-                  kind={status.plan === plan ? 'outline' : 'soft'}
+                  kind="secondary"
                   label={status.plan === plan ? 'Yours' : 'Choose'}
                   busy={busy === plan}
                   disabled={status.plan === plan || (plan === 'founding' && info?.foundingLeft === 0)}

@@ -136,7 +136,7 @@ export function WebLockSettings() {
           : 'Ask for your fingerprint, face or phone PIN before the app opens.'}{' '}
         It keeps out someone who picks up your phone while it's unlocked. It doesn't scramble what's stored here; your phone's own lock protects that.
       </T>
-      {on ? <Button kind="text" label="Turn off the lock" busy={busy} onPress={turnOff} /> : <Button small kind="soft" label="Turn on the lock" busy={busy} onPress={turnOn} />}
+      {on ? <Button kind="text" label="Turn off the lock" busy={busy} onPress={turnOff} /> : <Button small kind="secondary" label="Turn on the lock" busy={busy} onPress={turnOn} />}
       {note && <T v="small">{note}</T>}
     </View>
   )

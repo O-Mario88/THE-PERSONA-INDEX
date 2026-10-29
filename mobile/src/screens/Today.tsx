@@ -3,7 +3,7 @@
 // one quiet next step, a way in when something happens, and the Mirror
 // that's coming. Nothing here counts, badges or asks for more.
 import { useState, type ReactNode } from 'react'
-import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native'
+import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native'
 import Svg, { Circle, Defs, LinearGradient, Path, RadialGradient, Rect, Stop } from 'react-native-svg'
 import type { Window } from '@shared/day'
 import { greeting, type Hero } from '@shared/homeHero'
@@ -39,11 +39,10 @@ interface TodayProps {
   rail?: boolean // a right-hand column beside the feed, on a very wide screen
   onWrite: (prompt?: string, followsUp?: string) => void
   onInsights: () => void
-  onJourney: () => void
   children?: ReactNode
 }
 
-export function Today({ date, window: w, name, note, hero, memory, journey, link, tomorrow, onOpen, onAccount, themes, intimacy, onRead, rail, onWrite, onInsights, onJourney, children }: TodayProps) {
+export function Today({ date, window: w, name, note, hero, memory, journey, link, tomorrow, onOpen, onAccount, themes, intimacy, onRead, rail, onWrite, onInsights, children }: TodayProps) {
   const { width } = useWindowDimensions()
   const header = (
     <View style={styles.header}>
@@ -64,7 +63,7 @@ export function Today({ date, window: w, name, note, hero, memory, journey, link
     </View>
   )
   const main = <MainCard today={date} hero={hero} memory={memory} journey={journey} link={link} tomorrow={tomorrow} onOpen={onOpen} onWrite={onWrite} />
-  const step = <QuietStepCard today={date} onJourney={onJourney} />
+  const step = <QuietStepCard today={date} />
   const moment = <NeedAMoment today={date} onWrite={onWrite} />
   const mirror = <MirrorCard today={date} onWrite={onWrite} onInsights={onInsights} />
   if (rail) {
@@ -313,14 +312,15 @@ function NeedAMoment({ today, onWrite }: { today: string; onWrite: (prompt?: str
   const [keeping, setKeeping] = useState(false)
   return (
     <Section title="Need a moment?" icon="heart">
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingRight: 8 }} style={{ marginHorizontal: -2 }}>
+      {/* Wrapped, never cut off at the edge (the light-mode review, 2026-10-29). */}
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         <Chip label="Something feels heavy" on={heavy} onPress={() => setHeavy(!heavy)} />
         <Chip label="Keep a moment" on={keeping} onPress={() => setKeeping(!keeping)} />
         {MOMENTS.map((m) => (
           <Chip key={m.label} label={m.label} onPress={() => onWrite(m.prompt)} />
         ))}
         <Chip label="Just write" onPress={() => onWrite()} />
-      </ScrollView>
+      </View>
       {(keeping || heavy) && (
         <Card style={{ gap: 10 }}>
           {keeping && <KeepMoment today={today} />}
@@ -329,7 +329,7 @@ function NeedAMoment({ today, onWrite }: { today: string; onWrite: (prompt?: str
               <HeavyCard />
               <Button
                 small
-                kind="ghost"
+                kind="secondary"
                 icon="pencil"
                 label="Write it down, just for me"
                 onPress={() => onWrite('What’s weighing on you right now? You can write as much or as little as you like.')}

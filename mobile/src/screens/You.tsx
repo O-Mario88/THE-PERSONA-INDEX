@@ -124,7 +124,7 @@ export function You({
           ) : null}
           <Button
             small
-            kind="outline"
+            kind="secondary"
             label="Sign out of this phone"
             onPress={() => {
               signOut('current').catch(() => {})
@@ -172,7 +172,7 @@ export function You({
         <T v="small" tone="muted">
           {patronLine(patronStatus()) ?? 'Keep the app independent and free of ads, and open the longer view of your own story.'}
         </T>
-        <Button small kind="soft" label="See Patron" onPress={openPatron} />
+        <Button small kind="secondary" label="See Patron" onPress={openPatron} />
       </Card>
 
       {/* Every on/off choice in the app lives here, and all start on (Edwin,
@@ -333,7 +333,7 @@ export function KeptScreen({ today, mild, signedIn, onBack, onDeleted }: { today
       ) : null}
       <Button
         wide
-        kind="outline"
+        kind="secondary"
         label="Delete everything on this phone"
         onPress={() =>
           confirm('Delete everything on this phone?', 'Your answers, words, notebook and steps on this phone go. The server keeps its anonymous counts.', 'Delete', () => {
