@@ -188,7 +188,7 @@ export function Settings({
               <View style={{ gap: 10 }}>
                 <T v="eyebrow">Your first week</T>
                 <T v="small" tone="muted">
-                  For your first week the app keeps to Today, Reflect and Insights. Connect and your Mirrors arrive as they fill in.
+                  For your first week I keep a few extras back, such as the shortcuts to your Mirrors and Saved, so the start stays simple.
                 </T>
                 <Button small kind="secondary" label="Show every section now" onPress={onShowAll} />
               </View>

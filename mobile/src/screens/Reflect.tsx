@@ -14,7 +14,8 @@ import { KINDER_FRIEND, KINDER_TITLE, KINDER_WRITE, kinderLook, readWriting, typ
 import { noticedFrom, type Noticed, type NoticedSource } from '@shared/noticed'
 import { loadHistory } from '@shared/profile'
 import { AREA_NAMES, dayMonth, PERIOD_NAMES, reflectionItems } from '@shared/reflect'
-import { PRIVACY_LINE } from '@shared/words'
+import { privacyLine } from '@shared/words'
+import { vaultState } from '@shared/vault'
 import { addDays } from '@shared/storage'
 import { thoughtsFor, type Answered, type Thought } from '@shared/thoughts'
 import { BringBack } from './Backup'
@@ -449,7 +450,7 @@ function Writing({
           saveDraft(space, next)
         }}
       />
-      <Private>{PRIVACY_LINE}</Private>
+      <Private>{privacyLine(vaultState() !== null)}</Private>
       <Button label="Save reflection" iconAfter="arrow" disabled={!text.trim()} onPress={save} />
     </Tinted>
   )

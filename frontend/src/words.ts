@@ -187,3 +187,6 @@ export const FIXED_WORDS: [string, string][] = [
 ]
 
 export const PRIVACY_LINE = 'Your writing is private, end-to-end encrypted and synced only to your devices.'
+export const PRIVACY_LINE_HERE = 'Your writing is private and stays on this phone. Turn on the backup in Settings to keep it, end-to-end encrypted, on your other devices.'
+// What is true for this phone: the writing leaves it only inside the encrypted backup.
+export const privacyLine = (backupOn: boolean) => (backupOn ? PRIVACY_LINE : PRIVACY_LINE_HERE)

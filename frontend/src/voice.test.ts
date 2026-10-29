@@ -3,7 +3,7 @@ import { adviceFor, levelLine as closeLevelLine } from './advice'
 import { AREA_NAMES, levelLine, levelMeta, PERIOD_CLOSE, periodSummary, summary, tagline, title } from './mirrorText'
 import { changeWords, threadLine, type AnswerRecord } from './profile'
 import { TRAITS } from './traits'
-import { FIXED_WORDS } from './words'
+import { FIXED_WORDS, privacyLine } from './words'
 import { voiceProblems } from './voice'
 
 // Trait reads, and mirrors that lean on them: summary and periodSummary only
@@ -141,5 +141,16 @@ describe('the voice of the mirror and the day close', () => {
     for (const [where, s] of words) {
       expect(voiceProblems(s), `${where}: ${s}`).toEqual([])
     }
+  })
+})
+
+// Found in the 2026-10-29 audit: Reflect promised writing "synced only to
+// your devices" to someone with no backup, whose writing never leaves the
+// phone. The line now says what is true for each.
+describe('the privacy line under the writing box', () => {
+  it('says the writing stays on this phone until the backup is on', () => {
+    expect(privacyLine(false)).toBe('Your writing is private and stays on this phone. Turn on the backup in Settings to keep it, end-to-end encrypted, on your other devices.')
+    expect(privacyLine(true)).toBe('Your writing is private, end-to-end encrypted and synced only to your devices.')
+    expect(voiceProblems(privacyLine(false))).toEqual([])
   })
 })

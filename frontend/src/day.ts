@@ -81,7 +81,7 @@ export function clock(minutes: number): string {
 
 // opensAt names when a sitting opens, the way a person would say it.
 export function opensAt(sitting: Sitting): string {
-  return sitting === 'morning' ? '5 am' : '5 pm'
+  return clock(sitting === 'morning' ? 5 * 60 : 17 * 60)
 }
 
 // isSaturday says whether date (YYYY-MM-DD) is a Saturday: tomorrow is review day.

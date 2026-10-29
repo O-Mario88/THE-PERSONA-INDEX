@@ -5,7 +5,8 @@ import { useState } from 'react'
 import { View } from 'react-native'
 import { recalledDraft, saveDraft } from '@shared/api'
 import { keepMoment, MOMENT_MAX } from '@shared/moments'
-import { PRIVACY_LINE } from '@shared/words'
+import { privacyLine } from '@shared/words'
+import { vaultState } from '@shared/vault'
 import { Button, Field, Private, T } from '../ui/kit'
 import { addSpoken, SpeakInstead } from '../ui/Speak'
 
@@ -36,7 +37,7 @@ export function KeepMoment({ today }: { today: string }) {
           saveDraft(DRAFT, next)
         }}
       />
-      <Private>{PRIVACY_LINE}</Private>
+      <Private>{privacyLine(vaultState() !== null)}</Private>
       <Button
         small
         label="Keep this moment"

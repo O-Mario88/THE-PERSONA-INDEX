@@ -1,4 +1,4 @@
-import { helplineFor, isCountry } from './country'
+import { guessCountry, helplineFor, isCountry } from './country'
 import { regionOf, type Region } from './regions'
 import { loadJSON, saveJSON } from './storage'
 
@@ -130,7 +130,14 @@ export const regionHere = (p: Prefs): Region | null => (p.regional === false ? n
 // The helpline for where the person said they live (country.ts), read on the
 // phone; the directory's front page when they gave none. Public pages, which
 // know nothing about the reader, use HELPLINE_URL (Helpline.tsx).
-export const helplineHere = () => helplineFor(countryOf(loadPrefs()))
+// Help goes to the person's country; before they're asked, to the one the
+// phone's time zone names (guessed on the phone, never sent). "Prefer not to
+// say" keeps the directory's front page.
+export function helplineHere(zone?: string): string {
+  const p = loadPrefs()
+  if (p.country === NO_COUNTRY) return helplineFor(null)
+  return helplineFor(countryOf(p) ?? guessCountry(zone))
+}
 
 // A crisis line someone in that country already knows, to call or text in one
 // tap: 988 in the US and Canada, Samaritans in the UK and Ireland. Elsewhere

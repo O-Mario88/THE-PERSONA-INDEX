@@ -12,7 +12,7 @@ import { Linking, Pressable, View } from 'react-native'
 import { Text } from '../ui/textScale'
 import {
   ApiError,
-  castVote,
+  sendVote,
   CLOSED,
   dropVoteKey,
   earlierAnswer,
@@ -122,7 +122,8 @@ export function QuestionCard({ question, date, sitting, wordsDays = DEFAULT_WORD
     setError(null)
     const sent = intimate ? PRIVATE_OPTION : o.id
     // Counted in the shared totals only once the person said yes (prefs.countAnswers).
-    const send = () => castVote(question.id, sent, voteKey(question.id, sent), sitting, countAnswersOn(loadPrefs()))
+    // Kept on the phone and sent later when the server can't take it now (api.ts sendVote).
+    const send = () => sendVote(question.id, sent, voteKey(question.id, sent), sitting, countAnswersOn(loadPrefs()))
     try {
       try {
         await send()

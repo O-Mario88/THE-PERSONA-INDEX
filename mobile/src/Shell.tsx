@@ -7,7 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ComponentRef, t
 import { AppState, BackHandler, Linking, Platform, Pressable, ScrollView, useWindowDimensions, View } from 'react-native'
 import { Text, TextScaleProvider } from './ui/textScale'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { ApiError, cacheEdition, cachedEdition, getDay, pruneLocal, pruneWords, recalledChoice, sendPlanChecks, sendUnrated, type DailySet, type Question } from '@shared/api'
+import { ApiError, cacheEdition, cachedEdition, getDay, pruneLocal, pruneWords, recalledChoice, sendPlanChecks, sendUnrated, sendUnvoted, type DailySet, type Question } from '@shared/api'
 import { clock, dayAt, nextTurn, WINDOW_INFO, type Day, type OpenWindow, type Sitting } from '@shared/day'
 import { heroFor, type Progress } from '@shared/homeHero'
 import { pruneNotebook } from '@shared/notebook'
@@ -286,6 +286,7 @@ export function Shell({ phoneDark, onRestart, onDayReady }: { phoneDark: boolean
     pruneCardTexts(date)
     sendUnsent(date)
     sendUnrated()
+    sendUnvoted()
     sendPlanChecks()
   }, [date])
 

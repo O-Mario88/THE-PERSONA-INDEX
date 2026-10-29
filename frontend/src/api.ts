@@ -116,6 +116,54 @@ export async function castVote(
   )
 }
 
+// An answer the server could not take yet (Edwin's audit, 2026-10-29): offline,
+// busy (5xx) or rate limited (429, including no new pass for this phone yet).
+// It is kept with its idempotency key and sent again when the app next opens,
+// so the person carries on and it never counts twice. Any other answer from
+// the server ends it: the vote got there, or never can.
+type UnsentVote = { key: string; optionId: string; sitting?: Sitting; count?: boolean }
+const unvotedPrefix = 'pi.unvoted.'
+const tryLater = (e: unknown) => !(e instanceof ApiError) || e.status >= 500 || e.status === 429
+
+// sendVote sends an answer now, or keeps it for later: 'sent' or 'later'. A
+// clear refusal (a duplicate, a closed question) is thrown for the screen.
+export async function sendVote(questionId: string, optionId: string, key: string, sitting?: Sitting, count = false): Promise<'sent' | 'later'> {
+  try {
+    await castVote(questionId, optionId, key, sitting, count)
+    remove(unvotedPrefix + questionId)
+    return 'sent'
+  } catch (e) {
+    if (!tryLater(e)) throw e
+    const v: UnsentVote = { key, optionId, count, ...(sitting ? { sitting } : {}) }
+    save(unvotedPrefix + questionId, JSON.stringify(v))
+    return 'later'
+  }
+}
+
+export const unsentVotes = (): string[] => keys(unvotedPrefix).map((k) => k.slice(unvotedPrefix.length))
+
+// sendUnvoted sends every waiting answer once more, with its original key.
+export async function sendUnvoted() {
+  for (const questionId of unsentVotes()) {
+    let v: UnsentVote | null = null
+    try {
+      v = JSON.parse(load(unvotedPrefix + questionId) ?? 'null')
+    } catch {
+      // unreadable: dropped below
+    }
+    if (!v || typeof v.key !== 'string' || typeof v.optionId !== 'string') {
+      remove(unvotedPrefix + questionId)
+      continue
+    }
+    try {
+      await castVote(questionId, v.optionId, v.key, v.sitting, v.count === true)
+      remove(unvotedPrefix + questionId)
+    } catch (e) {
+      if (!tryLater(e)) remove(unvotedPrefix + questionId)
+    }
+  }
+}
+
 // withDevice runs a request with this phone's pass. When the server stops
 // accepting the pass (its key was rotated away, or another tab deleted
 // everything), it gets a new one and sends the same request, with the same
@@ -577,7 +625,7 @@ const draftPrefix = 'pi.draft.'
 const editionPrefix = 'pi.edition.'
 const pickPrefix = 'pi.pick.'
 const leaningPrefix = 'pi.leaning.'
-const perQuestion = [choicePrefix, pendingPrefix, draftPrefix, 'pi.at.', 'pi.rated.', 'pi.unrated.']
+const perQuestion = [choicePrefix, pendingPrefix, draftPrefix, 'pi.at.', 'pi.rated.', 'pi.unrated.', 'pi.unvoted.']
 
 function randomId(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {

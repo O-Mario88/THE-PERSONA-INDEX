@@ -59,6 +59,7 @@ export const REGISTRY: Entry[] = [
   { key: 'pi.signin.again', what: 'That the one later offer to sign in was made', backup: 'never', merge: 'local', download: false },
   { key: 'pi.invite', what: 'An invite link you followed, until you join or say not now', backup: 'never', merge: 'local', download: false },
   { key: 'pi.unrated.', what: 'A card tap waiting to be sent', backup: 'never', merge: 'local', download: false },
+  { key: 'pi.unvoted.', what: 'An answer waiting to be sent, kept while offline or while the server was busy', backup: 'never', merge: 'local', download: false },
   { key: 'pi.pending.', what: 'An answer waiting to be sent', backup: 'never', merge: 'local', download: false },
   { key: 'pi.draft.', what: 'A half-written answer, for a day', backup: 'never', merge: 'local', download: false },
   { key: 'pi.insight.', what: 'The card each answer showed, for Insights, for 30 days', backup: 'never', merge: 'local', download: false },

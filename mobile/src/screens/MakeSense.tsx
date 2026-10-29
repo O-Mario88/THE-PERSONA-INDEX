@@ -289,7 +289,7 @@ function Kept({ checkOn, first, onDone }: { checkOn: string; first: boolean; onD
         <T tone="onNavy2">{`I’ll check in on ${dateOf(checkOn, { weekday: 'long' })} to ask how your next step went.`}</T>
       </View>
       {first && (
-        <PatronNote text="As you go, I’ll remember what helped and bring it back when something similar happens, and each week your Mirror shows what kept coming up. That memory across your weeks is part of The Persona Index Patron." />
+        <PatronNote text="As you go, I can remember what you said helped and bring it back when something similar happens. That is part of The Persona Index Patron. Your weekly Mirror stays free." />
       )}
       {first && <RemindersOn />}
       <Button wide label="Back to today" onPress={onDone} />
