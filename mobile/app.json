@@ -76,7 +76,7 @@
           "faceIDPermission": "Lets you open your private space with Face ID."
         }
       ],
-      "./plugins/withQuietLabels",
+      "./plugins/withQuietIcons",
       [
         "expo-alternate-app-icons",
         [

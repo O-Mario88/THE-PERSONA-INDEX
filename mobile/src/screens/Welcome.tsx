@@ -6,7 +6,8 @@
 // Then signing in (Edwin's brief of 2026-10-29): Apple, Google, or a 6-digit
 // code to an email or phone, so the Notebook, a Patron plan and the backup
 // follow the person to every device. Starting without an account stays one
-// tap away: the app works fully without one (and Apple asks that it does).
+// tap away: the first day works without one, and from the second day the
+// sittings ask for a free account, as before (firstWeek.ts).
 import { useState } from 'react'
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'

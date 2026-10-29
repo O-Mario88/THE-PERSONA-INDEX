@@ -6,10 +6,9 @@
 // of Patron. Inside the guest space nothing mentions a guest PIN.
 import { useEffect, useState } from 'react'
 import { Image, Modal, Platform, Pressable, View } from 'react-native'
-import { getAppIconName } from 'expo-alternate-app-icons'
 import { appLock, saveAppLock, sealPin, type AppLock, type QuietIcon } from '@shared/appLock'
 import { isPatron } from '@shared/patron'
-import { applyCover, checkName, confirmOwner, ownerCheck, quietIconsHere, setQuietIcon, type OwnerCheck } from '../platform/applock'
+import { applyCover, checkName, chosenIcon, confirmOwner, homeScreenIcon, ownerCheck, quietIconsHere, setQuietIcon, type OwnerCheck } from '../platform/applock'
 import { currentSpace, wipeGuest } from '../platform/setup'
 import { brand, useTheme } from '../theme'
 import { PinPad } from '../ui/AppLockGate'
@@ -30,16 +29,6 @@ const todayHere = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-// The icon the phone shows now, which a reinstall can change.
-function iconNow(saved: QuietIcon): QuietIcon {
-  try {
-    const n = getAppIconName()
-    return n === 'Pebble' ? 'pebble' : n === 'Horizon' ? 'horizon' : 'usual'
-  } catch {
-    return saved
-  }
-}
-
 export function PrivacyLockChoices() {
   return Platform.OS === 'web' ? <WebLockSettings /> : <PhoneLockChoices />
 }
@@ -50,7 +39,7 @@ function PhoneLockChoices() {
   const [note, setNote] = useState<string | null>(null)
   const [patronFor, setPatronFor] = useState<'icon' | 'guest' | null>(null)
   const [settingUp, setSettingUp] = useState(false)
-  const [icon, setIcon] = useState<QuietIcon>(() => iconNow(appLock().icon))
+  const [icon, setIcon] = useState<QuietIcon>(() => chosenIcon(appLock().icon))
   const guestSpace = currentSpace() === 'guest'
   useEffect(() => {
     ownerCheck().then(setCheck)
@@ -139,7 +128,12 @@ function PhoneLockChoices() {
               <IconTile key={i.id} label={i.label} under={i.under} src={i.src} on={icon === i.id} onPress={() => pickIcon(i.id)} />
             ))}
           </View>
-          {patronFor === 'icon' && <PatronNote text="A quiet app icon is part of The Persona Index Patron." />}
+          {android && icon !== homeScreenIcon(icon) && (
+            <T v="small" tone="muted">
+              Your home screen shows it once you leave the app.
+            </T>
+          )}
+          {patronFor === 'icon' && !patron() && <PatronNote text="A quiet app icon is part of The Persona Index Patron." />}
         </View>
       )}
       {!guestSpace && (
@@ -162,7 +156,7 @@ function PhoneLockChoices() {
           ) : (
             <Button small kind="soft" label="Set up a guest PIN" onPress={startGuest} />
           )}
-          {patronFor === 'guest' && <PatronNote text="A guest PIN is part of The Persona Index Patron." />}
+          {patronFor === 'guest' && !patron() && <PatronNote text="A guest PIN is part of The Persona Index Patron." />}
         </View>
       )}
       {settingUp && (

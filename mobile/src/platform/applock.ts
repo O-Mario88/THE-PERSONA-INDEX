@@ -1,10 +1,10 @@
 // The phone's side of the privacy curtain (shared appLock.ts): the phone's
 // own check of its owner (face, fingerprint or passcode), the cover in the app
 // switcher, and the quiet icon. All of it on the phone; nothing is sent.
-import { Platform } from 'react-native'
+import { AppState, Platform } from 'react-native'
 import * as LocalAuthentication from 'expo-local-authentication'
 import * as ScreenCapture from 'expo-screen-capture'
-import { setAlternateAppIcon, supportsAlternateIcons } from 'expo-alternate-app-icons'
+import { getAppIconName, setAlternateAppIcon, supportsAlternateIcons } from 'expo-alternate-app-icons'
 import type { QuietIcon } from '@shared/appLock'
 
 // face / finger: the phone checks a face or a fingerprint (its passcode
@@ -63,8 +63,41 @@ export const quietIconsHere = (): boolean => Platform.OS !== 'web' && supportsAl
 
 const NATIVE_ICON: Record<QuietIcon, string | null> = { usual: null, pebble: 'Pebble', horizon: 'Horizon' }
 
+// The icon on the home screen now (a reinstall can change it), or `saved`
+// when the phone can't say.
+export function homeScreenIcon(saved: QuietIcon): QuietIcon {
+  try {
+    const n = getAppIconName()
+    return n === 'Pebble' ? 'pebble' : n === 'Horizon' ? 'horizon' : 'usual'
+  } catch {
+    return saved
+  }
+}
+
+// Android closes the app the moment its home-screen icon changes, so there
+// the change waits until the person leaves the app. An iPhone changes it
+// straight away.
+let waiting: QuietIcon | null = null
+let leaving: { remove: () => void } | null = null
+
+// The icon chosen last: the one on the home screen, or the one Android puts
+// there once the person leaves the app.
+export const chosenIcon = (saved: QuietIcon): QuietIcon => waiting ?? homeScreenIcon(saved)
+
 export async function setQuietIcon(icon: QuietIcon): Promise<boolean> {
   if (!quietIconsHere()) return false
+  if (Platform.OS !== 'android') return switchIcon(icon)
+  waiting = icon
+  leaving ??= AppState.addEventListener('change', (state) => {
+    if (state !== 'background' || !waiting) return
+    const next = waiting
+    waiting = null
+    switchIcon(next)
+  })
+  return true
+}
+
+async function switchIcon(icon: QuietIcon): Promise<boolean> {
   try {
     await setAlternateAppIcon(NATIVE_ICON[icon])
     return true
