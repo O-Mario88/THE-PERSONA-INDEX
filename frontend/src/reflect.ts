@@ -3,6 +3,7 @@ import { splitReveal } from './reveal'
 import type { OutsideMirror } from './social'
 import { TRAITS } from './traits'
 import type { Reflection, ReflectionArea, ReflectionGroup, ReflectionPeriod, ReflectionSource } from './notebook'
+import { locale } from './locale'
 
 // Reflect (Edwin, 2026-10-25): what the person learnt about themselves,
 // what's going well and where they could grow, across the parts of a life,
@@ -111,4 +112,4 @@ export function reflectionPrompts(items: ReflectionItem[], period: ReflectionPer
 
 // "24 October": the day first, whatever the phone's locale.
 export const dayMonth = (iso: string) =>
-  new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', timeZone: 'UTC' })
+  new Date(`${iso}T00:00:00Z`).toLocaleDateString(locale(), { day: 'numeric', month: 'long', timeZone: 'UTC' })

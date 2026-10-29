@@ -45,15 +45,15 @@ describe('the service worker', () => {
     ])
   })
 
-  it('keeps the React Native web build: its script, the Figtree faces the app draws with, and the icons', () => {
+  it('keeps the React Native web build: its script, the Geist faces the app draws with, and the icons', () => {
     const expo = [
       'index.html',
       'app.css',
       '_expo/static/js/web/index-9bdcdbe5f9584522a138355c67028d4f.js',
-      'assets/node_modules/@expo-google-fonts/figtree/400Regular/Figtree_400Regular.fde4a0ff.ttf',
-      'assets/node_modules/@expo-google-fonts/figtree/800ExtraBold/Figtree_800ExtraBold.2960d6e0.ttf',
-      'assets/node_modules/@expo-google-fonts/figtree/900Black/Figtree_900Black.cb929048.ttf',
-      'assets/node_modules/@expo-google-fonts/figtree/400Regular_Italic/Figtree_400Regular_Italic.9d65a509.ttf',
+      'assets/node_modules/@expo-google-fonts/geist/400Regular/Geist_400Regular.fde4a0ff.ttf',
+      'assets/node_modules/@expo-google-fonts/geist/800ExtraBold/Geist_800ExtraBold.2960d6e0.ttf',
+      'assets/node_modules/@expo-google-fonts/geist/900Black/Geist_900Black.cb929048.ttf',
+      'assets/node_modules/@expo-google-fonts/geist/400Regular_Italic/Geist_400Regular_Italic.9d65a509.ttf',
       'manifest.webmanifest',
       'favicon.svg',
       'sw.js',
@@ -62,7 +62,7 @@ describe('the service worker', () => {
       '/',
       '/_expo/static/js/web/index-9bdcdbe5f9584522a138355c67028d4f.js',
       '/app.css',
-      '/assets/node_modules/@expo-google-fonts/figtree/400Regular/Figtree_400Regular.fde4a0ff.ttf',
+      '/assets/node_modules/@expo-google-fonts/geist/400Regular/Geist_400Regular.fde4a0ff.ttf',
       '/favicon.svg',
       '/manifest.webmanifest',
     ])

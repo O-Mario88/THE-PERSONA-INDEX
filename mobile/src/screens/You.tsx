@@ -7,12 +7,22 @@ import { deleteBackup, vaultState } from '@shared/vault'
 import { ApiError, deleteEverywhere, forgetLocal, getKept, insteadCount, wordsBetween, type Kept } from '@shared/api'
 import { loadMoves } from '@shared/moves'
 import { notebookCount } from '@shared/notebook'
-import { blackOn, loadPrefs, pulseOn, type Prefs } from '@shared/prefs'
+import { followTime } from '@shared/depth'
+import { countAnswersOn, countryOf, countUseOn, loadPrefs, pulseOn, whatHelpedOn, withSharing, type Prefs, type ReflectionStyle, type ReflectionTime } from '@shared/prefs'
+import { regionOf } from '@shared/regions'
+import { REGIONAL_SWITCH } from '@shared/words'
+import { MirrorDayPicker, ReminderSettingsView } from './Reminders'
+import { PushRow, SHARE_ROWS } from './ShareChoices'
+import { pushAvailable } from '../platform/push'
 import { loadHistory } from '@shared/profile'
 import { forgetSession, patchAccount, signOut, type AccountView } from '@shared/social'
-import { Back, Button, Card, Field, Page, RowLink, T, Tinted, Toggle } from '../ui/kit'
+import { Back, Button, Card, Chip, Field, Page, RowGroup, RowLink, T, Tinted, Toggle } from '../ui/kit'
 import { Avatar } from '../ui/parts'
 import { DownloadButtons } from './BookDownloads'
+import { PrivacyLockChoices } from './PrivacyChoices'
+import { patronLine, patronStatus } from '@shared/patron'
+import { openPatron } from '../ui/Patron'
+import { SharingHistory } from './ShareSheet'
 
 const KEPT: [string, string][] = [
   ['Readings, plans, Notebook', 'Encrypted · until you delete'],
@@ -22,6 +32,17 @@ const KEPT: [string, string][] = [
   ['That you answered a friend question', 'The date only, no question or option · 35 days'],
   ['Nods & Answer Together', 'Nods 35 days, Answer Together 3 days · never counted'],
   ['Human Pulse totals', 'Anonymous counts only'],
+]
+
+const STYLES: [ReflectionStyle, string][] = [
+  ['think', 'Help me think things through'],
+  ['practical', 'Give me small, practical ideas'],
+  ['both', 'A little of both'],
+]
+const TIMES: [ReflectionTime, string][] = [
+  ['minute', 'Just a minute'],
+  ['few', 'A few minutes'],
+  ['deep', 'I like to go deeper'],
 ]
 
 export function You({
@@ -75,6 +96,8 @@ export function You({
     delete next[k]
     return next
   }
+  // What this phone adds to shared totals, each off until chosen.
+  const sharing = { answers: countAnswersOn(prefs), helped: whatHelpedOn(prefs), use: countUseOn(prefs) }
   const shown = me?.name || localName || 'You'
 
   return (
@@ -96,13 +119,17 @@ export function You({
         </Tinted>
       ) : (
         <View style={{ gap: 12 }}>
-          <T v="label">What friends see</T>
+          <T v="eyebrow">What friends see</T>
           <Field label="Display name" value={name} onChangeText={setName} maxLength={40} onBlur={saveProfile} />
           <Field label="Handle" value={handle} onChangeText={setHandle} maxLength={21} autoCapitalize="none" onBlur={saveProfile} />
-          {note ? <T v="small" tone="muted">{note}</T> : null}
+          {note ? (
+            <T v="small" tone="muted">
+              {note}
+            </T>
+          ) : null}
           <Button
             small
-            kind="outline"
+            kind="secondary"
             label="Sign out of this phone"
             onPress={() => {
               signOut('current').catch(() => {})
@@ -112,20 +139,74 @@ export function You({
         </View>
       )}
 
+      {/* My Reflection Style (Edwin's brief, 2026-10-28): optional. What feels
+          most useful decides what comes first; the time sets how much each page
+          shows at first (Essential or Explore deeper). */}
+      <Card style={{ gap: 12 }}>
+        <View style={{ gap: 4 }}>
+          <T v="h2">Make this space yours</T>
+          <T v="small" tone="muted">
+            How would you like The Persona Index to help you? Change it any time.
+          </T>
+        </View>
+        <T v="h3">What feels most useful?</T>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          {STYLES.map(([id, label]) => (
+            <Chip key={id} label={label} on={(prefs.style ?? 'both') === id} onPress={() => onChange({ ...prefs, style: id })} />
+          ))}
+        </View>
+        <T v="h3">How much time do you usually have?</T>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          {TIMES.map(([id, label]) => (
+            <Chip
+              key={id}
+              label={label}
+              on={(prefs.time ?? 'few') === id}
+              onPress={() => {
+                followTime()
+                onChange({ ...prefs, time: id })
+              }}
+            />
+          ))}
+        </View>
+      </Card>
+
+      {/* Patron (Edwin's brief, 2026-10-29), right above Privacy and choices. */}
+      <Card style={{ gap: 8 }}>
+        <T v="h2">The Persona Index Patron</T>
+        <T v="small" tone="muted">
+          {patronLine(patronStatus()) ?? 'Prepare for a conversation, remember what helps you and see what is changing, while keeping the app independent and free of ads.'}
+        </T>
+        <Button small kind="secondary" label="See Patron" onPress={openPatron} />
+      </Card>
+
+      {/* Every on/off choice in the app lives here (Edwin, 2026-10-28). What only
+          changes this phone starts on; anything added to totals other people
+          see is off until chosen (Edwin, 2026-10-29). No other page asks you
+          to switch anything, apart from the one sharing question at a close. */}
       <Card style={{ gap: 4 }}>
-        <T v="label">Choices</T>
+        <T v="h2">Privacy and choices</T>
+        <T v="small" tone="muted">
+          Private reflection works from the start. Anything added to totals other people see stays off until you choose it.
+        </T>
         <Toggle
-          label="Dark mode"
-          note="Midnight through the evening and night, and whenever your phone is set to dark."
-          value={blackOn(prefs)}
-          onChange={(on) => onChange(on ? without('black') : { ...prefs, black: false })}
-        />
-        <Toggle
-          label="Show me the Human Pulse"
-          note="Anonymous totals of how others answered. Off hides every number."
+          label="The Human Pulse"
+          note="See how many people chose the same answers as you: anonymous totals only, never who. Off hides every number, everywhere."
           value={pulseOn(prefs)}
-          onChange={(on) => onChange({ ...prefs, pulse: on })}
+          onChange={(on) => onChange(on ? without('pulse') : { ...prefs, pulse: false })}
         />
+        {SHARE_ROWS.map((r) => (
+          <Toggle key={r.key} label={r.label} note={r.note} value={sharing[r.key]} onChange={(on) => onChange(withSharing(prefs, { ...sharing, [r.key]: on }))} />
+        ))}
+        {me && pushAvailable && <PushRow />}
+        {regionOf(countryOf(prefs)) && (
+          <Toggle
+            label={REGIONAL_SWITCH}
+            note="Asked and kept on this phone only. Nothing about them is ever sent."
+            value={prefs.regional !== false}
+            onChange={(on) => onChange(on ? without('regional') : { ...prefs, regional: false })}
+          />
+        )}
         {prefs.adult === true && (
           <Toggle
             label="Keep it mild (no intimacy questions)"
@@ -134,14 +215,23 @@ export function You({
             onChange={(on) => onChange({ ...prefs, mild: on })}
           />
         )}
+        {/* The privacy curtain (Edwin's brief, 2026-10-29): lock, cover, quiet icon, guest PIN. */}
+        <PrivacyLockChoices />
+        <ReminderSettingsView />
+        <MirrorDayPicker />
       </Card>
 
-      <RowLink label="Settings" sub="Your name, intimacy questions, where you live" onPress={onOpenSettings} />
-      <RowLink label="What I keep, and how to delete it" onPress={onOpenKept} />
+      {/* What you've shared, and taking it back (Edwin, 2026-10-29). */}
+      <SharingHistory />
+
+      <RowGroup>
+        <RowLink inGroup label="Settings" sub="Your name, language, light or dark, text size and where you live" onPress={onOpenSettings} />
+        <RowLink inGroup label="What I keep, and how to delete it" onPress={onOpenKept} />
+      </RowGroup>
 
       {me && (
         <View style={{ gap: 10 }}>
-          <T v="label">What your account keeps</T>
+          <T v="eyebrow">What your account keeps</T>
           {KEPT.map(([what, how]) => (
             <View key={what} style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
               <T v="small" bold style={{ flex: 1 }}>
@@ -219,8 +309,7 @@ export function KeptScreen({ today, mild, signedIn, onBack, onDeleted }: { today
           </T>
         )}
         <T>
-          <T bold>{plural(phone.notebook, 'entry', 'entries')} in your notebook.</T> The cards you kept, your good things, reflections and plans, until you remove
-          them.
+          <T bold>{plural(phone.notebook, 'entry', 'entries')} in your notebook.</T> The cards you kept, your good things, reflections and plans, until you remove them.
         </T>
         <T>
           <T bold>{plural(phone.answers, 'answer')} in your history.</T> Which answer you chose, its theme and depth, and whether its card was you. Kept 60 days.
@@ -246,10 +335,14 @@ export function KeptScreen({ today, mild, signedIn, onBack, onDeleted }: { today
         <T tone="muted">Your book is {Platform.OS === 'web' ? 'a page' : 'a PDF'} with your notebook, answers and steps, to read or print. The data file holds everything above, as it is kept.</T>
         <DownloadButtons today={today} mild={mild} data />
       </View>
-      {done ? <T tone="leaf" bold>{done}</T> : null}
+      {done ? (
+        <T tone="leaf" bold>
+          {done}
+        </T>
+      ) : null}
       <Button
         wide
-        kind="outline"
+        kind="secondary"
         label="Delete everything on this phone"
         onPress={() =>
           confirm('Delete everything on this phone?', 'Your answers, words, notebook and steps on this phone go. The server keeps its anonymous counts.', 'Delete', () => {
@@ -268,17 +361,17 @@ export function KeptScreen({ today, mild, signedIn, onBack, onDeleted }: { today
           confirm('Delete everywhere?', 'Everything on this phone and everything the server holds from it goes, for good.', 'Delete everywhere', () => {
             // The backup goes first: once this phone's pass is gone, only the
             // 12 words could find it again. If it can't go, nothing goes.
-            (vaultState() ? deleteBackup() : Promise.resolve())
+            ;(vaultState() ? deleteBackup() : Promise.resolve())
               .then(() => deleteEverywhere(today))
               .then(
-              () => {
-                setPhone(onPhone())
-                setServer(null)
-                setDone('Deleted everywhere.')
-                onDeleted()
-              },
-              () => setDone('I couldn’t reach the server, so nothing was deleted. Try again soon.'),
-            )
+                () => {
+                  setPhone(onPhone())
+                  setServer(null)
+                  setDone('Deleted everywhere.')
+                  onDeleted()
+                },
+                () => setDone('I couldn’t reach the server, so nothing was deleted. Try again soon.'),
+              )
           })
         }
       />
@@ -288,13 +381,13 @@ export function KeptScreen({ today, mild, signedIn, onBack, onDeleted }: { today
 
 function ServerList({ k }: { k: Kept }) {
   const { kept, keptFor } = k
-  if (kept.answers + kept.steps + (kept.planChecks ?? 0) + kept.weeklyNotes + kept.votes === 0) return <T>Nothing. This phone has no answers on the server.</T>
+  if (kept.answers + kept.steps + (kept.planChecks ?? 0) + kept.weeklyNotes + kept.votes + (kept.reports ?? 0) === 0) return <T>Nothing. This phone has no answers on the server.</T>
   return (
     <>
       <T>
         <T bold>{plural(kept.answers, 'answer')}</T>
-        {kept.privateAnswers > 0 ? `, ${kept.privateAnswers} of them private` : ''}, under an anonymous key, for your mirror. For a private one I keep only that you
-        answered. Kept {weeks(keptFor.answersDays)}.
+        {kept.privateAnswers > 0 ? `, ${kept.privateAnswers} of them private` : ''}, under an anonymous key, for your mirror. For a private one I keep only that you answered. Kept{' '}
+        {weeks(keptFor.answersDays)}.
       </T>
       <T>
         <T bold>{plural(kept.steps, 'small step')}</T> you started. Kept {weeks(keptFor.answersDays)}.
@@ -308,9 +401,13 @@ function ServerList({ k }: { k: Kept }) {
         <T bold>{plural(kept.weeklyNotes, 'weekly note')}</T> for your month, quarter and year: counts and your clearest answers, never your words. Kept{' '}
         {plural(Math.round(keptFor.weeklyNotesDays / 30), 'month')}.
       </T>
+      {(kept.reports ?? 0) > 0 && (
+        <T>
+          <T bold>{plural(kept.reports ?? 0, 'What helped report')}</T>: how a step went, under a key of its own, with only the week. Kept until you delete everything.
+        </T>
+      )}
       <T>
-        <T bold>{plural(kept.votes, 'vote')}</T> with no key that links them to each other, only there so you can't be counted twice. Kept {weeks(keptFor.votesDays)}, to
-        the hour they came in.
+        <T bold>{plural(kept.votes, 'vote')}</T> with no key that links them to each other, only there so you can't be counted twice. Kept {weeks(keptFor.votesDays)}, to the hour they came in.
       </T>
     </>
   )

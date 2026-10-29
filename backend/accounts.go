@@ -474,6 +474,9 @@ func (s *Server) signInWith(w http.ResponseWriter, r *http.Request, l Login, vot
 	}
 	devID := s.devices.accountDeviceID(acc)
 	merged := false
+	if old, ok := s.devices.Verify(voterID); ok {
+		s.movePatron(ctx, old, acc.ID)
+	}
 	if old, ok := s.devices.Verify(voterID); ok && old != devID {
 		if err := s.social.MoveMirror(ctx, s.devices.mirrorKey(old), s.devices.mirrorKey(devID)); err != nil {
 			log.Printf("move mirror: %v", err) // the answers stay where they were; signing in still works
@@ -602,11 +605,12 @@ func (s *Server) DeleteAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	devID := s.devices.accountDeviceID(acc)
-	if _, err := s.mirror.ForgetDevice(r.Context(), s.devices.mirrorKey(devID), s.deviceVoteHashes(devID), s.today()); err != nil {
+	if _, err := s.forgetDevice(r.Context(), devID, s.today()); err != nil {
 		log.Printf("delete account mirror: %v", err)
 		writeError(w, http.StatusServiceUnavailable, "unavailable")
 		return
 	}
+	s.endPairOf(r.Context(), acc.ID)
 	if err := s.social.DeleteAccount(r.Context(), acc.ID); err != nil {
 		log.Printf("delete account: %v", err)
 		writeError(w, http.StatusServiceUnavailable, "unavailable")

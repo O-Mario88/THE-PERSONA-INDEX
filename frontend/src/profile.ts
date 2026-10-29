@@ -17,6 +17,7 @@
 // - Evening follow-up answers (asked until 2026-10-15, still read while they
 //   are kept) carry trait weights but no depth, so they never move interest.
 
+import { keepEcho, withEcho } from './echoes'
 import { isNewcomer } from './firstWeek'
 import type { Question, Verdict } from './api'
 import { isNeed, type Need } from './needs'
@@ -88,6 +89,8 @@ export function recordAnswer(q: Question, optionId: string, date: string) {
   })
   saveHistory(h, date)
   weave(date, o.need)
+  // A small note of it, for an echo months from now (echoes.ts).
+  keepEcho(q, optionId, date)
 }
 
 // recordRoute keeps the person's word on whether an answer's route usually
@@ -266,7 +269,8 @@ export function todaysPick(
   }
   const h = loadHistory()
   const picked = pickThree(pool.length ? pool : defaults, defaults, h, today, adult, taken, offer, isNewcomer())
-  const qs = isFirstDay(h, today) ? gentleFirst(picked) : picked
+  // Once a week at most, a question answered months ago comes back (echoes.ts).
+  const qs = isFirstDay(h, today) ? gentleFirst(picked) : withEcho(picked, pool.length ? pool : defaults, today, half)
   saveJSON(key, qs.map((q) => q.id))
   return qs
 }

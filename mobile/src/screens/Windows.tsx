@@ -1,8 +1,9 @@
-// The three short windows between the sittings: a check on the morning's step, the
+// The three short windows between the sittings: a reminder of the morning's step, the
 // afternoon's anonymous totals for those who asked for them, and three good
 // things before bed.
 import { useEffect, useState } from 'react'
-import { TextInput, View } from 'react-native'
+import { View } from 'react-native'
+import { TextInput } from '../ui/textScale'
 import { recalledChoice, SKIPPED, type Question } from '@shared/api'
 import { isSaturday, opensAt } from '@shared/day'
 import { movesOn } from '@shared/moves'
@@ -10,18 +11,32 @@ import { goodThings, keepGoodThings } from '@shared/notebook'
 import { inOrder } from '@shared/order'
 import { count, getPulse, PULSE_MIN, sameAs, shareOf, showsSplit, type Pulse } from '@shared/pulse'
 import { themeName } from '@shared/themes'
-import { SUNDAY_LINE } from '@shared/words'
-import { font, radius, useTheme } from '../theme'
-import { Button, Chip, T, Tinted } from '../ui/kit'
+import { QUIET_SUNDAY_LINE, SUNDAY_LINE } from '@shared/words'
+import { mirrorDay, SUNDAY } from '@shared/mirrorDay'
+import { font, radius, useTheme, typeScale } from '../theme'
+import { Button, Chip, T, Tinted, Private } from '../ui/kit'
 import { Upcoming } from './Close'
-import { Steps } from './Steps'
 
+// Midday only reminds: how a step went is asked once, with the same check-in
+// as everywhere, at the evening close or on Today.
 export function Midday({ date, morningOpen, onMorning }: { date: string; morningOpen: boolean; onMorning: () => void }) {
-  const hasSteps = movesOn(date).length > 0
+  const [steps] = useState(() => movesOn(date).filter((m) => m.status === 'started'))
   return (
     <View style={{ gap: 20 }}>
       <T v="display">Your midday check.</T>
-      {hasSteps ? <Steps date={date} mode="midday" label="This morning's step" /> : <T tone="muted">No small step picked this morning. That's fine; noticing counts too.</T>}
+      {steps.length > 0 ? (
+        <View style={{ gap: 6 }}>
+          <T v="eyebrow">{steps.length > 1 ? 'This morning’s steps' : 'This morning’s step'}</T>
+          {steps.map((m) => (
+            <T key={m.questionId} v="h3">
+              {m.step}
+            </T>
+          ))}
+          <T tone="muted">No need to report back now. I’ll ask you how it went this evening.</T>
+        </View>
+      ) : (
+        <T tone="muted">No small step picked this morning. That's fine; noticing counts too.</T>
+      )}
       {morningOpen && (
         <Tinted>
           <T>Your morning three are still open until 17:00.</T>
@@ -34,28 +49,13 @@ export function Midday({ date, morningOpen, onMorning }: { date: string; morning
 }
 
 // The Human Pulse: off until the person says yes once.
-export function Afternoon({ questions, pulse, onPulse }: { questions: Question[]; pulse: boolean | undefined; onPulse: (on: boolean) => void }) {
-  if (pulse === undefined) {
-    return (
-      <View style={{ gap: 16 }}>
-        <T v="display">The afternoon pulse.</T>
-        <Tinted>
-          <T>
-            <T bold>See how others answered?</T> Anonymous totals only. Never who, and never a score.
-          </T>
-          <View style={{ flexDirection: 'row', gap: 10 }}>
-            <Button small label="Show me" onPress={() => onPulse(true)} />
-            <Button small kind="ghost" label="Not for me" onPress={() => onPulse(false)} />
-          </View>
-        </Tinted>
-      </View>
-    )
-  }
+// The Human Pulse is on unless switched off in You (no prompt here).
+export function Afternoon({ questions, pulse }: { questions: Question[]; pulse: boolean }) {
   if (!pulse) {
     return (
       <View style={{ gap: 12 }}>
         <T v="display">A quiet afternoon.</T>
-        <T tone="muted">Nothing else until 17:00. The Human Pulse is off; you can turn it on in You.</T>
+        <T tone="muted">Nothing else until 17:00. The Human Pulse is off; you can turn it back on in You, under Privacy and choices.</T>
       </View>
     )
   }
@@ -153,8 +153,8 @@ export function Night({ date, tomorrowThemes, onClose }: { date: string; tomorro
       <View style={{ gap: 16 }}>
         <T v="display">That's your day.</T>
         {picked.length > 0 && <T tone="muted">Kept in your notebook: {picked.join(' · ')}.</T>}
-        {isSaturday(date) ? <T>{SUNDAY_LINE}</T> : <Upcoming label="Tomorrow" themes={tomorrowThemes} />}
-        <T style={{ fontFamily: font.semibold, fontSize: 20, lineHeight: 28 }}>
+        {isSaturday(date) ? <T>{mirrorDay() === SUNDAY ? SUNDAY_LINE : QUIET_SUNDAY_LINE}</T> : <Upcoming label="Tomorrow" themes={tomorrowThemes} />}
+        <T style={{ fontFamily: font.semibold, ...typeScale.heading }}>
           {isSaturday(date) ? 'Sleep well. Tomorrow is for looking back: your week will be waiting in your mirror.' : `Sleep well. Your next three open at ${opensAt('morning')}.`}
         </T>
       </View>
@@ -180,7 +180,7 @@ export function Night({ date, tomorrowThemes, onClose }: { date: string; tomorro
             placeholder="Something else"
             placeholderTextColor={p.muted}
             accessibilityLabel="Something else that was good"
-            style={{ flex: 1, borderWidth: 1.5, borderColor: p.line, backgroundColor: p.surface, borderRadius: radius.md, padding: 12, fontFamily: font.regular, fontSize: 16, color: p.text }}
+            style={{ flex: 1, borderWidth: 1.5, borderColor: p.control, backgroundColor: p.surface, borderRadius: radius.md, padding: 12, fontFamily: font.regular, ...typeScale.body, color: p.text }}
           />
           <Button
             small
@@ -193,12 +193,10 @@ export function Night({ date, tomorrowThemes, onClose }: { date: string; tomorro
           />
         </View>
       )}
-      <T v="small" tone="muted">
-        🔒 Kept in your notebook, on this phone only.
-      </T>
+      <Private>Kept in your notebook, on this phone only.</Private>
       <Button
         wide
-        kind="outline"
+        kind="secondary"
         label="Close the day"
         onPress={() => {
           if (picked.length > 0) keepGoodThings(date, picked)

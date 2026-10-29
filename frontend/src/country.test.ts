@@ -56,4 +56,16 @@ describe('where someone lives', () => {
     saveJSON('pi.prefs.v1', { adult: null, mild: false, wordsDays: 35, country: 'Narnia' })
     expect(loadPrefs().country).toBeUndefined()
   })
+
+  // Found in the 2026-10-29 audit as a US user: before the country question,
+  // a heavy moment sent people to the directory's front page, one more step
+  // from someone to talk to. The phone's time zone already names the country.
+  it('before the country is asked, points help to the country the phone’s time zone names, unless they said Prefer not to say', () => {
+    expect(helplineHere('America/New_York')).toBe('https://findahelpline.com/countries/us')
+    expect(helplineHere('UTC')).toBe('https://findahelpline.com')
+    savePrefs({ ...loadPrefs(), country: 'none' })
+    expect(helplineHere('America/New_York')).toBe('https://findahelpline.com')
+    savePrefs({ ...loadPrefs(), country: 'KE' })
+    expect(helplineHere('America/New_York')).toBe('https://findahelpline.com/countries/ke')
+  })
 })

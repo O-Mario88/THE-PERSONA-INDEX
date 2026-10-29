@@ -8,6 +8,7 @@
 
 import { ApiError } from './api'
 import { load, loadJSON, remove, save, saveJSON } from './storage'
+import { pushState, savePush } from './push'
 
 export const ACCOUNT_KEY = 'pi.account.v1'
 const ME_KEY = 'pi.account.me'
@@ -23,7 +24,24 @@ export type AccountDetails = { account: AccountView; logins: LoginView[]; sessio
 
 export type Tag = 'work' | 'family' | 'school' | 'friends'
 export const TAGS: Tag[] = ['work', 'family', 'school', 'friends']
-export const TAG_NAMES: Record<Tag, string> = { work: 'Work', family: 'Family', school: 'School', friends: 'Friends' }
+// The tags in Edwin's words (2026-10-29): who someone is to you. The ids the
+// server keeps stay the same.
+export const TAG_NAMES: Record<Tag, string> = { work: 'Workmates', family: 'Loved ones', school: 'Classmates', friends: 'Close friends' }
+
+// Connect is the one place people share anything, and they share it with
+// the people they choose: one tap picks a whole group, and they can add or
+// take away anyone after. Someone you muted is never picked by a group.
+export type Audience = 'loved' | 'work' | 'close'
+export const AUDIENCES: { id: Audience; label: string; tag: Tag }[] = [
+  { id: 'loved', label: 'Loved ones', tag: 'family' },
+  { id: 'work', label: 'Workmates', tag: 'work' },
+  { id: 'close', label: 'Close friends', tag: 'friends' },
+]
+
+export function audienceOf(friends: FriendView[], audience: Audience): string[] {
+  const tag = AUDIENCES.find((a) => a.id === audience)?.tag
+  return friends.filter((f) => f.tag === tag && !f.muted).map((f) => f.id)
+}
 
 export type FriendView = { id: string; name: string; handle?: string; tag: Tag; since: string; muted?: boolean; active: boolean; connect: boolean }
 export type RoomView = { code: string; tag: Tag; inside: number; expires: string; host?: string }
@@ -178,8 +196,23 @@ export async function deleteAccount(): Promise<void> {
 }
 
 export async function signOut(id: string | 'current'): Promise<void> {
+  // Notices stop for this person on this phone before it signs out.
+  if (id === 'current') await turnOffPushHere()
   await call(`/api/account/sessions/${encodeURIComponent(id)}`, json('DELETE'))
   if (id === 'current') forgetSession()
+}
+
+// ---- notices on this phone (backend/notify.go) ----
+
+export const registerPush = (token: string, platform: 'ios' | 'android') => call<void>('/api/push', json('PUT', { token, platform }))
+export const unregisterPush = (token: string) => call<void>('/api/push', json('DELETE', { token }))
+
+// turnOffPushHere takes this phone's address back from the server and keeps
+// "off" as the person's choice.
+export async function turnOffPushHere(): Promise<void> {
+  const s = pushState()
+  if (s.token) await unregisterPush(s.token).catch(() => {})
+  if (s.on !== undefined || s.token) savePush({ on: false })
 }
 
 export function putSync(phrase: string): Promise<void> {
@@ -243,10 +276,8 @@ export const outsideMirror = () => call<OutsideMirror>('/api/friends/mirror')
 export const getNods = (date: string) => call<NodsView>(`/api/nods?date=${date}`)
 export const sendNod = (to: string, card: number, date: string) => call<{ status: string }>('/api/nods', json('POST', { to, card, date }))
 export const getTogethers = () => call<TogetherView[]>('/api/together')
-export const askTogether = (friendId: string, questionId: string, optionId: string) =>
-  call<{ id: string }>('/api/together', json('POST', { friendId, questionId, optionId }))
-export const answerTogether = (id: string, optionId: string) =>
-  call<{ mine: string; theirs: string }>(`/api/together/${encodeURIComponent(id)}`, json('POST', { optionId }))
+export const askTogether = (friendId: string, questionId: string, optionId: string) => call<{ id: string }>('/api/together', json('POST', { friendId, questionId, optionId }))
+export const answerTogether = (id: string, optionId: string) => call<{ mine: string; theirs: string }>(`/api/together/${encodeURIComponent(id)}`, json('POST', { optionId }))
 export const leaveTogether = (id: string) => call<void>(`/api/together/${encodeURIComponent(id)}`, json('DELETE'))
 
 // ---- Closer Together (the new Connect, backend/closer.go) ----
@@ -255,12 +286,32 @@ export const leaveTogether = (id: string) => call<void>(`/api/together/${encodeU
 // two friends share, once both opted in; a reach-out is one fixed phrase to
 // one friend, and the sender is never told whether it was seen.
 
-export type ShareKind = 'helped' | 'win'
+export type ShareKind = 'helped' | 'win' | 'reflection' | 'answer' | 'mirror'
 export type ThemeOption = { id: string; label: string }
-export type ShareView = { id: string; kind: ShareKind; theme: string; text: string; why?: string; try?: string; date: string }
-export type SentShareView = { id: string; kind: ShareKind; theme: string; text: string; why?: string; try?: string; date: string; to: string[] }
+// "What would feel helpful?" (Edwin, 2026-10-29): what the author would like back.
+export type ShareMode = 'share' | 'encourage' | 'celebrate' | 'experience' | 'talk'
+export type ShareAudience = 'people' | 'inner'
+// A private reply: a gentle opening, or a short message in one's own words.
+export type NoteKind = 'resonated' | 'talk' | 'similar' | 'encourage' | 'celebrate' | 'words'
+export type NoteView = { id: string; from: string; mine: boolean; kind: NoteKind; text?: string; date: string }
+export type SharedPerson = { id: string; name: string; notes: NoteView[] }
+export type ShareView = { id: string; from: FriendView; kind: ShareKind; theme: string; text: string; why?: string; try?: string; date: string; mode: ShareMode; replies: boolean; notes: NoteView[] }
+export type SentShareView = {
+  id: string
+  kind: ShareKind
+  theme: string
+  text: string
+  why?: string
+  try?: string
+  date: string
+  to: string[]
+  mode: ShareMode
+  replies: boolean
+  audience: ShareAudience
+  people: SharedPerson[]
+}
 export type SharesView = { themes: ThemeOption[]; received: ShareView[]; sent: SentShareView[] }
-export type NewShare = { kind: ShareKind; theme: string; text: string; why?: string; try?: string; to: string[] }
+export type NewShare = { kind: ShareKind; theme?: string; text: string; why?: string; try?: string; to: string[]; mode?: ShareMode; replies?: boolean; audience?: ShareAudience }
 
 export type CommonTag = { id: string; label: string; value: string; explore: string }
 export type CommonPair = { friend: FriendView; shared: string[]; headline: string; explore: string }
@@ -276,6 +327,47 @@ export const SHARE_TEXT_MAX = 280
 export const getShares = () => call<SharesView>('/api/shares')
 export const postShare = (s: NewShare) => call<{ id: string }>('/api/shares', json('POST', s))
 export const withdrawShare = (id: string) => call<void>(`/api/shares/${encodeURIComponent(id)}`, json('DELETE'))
+// Reflect together (Edwin, 2026-10-29): a question from a fixed list, both
+// answer privately, each chooses to reveal; theirs arrives only once both did.
+export type RTQuestion = { id: string; prompt: string; options: ThemeOption[]; same: string; differ: string }
+export type RTItem = {
+  id: string
+  with: FriendView
+  questionId: string
+  asked: boolean
+  mine: string
+  iRevealed: boolean
+  iKept: boolean
+  theyAnswered: boolean
+  theyKept: boolean
+  theirs: string
+  date: string
+}
+export type ReflectTogetherView = { questions: RTQuestion[]; items: RTItem[] }
+export const getReflectTogether = () => call<ReflectTogetherView>('/api/reflect-together')
+export const askReflectTogether = (friendId: string, questionId: string, optionId: string) => call<{ id: string }>('/api/reflect-together', json('POST', { friendId, questionId, optionId }))
+export const answerReflectTogether = (id: string, optionId: string) => call<void>(`/api/reflect-together/${encodeURIComponent(id)}/answer`, json('POST', { optionId }))
+export const revealReflectTogether = (id: string, reveal: boolean) => call<void>(`/api/reflect-together/${encodeURIComponent(id)}/reveal`, json('POST', { reveal }))
+export const leaveReflectTogether = (id: string) => call<void>(`/api/reflect-together/${encodeURIComponent(id)}`, json('DELETE'))
+
+// The Outside Mirror as named notes (Edwin, 2026-10-29): a person invites a
+// friend with a concrete prompt; the friend writes a short note with their
+// name on it, or declines; the person keeps it, dismisses it, or reflects.
+export type OutsidePrompt = { id: string; text: string }
+export type OutsideAsk = { id: string; with: FriendView; promptId: string; date: string }
+export type OutsideInvite = { id: string; from: FriendView; promptId: string; date: string }
+export type OutsideNote = { id: string; from: FriendView; promptId: string; text: string; kept: boolean; date: string }
+export type OutsideView = { prompts: OutsidePrompt[]; asked: OutsideAsk[]; invitations: OutsideInvite[]; notes: OutsideNote[] }
+export const getOutside = () => call<OutsideView>('/api/outside')
+export const askOutside = (friendId: string, promptId: string) => call<{ id: string }>('/api/outside', json('POST', { friendId, promptId }))
+export const writeOutside = (id: string, text: string) => call<void>(`/api/outside/${encodeURIComponent(id)}/write`, json('POST', { text }))
+export const declineOutside = (id: string) => call<void>(`/api/outside/${encodeURIComponent(id)}/decline`, json('POST'))
+export const keepOutside = (id: string, keep: boolean) => call<void>(`/api/outside/${encodeURIComponent(id)}/keep`, json('POST', { keep }))
+
+// A private reply in the thread between the author and one person; the author names whose thread.
+export const postNote = (shareId: string, n: { kind: NoteKind; text?: string; with?: string }) => call<{ id: string }>(`/api/shares/${encodeURIComponent(shareId)}/notes`, json('POST', n))
+// Ends one person's access to an item, quietly, with their thread.
+export const removeSharePerson = (shareId: string, friendId: string) => call<void>(`/api/shares/${encodeURIComponent(shareId)}/people/${encodeURIComponent(friendId)}`, json('DELETE'))
 export const getCommon = () => call<CommonView>('/api/common')
 export const putCommon = (tags: string[]) => call<void>('/api/common', json('PUT', { tags }))
 export const setCommonFriend = (id: string, on: boolean) => call<void>(`/api/common/friends/${encodeURIComponent(id)}`, json('PUT', { on }))

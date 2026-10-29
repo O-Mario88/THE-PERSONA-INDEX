@@ -1,4 +1,4 @@
-import { helplineFor, isCountry } from './country'
+import { guessCountry, helplineFor, isCountry } from './country'
 import { regionOf, type Region } from './regions'
 import { loadJSON, saveJSON } from './storage'
 
@@ -10,11 +10,21 @@ import { loadJSON, saveJSON } from './storage'
 // sealed in the backup.
 // regional: false turns off the questions about everyday life where the
 // person lives (regional.ts); they are on whenever a country is given.
-// The choices on the Account screen (Stage 5, 2026-10-24): pulse is whether
-// the Human Pulse totals show (absent until the person is asked once; false
-// hides every number); black: false keeps the evening and night windows off
+// The choices, all in one place on the You page. Those that only change
+// what this phone shows start on (Edwin, 2026-10-28): pulse: false hides
+// every Human Pulse number; appearance is
+// light or dark on every page (Settings; absent is automatic); black: false (older) keeps the evening and night windows off
 // pure black; still: true shows cards at once instead of unfolding them;
-// connect: false turns quiet nods and Answer Together off both ways.
+// connect: false turns quiet nods and Answer Together off both ways;
+// Adding to anything other people see is a clear choice, asked once and off
+// until made (Edwin, 2026-10-29): countAnswers adds answers to the anonymous
+// totals (count on POST /api/votes), whatHelped adds a check-in's outcome to
+// What helped (backend/whathelped.go), countUse adds the anonymous product
+// counts (productCounts.ts). Absent is "not chosen yet", which adds nothing. style and time are My
+// Reflection Style (Edwin's brief, 2026-10-28): what feels most useful, and
+// how much time there usually is; absent is a little of both, a few minutes.
+// textSize scales every word in the app (Settings, Edwin 2026-10-29), on top
+// of the phone's own text size; absent is standard.
 export type Prefs = {
   adult: boolean | null
   mild: boolean
@@ -22,10 +32,28 @@ export type Prefs = {
   country?: string
   regional?: false
   pulse?: boolean
-  black?: false
+  black?: false // before 2026-10-28: dark mode switched off, read now as appearance 'light'
+  appearance?: 'light' | 'dark' // light or dark on every page; absent is automatic
   still?: true
   connect?: false
+  whatHelped?: boolean
+  countAnswers?: boolean
+  countUse?: boolean
+  style?: ReflectionStyle
+  time?: ReflectionTime
+  lang?: AppLang // the app's language; absent follows the phone (i18n/index.ts)
+  textSize?: Exclude<TextSize, 'standard'>
 }
+
+// Text size, smallest to largest, and how much each scales the app's words.
+export const TEXT_SIZES = ['smaller', 'standard', 'larger', 'largest'] as const
+export type TextSize = (typeof TEXT_SIZES)[number]
+const TEXT_SCALE: Record<TextSize, number> = { smaller: 0.9, standard: 1, larger: 1.15, largest: 1.3 }
+export type ReflectionStyle = 'think' | 'practical' | 'both'
+// The languages the app speaks (i18n/index.ts LANGS), German, Russian, Japanese and Korean since 2026-10-28.
+const APP_LANGS = ['en', 'es', 'pt', 'fr', 'de', 'ru', 'ja', 'ko'] as const
+export type AppLang = (typeof APP_LANGS)[number]
+export type ReflectionTime = 'minute' | 'few' | 'deep'
 export const NO_COUNTRY = 'none'
 
 export const WORDS_DAYS = [7, 35, 90] as const
@@ -44,8 +72,16 @@ export function loadPrefs(): Prefs {
     const regional = p.regional === false ? { regional: false as const } : {}
     const pulse = typeof p.pulse === 'boolean' ? { pulse: p.pulse } : {}
     const black = p.black === false ? { black: false as const } : {}
+    const appearance = p.appearance === 'light' || p.appearance === 'dark' ? { appearance: p.appearance } : {}
     const still = p.still === true ? { still: true as const } : {}
     const connect = p.connect === false ? { connect: false as const } : {}
+    const whatHelped = typeof p.whatHelped === 'boolean' ? { whatHelped: p.whatHelped } : {}
+    const countAnswers = typeof p.countAnswers === 'boolean' ? { countAnswers: p.countAnswers } : {}
+    const countUse = typeof p.countUse === 'boolean' ? { countUse: p.countUse } : {}
+    const style = p.style === 'think' || p.style === 'practical' || p.style === 'both' ? { style: p.style } : {}
+    const time = p.time === 'minute' || p.time === 'few' || p.time === 'deep' ? { time: p.time } : {}
+    const lang = (APP_LANGS as readonly string[]).includes(p.lang ?? '') ? { lang: p.lang } : {}
+    const textSize = p.textSize === 'smaller' || p.textSize === 'larger' || p.textSize === 'largest' ? { textSize: p.textSize } : {}
     return {
       adult: typeof p.adult === 'boolean' ? p.adult : null,
       mild: !!p.mild,
@@ -54,8 +90,16 @@ export function loadPrefs(): Prefs {
       ...regional,
       ...pulse,
       ...black,
+      ...appearance,
       ...still,
       ...connect,
+      ...whatHelped,
+      ...countAnswers,
+      ...countUse,
+      ...style,
+      ...time,
+      ...lang,
+      ...textSize,
     }
   }
   return { adult: null, mild: false, wordsDays }
@@ -67,6 +111,15 @@ export function savePrefs(p: Prefs) {
 
 export const intimacyOn = (p: Prefs) => p.adult === true && !p.mild
 
+// Each adds to a shared total only once the person said yes.
+export const countAnswersOn = (p: Prefs): boolean => p.countAnswers === true
+export const whatHelpedOn = (p: Prefs): boolean => p.whatHelped === true
+export const countUseOn = (p: Prefs): boolean => p.countUse === true
+// The one question about sharing has been answered (ShareChoices.tsx).
+export const sharingAsked = (p: Prefs): boolean => typeof p.countAnswers === 'boolean'
+
+export const withSharing = (p: Prefs, c: { answers: boolean; helped: boolean; use: boolean }): Prefs => ({ ...p, countAnswers: c.answers, whatHelped: c.helped, countUse: c.use })
+
 // The country to tailor to, or null when none was given.
 export const countryOf = (p: Prefs): string | null => (p.country && p.country !== NO_COUNTRY ? p.country : null)
 
@@ -77,12 +130,59 @@ export const regionHere = (p: Prefs): Region | null => (p.regional === false ? n
 // The helpline for where the person said they live (country.ts), read on the
 // phone; the directory's front page when they gave none. Public pages, which
 // know nothing about the reader, use HELPLINE_URL (Helpline.tsx).
-export const helplineHere = () => helplineFor(countryOf(loadPrefs()))
+// Help goes to the person's country; before they're asked, to the one the
+// phone's time zone names (guessed on the phone, never sent). "Prefer not to
+// say" keeps the directory's front page.
+export function helplineHere(zone?: string): string {
+  const p = loadPrefs()
+  if (p.country === NO_COUNTRY) return helplineFor(null)
+  return helplineFor(countryOf(p) ?? guessCountry(zone))
+}
 
-// The Human Pulse shows only once the person has said yes to it.
-export const pulseOn = (p: Prefs) => p.pulse === true
-// Evening and night on pure black, unless switched off.
-export const blackOn = (p: Prefs) => p.black !== false
+// A crisis line someone in that country already knows, to call or text in one
+// tap: 988 in the US and Canada, Samaritans in the UK and Ireland. Elsewhere
+// the helpline directory above is the way.
+const CRISIS_NUMBERS: Record<string, { label: string; tel: string; sms?: string }> = {
+  US: { label: 'Call or text 988', tel: '988', sms: '988' },
+  CA: { label: 'Call or text 988', tel: '988', sms: '988' },
+  GB: { label: 'Call Samaritans, 116 123', tel: '116123' },
+  IE: { label: 'Call Samaritans, 116 123', tel: '116123' },
+}
+export const crisisNumber = (country: string | null) => (country ? (CRISIS_NUMBERS[country] ?? null) : null)
+export const crisisHere = () => crisisNumber(countryOf(loadPrefs()))
+
+// The Human Pulse shows unless switched off in You.
+export const pulseOn = (p: Prefs) => p.pulse !== false
+// Light or dark, one choice in Settings for every page (Edwin, 2026-10-28:
+// dark mode only reached Today). Automatic is dark in the evening and at
+// night, and whenever the phone is set to dark.
+export type Appearance = 'auto' | 'light' | 'dark'
+
+export function appearanceOf(p: Prefs): Appearance {
+  if (p.appearance === 'light' || p.appearance === 'dark') return p.appearance
+  return p.black === false ? 'light' : 'auto'
+}
+
+// darkNow says whether the whole app draws dark right now.
+export function darkNow(p: Prefs, phoneDark: boolean, evening: boolean): boolean {
+  const a = appearanceOf(p)
+  return a === 'dark' || (a === 'auto' && (phoneDark || evening))
+}
+
+// withAppearance is the prefs with a new choice; automatic leaves no trace of
+// an earlier one.
+export function withAppearance(p: Prefs, a: Appearance): Prefs {
+  const { black: _b, appearance: _a, ...rest } = p
+  return a === 'auto' ? rest : { ...rest, appearance: a }
+}
+export const textSizeOf = (p: Prefs): TextSize => p.textSize ?? 'standard'
+export const textScaleOf = (p: Prefs): number => TEXT_SCALE[textSizeOf(p)]
+
+export function withTextSize(p: Prefs, size: TextSize): Prefs {
+  const { textSize: _t, ...rest } = p
+  return size === 'standard' ? rest : { ...rest, textSize: size }
+}
+
 // Cards unfold in three beats unless the person or the phone asks for less motion.
 export const stillOn = (p: Prefs) =>
   p.still === true || (typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches)

@@ -8,6 +8,8 @@
 // good friend? It asks; it never hands out answers. Words that sound like a
 // crisis get no kinder look at all: they get people and a helpline.
 
+import { locale } from './locale'
+
 export type Trap = 'label' | 'always' | 'blame' | 'future' | 'mind'
 export type Area = 'work' | 'friends' | 'family' | 'world'
 export type Reading = { kind: 'crisis' } | { kind: 'hard'; traps: Trap[]; area: Area | null }
@@ -67,7 +69,7 @@ export const KINDER_WRITE = 'Write it the kinder way'
 export type OwnRecord = { goodThings: { date: string; text: string }[]; kept: { date: string; text: string }[] }
 export type KinderLook = { lines: string[]; evidence: { lead: string; text: string } | null }
 
-const dayMonth = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', timeZone: 'UTC' })
+const dayMonth = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString(locale(), { day: 'numeric', month: 'long', timeZone: 'UTC' })
 const latest = <T extends { date: string }>(xs: T[]) => [...xs].sort((a, b) => b.date.localeCompare(a.date))[0]
 
 // kinderLook says it: the feeling, one trap, the area, and a friend's eyes;

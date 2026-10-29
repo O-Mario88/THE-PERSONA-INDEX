@@ -13,34 +13,54 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as ExpoCrypto from 'expo-crypto'
 import { Platform } from 'react-native'
 import { installSubtle } from './subtle'
+import { setLocale } from '@shared/locale'
+
+// Times, dates and numbers in this phone's own style (shared locale.ts).
+setLocale((typeof navigator !== 'undefined' && navigator.language) || Intl.DateTimeFormat().resolvedOptions().locale)
 
 const PREFIX = 'pi.'
-const values = new Map<string, string>()
 let ready = false
+
+// Two spaces (Edwin's brief, 2026-10-29: the guest PIN). The person's own
+// keys are stored as they are; the empty guest space's keys are stored under
+// "guest:", so a guest PIN opens a new-looking app and the person's own space
+// stays untouched until they unlock it themselves. The app reads whichever
+// space is open; the lock reads its own settings from the person's space.
+export type Space = 'real' | 'guest'
+const GUEST = 'guest:'
+const LOCK_KEY = 'pi.applock.v1'
+const real = new Map<string, string>()
+let guest: Map<string, string> | null = null
+let space: Space = 'real'
+const active = () => (space === 'guest' && guest ? guest : real)
+const stored = (k: string) => (space === 'guest' ? GUEST + k : k)
 
 const memoryStorage = {
   get length() {
-    return values.size
+    return active().size
   },
   key(i: number) {
-    return [...values.keys()][i] ?? null
+    return [...active().keys()][i] ?? null
   },
   getItem(k: string) {
-    return values.has(k) ? (values.get(k) as string) : null
+    const m = active()
+    return m.has(k) ? (m.get(k) as string) : null
   },
   setItem(k: string, v: string) {
     const s = String(v)
-    values.set(k, s)
-    if (ready) AsyncStorage.setItem(k, s).catch(() => {})
+    active().set(k, s)
+    if (ready) AsyncStorage.setItem(stored(k), s).catch(() => {})
   },
   removeItem(k: string) {
-    values.delete(k)
-    if (ready) AsyncStorage.removeItem(k).catch(() => {})
+    active().delete(k)
+    if (ready) AsyncStorage.removeItem(stored(k)).catch(() => {})
+    // No lock, no guest space: deleting everything takes it too.
+    if (space === 'real' && k === LOCK_KEY) wipeGuest().catch(() => {})
   },
   clear() {
-    const ks = [...values.keys()]
-    values.clear()
-    if (ready) AsyncStorage.multiRemove(ks).catch(() => {})
+    const ks = [...active().keys()]
+    active().clear()
+    if (ready) AsyncStorage.multiRemove(ks.map(stored)).catch(() => {})
   },
 }
 
@@ -58,14 +78,37 @@ export async function hydrate(): Promise<void> {
   try {
     const ks = (await AsyncStorage.getAllKeys()).filter((k) => k.startsWith(PREFIX))
     const pairs = await AsyncStorage.multiGet(ks)
-    for (const [k, v] of pairs) if (v !== null && !values.has(k)) values.set(k, v)
+    for (const [k, v] of pairs) if (v !== null && !real.has(k)) real.set(k, v)
     // Anything written before hydrate finished is sent on now.
-    const early = [...values.entries()].filter(([k]) => !ks.includes(k))
+    const early = [...real.entries()].filter(([k]) => !ks.includes(k))
     if (early.length) await AsyncStorage.multiSet(early)
   } catch {
     // storage unavailable: the app runs from memory for this visit
   }
   ready = true
+}
+
+export const currentSpace = (): Space => space
+
+// A key as the person's own space holds it, whichever space is open.
+export const realValue = (k: string): string | null => real.get(k) ?? null
+
+// enterSpace opens one space or the other; the app is drawn afresh after it.
+export async function enterSpace(next: Space): Promise<void> {
+  if (Platform.OS === 'web' || next === space) return
+  if (next === 'guest') {
+    const ks = (await AsyncStorage.getAllKeys()).filter((k) => k.startsWith(GUEST))
+    const pairs = await AsyncStorage.multiGet(ks)
+    guest = new Map(pairs.flatMap(([k, v]) => (v === null ? [] : [[k.slice(GUEST.length), v] as [string, string]])))
+  } else guest = null
+  space = next
+}
+
+// wipeGuest deletes the guest space, when its PIN goes or the lock does.
+export async function wipeGuest(): Promise<void> {
+  if (Platform.OS === 'web' || space === 'guest') return
+  const ks = (await AsyncStorage.getAllKeys()).filter((k) => k.startsWith(GUEST))
+  if (ks.length) await AsyncStorage.multiRemove(ks)
 }
 
 // The server the app talks to. Set EXPO_PUBLIC_API_URL to point elsewhere;

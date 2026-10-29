@@ -12,13 +12,14 @@ import (
 
 type memoryCloser struct {
 	shares  map[string]Share
+	notes   map[string][]ShareNote  // share -> its private replies (sharing.go)
 	tags    map[string]CommonTagSet // account -> Common Ground tags
 	consent map[string]bool         // a\x00b: a opted in to Common Ground with b
 	reaches map[string]ReachOut
 }
 
 func newMemoryCloser() memoryCloser {
-	return memoryCloser{shares: map[string]Share{}, tags: map[string]CommonTagSet{}, consent: map[string]bool{}, reaches: map[string]ReachOut{}}
+	return memoryCloser{shares: map[string]Share{}, notes: map[string][]ShareNote{}, tags: map[string]CommonTagSet{}, consent: map[string]bool{}, reaches: map[string]ReachOut{}}
 }
 
 func (m *memoryStore) PutShare(_ context.Context, sh Share) error {
@@ -64,6 +65,7 @@ func (m *memoryStore) DeleteShare(_ context.Context, from, id string) (bool, err
 		return false, nil
 	}
 	delete(m.closer.shares, id)
+	delete(m.closer.notes, id)
 	return true, nil
 }
 
@@ -186,9 +188,13 @@ func (c *memoryCloser) forgetPair(a, b string) {
 // forgetAccount drops everything Closer Together kept for an account. The
 // caller holds the lock.
 func (c *memoryCloser) forgetAccount(id string) {
+	for sid, notes := range c.notes {
+		c.notes[sid] = slices.DeleteFunc(notes, func(n ShareNote) bool { return n.With == id || n.From == id })
+	}
 	for sid, sh := range c.shares {
 		if sh.From == id {
 			delete(c.shares, sid)
+			delete(c.notes, sid)
 			continue
 		}
 		if slices.Contains(sh.To, id) {

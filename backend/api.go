@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"slices"
 	"strconv"
+	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -82,6 +83,10 @@ type VoteRequest struct {
 	OptionID   string `json:"optionId"`
 	VoterID    string `json:"voterId"`
 	Sitting    string `json:"sitting,omitempty"` // morning | evening, on the phone's clock; empty reads as morning
+	// Count false keeps the answer for the phone's own mirror without adding
+	// it to the shared totals, until the person chooses to (Edwin,
+	// 2026-10-29). Absent, from an older app, it is counted as before.
+	Count *bool `json:"count,omitempty"`
 }
 
 // VoteAccepted is the 202 body, returned only once the vote is durably accepted.
@@ -117,22 +122,30 @@ type QuestionBank interface {
 	GetSet(date string) (DailySet, bool)
 }
 
-type emptyBank struct{}
-
-func (emptyBank) GetSet(string) (DailySet, bool) { return DailySet{}, false }
-
 // Server holds the API's dependencies. Handlers are stateless over HTTP; vote
 // state lives behind the server so tests can use an in-memory store.
 type Server struct {
-	clock   func() time.Time
-	bank    QuestionBank
-	votes   VoteStore
-	mirror  MirrorStore // each phone's kept answers and steps (mirrorstore.go)
-	vaults  VaultStore  // the sealed backups (vault.go)
-	social  SocialStore // accounts and the circle (social.go)
-	friends friendBank  // friend questions (friends.go)
-	signIn  SignInConfig
-	devices *deviceSigner
+	clock           func() time.Time
+	bank            QuestionBank
+	votes           VoteStore
+	mirror          MirrorStore          // each phone's kept answers and steps (mirrorstore.go)
+	helped          HelpedStore          // What Helped reports, apart from votes and the mirror (whathelped.go)
+	vaults          VaultStore           // the sealed backups (vault.go)
+	social          SocialStore          // accounts and the circle (social.go)
+	patron          PatronStore          // what each person holds as a Patron (patron.go)
+	pairs           PairStore            // two people walking alongside each other (pair.go)
+	productCounts   ProductCountStore    // anonymous daily product counts (productcounts.go)
+	reflectTogether ReflectTogetherStore // reflect together (reflecttogether.go)
+	outsideNotes    OutsideNoteStore     // the Outside Mirror as named notes (outsidenotes.go)
+	push            PushStore            // phones' push addresses (notify.go)
+	pusher          Pusher               // how notices go out; nil sends none (notify.go)
+	pushes          sync.WaitGroup       // notices still going out
+	pushLimit       *windowLimiter       // one notice per person, sender and kind per window
+	friends         friendBank           // friend questions (friends.go)
+	signIn          SignInConfig
+	// patronCfg is what Patron offers here: test purchases, the Founding places (patron.go).
+	patronCfg PatronConfig
+	devices   *deviceSigner
 	// voteRetention is how long raw votes are kept (main.go), so "Delete
 	// everything" knows how far back a phone's votes can reach.
 	voteRetention time.Duration
@@ -155,6 +168,7 @@ type Server struct {
 	accountLimit    *windowLimiter // per session
 	invitePeekLimit *windowLimiter // per network address
 	roomJoinLimit   *windowLimiter // per session
+	countLimit      *windowLimiter // product counts, per network address
 
 	// The layers around the API (middleware.go): its metrics, the edge
 	// secret, the access log setting, the static site and the metrics token.
@@ -179,8 +193,17 @@ func NewServer(clock func() time.Time, bank QuestionBank, store Store, devices *
 		bank:            bank,
 		votes:           store,
 		mirror:          store,
+		helped:          store,
 		vaults:          store,
 		social:          store,
+		patron:          store,
+		pairs:           store,
+		productCounts:   store,
+		reflectTogether: store,
+		outsideNotes:    store,
+		push:            store,
+		pushLimit:       newWindowLimiter(pushesPerPairWindow, pushPairWindow),
+		patronCfg:       PatronConfig{FoundingLimit: defaultFoundingLimit},
 		friends:         mustFriendBank(),
 		devices:         devices,
 		voteRetention:   defaultRetention,
@@ -195,6 +218,7 @@ func NewServer(clock func() time.Time, bank QuestionBank, store Store, devices *
 		accountLimit:    newWindowLimiter(accountsCallsMin, time.Minute),
 		invitePeekLimit: newWindowLimiter(invitePeeksPerHr, time.Hour),
 		roomJoinLimit:   newWindowLimiter(roomJoinsPerHour, time.Hour),
+		countLimit:      newWindowLimiter(countsPerAddrHour, time.Hour),
 		metrics:         newMetrics(clock()),
 		accessLog:       "errors",
 	}
@@ -220,6 +244,9 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("DELETE /api/mirror", s.ForgetDevice) // the older name, kept for phones still using it
 	mux.HandleFunc("POST /api/steps", s.SaveStep)
 	mux.HandleFunc("POST /api/plans/checks", s.SavePlanCheck)
+	mux.HandleFunc("POST /api/what-helped", s.SaveHelped)
+	mux.HandleFunc("GET /api/what-helped", s.GetWhatHelped)
+	mux.HandleFunc("POST /api/counts", s.SaveCount)
 	mux.HandleFunc("GET /api/device/export", s.ExportDevice)
 	mux.HandleFunc("PUT /api/vault", s.PutVault)
 	mux.HandleFunc("GET /api/vault", s.GetVault)
@@ -233,6 +260,8 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/account", s.GetAccountDetails)
 	mux.HandleFunc("PATCH /api/account", s.PatchAccount)
 	mux.HandleFunc("DELETE /api/account", s.DeleteAccount)
+	mux.HandleFunc("PUT /api/push", s.PutPush)
+	mux.HandleFunc("DELETE /api/push", s.DeletePush)
 	mux.HandleFunc("POST /api/account/fresh", s.FreshDevice)
 	mux.HandleFunc("GET /api/account/device", s.AccountDevice)
 	mux.HandleFunc("DELETE /api/account/sessions/{id}", s.SignOut)
@@ -269,7 +298,29 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/shares", s.GetShares)
 	mux.HandleFunc("POST /api/shares", s.PostShare)
 	mux.HandleFunc("DELETE /api/shares/{id}", s.WithdrawShare)
+	mux.HandleFunc("POST /api/shares/{id}/notes", s.PostShareNote)
+	mux.HandleFunc("DELETE /api/shares/{id}/people/{friendId}", s.RemoveSharePerson)
+	mux.HandleFunc("GET /api/reflect-together", s.GetReflectTogether)
+	mux.HandleFunc("POST /api/reflect-together", s.AskReflectTogether)
+	mux.HandleFunc("POST /api/reflect-together/{id}/answer", s.AnswerReflectTogether)
+	mux.HandleFunc("POST /api/reflect-together/{id}/reveal", s.RevealReflectTogether)
+	mux.HandleFunc("DELETE /api/reflect-together/{id}", s.LeaveReflectTogether)
+	mux.HandleFunc("GET /api/outside", s.GetOutside)
+	mux.HandleFunc("POST /api/outside", s.AskOutside)
+	mux.HandleFunc("POST /api/outside/{id}/write", s.WriteOutside)
+	mux.HandleFunc("POST /api/outside/{id}/decline", s.DeclineOutside)
+	mux.HandleFunc("POST /api/outside/{id}/keep", s.KeepOutside)
 	mux.HandleFunc("GET /api/common", s.GetCommon)
+
+	// Patron (patron.go) and walking alongside one person (pair.go).
+	mux.HandleFunc("GET /api/patron", s.GetPatron)
+	mux.HandleFunc("POST /api/patron/test", s.TestPurchase)
+	mux.HandleFunc("DELETE /api/patron/test", s.ClearTestPurchases)
+	mux.HandleFunc("GET /api/pair", s.GetPair)
+	mux.HandleFunc("POST /api/pair", s.AskPair)
+	mux.HandleFunc("POST /api/pair/accept", s.AcceptPair)
+	mux.HandleFunc("DELETE /api/pair", s.EndPair)
+	mux.HandleFunc("GET /api/pair/week", s.GetPairWeek)
 	mux.HandleFunc("PUT /api/common", s.PutCommon)
 	mux.HandleFunc("PUT /api/common/friends/{id}", s.PutCommonFriend)
 	mux.HandleFunc("GET /api/reachouts", s.GetReachOuts)
@@ -455,7 +506,7 @@ func (s *Server) CastVote(w http.ResponseWriter, r *http.Request) {
 	if q.Care == careIntimate {
 		option = privateOption // whatever arrived, the choice is never stored
 	}
-	ballot := Ballot{Vote: Vote{QuestionID: q.ID, OptionID: option, VoterHash: s.devices.voterHash(deviceID, q.ID)}, DeviceKey: a.DeviceKey, Answer: &a}
+	ballot := Ballot{Vote: Vote{QuestionID: q.ID, OptionID: option, VoterHash: s.devices.voterHash(deviceID, q.ID)}, DeviceKey: a.DeviceKey, Answer: &a, Uncounted: notCounted(v.Count)}
 	s.accept(w, r, key, ballot)
 }
 
@@ -473,6 +524,7 @@ type RatingRequest struct {
 	Verdict    string `json:"verdict,omitempty"`
 	Learned    *bool  `json:"learned,omitempty"`
 	VoterID    string `json:"voterId"`
+	Count      *bool  `json:"count,omitempty"` // as on a vote: false keeps the tap out of the totals
 }
 
 // The three verdicts, as the API and the mirror store them.
@@ -531,9 +583,14 @@ func (s *Server) RateCard(w http.ResponseWriter, r *http.Request) {
 		Vote:      Vote{QuestionID: ratingKey(q.ID), OptionID: ratingOption(option, verdict), VoterHash: s.devices.voterHash(deviceID, ratingKey(q.ID))},
 		DeviceKey: s.devices.mirrorKey(deviceID),
 		Rating:    &Rating{QuestionID: kept, Verdict: verdict},
+		Uncounted: notCounted(v.Count),
 	}
 	s.accept(w, r, key, ballot)
 }
+
+// notCounted says a ballot stays out of the shared totals: only when the app
+// said so. An older app that says nothing is counted, as it always was.
+func notCounted(count *bool) bool { return count != nil && !*count }
 
 // readBallot does the checks votes and ratings share: idempotency key, body,
 // device token, rate limit, and that the option belongs to a question open

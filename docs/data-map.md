@@ -22,7 +22,8 @@ Every key is named in one registry, `frontend/src/registry.ts`, which also says 
 | Whether the home screen invite was answered | `pi.install.v1` | Until deleted | Never |
 | What the person asked to be called, for the greeting | `pi.name` | Until deleted | Only sealed in the backup |
 | Your own moves towards friends, for "Your week in connection" in the Mirrors: the day and the kind (a quiet nod, a shared insight, asking for support, a win), never who | `pi.connection.v1` | A year | Only sealed in the backup. Never sent: the server counts none of these |
-| Which of the three circles (inner, close, friends) each friend was placed in | `pi.rings` | Until deleted | Only sealed in the backup. Never sent: no friend and not the server learns which circle they are in |
+| Who the person added to their Inner Circle (everyone else is a Connection; an older phone's three circles are read as Inner Circle or Connection) | `pi.rings` | Until deleted | Only sealed in the backup. Never sent: no friend and not the server learns who is in it |
+| Whether notices about people you trust are on, this phone's push address while they are, and the day the app asked | `pi.push.v1` | Until changed or deleted | Never backed up. The address goes to the server only while notices are on (`push_tokens`) |
 | That the welcome was shown before the first sitting | `pi.welcomed` | Until deleted | Never |
 | "Not yet" on the midday step check | `pi.midday.<date>` | The day | Never |
 | Device pass: a server-signed random id, no personal data | `pi.device.v1` | Until "Delete everywhere" | Sent with every vote, step and mirror request |
@@ -34,7 +35,9 @@ Every key is named in one registry, `frontend/src/registry.ts`, which also says 
 | "That's me", "Partly" or "Not me" on a leaning in the mirror | `pi.leaning.<trait>.<high\|low>` | 35 days (`LEANING_KEEP_DAYS`, `profile.ts`) | Never. A leaning marked "Not me" stays out of the mirror's title, summary and one line on this phone |
 | The order answers are shown in: a random seed, so the healthiest answer is not always first | `pi.seed` | Until "Delete from this phone" | Never |
 | Small steps and how they went, and whether the step was the card's own or the one serving the answer's need | `pi.moves.v1` | The latest 60 | Each step's status, and which of the two steps it is, is sent to the mirror; a step on a private answer cannot be started; a step from a regional question is marked `local` and never sent |
-| Per-question notes: the option tapped, a vote waiting to send, when it was answered, the card's "That's me", "Partly" or "Not me" and that tap while it waits to send | `pi.choice.`, `pi.pending.`, `pi.at.`, `pi.rated.`, `pi.unrated.` + question id | Eight days past the question's day (`NOTES_KEPT_DAYS`), longer than any question takes votes | A waiting vote or card tap is sent again with its original key; the rest never |
+| How a step went (My Growth Journey check-in): whether you tried it, how it went, how you felt, and a date to ask again if you kept it for later | `pi.checkins.v1` | The latest 60 | Never sent as such: only the step's existing status (helped, no change, not tried) goes to the mirror, as before, and, while "Count my steps in What helped" is on (You), the outcome alone goes to `what_helped`. The feeling, the date to ask again and the note never leave the phone. In the backup |
+| Your note about how a step went, in your own words | `pi.stepnote.<question>` | Until you delete it | Never sent. Journal class: only in the backup's journal copy, sealed under keys from your 12 words, so easy sync cannot open it |
+| Per-question notes: the option tapped, a vote waiting to send, when it was answered, the card's "That's me", "Partly" or "Not me" and that tap while it waits to send | `pi.choice.`, `pi.pending.`, `pi.unvoted.`, `pi.at.`, `pi.rated.`, `pi.unrated.` + question id | Eight days past the question's day (`NOTES_KEPT_DAYS`), longer than any question takes votes | A waiting vote or card tap is sent again with its original key; the rest never |
 | The three questions each sitting showed | `pi.pick.<date>` and `pi.pick.<date>.pm` | Yesterday and today | Never |
 | The day's questions, for opening offline | `pi.edition.<date>` | Yesterday, today and tomorrow | Public content, nothing personal |
 | The card each answer showed (the question, the option's label, its reading, other side, step and need), for Insights; never for an intimacy question | `pi.insight.` + question id | 30 days | Never, and never in a backup |
@@ -58,13 +61,17 @@ Postgres, schema in `backend/migrations/`. Every key below is an HMAC made from 
 
 | Table | One row is | Holds | Kept | Deleted by "Delete everywhere" |
 | --- | --- | --- | --- | --- |
-| `votes` | A vote or a card rating, waiting to be counted or kept for the one-vote rule | Question, option, a voter hash that is different for every question, the idempotency key, the time to the hour, when it was counted | `VOTE_RETENTION_DAYS` after it is counted: default 7, never less than 7 (`main.go`) | Yes, found through the phone's voter hashes for every edition still kept (`deviceVoteHashes`) |
+| `votes` | A vote or a card rating, waiting to be counted or kept for the one-vote rule. `counted` is false when the phone has not chosen to add to the totals: the tally then skips it (`012_uncounted_votes.sql`) | Question, option, a voter hash that is different for every question, the idempotency key, the time to the hour, when it was counted | `VOTE_RETENTION_DAYS` after it is counted: default 7, never less than 7 (`main.go`) | Yes, found through the phone's voter hashes for every edition still kept (`deviceVoteHashes`) |
 | `vote_tallies` | One option's count | Question, option, count. No device key of any kind | For good | No: with nothing to link a count to a phone, it is a real total, not personal data |
 | `mirror_answers` | One answer, for the phone's mirror | Mirror key, question, date, morning or evening, theme, option, depth, the tap under the card (`verdict`: me, partly or not_me) | 35 days (`mirrorRetention`, `mirrorstore.go`) | Yes |
 | `mirror_steps` | One small step | Mirror key, question, option, the day it started, its status, whether it was the need step (`007_need_steps.sql`), the hour it last changed | 35 days | Yes |
 | `mirror_weeks` | One finished week, for the monthly, quarterly and yearly mirrors | Mirror key, counts, theme depths, trait sums and on how many days each trait came up, steps that helped, the three answers that said the most. Never a private answer's question or option, never own words | 400 days (`weekSummaryRetention`, `period.go`) | Yes |
 | `mirror_plan_checks` | One check of a plan | Mirror key, a random key for the check (so a resend counts once and two checks of one plan cannot be tied together), the date, "did" or "not_yet". Never the plan's words | 35 days, with the rest of the mirror | Yes |
 | `vaults` | One encrypted backup copy: each backup is two, a main copy (everything but the writing) and a journal copy (written reflections, intentions and Reflect's drafts and choices), under keys from separate branches of the phrase | The SHA-256 of a key derived from the 12-word phrase, a version number, the sealed bytes (AES-GCM on the phone; the server cannot open them), the last day a phone wrote or read it. No mirror key, no pass: nothing ties it to a phone | 400 days after a phone last wrote or read it (`vaultRetention`, `vault.go`) | Yes: the app deletes it first, with `DELETE /api/vault`, while the phone still holds the phrase |
+| `what_helped` | One phone's report on one step, sent from a check-in while "Count my steps in What helped" is on (`010_what_helped.sql`, `whathelped.go`) | A keyed hash of its own (never the mirror key or a voter hash), question, option, the outcome (helped, helped a little, no change, didn't try) and the Monday of the week. Never the day, the feeling or the note | Until the phone deletes everything | Yes |
+| `entitlements` | One Patron purchase (`011_patron.sql`, `patron.go`) | The owner (an account, or a keyed hash of a phone's pass that no other table uses), the plan, its first and last day, and where it came from. No name, address or card | As a purchase record, for good | No. After the delete the phone has a new pass, so nothing links the row to it any more |
+| `pairs` | One ask, or two accounts walking alongside each other (`pair.go`) | The two account ids, whether the ask was accepted, the day | Until either ends it | With either account |
+| `product_counts` | One day's total for one of four product events (`013_product_counts.sql`, `productcounts.go`), sent with `POST /api/counts` only by phones whose person said yes to "Count how I use the app" | The day, the event (a useful first result, a brief used, a second Mirror, a step that helped) and a count. No device, account, address, words or time of day | For good | No: with nothing to link a count to a phone, it is a real total |
 | `mirror_folds` | A week that has been folded for everyone | The Monday and when it was folded. Nothing about any phone | For good | No |
 | `forgotten_devices` | A phone that deleted everything | Mirror key and the date | 35 days, with the rest of the mirror | It is what the delete writes |
 | `schema_migrations` | A migration that has run | File name and time | For good | No |
@@ -83,6 +90,7 @@ The choice on an intimacy question is never stored on the server, in any table:
 
 - Votes cannot be put together into one person's answers: each vote's voter hash is made per question, so one phone's votes share no key.
 - Votes cannot be matched to the mirror: the mirror key is made with a different subkey from every voter hash, a vote keeps only its hour, and a mirror answer keeps only its date and sitting, never its moment.
+- What helped reports cannot be matched to votes or the mirror: they are kept under a key made with a subkey of their own, with only the week. Totals show once 50 reports stand, with any outcome fewer than 10 gave folded.
 - The mirror is a profile of one phone by design; that is what the mirror reads. Only a request carrying that phone's pass can read it, and it never reads another phone's rows or any tally.
 
 ### Held in memory only
@@ -114,12 +122,48 @@ Migration `backend/migrations/008_accounts_circle.sql`; rules in `backend/social
 | That the person answered a friend question on a day: no subject, question or option | `friend_prompt_log` | 35 days (`friendRetention`) |
 | A friend answer about a person: the subject, the week, the question and option, and a keyed mark of the sender and subject pair that counts distinct friends without naming them. No sender, and no link to the prompt log | `friend_mirror_inputs` | 35 days (`friendRetention`). The Outside Mirror opens a trait only when three different friends spoke to it in the last three weeks |
 | Quiet nods: sender, receiver, day and one of 24 fixed cards. Never counted | `nods` | 35 days; shown for 7 |
-| Shared insights (the new Connect), shown to friends as "a perspective from your circle" with no name (the server keeps the sender only to apply muting and Connect off): the words a person approved, the kind (what helped, or a win), one theme from a fixed list, an optional "why it helped" and "try it for yourself", the time, and the friends chosen to see it. Nothing else from the person's answers | `shares`, `share_recipients` | Until the sender withdraws it, or the friendship or account ends (a share left with no recipients goes) |
+| Shared items (Connect, Edwin 2026-10-29), shown with the sender's name only to the people they chose: the words the person approved (what helped, a win, an excerpt of a reflection, an answer or part of a Mirror), an optional theme from a fixed list, what kind of response would feel helpful, whether replies are welcome, whether it went to particular people or the Inner Circle, the time, and the people chosen. Nothing else from the person's answers or writing | `shares`, `share_recipients` | Until the person withdraws it, removes that person, or the friendship ends |
+| Private replies to a shared item: one thread per person it went to, between that person and the author only, each reply a gentle opening or a short message (300 characters, no links). No counts, no audience | `share_notes` | With the item; removing the person from it deletes their thread |
 | Common Ground: up to six broad tags from a fixed list, suggested on the phone from the themes answered most (never the answers) and confirmed by the person before anything is sent, and which friends the person opted in to. Overlapping tags are shown only to two friends who each opted in to the other, and new tags can be added once a week so the overlap cannot be used to read someone's whole list | `common_tags`, `common_consent` | Until changed, the person opts out, or the friendship or account ends |
 | Reach-outs (Support & Celebrate): sender, receiver, day, kind and one fixed phrase. The sender is never told whether it was seen; putting it away deletes it | `reach_outs` | 35 days; shown for 7 |
+| The Outside Mirror as named notes (Edwin, 2026-10-29): who asked whom, which of three fixed prompts, and, once written, the friend's short note (300 characters, no links) and whether the person kept it. Only the two people see it; the writer's name is always on it. The older anonymous Outside Mirror below no longer shows in the app | `outside_notes` | Until the person dismisses it, the friend declines, or either account is deleted; an unanswered invitation lapses after 30 days |
+| Notices when someone you trust reaches out (Edwin, 2026-10-29): a phone's push address, its platform and when it was last sent, for the one person signed in on it. Only while that person has notices on. No record of what was shared, or of any notice sent | `push_tokens` | Until notices are turned off on that phone, the person signs out there, the push service says the address is gone, or the account is deleted |
+| Reflect together: the two people, a question from a fixed list, each answer, and whether each chose to reveal it or keep it private. An answer is shown to the other only when both chose to reveal. Never fed to a mirror or a count | `reflect_together` | 30 days; either person leaving deletes it |
 | Answer Together: the two people, the question and each choice. Never fed to a mirror or a count; the asker's choice is shown to the other only after they answer | `together` | 48 hours, then gone a day later |
 
 Signed in, every phone on the account votes and keeps its mirror under one pass, derived from the account (`accountDeviceID`), so the duplicate-vote rule holds per account. Answers are still stored under a keyed hash of that pass, never with a name or handle, but the server can tell which account they belong to.
+
+## Patron never changes what is kept
+
+Patron (`patron.go`, `frontend/src/patron.ts`) changes what the app makes for the person, never what is kept, where, or for how long. Every row on this page holds with or without a plan; the server's only Patron record is the purchase itself (`entitlements`, above).
+
+**Long comparisons run on the phone.** The server keeps answers and steps for 35 days (`mirrorRetention`) whatever the plan, and no feature, free or paid, reads further back on the server than that.
+
+- Seasonal Echoes compare today's answer with the same question from one, three, six or twelve months ago. They read the phone's own echo log (`pi.echoes.v1`, about 400 days, `echoes.ts`), which leaves the phone only sealed in the encrypted backup. A new phone gets it back only by restoring that backup with the 12-word phrase, and the comparison then runs on the new phone.
+- The monthly, quarterly and yearly Mirrors read the server's weekly notes (`mirror_weeks`, 400 days): counts, theme depths, trait sums and steps that helped, never words. They are free and the same for everyone.
+- The rule for anything new: a comparison that needs more than 35 days of answers runs on the phone, over history kept on the phone or restored from the encrypted backup. It never lengthens what the server keeps, and a plan never switches longer keeping on.
+
+**Cancelling stops new premium outputs and takes nothing away.** When a plan ends, the app stops making what Patron covers: another brief after the free one, Echoes older than a month, Speak instead after the free tries, and bringing back what helped after the first time. Everything already made stays readable and in "Download my book": the notebook, kept briefs (`pi.briefs.v1`), the echoes in My journey, and the Mirrors.
+
+**Trust is never behind the paywall.** The lock, the cover in the app switcher, the quiet icon, the guest PIN, "Download my book" and both deletes are free for everyone.
+
+## Choices: private by default, shared by choice
+
+Private reflection works from the first moment with nothing to switch on: answering, writing, the first experience, the Mirror and the lock.
+
+Adding to anything other people see is a choice the person makes, asked once in plain words at the end of an early sitting, with nothing ticked (`mobile/src/screens/ShareChoices.tsx`), and changeable on You. Until they choose, nothing is added:
+
+- **Count my answers in the anonymous totals** (the Human Pulse, Growing together, You're not alone). Until they say yes, an answer still reaches their own Mirror (`mirror_answers`) but adds nothing to `votes` or `vote_tallies` (`count: false` on `POST /api/votes`).
+- **Count my steps in What helped** (`what_helped`).
+- **Count how I use the app** (the anonymous product counts, `product_counts`). A first result kept before the question waits on the phone (`pi.counted.v1`) and is sent once only if the person later says yes.
+
+Seeing the totals is a separate switch from adding to them. Sharing with a person (a circle, a brief, a shared insight, walking alongside) only ever happens when the person does it, each time.
+
+## What the voice promise covers
+
+Speak instead (`mobile/src/ui/Speak.tsx`, `mobile/src/platform/voice.ts`, `frontend/src/speech.ts`) turns speech into words on the phone: on iPhone and Android with on-device recognition only, and on the website only where the browser recognises speech on the device (otherwise the button does not show). No audio is kept, and the clearer version is made on the phone from the person's own words (`distil.ts`), with no server and no AI service.
+
+That promise covers the speech becoming words, and nothing after it. From there the words are treated exactly like typed words and go where the person puts them: an answer in their own words stays on the phone (`pi.words.<questionId>`), Reflect writing goes only into the encrypted backup, and a brief goes only where the person shares it. If the app ever makes a summary or interpretation away from the phone, it will be its own named choice, asked for separately, and never covered by "on the phone".
 
 ## Deleting everything
 

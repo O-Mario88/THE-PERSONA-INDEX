@@ -10,9 +10,9 @@
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
-    "backgroundColor": "#fbf7f0",
+    "backgroundColor": "#f3f3f0",
     "splash": {
-      "backgroundColor": "#fbf7f0"
+      "backgroundColor": "#0b1c2c"
     },
     "ios": {
       "bundleIdentifier": "com.personaindex.app",
@@ -20,12 +20,17 @@
       "config": {
         "usesNonExemptEncryption": false
       },
-      "usesAppleSignIn": true
+      "usesAppleSignIn": true,
+      "icon": {
+        "light": "./assets/icon.png",
+        "dark": "./assets/icon-dark.png",
+        "tinted": "./assets/icon-tinted.png"
+      }
     },
     "android": {
       "package": "com.personaindex.app",
       "adaptiveIcon": {
-        "backgroundColor": "#013d5a",
+        "backgroundColor": "#f8f4ec",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -43,11 +48,7 @@
         {
           "image": "./assets/splash-icon.png",
           "imageWidth": 140,
-          "backgroundColor": "#fbf7f0",
-          "dark": {
-            "image": "./assets/splash-icon-dark.png",
-            "backgroundColor": "#0b1a24"
-          }
+          "backgroundColor": "#0b1c2c"
         }
       ],
       [
@@ -55,6 +56,47 @@
         {
           "color": "#013d5a"
         }
+      ],
+      "expo-asset",
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Lets you speak instead of typing. Your words are turned into text on this phone, and no recording is kept.",
+          "speechRecognitionPermission": "Your speech is turned into words on this phone only, and no recording is kept.",
+          "androidSpeechServicePackages": [
+            "com.google.android.as",
+            "com.google.android.tts",
+            "com.google.android.googlequicksearchbox"
+          ]
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Lets you open your private space with Face ID."
+        }
+      ],
+      "./plugins/withQuietIcons",
+      [
+        "expo-alternate-app-icons",
+        [
+          {
+            "name": "Pebble",
+            "ios": "./assets/quiet/pebble.png",
+            "android": {
+              "foregroundImage": "./assets/quiet/pebble-foreground.png",
+              "backgroundColor": "#0b1c2c"
+            }
+          },
+          {
+            "name": "Horizon",
+            "ios": "./assets/quiet/horizon.png",
+            "android": {
+              "foregroundImage": "./assets/quiet/horizon-foreground.png",
+              "backgroundColor": "#f6f1e8"
+            }
+          }
+        ]
       ]
     ],
     "experiments": {

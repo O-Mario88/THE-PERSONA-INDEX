@@ -1,25 +1,39 @@
-// The close of a sitting: the midnight card with
-// the season tapestry weaving in, then the first glimpse (first sitting
-// only) or today's thread, the small steps, and what comes next. Nothing is
-// scored, shared or set against anyone else.
-import { useState } from 'react'
-import { useWindowDimensions, View } from 'react-native'
+// The close of a sitting, one reflection after a conversation (Edwin's
+// brief, 2026-10-28): the midnight card with this week's tiles and when the
+// next three open, then the first glimpse (first sitting only) or today's
+// thread, how today's steps went (the same check-in as everywhere), and one
+// thing worth trying from the sitting's own answers. Three things, not seven
+// (the light-mode review, 2026-10-29). Nothing is scored, shared or set
+// against anyone else.
+import { useEffect, useState, type ReactNode } from 'react'
+import { View } from 'react-native'
 import { recalledChoice, SKIPPED, type Question } from '@shared/api'
 import { adviceFor, levelLine } from '@shared/advice'
 import { isSaturday, opensAt } from '@shared/day'
+import { ECHO_FELT, echoesSeen, echoFor, echoLines, echoSpan, feltReply, FREE_MILESTONE, noteEchoSeen, readEcho, type EchoFelt } from '@shared/echoes'
+import { checkInFor, checkIns } from '@shared/growthJourney'
+import { cardTextOf } from '@shared/insights'
 import { sharedNeed } from '@shared/glimpse'
 import { HELPLINE_LINE } from '@shared/helplineText'
+import { dateOf } from '@shared/locale'
+import { loadMoves, movesOn, startMove, startedInEvening, type Move } from '@shared/moves'
+import { isPatron } from '@shared/patron'
+import { loadPrefs } from '@shared/prefs'
 import { heavyPause, isLowMood, loadHistory, recordRoute, type AnswerRecord, type History, type Route } from '@shared/profile'
 import { NEED_PHRASES, type Need } from '@shared/needs'
 import { routeToAsk } from '@shared/reaching'
-import { season } from '@shared/tapestry'
-import { themeName, themeStyle } from '@shared/themes'
+import { stepToTry, type SittingPick } from '@shared/sittingClose'
+import { week } from '@shared/tapestry'
+import { themeName } from '@shared/themes'
 import { sideOf, TRAITS } from '@shared/traits'
-import { GLIMPSE_BALANCED, GLIMPSE_NEXT, QUIET_DAY, ROUTE_ASK, ROUTE_REPLIES, ROUTE_WORDS, routeLead, SUNDAY_LINE } from '@shared/words'
-import { font, gutter, radius, useTheme } from '../theme'
-import { B, Chip, Option, T, Tinted } from '../ui/kit'
-import { Tapestry } from '../ui/parts'
-import { Steps } from './Steps'
+import { GLIMPSE_BALANCED, GLIMPSE_NEXT, QUIET_DAY, ROUTE_ASK, ROUTE_REPLIES, ROUTE_WORDS, routeLead } from '@shared/words'
+import { brand, radius, useTheme, typeScale } from '../theme'
+import { B, Button, Chip, feel, Option, T, Tinted } from '../ui/kit'
+import { CardHead, themeIcon, WeekTiles } from '../ui/parts'
+import { PatronNote } from '../ui/Patron'
+import { PulseNote, usePagePulse } from '../ui/Pulse'
+import { CheckIn } from './CheckIn'
+import { OwnIdea } from './QuestionCard'
 
 type Props = {
   date: string
@@ -27,7 +41,17 @@ type Props = {
   dayWithYou?: number
   questions: Question[]
   tomorrowThemes: string[]
-} & ({ sitting: 'morning'; eveningThemes: string[] | null } | { sitting: 'evening'; morning: Question[] })
+} & ({ sitting: 'morning'; eveningThemes: string[] | null; carry?: string | null } | { sitting: 'evening'; morning: Question[] })
+
+// The sitting's answers that have a reading: what one thing to try is picked from.
+const picksIn = (questions: Question[]): SittingPick[] =>
+  questions.flatMap((q) => {
+    const id = recalledChoice(q.id)
+    return id && id !== SKIPPED && q.options.some((o) => o.id === id) ? [{ question: q, optionId: id }] : []
+  })
+
+// Today's steps not asked about yet, leaving out one chosen this evening.
+const openSteps = (date: string): Move[] => movesOn(date).filter((m) => m.status === 'started' && !startedInEvening(m) && !checkInFor(m.questionId))
 
 const answersIn = (h: History, questions: Question[], date: string): AnswerRecord[] =>
   questions.flatMap((q) => {
@@ -41,42 +65,53 @@ const answersIn = (h: History, questions: Question[], date: string): AnswerRecor
 
 const COUNT = ['No', 'One', 'Two', 'Three', 'Four', 'Five', 'Six']
 
+const listOf = (xs: string[]) => (xs.length <= 1 ? (xs[0] ?? '') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`)
+
+// When the next three open, and what they're about, on the midnight card.
+function nextLine(date: string, eveningThemes: string[] | null, tomorrowThemes: string[]): string {
+  const about = (themes: string[]) => (themes.length ? `: ${listOf(themes.map(themeName))}` : '')
+  if (eveningThemes) return `Your evening three open at ${opensAt('evening')}${about(eveningThemes)}.`
+  if (isSaturday(date)) return 'Sleep well. Tomorrow is for looking back: your week will be waiting in your mirror.'
+  return `Sleep well. Your next three open at ${opensAt('morning')}${about(tomorrowThemes)}.`
+}
+
 function summaryLine(answers: AnswerRecord[], sitting: 'morning' | 'evening'): string {
   const n = answers.length
   const when = sitting === 'morning' ? 'this morning' : 'this evening'
   if (n === 0) return `Nothing woven ${when}, and that's fine.`
   const head = `${COUNT[n] ?? n} new ${n === 1 ? 'thread' : 'threads'}`
   const needs = answers.map((a) => a.need).filter((x): x is Need => !!x)
-  if (needs.length === n && needs.every((x) => x === needs[0]))
-    return n === 1 ? `${head}, reaching for ${NEED_PHRASES[needs[0]]}.` : `${head}, all reaching for ${NEED_PHRASES[needs[0]]}.`
+  if (needs.length === n && needs.every((x) => x === needs[0])) return n === 1 ? `${head}, reaching for ${NEED_PHRASES[needs[0]]}.` : `${head}, all reaching for ${NEED_PHRASES[needs[0]]}.`
   return `${head} woven in ${when}.`
 }
 
 export function Close(props: Props) {
   const p = useTheme()
-  const { width } = useWindowDimensions()
   const { date, questions, tomorrowThemes, sitting, glimpse, dayWithYou } = props
   const [history] = useState(loadHistory)
   const mine = answersIn(history, questions, date)
   const eveningThemes = props.sitting === 'morning' ? props.eveningThemes : null
-  const endsDay = !eveningThemes
   const heavy = mine.some((a) => a.heavy || isLowMood(a.theme, a.depth))
   const [paused] = useState(() => heavyPause(history, date))
+  // Finishing a sitting gets a small "done" under the finger, unless it was a heavy one.
+  useEffect(() => {
+    if (!heavy) feel('done')
+  }, [heavy])
   const dayAnswers = props.sitting === 'evening' ? [...answersIn(history, props.morning, date), ...mine] : mine
   const glimpseFor = glimpse && !heavy ? glimpse : null
-  const s = season(date)
+  const [thisWeek] = useState(() => week(date))
   const answered = questions.filter((q) => {
     const c = recalledChoice(q.id)
     return !!c && c !== SKIPPED
   }).length
-  const inner = Math.min(width, 640) - gutter * 2 - 40
+  const [pending] = useState(() => (sitting === 'evening' ? openSteps(date) : []))
 
   return (
     <View style={{ gap: 20 }}>
       <View style={{ backgroundColor: p.navy, borderRadius: radius.xl, padding: 20, gap: 16 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
           <T v="label" tone="onNavy2">
-            {dayWithYou === 1 ? `Your first ${sitting}` : `${sitting === 'morning' ? 'Morning close' : 'Evening close'} · ${dayWithYou ? `your day ${dayWithYou}` : `day ${s.day} of 90`}`}
+            {dayWithYou === 1 ? `Your first ${sitting}` : `${sitting === 'morning' ? 'Morning close' : 'Evening close'} · ${dayWithYou ? `your day ${dayWithYou}` : 'this week'}`}
           </T>
           {questions.length > 0 && (
             <T v="small" tone="onNavy" bold>
@@ -84,13 +119,11 @@ export function Close(props: Props) {
             </T>
           )}
         </View>
-        <Tapestry s={s} dark cols={15} width={inner} />
-        <T v="title" tone="onNavy" style={{ fontSize: 26, lineHeight: 31 }}>
+        <WeekTiles tiles={thisWeek} dark />
+        <T v="title" tone="onNavy">
           {summaryLine(mine, sitting)}
         </T>
-        <T v="small" tone="onNavy2">
-          Today's tile weaves in as you watch. A missed day stays open, and nothing resets.
-        </T>
+        <T tone="onNavy2">{nextLine(date, eveningThemes, tomorrowThemes)}</T>
       </View>
 
       {heavy && (
@@ -98,38 +131,209 @@ export function Close(props: Props) {
           {HELPLINE_LINE}
         </T>
       )}
+      {!heavy && <SittingPulse answers={mine} date={date} />}
 
       {props.sitting === 'morning' ? (
         <>
           {glimpseFor ? <Glimpse answers={mine} history={history} date={date} name={glimpseFor.name} /> : <Thread answers={mine} history={history} date={date} paused={paused} />}
-          <Steps date={date} mode="morning" emptyNote={!glimpseFor} />
-          {eveningThemes && <Upcoming label={`Your evening three · ${opensAt('evening')}`} themes={eveningThemes} note={`Go about your day. They'll be waiting for you at ${opensAt('evening')}.`} />}
+          {!heavy && <EchoCard questions={questions} date={date} />}
+          {!heavy && <TryOne date={date} questions={questions} sitting="morning" otherwise={props.carry ? <Carry text={props.carry} /> : null} />}
         </>
       ) : (
         <>
           {glimpseFor && <Glimpse answers={dayAnswers} history={history} date={date} name={glimpseFor.name} />}
-          <Steps date={date} mode="evening" label="Your small steps" />
-          {!paused && <RouteCheck date={date} morning={props.morning} />}
-          <ForTomorrow answers={dayAnswers} history={history} date={date} paused={paused} />
+          <TodaysCheckIns date={date} steps={pending} />
+          {/* One question at the close at most: how the morning's choice went, only when no step is waiting. */}
+          {!paused && pending.length === 0 && <RouteCheck date={date} morning={props.morning} />}
+          {!heavy && <EchoCard questions={questions} date={date} />}
+          {heavy ? (
+            <ForTomorrow answers={dayAnswers} history={history} date={date} paused={paused} />
+          ) : (
+            <TryOne date={date} questions={questions} sitting="evening" otherwise={<ForTomorrow answers={dayAnswers} history={history} date={date} paused={paused} />} />
+          )}
         </>
       )}
 
-      {endsDay && (
-        <>
-          {isSaturday(date) ? <T>{SUNDAY_LINE}</T> : <Upcoming label="Tomorrow" themes={tomorrowThemes} />}
-          <T style={{ fontFamily: font.semibold, fontSize: 20, lineHeight: 28 }}>
-            {isSaturday(date)
-              ? 'Sleep well. Tomorrow is for looking back: your week will be waiting in your mirror.'
-              : `Sleep well. Your next three open at ${opensAt('morning')}.`}
-          </T>
-        </>
-      )}
       <T v="tiny">Something to think about, never a diagnosis.</T>
     </View>
   )
 }
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
+
+// Seasonal Echoes (Edwin's brief, 2026-10-29): when one of this sitting's
+// questions came back from a month, three months, six months or a year ago,
+// its two answers side by side. A month-old echo is free; a longer one is
+// part of Patron, and without it only says that an echo is here.
+function EchoCard({ questions, date }: { questions: Question[]; date: string }) {
+  const [found] = useState(() => {
+    for (const q of questions) {
+      const e = echoFor(q.id, date)
+      const chose = recalledChoice(q.id)
+      if (e && chose && chose !== SKIPPED) return { q, e, chose }
+    }
+    return null
+  })
+  const open = !!found && (found.e.milestone === FREE_MILESTONE || isPatron(date))
+  const [reading] = useState(() => (found && open ? readEcho(found.q, found.chose, found.e.from, found.e.milestone, loadMoves(), checkIns()) : null))
+  const [felt, setFelt] = useState(() => (found ? echoesSeen().find((x) => x.questionId === found.q.id)?.felt : undefined))
+  const note = (f?: EchoFelt) => {
+    if (!found || !reading) return
+    noteEchoSeen({ date, questionId: found.q.id, from: reading.fromDate, milestone: reading.milestone, before: reading.before, after: reading.after, ...(f ? { felt: f } : {}) })
+  }
+  // The same answer is kept as soon as it shows; a different one once they say what they make of it.
+  useEffect(() => {
+    if (reading?.kind === 'steady') note()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+  if (!found) return null
+  if (!open || !reading)
+    return (
+      <PatronNote
+        text={`You answered one of these questions on ${dateOf(found.e.from.date, { day: 'numeric', month: 'long' })} too. Seeing how your answer has moved across ${echoSpan(found.e.milestone)} is part of The Persona Index Patron.`}
+      />
+    )
+  const { title, lines } = echoLines(reading)
+  const choose = (f: EchoFelt) => {
+    feel('select')
+    setFelt(f)
+    note(f)
+  }
+  return (
+    <View style={{ backgroundColor: brand.night, borderRadius: radius.xl, padding: 20, gap: 10 }}>
+      <T v="eyebrow" style={{ color: brand.sprout }}>
+        {title}
+      </T>
+      {lines.map((l) => (
+        <T key={l} style={{ color: brand.onNight }}>
+          {l}
+        </T>
+      ))}
+      {reading.kind === 'shift' &&
+        (felt ? (
+          <T v="small" style={{ color: brand.onNight2 }}>
+            {feltReply(felt)}
+          </T>
+        ) : (
+          <View style={{ gap: 8, marginTop: 4 }}>
+            {ECHO_FELT.map((f) => (
+              <Button key={f.id} wide kind="secondary" label={f.label} onPress={() => choose(f.id)} />
+            ))}
+          </View>
+        ))}
+      {reading.kind === 'steady' && (
+        <T v="small" style={{ color: brand.onNight2 }}>
+          Kept in My journey.
+        </T>
+      )}
+      {!isPatron(date) && (
+        <T v="tiny" style={{ color: brand.onNight2 }}>
+          Echoes across 3 months, 6 months and a year are part of Patron.
+        </T>
+      )}
+    </View>
+  )
+}
+
+// The Human Pulse for this sitting's answers (Edwin, 2026-10-29): how many
+// people chose the same, for each answer that has honest counts yet. Never a
+// heavy, regional or intimate answer; nothing at all until there is a number.
+function SittingPulse({ answers, date }: { answers: AnswerRecord[]; date: string }) {
+  const pulse = usePagePulse(date)
+  const rows = answers
+    .filter((a) => !a.heavy && !a.regional && a.optionId && a.theme !== 'intimacy')
+    .map((a) => ({ id: a.questionId, label: cardTextOf(a.questionId)?.label, text: pulse.answer(a.questionId, a.optionId) }))
+    .filter((r): r is { id: string; label: string; text: string } => !!r.label && !!r.text)
+  if (rows.length === 0) return null
+  return (
+    <Tinted style={{ gap: 12 }}>
+      <CardHead icon="people" tone="blue" title="You’re not alone" />
+      {rows.map((r) => (
+        <View key={r.id} style={{ gap: 2 }}>
+          <T bold>“{r.label}”</T>
+          <PulseNote text={r.text} />
+        </View>
+      ))}
+    </Tinted>
+  )
+}
+
+// One thing worth trying, from this sitting's own answers (shared
+// sittingClose.ts): the step already chosen, or one offered with I'll try it,
+// your own idea or Not now. Otherwise, the quiet line passed in, which also
+// comes first for someone who'd rather think things through (My Reflection
+// Style); the step stays with today's cards in Insights.
+function TryOne({ date, questions, sitting, otherwise }: { date: string; questions: Question[]; sitting: 'morning' | 'evening'; otherwise: ReactNode }) {
+  const [picked] = useState(() => stepToTry(picksIn(questions)))
+  const [think] = useState(() => loadPrefs().style === 'think')
+  const [state, setState] = useState<'open' | 'trying' | 'own' | 'planned' | 'later'>(picked?.kind === 'trying' ? 'trying' : 'open')
+  const pulse = usePagePulse(date)
+  if (!picked || (think && picked.kind === 'offer' && otherwise)) return <>{otherwise}</>
+  const offer = picked.kind === 'offer' ? picked : null
+  const option = offer ? questions.find((q) => q.id === offer.questionId)?.options.find((o) => o.id === offer.optionId) : undefined
+  const step = offer ? offer.step : picked.kind === 'trying' ? picked.move.step : ''
+  const source = offer ? (offer.local ? null : offer) : picked.kind === 'trying' && !picked.move.local ? picked.move : null
+  return (
+    <Tinted style={{ gap: 10 }}>
+      <T v="eyebrow">{state === 'trying' ? 'You’re trying' : 'One thing worth trying'}</T>
+      <T v="h3">{step}</T>
+      {source && <PulseNote text={pulse.step(source.questionId, source.optionId)} />}
+      {state === 'open' && offer && (
+        <View style={{ flexDirection: 'row', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+          <Button
+            small
+            label="I'll try it"
+            onPress={() => {
+              startMove(date, offer.questionId, offer.optionId, offer.step, Date.now(), false, offer.local).catch(() => {})
+              setState('trying')
+            }}
+          />
+          {option && <Button kind="text" label="My own idea" onPress={() => setState('own')} />}
+          <Button kind="text" label="Not now" onPress={() => setState('later')} />
+        </View>
+      )}
+      {state === 'own' && option && <OwnIdea option={option} date={date} onMade={() => setState('planned')} onCancel={() => setState('open')} />}
+      {state === 'trying' && <T tone="muted">{sitting === 'morning' ? 'I’ll ask you how it went this evening.' : 'I’ll ask you how it went tomorrow, on Today.'}</T>}
+      {state === 'planned' && <T tone="muted">Your own plan, kept in your notebook. Next time you sit down, I’ll ask how it went.</T>}
+      {state === 'later' && <T tone="muted">It stays with today’s cards in Insights, if you want it later.</T>}
+    </Tinted>
+  )
+}
+
+// One thing to carry into today: noticing, not a task.
+function Carry({ text }: { text: string }) {
+  return (
+    <Tinted style={{ gap: 6 }}>
+      <T v="eyebrow">One thing to carry into today</T>
+      <T v="quote" style={typeScale.sub}>
+        {text}
+      </T>
+      <T v="small" tone="muted">
+        You don’t need to change anything. Just notice.
+      </T>
+    </Tinted>
+  )
+}
+
+// How today's steps went: the same three-question check-in as everywhere.
+function TodaysCheckIns({ date, steps }: { date: string; steps: Move[] }) {
+  const [said, setSaid] = useState<Record<string, string>>({})
+  if (steps.length === 0) return null
+  return (
+    <View style={{ gap: 14 }}>
+      <T v="eyebrow">{steps.length > 1 ? 'Your steps today' : 'Your step today'}</T>
+      {steps.map((m) =>
+        said[m.questionId] ? (
+          <T key={m.questionId} tone="text2">
+            {said[m.questionId]}
+          </T>
+        ) : (
+          <CheckIn key={m.questionId} move={m} today={date} onDone={(reply) => setSaid((was) => ({ ...was, [m.questionId]: reply }))} />
+        ),
+      )}
+    </View>
+  )
+}
 
 // The first glimpse: a few plain lines on what the first answers hint at,
 // said to the person by name, in the trait library's own warm words.
@@ -141,12 +345,15 @@ function Glimpse({ answers, history, date, name }: { answers: AnswerRecord[]; hi
   const need = sharedNeed(answers)
   return (
     <Tinted>
-      <T v="eyebrow">Your first glimpse</T>
-      <T v="h3">{name ? `${name}, here’s what your first answers hint at.` : 'Here’s what your first answers hint at.'}</T>
-      {top && (
-        <T style={{ fontFamily: font.semibold, fontSize: 18, lineHeight: 25 }}>
+      {/* The finding is the headline; who it's for sits above it, quietly
+          (the light-mode review, 2026-10-29: two bold lines read as one). */}
+      <T v="eyebrow">{name ? `${name}, your first glimpse` : 'Your first glimpse'}</T>
+      {top ? (
+        <T v="h2">
           {cap(top.quality)}, with {top.with}.
         </T>
+      ) : (
+        <T v="h2">Here’s what your first answers hint at.</T>
       )}
       {points.length === 0 ? (
         <T>{GLIMPSE_BALANCED}</T>
@@ -172,9 +379,7 @@ function Thread({ answers, history, date, paused }: { answers: AnswerRecord[]; h
   return (
     <View style={{ gap: 10 }}>
       <T v="eyebrow">Today's thread</T>
-      <T v="h3" style={{ fontSize: 19, lineHeight: 26 }}>
-        {advice.headline}
-      </T>
+      <T v="h3">{advice.headline}</T>
       {advice.points.length > 0 && !open && (
         <View style={{ flexDirection: 'row' }}>
           <Chip label={advice.points.length > 1 ? 'What each could mean' : 'What it could mean'} onPress={() => setOpen(true)} />
@@ -260,7 +465,7 @@ export function Upcoming({ label, themes, note }: { label: string; themes: strin
       {themes.length > 0 && (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           {themes.map((t) => (
-            <Chip key={t} icon={themeStyle(t).icon} label={themeName(t)} />
+            <Chip key={t} icon={themeIcon(t)} label={themeName(t)} />
           ))}
         </View>
       )}

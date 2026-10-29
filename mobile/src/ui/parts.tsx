@@ -1,11 +1,17 @@
-// Discs, initials, rings and the season tapestry.
-import { Text, View } from 'react-native'
+// Discs, initials, rings and this week's tiles.
+import type { ReactNode } from 'react'
+import { View } from 'react-native'
+import { Text } from './textScale'
 import Svg, { Circle } from 'react-native-svg'
 import { tintFor } from '@shared/avatarTint'
 import { NEED_TINTS } from '@shared/needs'
-import type { Season } from '@shared/tapestry'
-import { font, useTheme } from '../theme'
+import type { Tile } from '@shared/tapestry'
+import { locale } from '@shared/locale'
+import { font, useTheme, typeScale } from '../theme'
 import { Icon, type IconName } from './Icon'
+import { T } from './kit'
+import { THEMES } from '@shared/themes'
+import type { ReflectionArea } from '@shared/notebook'
 
 export type Tone = 'green' | 'blue' | 'purple' | 'rose' | 'amber'
 
@@ -25,6 +31,50 @@ export function Disc({ icon, tone = 'green', size = 40 }: { icon: IconName; tone
     </View>
   )
 }
+
+// The head of a card: a small disc beside its title on one line, and
+// everything else full width below, so an icon never squeezes the words into
+// a narrow column (Edwin, 2026-10-28).
+export function CardHead({ icon, tone, title, v = 'h3', right }: { icon: IconName; tone?: Tone; title: ReactNode; v?: 'h2' | 'h3' | 'eyebrow'; right?: ReactNode }) {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+      <Disc icon={icon} tone={tone} size={32} />
+      <T v={v} style={{ flex: 1 }}>
+        {title}
+      </T>
+      {right}
+    </View>
+  )
+}
+
+// A line icon for a question's topic, in place of the old emoji (Edwin,
+// 2026-10-28: one icon set only). A few topics have their own; the rest take
+// their area's.
+const TOPIC_ICONS: Record<string, IconName> = {
+  'work-career': 'briefcase',
+  colleagues: 'briefcase',
+  'sleep-health': 'moon',
+  rest: 'moon',
+  learning: 'bulb',
+  school: 'bulb',
+  money: 'insights',
+  'wealth-luxury': 'insights',
+  faith: 'leaf',
+  plans: 'pin',
+  'getting-around': 'pin',
+  phone: 'chat',
+  celebrations: 'star',
+}
+const AREA_ICONS: Record<string, IconName> = { everyday: 'sun', people: 'people', inner: 'heart', desire: 'star' }
+
+export function themeIcon(slug?: string): IconName {
+  if (!slug) return 'today'
+  return TOPIC_ICONS[slug] ?? AREA_ICONS[THEMES[slug]?.area ?? ''] ?? 'today'
+}
+
+// Each part of life's icon and tint (Reflect and My Journey share them).
+export const AREA_ICON: Record<ReflectionArea, IconName> = { work: 'briefcase', school: 'notebook', family: 'heart', culture: 'globe', social: 'people', health: 'leaf', money: 'bars', self: 'you' }
+export const AREA_TONE: Record<ReflectionArea, Tone> = { work: 'blue', school: 'blue', family: 'rose', culture: 'blue', social: 'blue', health: 'green', money: 'amber', self: 'purple' }
 
 // Initials on a pastel picked from the name. No photos.
 export function Avatar({ name, size = 36 }: { name: string; size?: number }) {
@@ -70,30 +120,35 @@ export function Ring({ part, big, small, size = 64, label, onDark }: { part: num
   )
 }
 
-// Ninety tiles, one a day. A missed day stays linen; nothing resets.
-export function Tapestry({ s, cols = 15, dark, width }: { s: Season; cols?: number; dark?: boolean; width: number }) {
+// This week's seven tiles, Monday to Sunday, the last one the Sunday Mirror:
+// woven where you answered, open where you didn't, and nothing resets
+// (Edwin, 2026-10-28: a ninety-day grid makes people give up).
+export function WeekTiles({ tiles, dark }: { tiles: Tile[]; dark?: boolean }) {
   const p = useTheme()
-  const gap = 4
-  const tile = Math.floor((width - gap * (cols - 1)) / cols)
+  const woven = tiles.filter((t) => t.state === 'woven').length
   return (
-    <View
-      accessibilityRole="image"
-      accessibilityLabel={`Season tapestry, day ${s.day} of 90: ${s.woven} ${s.woven === 1 ? 'day' : 'days'} woven`}
-      style={{ flexDirection: 'row', flexWrap: 'wrap', gap, width }}
-    >
-      {s.tiles.map((t) => (
-        <View
-          key={t.date}
-          style={{
-            width: tile,
-            height: tile,
-            borderRadius: 3,
-            backgroundColor:
-              t.state === 'woven' ? (t.need ? NEED_TINTS[t.need] : p.lime) : t.state === 'ahead' ? 'transparent' : dark ? 'rgba(255,255,255,0.12)' : p.surface3,
-            borderWidth: t.today ? 2 : t.state === 'ahead' ? 1 : 0,
-            borderColor: t.today ? (dark ? p.brandLime : p.text) : dark ? 'rgba(255,255,255,0.14)' : p.line,
-          }}
-        />
+    <View accessibilityRole="image" accessibilityLabel={`This week: ${woven} of 7 days woven`} style={{ flexDirection: 'row', gap: 8 }}>
+      {tiles.map((t, i) => (
+        <View key={t.date} style={{ flex: 1, alignItems: 'center', gap: 6 }}>
+          <View
+            style={{
+              alignSelf: 'stretch',
+              aspectRatio: 1,
+              borderRadius: 8,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor:
+                t.state === 'woven' ? (t.need ? NEED_TINTS[t.need] : p.lime) : t.state === 'ahead' ? 'transparent' : dark ? 'rgba(255,255,255,0.12)' : p.surface3,
+              borderWidth: t.today ? 2 : t.state === 'ahead' ? 1 : 0,
+              borderColor: t.today ? (dark ? p.brandLime : p.text) : dark ? 'rgba(255,255,255,0.18)' : p.line,
+            }}
+          >
+            {i === 6 && t.state === 'ahead' && <Icon name="mirror" size={14} color={dark ? p.onNavy2 : p.muted} />}
+          </View>
+          <Text style={{ fontFamily: t.today ? font.bold : font.medium, ...typeScale.tab, color: dark ? (t.today ? p.onNavy : p.onNavy2) : t.today ? p.text : p.muted }}>
+            {new Date(`${t.date}T00:00:00Z`).toLocaleDateString(locale(), { weekday: 'narrow', timeZone: 'UTC' })}
+          </Text>
+        </View>
       ))}
     </View>
   )

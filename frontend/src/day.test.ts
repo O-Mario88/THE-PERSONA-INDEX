@@ -1,4 +1,4 @@
-import { clock, dayAt, isEvening, isSaturday, left, localDate, MORNING_CLOSES, morningEnd, nextTurn, opensAt, sittingOf, windowAt } from './day'
+import { clock, dayAt, isEvening, isSaturday, localDate, MORNING_CLOSES, morningEnd, nextTurn, opensAt, sittingOf, windowAt } from './day'
 import { loadMoves, moveFor, movesOn, sendUnsent, setMoveStatus, startMove, startedInEvening } from './moves'
 
 describe('the local day', () => {
@@ -41,15 +41,15 @@ describe('the local day', () => {
     expect(morningEnd('2026-10-12')).toBe(new Date(2026, 9, 12, 17).getTime())
   })
 
-  it('names when each sitting opens', () => {
-    expect(opensAt('morning')).toBe('5 am')
-    expect(opensAt('evening')).toBe('5 pm')
+  // Found in the 2026-10-29 audit: the close said "5 pm" while every other
+  // page said "5:00 PM" (or "17:00" on a 24-hour phone).
+  it('names when each sitting opens, written like every other time on the phone', () => {
+    expect(opensAt('morning')).toBe(clock(5 * 60))
+    expect(opensAt('evening')).toBe(clock(17 * 60))
+    expect(opensAt('evening')).toBe('17:00')
   })
 
-  it('says how long a window has left, the way the ring shows it', () => {
-    expect(left(2 * 3600_000 + 16 * 60_000).text).toBe('2h 16m')
-    expect(left(16 * 60_000).text).toBe('16m')
-    expect(left(10_000).text).toBe('1m')
+  it('writes a time of day the way the phone does', () => {
     expect(clock(7 * 60 + 51)).toBe('07:51')
   })
 

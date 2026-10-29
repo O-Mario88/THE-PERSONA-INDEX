@@ -1,36 +1,40 @@
 import { loadJSON, saveJSON } from './storage'
 
-// The three circles (Edwin, 2026-10-25): inner, the people you would trust
-// with a secret; middle, close but not that close; outer, friends out there.
-// The person places each friend. Kept on this phone only (and sealed in the
-// backup): nobody, the server included, ever learns which circle they are in.
+// Circles are about permission, not popularity (Edwin, 2026-10-29). Everyone
+// the person is connected with is a Connection; the people they choose as
+// their closest are the Inner Circle. No numbered levels. Kept on this phone
+// only (and sealed in the backup): nobody, the server included, ever learns
+// who is in someone's Inner Circle. Adding someone shows them nothing shared
+// before; removing them ends their access to what was shared with the Inner
+// Circle (connections.ts).
 
-export type Ring = 'inner' | 'middle' | 'outer'
-export const RINGS: Ring[] = ['inner', 'middle', 'outer']
+export const CONNECTION = 'Connection'
+export const INNER_CIRCLE = 'Inner Circle'
 
-export const RING_NAMES: Record<Ring, string> = { inner: 'Inner circle', middle: 'Close', outer: 'Wider circle' }
-export const RING_NOTES: Record<Ring, string> = {
-  inner: 'People you would trust with a secret',
-  middle: 'Close, but not that close',
-  outer: 'Friends out there',
-}
+// What each can see, in plain words, for You and for Connect.
+export const CIRCLE_ACCESS: { who: string; sees: string }[] = [
+  { who: CONNECTION, sees: 'Your name and anything you deliberately send them.' },
+  { who: INNER_CIRCLE, sees: 'Items you choose to share with your Inner Circle, and invitations to reflect together.' },
+  { who: 'Selected person', sees: 'A particular answer, reflection or Mirror you choose to share with them directly.' },
+]
 
 const KEY = 'pi.rings'
 
-export type Rings = Record<string, Ring>
-
-export function loadRings(): Rings {
+// The Inner Circle, by account id. An older phone kept three circles; only
+// "inner" carries over.
+export function innerCircle(): string[] {
   const raw = loadJSON(KEY)
-  if (!raw || typeof raw !== 'object') return {}
-  const out: Rings = {}
-  for (const [id, r] of Object.entries(raw as Record<string, unknown>)) if (RINGS.includes(r as Ring)) out[id] = r as Ring
-  return out
+  if (!raw || typeof raw !== 'object') return []
+  return Object.entries(raw as Record<string, unknown>)
+    .filter(([, r]) => r === 'inner')
+    .map(([id]) => id)
 }
 
-export const ringOf = (rings: Rings, friendId: string): Ring => rings[friendId] ?? 'outer'
+export const isInner = (friendId: string): boolean => innerCircle().includes(friendId)
 
-export function placeIn(friendId: string, ring: Ring): Rings {
-  const next = { ...loadRings(), [friendId]: ring }
-  saveJSON(KEY, next)
+export function setInner(friendId: string, on: boolean): string[] {
+  const ids = innerCircle().filter((id) => id !== friendId)
+  const next = on ? [...ids, friendId] : ids
+  saveJSON(KEY, Object.fromEntries(next.map((id) => [id, 'inner'])))
   return next
 }

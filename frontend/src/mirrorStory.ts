@@ -13,8 +13,9 @@
 // frontend/src) tell the same stories. The rules of voice.ts apply to every
 // line (mirrorStory.test.ts).
 
-import type { Mirror, PeriodMirror, PeriodNeed, PeriodWeek } from './api'
+import type { Mirror, PeriodMirror, PeriodNeed, PeriodWeek, StepStatus } from './api'
 import type { ConnectionCounts } from './connection'
+import { FEELS, stepWords, type CheckIn, type Feeling, type Outcome } from './growthJourney'
 import { growthPairs, type GrowthPair } from './growth'
 import { cardTextOf, type CardText, type NotAloneQuestion } from './insights'
 import { NEED_NAMES, NEED_PHRASES, NEEDS, type Need } from './needs'
@@ -25,6 +26,7 @@ import { needsBetween, type NeedRead } from './reaching'
 import { areaOf, AREA_NAMES as LIFE_AREAS } from './reflect'
 import { themeName } from './themes'
 import type { Lean } from './mirrorText'
+import { locale } from './locale'
 
 export type Span = 'week' | 'month' | 'quarter' | 'year'
 
@@ -130,7 +132,7 @@ const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 
 // "Wednesday", or "14 October" for anything further back than a week.
 export function whenSaid(date: string, span: Span = 'week'): string {
   const d = new Date(`${date}T00:00:00Z`)
-  if (span === 'week') return d.toLocaleDateString('en-GB', { weekday: 'long', timeZone: 'UTC' })
+  if (span === 'week') return d.toLocaleDateString(locale(), { weekday: 'long', timeZone: 'UTC' })
   return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`
 }
 
@@ -167,58 +169,79 @@ export function needEvidence(h: History, need: Need, from: string, to: string, t
 // The Sunday Mirror.
 
 // What the person marked about a step or an intention, in their own terms.
-export type HelpedOutcome = 'helped' | 'some' | 'no_change' | 'testing' | 'not_tried'
-export type HelpedItem = { text: string; outcome: HelpedOutcome; date: string; source: 'step' | 'intention' | 'plan'; times: number }
+// checked: the outcome is from their own check-in (growthJourney.ts), with
+// how they felt afterwards when they said.
+export type HelpedOutcome = 'helped' | 'some' | 'no_change' | 'harder' | 'testing' | 'not_tried' | 'let_go'
+export type HelpedItem = { text: string; outcome: HelpedOutcome; date: string; source: 'step' | 'intention' | 'plan'; times: number; checked?: true; feeling?: Feeling }
 
 export const HELPED_PILL: Record<HelpedOutcome, string> = {
   helped: 'Helped',
   some: 'Helped a little',
   no_change: 'No change',
+  harder: 'Made it harder',
   testing: 'Still testing',
   not_tried: 'Not tried yet',
+  let_go: 'Let go',
 }
 
 export const HELPED_NOTE: Record<HelpedOutcome, string> = {
   helped: 'You said it helped.',
   some: 'You said it helped a little.',
   no_change: 'You tried it and noticed no change. That is worth knowing too.',
+  harder: 'You said it made things harder. That is worth knowing too.',
   testing: 'You are still finding out how this works for you.',
   not_tried: 'Not tried yet. It is still there if you want it.',
+  let_go: 'You let it go for now, and that is fine.',
 }
 
-const ORDER: HelpedOutcome[] = ['helped', 'some', 'no_change', 'testing', 'not_tried']
+const ORDER: HelpedOutcome[] = ['helped', 'some', 'no_change', 'harder', 'testing', 'not_tried', 'let_go']
+
+// How a step went, from the person's own check-in: "Not yet" kept for later
+// is still being tried; let go, or decided against, is let go.
+function checkOutcome(c: CheckIn): HelpedOutcome {
+  if (c.tried === 'not_yet') return c.later ? 'testing' : 'let_go'
+  if (c.tried === 'decided_not') return 'let_go'
+  const by: Record<Outcome, HelpedOutcome> = { helped: 'helped', helped_little: 'some', no_difference: 'no_change', harder: 'harder' }
+  return c.outcome ? by[c.outcome] : 'testing'
+}
 
 // helpedFor gathers what the person tried in a span and said about it: the
-// small steps from their cards (the server's record), the intentions they
+// small steps from their cards (the server's record, or their own check-in
+// on that step when there is one, which says more), the intentions they
 // saved and checked in on, and the plans they kept. Never a score: one row
 // per thing, with what they said. The same words twice are one row, counted.
 export function helpedFor(
   from: string,
   to: string,
   sources: {
-    steps?: { step: string; started: string; status: 'started' | 'helped' | 'no_change' | 'not_tried' }[]
+    steps?: { questionId?: string; step: string; started: string; status: 'started' | 'helped' | 'no_change' | 'not_tried' }[]
     helped?: { step: string; started: string }[]
     noChange?: { step: string; started: string }[]
     intentions?: Intention[]
+    checks?: CheckIn[]
   },
 ): HelpedItem[] {
   const out = new Map<string, HelpedItem>()
-  const add = (text: string, outcome: HelpedOutcome, date: string, source: HelpedItem['source']) => {
+  const checks = new Map((sources.checks ?? []).map((c) => [c.questionId, c]))
+  const add = (text: string, outcome: HelpedOutcome, date: string, source: HelpedItem['source'], check?: CheckIn) => {
     const key = text.trim().toLowerCase()
     if (!key) return
+    const said = check ? { checked: true as const, ...(check.feeling ? { feeling: check.feeling } : {}) } : {}
     const was = out.get(key)
-    if (!was) return void out.set(key, { text: text.trim(), outcome, date, source, times: 1 })
+    if (!was) return void out.set(key, { text: text.trim(), outcome, date, source, times: 1, ...said })
     // The more telling outcome wins; helping twice is said as twice.
     was.times += outcome === was.outcome ? 1 : 0
     if (ORDER.indexOf(outcome) < ORDER.indexOf(was.outcome)) {
-      was.outcome = outcome
-      was.times = 1
+      out.set(key, { text: was.text, outcome, date: date > was.date ? date : was.date, source: was.source, times: 1, ...said })
+      return
     }
     if (date > was.date) was.date = date
   }
   for (const s of sources.steps ?? []) {
     if (s.started < from || s.started > to) continue
-    add(s.step, s.status === 'started' ? 'testing' : s.status, s.started, 'step')
+    const check = s.questionId ? checks.get(s.questionId) : undefined
+    if (check) add(s.step, checkOutcome(check), s.started, 'step', check)
+    else add(s.step, s.status === 'started' ? 'testing' : s.status, s.started, 'step')
   }
   for (const s of sources.helped ?? []) if (s.started >= from && s.started <= to) add(s.step, 'helped', s.started, 'step')
   for (const s of sources.noChange ?? []) if (s.started >= from && s.started <= to) add(s.step, 'no_change', s.started, 'step')
@@ -232,22 +255,30 @@ export function helpedFor(
 }
 
 // One or two sentences about what helped, in the person's own terms:
-// "“Take a short pause” helped you twice. Asking for help is something
-// you're still exploring." Null when nothing was tried or marked.
+// "You tried “Ask for help”. When you checked in afterwards, you said it
+// helped, and you felt a little lighter. “Take a walk” is something you are
+// still exploring, and that is fine." It reports what they said and how
+// they felt afterwards, never that the step caused the feeling. Null when
+// nothing was tried or marked.
 export function helpedSentence(items: HelpedItem[]): string | null {
   const helped = items.filter((i) => i.outcome === 'helped' || i.outcome === 'some')
   const testing = items.filter((i) => i.outcome === 'testing')
+  const harder = items.find((i) => i.outcome === 'harder')
   const parts: string[] = []
-  if (helped[0]) {
-    const h = helped[0]
+  const h = helped[0]
+  if (h?.checked) {
+    const how = h.outcome === 'some' ? 'it helped a little' : 'it helped'
+    parts.push(`You tried “${stepWords(h.text)}”. When you checked in afterwards, you said ${how}${h.feeling ? `, and ${FEELS[h.feeling]}` : ''}.`)
+  } else if (h) {
     parts.push(
       h.outcome === 'some'
-        ? `“${h.text}” helped you a little, by your own account.`
-        : `“${h.text}” helped you${h.times > 1 ? ` ${times(h.times)}` : ''}, by your own account.`,
+        ? `“${stepWords(h.text)}” helped you a little, by your own account.`
+        : `“${stepWords(h.text)}” helped you${h.times > 1 ? ` ${times(h.times)}` : ''}, by your own account.`,
     )
   }
-  if (testing[0]) parts.push(`“${testing[0].text}” is something you are still exploring.`)
-  else if (!helped[0] && items.some((i) => i.outcome === 'no_change')) parts.push('What you tried made little difference this time, and knowing that is useful.')
+  if (testing[0]) parts.push(`“${stepWords(testing[0].text)}” is something you are still exploring, and that is fine.`)
+  else if (!h && harder) parts.push(`“${stepWords(harder.text)}” made things harder, by your own account. That is worth knowing too.`)
+  else if (!h && items.some((i) => i.outcome === 'no_change')) parts.push('What you tried made little difference this time, and knowing that is useful.')
   return parts.length ? parts.join(' ') : null
 }
 
@@ -270,11 +301,14 @@ export function weekStory(input: {
   const needs = needsBetween(h, from, to).filter((r) => r.answers >= 2)
   const [n1, n2] = needs
   const helpedSome = input.helped.find((i) => i.outcome === 'helped' || i.outcome === 'some')
-  if (input.answers === 0) {
+  // Quiet only when neither the server nor this phone has an answer from the week:
+  // a new account's answers can live on the phone before the server counts them.
+  const onPhone = h.answers.some((a) => a.date >= from && a.date <= to)
+  if (input.answers === 0 && !onPhone) {
     return {
       headline: 'A quiet week so far.',
       paragraphs: [
-        'Your Sunday Mirror is built from your own answers, so there is nothing to say about this week yet. Two or three days of questions is enough to start.',
+        'Your Mirror is built from your own answers, so there is nothing to say about this week yet. Two or three days of questions is enough to start.',
       ],
       evidence: [],
     }
@@ -302,7 +336,7 @@ export function weekStory(input: {
     paragraphs.push('Some of your answers also sounded heavy. That deserves to be said plainly. If this week was hard, leaning on someone you trust is a reasonable thing to do.')
   }
   const agency: string[] = []
-  if (helpedSome) agency.push(`you tried “${helpedSome.text}” and said it helped${helpedSome.outcome === 'some' ? ' a little' : ''}`)
+  if (helpedSome) agency.push(`you tried “${stepWords(helpedSome.text)}” and said it helped${helpedSome.outcome === 'some' ? ' a little' : ''}`)
   const c = input.connection
   if (c && c.support > 0) agency.push('you asked someone for support')
   else if (c && c.celebrate > 0) agency.push('you celebrated something with someone')
@@ -428,6 +462,56 @@ export function notAlonePicks(
     .map(({ need: _n, ...p }) => p)
 }
 
+// "The moments we share" (Edwin, 2026-10-28): after the week's shared
+// answers, any move towards other people the person recorded: a step about
+// the people in their life that they chose to try, else something they did
+// in their Circle. It never says a reach-out worked unless they said so, and
+// asks what it taught them only once they did it.
+export type SharedMoment = { line: string; ask: string | null; prompt: string | null }
+
+const PEOPLE_AREAS: ReflectionArea[] = ['family', 'social']
+const TAUGHT = 'What did that experience teach you?'
+const SAID: Record<Outcome, string> = {
+  helped: 'it helped',
+  helped_little: 'it helped a little',
+  no_difference: 'it didn’t make a difference, which is worth knowing too',
+  harder: 'it made things harder, which is worth knowing too',
+}
+
+export function sharedMoment(input: {
+  from: string
+  to: string
+  history: History
+  steps: { questionId: string; theme: string; step: string; started: string; status?: StepStatus }[]
+  checks?: CheckIn[]
+  connection?: ConnectionCounts
+}): SharedMoment | null {
+  const { from, to } = input
+  const needOf = (id: string) => input.history.answers.find((a) => a.questionId === id)?.need
+  const aboutPeople = (s: { questionId: string; theme: string }) => PEOPLE_AREAS.includes(areaOf(s.theme)) || needOf(s.questionId) === 'belonging'
+  const chosen = input.steps
+    .filter((s) => s.started >= from && s.started <= to && aboutPeople(s))
+    .map((s) => ({ s, c: input.checks?.find((c) => c.questionId === s.questionId) }))
+    // A step let go, decided against or not got to is not brought back here.
+    .filter(({ s, c }) => (c ? c.tried !== 'decided_not' && !(c.tried === 'not_yet' && !c.later) : s.status !== 'not_tried'))
+    .sort((a, b) => b.s.started.localeCompare(a.s.started))[0]
+  if (chosen) {
+    const { s, c } = chosen
+    const chose = `You chose to try “${stepWords(s.step)}”`
+    // What they said: their check-in, else the step's mark from before
+    // check-ins existed.
+    const tried = c ? c.tried === 'yes' || c.tried === 'little' : s.status === 'helped' || s.status === 'no_change'
+    const said: Outcome | undefined = c ? c.outcome : s.status === 'helped' ? 'helped' : s.status === 'no_change' ? 'no_difference' : undefined
+    if (tried) return { line: said ? `${chose}, and you said ${SAID[said]}.` : `${chose}.`, ask: TAUGHT, prompt: `What did trying “${stepWords(s.step)}” teach you?` }
+    return { line: `${chose}. It is still there whenever you are ready.`, ask: null, prompt: null }
+  }
+  const c = input.connection
+  if (c?.support) return { line: 'You asked someone in your Circle for support.', ask: TAUGHT, prompt: 'What did asking for support teach you?' }
+  if (c?.celebrate) return { line: 'You celebrated something with someone in your Circle.', ask: TAUGHT, prompt: 'What did celebrating with someone teach you?' }
+  if (c && c.nod + c.share > 0) return { line: 'You reached out to someone in your Circle.', ask: TAUGHT, prompt: 'What did reaching out teach you?' }
+  return null
+}
+
 // What helped other people: the anonymous What Helped totals (served by
 // GET /api/what-helped once that dataset is live), for a step offered by
 // one of the person's own answers. Counts only, never percentages.
@@ -436,10 +520,24 @@ export type OthersStep = { questionId: string; optionId: string; total: number; 
 export type OthersPick = { step: string; total: number; rows: { label: string; count: number | null }[]; line: string }
 
 export const OTHERS_LABELS: Record<OthersOutcome, string> = {
-  helped_lot: 'Helped a lot',
+  helped_lot: 'Helped', // "It helped" in a check-in
   helped_little: 'Helped a little',
   no_change: 'No change',
   not_tried: 'Didn’t try',
+}
+
+// othersLine says what the people who reported back on a step found, in
+// counts: "Of the 2,480 who tried this and chose to report back, 1,780 said
+// it helped." A folded few is never added in.
+export function othersLine(s: OthersStep): string {
+  const counted = (o: OthersOutcome) => {
+    const c = s.outcomes.find((x) => x.outcome === o)
+    return c && !c.few ? c.count : 0
+  }
+  const helped = counted('helped_lot') + counted('helped_little')
+  return helped > 0
+    ? `Of the ${s.total.toLocaleString(locale())} who tried this and chose to report back, ${helped.toLocaleString(locale())} said it helped.`
+    : `${s.total.toLocaleString(locale())} reported back on this step.`
 }
 
 export function othersHelped(
@@ -462,12 +560,7 @@ export function othersHelped(
         const c = of(o)
         return { label: OTHERS_LABELS[o], count: c?.few ? null : (c?.count ?? 0) }
       })
-      const helped = (of('helped_lot')?.few ? 0 : (of('helped_lot')?.count ?? 0)) + (of('helped_little')?.few ? 0 : (of('helped_little')?.count ?? 0))
-      const line =
-        helped > 0
-          ? `Of the ${s.total.toLocaleString('en-GB')} who tried this and chose to report back, ${helped.toLocaleString('en-GB')} said it helped.`
-          : `${s.total.toLocaleString('en-GB')} reported back on this step.`
-      return { step: textOf(s.questionId)!.step!, total: s.total, rows, line }
+      return { step: textOf(s.questionId)!.step!, total: s.total, rows, line: othersLine(s) }
     })
 }
 
@@ -495,7 +588,7 @@ export type Direction = { key: string; text: string; why: string }
 
 export function weekDirection(input: { from: string; history: History; helped: HelpedItem[]; nextStep?: string | null }): Direction | null {
   const helped = input.helped.find((i) => i.outcome === 'helped')
-  if (helped) return { key: `helped.${helped.text}`, text: `Keep “${helped.text}” going, once or twice this week.`, why: 'Because you said it helped.' }
+  if (helped) return { key: `helped.${helped.text}`, text: `Keep “${stepWords(helped.text)}” going, once or twice this week.`, why: 'Because you said it helped.' }
   const top = needsBetween(input.history, input.from, addDaysIso(input.from, 6))[0]
   if (top && top.answers >= 2) {
     return { key: `need.${top.need}`, text: NEED_DIRECTION[top.need], why: `Because ${NEED_PHRASES[top.need]} came up in ${say(top.answers)} of your answers.` }
@@ -589,6 +682,9 @@ export function periodStory(p: PeriodMirror, h: History, helped: HelpedItem[]): 
         : `You tried ${plural(tried.length, 'small thing', 'small things')}, and none made a clear difference yet. That is information, not failure.`,
     )
   }
+  // What helped again: the same step helping more than once in the span.
+  const again = helped.find((i) => (i.outcome === 'helped' || i.outcome === 'some') && i.times > 1)
+  if (again) paragraphs.push(`“${stepWords(again.text)}” helped you ${times(again.times)} this ${noun}, by your own account.`)
   const evidence = needs.slice(0, 2).flatMap((n) => needEvidence(h, n.need, p.from, p.to))
   return { headline, paragraphs, evidence }
 }
@@ -781,9 +877,9 @@ export function yearStory(chapters: Chapter[], year: PeriodMirror | null): Story
     paragraphs.push(`Across the chapters on record, ${NEED_PHRASES[first.needs[0].need]} kept coming back in your answers.`)
   } else {
     headline = 'A year in your own answers.'
-    paragraphs.push(`You gave ${answered.toLocaleString('en-GB')} answers this year. What they reached for is only on record for the most recent weeks, so the earlier chapters are told by their numbers alone.`)
+    paragraphs.push(`You gave ${answered.toLocaleString(locale())} answers this year. What they reached for is only on record for the most recent weeks, so the earlier chapters are told by their numbers alone.`)
   }
-  if (helped.length) paragraphs.push(`Along the way, you found ${plural(helped.length, 'small thing', 'small things')} that helped, by your own account, starting with “${helped[0]}”.`)
+  if (helped.length) paragraphs.push(`Along the way, you found ${plural(helped.length, 'small thing', 'small things')} that helped, by your own account, starting with “${stepWords(helped[0])}”.`)
   const missing = chapters.filter((c) => c.state === 'none').length
   if (missing > 0) paragraphs.push(`${cap(plural(missing, 'chapter', 'chapters'))} of this year ${missing === 1 ? 'has' : 'have'} nothing on record, so ${missing === 1 ? 'it is' : 'they are'} left blank rather than guessed.`)
   void year

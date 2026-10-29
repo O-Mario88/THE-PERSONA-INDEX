@@ -16,7 +16,6 @@ import {
   type OwnWords,
   type Period,
   type PeriodMirror,
-  type StepStatus,
   type ThemeRead,
   type Verdict,
 } from '@shared/api'
@@ -37,7 +36,7 @@ import {
   weekRange,
   type Lean,
 } from '@shared/mirrorText'
-import { setMoveStatus, startMove } from '@shared/moves'
+import { startMove } from '@shared/moves'
 import { NEED_NAMES, NEED_PHRASES } from '@shared/needs'
 import {
   changePlan,
@@ -64,9 +63,9 @@ import { changesBetween, changeWords, leaningVerdict, loadHistory, notMeSides, r
 import { needsBetween, reachedFor, rememberSafety, safetyAnswer, safetyLed, UNCERTAIN, type NeedRead, type Uncertain } from '@shared/reaching'
 import { readFor } from '@shared/reads/reads'
 import type { Read } from '@shared/reads/types'
-import { outsideMirror, type OutsideMirror as OutsideMirrorData } from '@shared/social'
 import { addDays } from '@shared/storage'
-import { THEMES, themeName, themeStyle } from '@shared/themes'
+import { isMirrorDay, mirrorName, readyBack } from '@shared/mirrorDay'
+import { THEMES, themeName } from '@shared/themes'
 import { honestLine, sideOf, TRAITS } from '@shared/traits'
 import { useAccount } from '@shared/useAccount'
 import {
@@ -91,11 +90,15 @@ import {
   timesDoneLine,
   WORDS_BACK_ASK,
 } from '@shared/words'
-import { font, radius, type Palette, useTheme } from '../theme'
+import { font, radius, type Palette, useTheme, typeScale } from '../theme'
 import { Icon } from '../ui/Icon'
-import { Button, Chip, Field, Hairline, T, Tinted } from '../ui/kit'
+import { Button, Chip, Field, Hairline, LoadingPage, PageHeader, T, Tinted } from '../ui/kit'
+import { CheckIn } from './CheckIn'
 import { Box, Chips, Eyebrow, Note, Quote } from './MirrorBits'
 import { PeriodStory, SundayMirror, YearMirror, type Host } from './MirrorStory'
+import { locale } from '@shared/locale'
+import { EmptyState } from '../ui/Scene'
+import { OutsideNotesSection } from './OutsideNotes'
 
 type Span = 'week' | Period
 type State = { kind: 'loading' } | { kind: 'week'; m: MirrorData } | { kind: 'period'; p: PeriodMirror } | { kind: 'error' }
@@ -114,10 +117,11 @@ const MAX_PLAN = 80
 
 type Nav = { onOpenKept: () => void; onCircle?: () => void; onRead?: (r: Read) => void }
 
-export function Mirror({ today, onOpenKept, onCircle, onRead, onOpenSettings, jumpTo }: { today: string; onOpenSettings?: () => void; jumpTo?: (v: Host) => void } & Nav) {
+export function Mirror({ today, onOpenKept, onCircle, onRead, onOpenChoices, onWrite, jumpTo }: { today: string; onOpenChoices?: () => void; onWrite?: (prompt: string) => void; jumpTo?: (v: Host) => void } & Nav) {
   const p = useTheme()
   const [span, setSpan] = useState<Span>('week')
-  const [back, setBack] = useState(0)
+  // On the Mirror day, the week that Mirror shows (mirrorDay.ts).
+  const [back, setBack] = useState(() => (isMirrorDay(today) ? readyBack() : 0))
   const [state, setState] = useState<State>({ kind: 'loading' })
   const [attempt, setAttempt] = useState(0)
   const reload = useCallback(() => setAttempt((n) => n + 1), [])
@@ -152,10 +156,7 @@ export function Mirror({ today, onOpenKept, onCircle, onRead, onOpenSettings, ju
 
   return (
     <View style={{ gap: 20 }} accessibilityLabel={`Your ${adjOf(span)} mirror`}>
-      <View style={{ gap: 4 }}>
-        <T v="display">Mirrors</T>
-        <T tone="text2">A clearer view of your journey.</T>
-      </View>
+      <PageHeader title="Mirrors" line="A clearer view of your journey." />
       <View style={{ flexDirection: 'row', gap: 4, padding: 4, borderRadius: radius.md, backgroundColor: p.surface2 }} accessibilityRole="tablist">
         {SPANS.map((s) => (
           <Pressable
@@ -180,24 +181,18 @@ export function Mirror({ today, onOpenKept, onCircle, onRead, onOpenSettings, ju
         <StepButton icon="back" label={`An earlier ${span}`} disabled={back >= mostBack(span)} onPress={() => step(1)} />
         <StepButton icon="arrow" label={`A later ${span}`} disabled={back === 0} onPress={() => step(-1)} />
       </View>
-      {state.kind === 'loading' && (
-        <T tone="muted" center style={{ paddingVertical: 32 }}>
-          Putting your {span} together…
-        </T>
-      )}
+      {state.kind === 'loading' && <LoadingPage label={`Putting your ${span} together…`} />}
       {state.kind === 'error' && (
-        <View style={{ gap: 12 }}>
-          <T>I couldn't load your mirror just now.</T>
-          <Button
-            small
-            label="Try again"
-            onPress={() => {
-              setState({ kind: 'loading' })
-              reload()
-            }}
-            style={{ alignSelf: 'flex-start' }}
-          />
-        </View>
+        <EmptyState
+          scene="night"
+          title="Your mirror didn’t load"
+          line="Check your connection and try again. Nothing you answered is lost."
+          action="Try again"
+          onAction={() => {
+            setState({ kind: 'loading' })
+            reload()
+          }}
+        />
       )}
       {state.kind === 'week' && (
         <SundayMirror
@@ -205,10 +200,11 @@ export function Mirror({ today, onOpenKept, onCircle, onRead, onOpenSettings, ju
           m={state.m}
           today={today}
           back={back}
-          onOpenSettings={onOpenSettings}
+          onOpenChoices={onOpenChoices}
+          onWrite={onWrite}
           jumpTo={jumpTo}
           footer={footer}
-          deeper={<MirrorPage m={state.m} today={today} reload={reload} onCircle={onCircle} onRead={onRead} />}
+          deeper={<MirrorPage m={state.m} today={today} reload={reload} onCircle={onCircle} onRead={onRead} onWrite={onWrite} />}
         />
       )}
       {state.kind === 'period' && state.p.period !== 'year' && (
@@ -298,10 +294,10 @@ function Legend({ items }: { items: [Depth | 'missed', string][] }) {
   )
 }
 
-function ThemeMeta({ theme, children }: { theme?: string; children: ReactNode }) {
+function ThemeMeta({ children }: { theme?: string; children: ReactNode }) {
   return (
     <T v="small" tone="muted">
-      {themeStyle(theme).icon} {children}
+      {children}
     </T>
   )
 }
@@ -329,14 +325,13 @@ function numbered(parts: Part[]) {
 const titleCase = (s: string) => s.replace(/\b\w/g, (c) => c.toUpperCase())
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
 const edition = (n: number) => (n > 0 ? ` · Edition #${n}` : '')
-const weekday = (iso: string, style: 'short' | 'long' = 'short') => new Date(`${iso}T00:00:00Z`).toLocaleDateString('en', { weekday: style, timeZone: 'UTC' })
+const weekday = (iso: string, style: 'short' | 'long' = 'short') => new Date(`${iso}T00:00:00Z`).toLocaleDateString(locale(), { weekday: style, timeZone: 'UTC' })
 const DEPTH_ANSWER: Record<Depth, string> = { light: 'a light answer', deeper: 'a deeper answer', deep: 'a deep answer', private: 'a private answer' }
 
 // ---- the week ----
 
-function MirrorPage({ m, today, reload, onCircle, onRead }: { m: MirrorData; today: string; reload: () => void; onCircle?: () => void; onRead?: (r: Read) => void }) {
+function MirrorPage({ m, today, reload, onRead, onWrite }: { m: MirrorData; today: string; reload: () => void; onCircle?: () => void; onRead?: (r: Read) => void; onWrite?: (prompt: string) => void }) {
   const p = useTheme()
-  const signedIn = !!useAccount()
   const [notMe, setNotMe] = useState(() => notMeSides(today))
   const top = leanings(m.traits, notMe)
   const shareName = top.length ? titleCase(`the ${top[0].side.adj} ${(top[1] ?? top[0]).side.noun}`) : null
@@ -358,7 +353,8 @@ function MirrorPage({ m, today, reload, onCircle, onRead }: { m: MirrorData; tod
 
   const parts: Part[] = [
     { key: 'who', title: 'Where you leaned', body: <Who leans={lean} date={today} span="week" onVerdict={() => setNotMe(notMeSides(today))} onRead={onRead} />, show: lean.length > 0 },
-    { key: 'outside', title: 'How your circle experiences you', body: <OutsideMirrorSection m={m} onCircle={onCircle} />, show: signedIn },
+    // Named notes from people the person invited (Edwin, 2026-10-29), in place of the anonymous Outside Mirror.
+    { key: 'outside', title: 'What people you trust notice', body: <OutsideNotesSection onReflect={onWrite} />, show: true },
     {
       key: 'sentence',
       title: 'One line for your week',
@@ -396,7 +392,7 @@ function MirrorPage({ m, today, reload, onCircle, onRead }: { m: MirrorData; tod
               accessibilityRole="button"
               accessibilityLabel="Share the card"
               hitSlop={8}
-              onPress={() => Share.share({ message: `Week ${m.week} · My Sunday Mirror\n${shareName}${line ? `\n${line}` : ''}` })}
+              onPress={() => Share.share({ message: `Week ${m.week} · My ${mirrorName()}\n${shareName}${line ? `\n${line}` : ''}` })}
               style={{ width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.12)' }}
             >
               <Icon name="share" size={18} color={p.onNavy} />
@@ -413,7 +409,7 @@ function MirrorPage({ m, today, reload, onCircle, onRead }: { m: MirrorData; tod
           )}
         </T>
         {line ? (
-          <T tone="onNavy" style={{ fontFamily: font.semibold, fontSize: 19, lineHeight: 26 }}>
+          <T tone="onNavy" style={{ fontFamily: font.semibold, ...typeScale.sub }}>
             {line}
           </T>
         ) : null}
@@ -484,6 +480,7 @@ function fitTile(s: { me: number; partly: number; rated: number }): [string, str
 }
 
 function Glance({ m }: { m: MirrorData }) {
+  const p = useTheme()
   const active = m.days.map((d, i) => i < m.stats.daysSoFar && d.answers.length > 0)
   let run = 0
   let best = 0
@@ -519,7 +516,7 @@ function Glance({ m }: { m: MirrorData }) {
                 {weekday(d.date)}
               </T>
               <View style={{ flex: 1, flexDirection: 'row', gap: 4 }}>
-                {review ? <T v="small">🪞</T> : d.answers.length === 0 ? <Sq kind={future ? 'later' : 'missed'} /> : d.answers.map((a, j) => <Sq key={j} kind={a.depth} />)}
+                {review ? <Icon name="mirror" size={16} color={p.accentInk} /> : d.answers.length === 0 ? <Sq kind={future ? 'later' : 'missed'} /> : d.answers.map((a, j) => <Sq key={j} kind={a.depth} />)}
               </View>
               <T v="tiny" tone="muted">
                 {review ? 'Review' : `#${d.edition}`}
@@ -885,19 +882,12 @@ function OwnWordsList({ words }: { words: OwnWords[] }) {
 
 const STEPS_SHOWN = 4
 
+// The week's steps; one still open gets the same three-question check-in as
+// Today and the evening close (one follow-up system, Edwin, 2026-10-28).
 function Steps({ m, today, reload }: { m: MirrorData; today: string; reload: () => void }) {
-  const [error, setError] = useState(false)
   const [all, setAll] = useState(false)
+  const [said, setSaid] = useState<Record<string, string>>({})
   const shown = all ? m.steps : m.steps.slice(0, STEPS_SHOWN)
-  async function mark(s: MirrorData['steps'][number], status: StepStatus) {
-    setError(false)
-    try {
-      await setMoveStatus(s.questionId, status, today, { optionId: s.optionId, step: s.step, date: s.started })
-      reload()
-    } catch {
-      setError(true)
-    }
-  }
   const r = m.stepRecord
   return (
     <>
@@ -907,18 +897,27 @@ function Steps({ m, today, reload }: { m: MirrorData; today: string; reload: () 
             {themeName(s.theme)}
             {edition(s.edition)} · {STEP_STATUS_WORDS[s.status]}
           </ThemeMeta>
-          <T>{s.step}</T>
-          {s.status === 'started' && (
-            <Chips>
-              <Chip label="It helped" onPress={() => mark(s, 'helped')} />
-              <Chip label="No change yet" onPress={() => mark(s, 'no_change')} />
-              <Chip label="Not today" onPress={() => mark(s, 'not_tried')} />
-            </Chips>
+          {s.status !== 'started' ? (
+            <T>{s.step}</T>
+          ) : said[s.questionId] ? (
+            <>
+              <T>{s.step}</T>
+              <T tone="text2">{said[s.questionId]}</T>
+            </>
+          ) : (
+            <CheckIn
+              move={s}
+              today={today}
+              from={{ optionId: s.optionId, step: s.step, date: s.started }}
+              onDone={(reply) => {
+                setSaid((was) => ({ ...was, [s.questionId]: reply }))
+                reload()
+              }}
+            />
           )}
         </View>
       ))}
       {m.steps.length > shown.length && <Button kind="text" small label={`Show all ${m.steps.length} steps`} onPress={() => setAll(true)} style={{ alignSelf: 'flex-start' }} />}
-      {error && <T tone="danger">That didn't save. Please try again.</T>}
       <Box eyebrow="Your record so far">
         <T>
           {r.started} {r.started === 1 ? 'step' : 'steps'} started, {r.tried} tried, {r.helped} helped.{' '}
@@ -951,7 +950,7 @@ function NextWeek({ m, today, reload }: { m: MirrorData; today: string; reload: 
             {s.edition > 0 && ` · from Edition #${s.edition}`}
           </ThemeMeta>
           <T>{s.step}</T>
-          <Button small kind="soft" label="Start this step" onPress={() => start(s)} style={{ alignSelf: 'flex-start' }} />
+          <Button small kind="secondary" label="Start this step" onPress={() => start(s)} style={{ alignSelf: 'flex-start' }} />
         </View>
       ))}
       {error && <T tone="danger">That didn't save. Please try again.</T>}
@@ -1048,7 +1047,7 @@ function PeriodPage({ p: pm, onRead }: { p: PeriodMirror; onRead?: (r: Read) => 
           )}
         </T>
         {line ? (
-          <T tone="onNavy" style={{ fontFamily: font.semibold, fontSize: 19, lineHeight: 26 }}>
+          <T tone="onNavy" style={{ fontFamily: font.semibold, ...typeScale.sub }}>
             {line}
           </T>
         ) : null}
@@ -1201,123 +1200,6 @@ function WeekLines({ lines }: { lines: { week: string; text: string }[] }) {
   )
 }
 
-// ---- the Outside Mirror ----
-
-function OutsideMirrorSection({ m, onCircle }: { m: MirrorData; onCircle?: () => void }) {
-  const p = useTheme()
-  const [o, setO] = useState<OutsideMirrorData | null>(null)
-  useEffect(() => {
-    let live = true
-    outsideMirror().then(
-      (x) => live && setO(x),
-      () => {},
-    )
-    return () => {
-      live = false
-    }
-  }, [])
-  if (!o) return null
-  if (!o.open) {
-    const rows = Array.from({ length: o.need }, (_, i) => i < o.friends)
-    return (
-      <Box>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          <Icon name="lock" size={20} color={p.text} />
-          <T bold>Opens when {o.need} friends have answered</T>
-        </View>
-        <View accessibilityLabel={`${o.friends} of ${o.need} friends have answered`} style={{ gap: 8 }}>
-          {rows.map((done, i) => (
-            <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <View
-                style={{
-                  width: 22,
-                  height: 22,
-                  borderRadius: 11,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: done ? p.lime : 'transparent',
-                  borderWidth: done ? 0 : 1.5,
-                  borderColor: p.lineStrong,
-                }}
-              >
-                {done && <Icon name="check" size={14} color={p.onLime} />}
-              </View>
-              <T style={{ flex: 1 }}>{done ? 'A friend' : o.need - o.friends === 1 ? 'One more friend' : 'A friend to invite'}</T>
-              {done ? (
-                <T v="small" tone="muted">
-                  Answered
-                </T>
-              ) : (
-                onCircle && <Button kind="text" small label="Invite" onPress={onCircle} />
-              )}
-            </View>
-          ))}
-        </View>
-        <Note>
-          With two friends you could work out who said what by elimination. Three keeps every answer anonymous, by arithmetic, not by promise. Answers already
-          given are held until the third friend joins.
-        </Note>
-        {onCircle && <Button wide label={o.need - o.friends === 1 ? 'Invite one more person' : 'Invite friends'} onPress={onCircle} />}
-      </Box>
-    )
-  }
-  const own = new Map(m.traits.map((t) => [t.trait, t.score]))
-  const rows = o.traits.filter((t) => TRAITS[t.trait])
-  const gaps = rows
-    .filter((t) => own.has(t.trait))
-    .map((t) => ({ t, gap: t.position - (own.get(t.trait) ?? 50) }))
-    .sort((a, b) => Math.abs(a.gap) - Math.abs(b.gap))
-  const shared = gaps[0] && Math.abs(gaps[0].gap) < 15 ? gaps[0] : null
-  const miss = gaps.length && Math.abs(gaps[gaps.length - 1].gap) >= 20 ? gaps[gaps.length - 1] : null
-  return (
-    <>
-      <Note>
-        Blended from {o.friends} friends over {o.weeks} weeks. No single answer is ever shown.
-      </Note>
-      {shared && (
-        <Box eyebrow="Shared ground">
-          <T>You and your circle both see you near {sideOf(TRAITS[shared.t.trait], shared.t.position >= 50).lean}.</T>
-        </Box>
-      )}
-      {miss && (
-        <Box eyebrow="What your circle notices that you might miss">
-          <T>
-            Your circle places you nearer {sideOf(TRAITS[miss.t.trait], miss.gap > 0).lean} than your own answers do. Neither is the truer one: people see the side of
-            you that you show them.
-          </T>
-        </Box>
-      )}
-      {rows.map((t) => {
-        const tr = TRAITS[t.trait]
-        const mine = own.get(t.trait)
-        return (
-          <View
-            key={t.trait}
-            style={{ gap: 6 }}
-            accessible
-            accessibilityLabel={`${tr.name}: your circle ${Math.round(t.position)} of 100${mine === undefined ? '' : `, you ${mine}`}`}
-          >
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <T v="small">{tr.low.lean}</T>
-              <T v="small">{tr.high.lean}</T>
-            </View>
-            <Scale dots={[...(mine !== undefined ? [{ at: mine, color: p.accentInk }] : []), { at: t.position, color: p.amber }]} />
-          </View>
-        )
-      })}
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-        <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: p.accentInk }} />
-        <T v="small" tone="muted">
-          you ·
-        </T>
-        <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: p.amber }} />
-        <T v="small" tone="muted">
-          your circle
-        </T>
-      </View>
-    </>
-  )
-}
 
 // ---- the Keep pieces the Mirror uses (Keep.tsx) ----
 
@@ -1553,7 +1435,7 @@ function PlanOffer({ trait, high, date }: { trait: string; high: boolean; date: 
       )}
       <Field label="When" value={when} maxLength={MAX_PLAN} placeholder={side.plan.when} onChangeText={setWhen} />
       <Field label="I will" value={will} maxLength={MAX_PLAN} placeholder={side.plan.will} onChangeText={setWill} />
-      <Note>🔒 Your plan stays on this phone. I only ever send whether you did it.</Note>
+      <Note>Your plan stays on this phone. I only ever send whether you did it.</Note>
       <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
         <Button
           small

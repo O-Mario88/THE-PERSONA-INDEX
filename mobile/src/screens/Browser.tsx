@@ -11,6 +11,7 @@ import { canPrompt, inviteDue, iosSafari, noteInstall, onInstallChange, promptIn
 import { lockAvailable, locked, RELOCK_MS, removeLock, setUpLock, unlock } from '@shared/pwa/lock'
 import { useTheme } from '../theme'
 import { Button, Page, T, Tinted } from '../ui/kit'
+import { Logo } from '../ui/Logo'
 
 const web = Platform.OS === 'web'
 
@@ -20,9 +21,13 @@ const todayIso = () => {
 }
 
 // The lock screen in front of the app, again after five minutes away.
-export function WebLockGate({ children }: { children: ReactNode }) {
+export function WebLockGate({ children, onLocked }: { children: ReactNode; onLocked?: () => void }) {
   const [open, setOpen] = useState(() => !web || !locked())
   const hiddenAt = useRef<number | null>(null)
+  // The launch shouldn't wait for today when the lock screen is what shows.
+  useEffect(() => {
+    if (!open) onLocked?.()
+  }, [open, onLocked])
   useEffect(() => {
     if (!web) return
     const seen = () => {
@@ -59,9 +64,7 @@ function LockScreen({ onOpen }: { onOpen: () => void }) {
   return (
     <View style={{ flex: 1, backgroundColor: p.bg }}>
       <Page>
-        <T v="eyebrow" tone="muted">
-          The Persona Index
-        </T>
+        <Logo size={36} />
         <T v="display">Locked</T>
         <T tone="muted">Use your fingerprint, face or phone PIN to open it.</T>
         <Button wide label="Unlock" busy={busy} onPress={tryUnlock} />
@@ -133,7 +136,7 @@ export function WebLockSettings() {
           : 'Ask for your fingerprint, face or phone PIN before the app opens.'}{' '}
         It keeps out someone who picks up your phone while it's unlocked. It doesn't scramble what's stored here; your phone's own lock protects that.
       </T>
-      {on ? <Button kind="text" label="Turn off the lock" busy={busy} onPress={turnOff} /> : <Button small kind="soft" label="Turn on the lock" busy={busy} onPress={turnOn} />}
+      {on ? <Button kind="text" label="Turn off the lock" busy={busy} onPress={turnOff} /> : <Button small kind="secondary" label="Turn on the lock" busy={busy} onPress={turnOn} />}
       {note && <T v="small">{note}</T>}
     </View>
   )

@@ -53,10 +53,14 @@ type deviceSigner struct {
 
 	hashVoter, hashMirror, hashPrivate []byte
 
+	// What Helped (whathelped.go): the key a phone's reports are kept under.
+	hashHelped []byte
+
 	// Accounts (accounts.go): the login hash, the account's device id, the
 	// friend mark and the seal on a synced backup phrase, each its own key
 	// from the data secret.
 	hashLogin, accountDevice, friendMark, syncSeal []byte
+	hashPatron                                     []byte
 }
 
 // KeyConfig is the server's key material, from the environment (main.go).
@@ -87,10 +91,12 @@ func newKeyring(c KeyConfig) (*deviceSigner, error) {
 	d.hashVoter = deriveKey(c.DataSecret, "voter-hash v1")
 	d.hashMirror = deriveKey(c.DataSecret, "mirror-key v1")
 	d.hashPrivate = deriveKey(c.DataSecret, "private-question v1")
+	d.hashHelped = deriveKey(c.DataSecret, "helped-key v1")
 	d.hashLogin = deriveKey(c.DataSecret, "login-key v1")
 	d.accountDevice = deriveKey(c.DataSecret, "account-device v1")
 	d.friendMark = deriveKey(c.DataSecret, "friend-mark v1")
 	d.syncSeal = deriveKey(c.DataSecret, "sync-seal v1")
+	d.hashPatron = deriveKey(c.DataSecret, "patron-key v1")
 	return d, nil
 }
 
@@ -205,8 +211,26 @@ func (d *deviceSigner) mirrorKey(id string) string {
 	return hex.EncodeToString(m.Sum(nil)[:16])
 }
 
+// helpedKey is the key one phone's What Helped reports are kept under: one
+// per phone, so a report can be changed and deleted with everything else,
+// but made with its own key, so the reports cannot be joined to the votes
+// or to the mirror.
+func (d *deviceSigner) helpedKey(id string) string {
+	m := hmac.New(sha256.New, d.hashHelped)
+	m.Write([]byte(id))
+	return hex.EncodeToString(m.Sum(nil)[:16])
+}
+
 // privateQuestionID stands in for a private question's id in the mirror, so
 // a stored row says only that a private answer was given.
+// patronKey is what a phone's purchases are kept under before it signs in:
+// a keyed hash of its id with a key of its own (patron.go).
+func (d *deviceSigner) patronKey(id string) string {
+	m := hmac.New(sha256.New, d.hashPatron)
+	m.Write([]byte(id))
+	return hex.EncodeToString(m.Sum(nil)[:16])
+}
+
 func (d *deviceSigner) privateQuestionID(questionID string) string {
 	m := hmac.New(sha256.New, d.hashPrivate)
 	m.Write([]byte(questionID))

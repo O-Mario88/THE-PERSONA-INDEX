@@ -134,6 +134,8 @@ func main() {
 	}
 	srv.trustCF = cfg.TrustCF
 	srv.signIn = signInFromEnv(os.Getenv, cfg.DatabaseURL == "", time.Now)
+	srv.patronCfg = patronFromEnv(os.Getenv, cfg.DatabaseURL == "")
+	srv.pusher = pusherFromEnv(os.Getenv, cfg.DatabaseURL == "")
 	srv.voteRetention = cfg.VoteRetention
 	srv.edgeSecret = cfg.EdgeSecret
 	srv.metricsToken = cfg.MetricsToken
@@ -146,7 +148,7 @@ func main() {
 		}
 		srv.static = site
 	}
-	if days := bank.scheduledUntil().Sub(time.Now()).Hours() / 24; days < scheduleWarnDays {
+	if days := time.Until(bank.scheduledUntil()).Hours() / 24; days < scheduleWarnDays {
 		slog.Warn(fmt.Sprintf("the frozen schedule ends in %.0f days; run `cd backend && go run . schedule` and ship the result", days))
 	}
 

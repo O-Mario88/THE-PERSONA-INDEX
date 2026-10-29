@@ -108,9 +108,9 @@ export function readSite(): { problems: string[]; files: Record<string, string> 
   return { problems, files }
 }
 
-// The app's one typeface, Figtree, from the site itself (mobile/scripts/build-web.mjs copies it to /fonts/).
-const FONT_FACES = [400, 600, 700].map((w) => `@font-face{font-family:Figtree;src:url(/fonts/figtree-${w}.ttf) format('truetype');font-weight:${w};font-display:swap}`).join('\n')
-const SANS = "Figtree,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif"
+// The app's one typeface, Geist, from the site itself (mobile/scripts/build-web.mjs copies it to /fonts/).
+const FONT_FACES = [400, 600, 700].map((w) => `@font-face{font-family:Geist;src:url(/fonts/geist-${w}.ttf) format('truetype');font-weight:${w};font-display:swap}`).join('\n')
+const SANS = "Geist,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif"
 
 const CSS = `
 ${FONT_FACES}

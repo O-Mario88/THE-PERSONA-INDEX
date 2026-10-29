@@ -1,21 +1,61 @@
-// Settings: three everyday choices, your name,
-// intimacy questions and where you live, and the rest folded under "More
-// settings", so it never feels like paperwork.
+// Settings: facts about you (your name, language, age and where you live),
+// light or dark and the text size for every page, and the rest folded under "More settings".
+// Every on/off choice lives on the You page (Privacy and choices, Edwin
+// 2026-10-28).
 import { useState } from 'react'
 import { Pressable, View } from 'react-native'
-import { countryOf, WORDS_DAYS, type Prefs, type WordsDays } from '@shared/prefs'
-import { regionOf } from '@shared/regions'
+import { appearanceOf, textSizeOf, withAppearance, withTextSize, WORDS_DAYS, type Prefs, type TextSize, type WordsDays } from '@shared/prefs'
 import { MAX_NAME } from '@shared/welcomeKeys'
-import { COUNTRY_SETTING, REGIONAL_SWITCH } from '@shared/words'
-import { useTheme } from '../theme'
-import { Back, Button, Card, Field, Page, Radio, RowLink, T, Toggle } from '../ui/kit'
+import { COUNTRY_SETTING } from '@shared/words'
+import { font, lift, radius, useTheme } from '../theme'
+import { Back, Button, Card, feel, Field, Page, PageHeader, Radio, RowLink, Segmented, T } from '../ui/kit'
 import { Icon } from '../ui/Icon'
 import { BackupSettings } from './Backup'
-import { ReminderSettingsView } from './Reminders'
 import { CountrySelect } from './Country'
-import { WebLockSettings } from './Browser'
+import { LANGS, tr } from '@shared/i18n'
+import { Text } from '../ui/textScale'
+
+const withoutLang = ({ lang: _, ...rest }: Prefs): Prefs => rest
 
 const WORDS_NAMES: Record<WordsDays, string> = { 7: 'One week', 35: 'Five weeks', 90: 'Three months' }
+
+// Each size shown as a letter at that size, as reading apps do: four words
+// would not fit side by side on a small phone.
+const TEXT_SIZE_CHOICES: { value: TextSize; label: string; glyph: number }[] = [
+  { value: 'smaller', label: 'Smaller', glyph: 14 },
+  { value: 'standard', label: 'Standard', glyph: 17 },
+  { value: 'larger', label: 'Larger', glyph: 20 },
+  { value: 'largest', label: 'Largest', glyph: 23 },
+]
+
+function TextSizePicker({ value, onChange }: { value: TextSize; onChange: (size: TextSize) => void }) {
+  const p = useTheme()
+  return (
+    <View accessibilityRole="radiogroup" accessibilityLabel={tr('Text size')} style={{ flexDirection: 'row', padding: 3, gap: 3, borderRadius: radius.sm, backgroundColor: p.surface2 }}>
+      {TEXT_SIZE_CHOICES.map((c) => {
+        const on = c.value === value
+        return (
+          <Pressable
+            key={c.value}
+            accessibilityRole="radio"
+            accessibilityLabel={tr(c.label)}
+            accessibilityState={{ checked: on }}
+            onPress={() => {
+              feel('select')
+              onChange(c.value)
+            }}
+            style={[{ flex: 1, minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 8 }, on && { backgroundColor: p.dark ? p.surface3 : p.surface }, on && lift(p)]}
+          >
+            {/* The letter keeps its own size: it shows the choice, whatever is chosen now. */}
+            <Text maxScale={1} style={{ fontFamily: on ? font.bold : font.semibold, fontSize: c.glyph, lineHeight: 28, color: on ? p.text : p.text2 }}>
+              A
+            </Text>
+          </Pressable>
+        )
+      })}
+    </View>
+  )
+}
 
 export function Settings({
   prefs,
@@ -42,10 +82,7 @@ export function Settings({
   return (
     <Page>
       <Back onPress={onBack} />
-      <View style={{ gap: 6 }}>
-        <T v="display">Settings</T>
-        <T tone="text2">Everything here is optional. Change it whenever you like.</T>
-      </View>
+      <PageHeader title="Settings" line="Everything here is optional. Change it whenever you like." />
 
       <Card style={{ gap: 10 }}>
         <T v="eyebrow">Your name</T>
@@ -63,13 +100,57 @@ export function Settings({
       </Card>
 
       <Card style={{ gap: 10 }}>
+        <T v="eyebrow">Language</T>
+        <T v="small" tone="muted">
+          The language the app speaks to you in.
+        </T>
+        <Radio label="Same as my phone" checked={!prefs.lang} onPress={() => onChange(withoutLang(prefs))} />
+        {LANGS.map((l) => (
+          <Radio key={l.id} label={l.name} checked={prefs.lang === l.id} onPress={() => onChange({ ...prefs, lang: l.id })} />
+        ))}
+      </Card>
+
+      {/* Light or dark for every page (Edwin, 2026-10-28). */}
+      <Card style={{ gap: 10 }}>
+        <T v="eyebrow">Appearance</T>
+        <T v="small" tone="muted">
+          Light or dark, on every page. Automatic is dark in the evening and at night, and whenever your phone is set to dark.
+        </T>
+        <Segmented
+          label="Appearance"
+          value={appearanceOf(prefs)}
+          onChange={(a) => onChange(withAppearance(prefs, a))}
+          options={[
+            { value: 'auto', label: 'Automatic' },
+            { value: 'light', label: 'Light' },
+            { value: 'dark', label: 'Dark' },
+          ]}
+        />
+      </Card>
+
+      {/* Text size for every word in the app (Edwin, 2026-10-29). */}
+      <Card style={{ gap: 10 }}>
+        <T v="eyebrow">Text size</T>
+        <T v="small" tone="muted">
+          Every word in the app grows or shrinks to match. Your phone’s own text size still adds to it.
+        </T>
+        <TextSizePicker value={textSizeOf(prefs)} onChange={(s) => onChange(withTextSize(prefs, s))} />
+        <T v="small" tone="muted" center>
+          {TEXT_SIZE_CHOICES.find((c) => c.value === textSizeOf(prefs))?.label ?? 'Standard'}
+        </T>
+        <View style={{ gap: 4, padding: 16, borderRadius: radius.md, backgroundColor: p.surface2 }}>
+          <T v="h3">Where did you feel most like yourself today?</T>
+          <T tone="text2">This is how your questions and readings will look.</T>
+        </View>
+      </Card>
+
+      <Card style={{ gap: 10 }}>
         <T v="eyebrow">Intimacy questions</T>
         <T v="small" tone="muted">
           Frank, never graphic, and always kept private.
         </T>
         <Radio label="I'm 18 or older" checked={prefs.adult === true} onPress={() => onChange({ ...prefs, adult: true })} />
         <Radio label="I'm under 18, or I'd rather not have them" checked={prefs.adult === false} onPress={() => onChange({ ...prefs, adult: false })} />
-        {prefs.adult === true && <Toggle label="Keep it mild (no intimacy questions)" value={prefs.mild} onChange={(on) => onChange({ ...prefs, mild: on })} />}
       </Card>
 
       <Card style={{ gap: 10 }}>
@@ -78,16 +159,6 @@ export function Settings({
           {COUNTRY_SETTING}
         </T>
         <CountrySelect value={prefs.country ?? ''} withNone onChange={(country) => onChange({ ...prefs, country })} />
-        {regionOf(countryOf(prefs)) && (
-          <Toggle
-            label={REGIONAL_SWITCH}
-            value={prefs.regional !== false}
-            onChange={(on) => {
-              const { regional: _, ...rest } = prefs
-              onChange(on ? rest : { ...rest, regional: false })
-            }}
-          />
-        )}
       </Card>
 
       <Card>
@@ -117,17 +188,14 @@ export function Settings({
               <View style={{ gap: 10 }}>
                 <T v="eyebrow">Your first week</T>
                 <T v="small" tone="muted">
-                  For your first week the app keeps to Today, Reflect and Insights. Connect and your Mirrors arrive as they fill in.
+                  For your first week I keep a few extras back, such as the shortcuts to your Mirrors and Saved, so the start stays simple.
                 </T>
-                <Button small kind="soft" label="Show every section now" onPress={onShowAll} />
+                <Button small kind="secondary" label="Show every section now" onPress={onShowAll} />
               </View>
             )}
-            <ReminderSettingsView />
-            <WebLockSettings />
             <BackupSettings onRestored={onRestored} />
           </View>
         )}
-
       </Card>
 
       <RowLink label="What I keep, and how to delete it" onPress={onOpenKept} />

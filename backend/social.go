@@ -239,6 +239,11 @@ type SocialStore interface {
 	SharesTo(ctx context.Context, to string) ([]Share, error)
 	SharesFrom(ctx context.Context, from string) ([]Share, error)
 	DeleteShare(ctx context.Context, from, id string) (bool, error)
+	// Private replies and removing one person (sharing.go).
+	ShareByID(ctx context.Context, id string) (Share, error)
+	PutShareNote(ctx context.Context, n ShareNote) error
+	ShareNotes(ctx context.Context, shareID string) ([]ShareNote, error)
+	RemoveShareRecipient(ctx context.Context, from, id, friend string) (bool, error)
 
 	// Common Ground: a person's tags, whom they opted in to, and CommonWith,
 	// the friends who opted in back, with those friends' tags and whether

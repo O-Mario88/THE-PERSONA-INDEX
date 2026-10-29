@@ -102,6 +102,7 @@ export async function castVote(
   optionId: string,
   idempotencyKey: string,
   sitting?: Sitting,
+  count = false, // added to the shared totals only once the person said yes (prefs.countAnswers)
 ): Promise<{ status: string; eventId: string }> {
   return withDevice((voterId) =>
     request<{ status: string; eventId: string }>('/api/votes', {
@@ -110,9 +111,57 @@ export async function castVote(
         'Content-Type': 'application/json',
         'Idempotency-Key': idempotencyKey,
       },
-      body: JSON.stringify({ questionId, optionId, voterId, ...(sitting ? { sitting } : {}) }),
+      body: JSON.stringify({ questionId, optionId, voterId, count, ...(sitting ? { sitting } : {}) }),
     }),
   )
+}
+
+// An answer the server could not take yet (Edwin's audit, 2026-10-29): offline,
+// busy (5xx) or rate limited (429, including no new pass for this phone yet).
+// It is kept with its idempotency key and sent again when the app next opens,
+// so the person carries on and it never counts twice. Any other answer from
+// the server ends it: the vote got there, or never can.
+type UnsentVote = { key: string; optionId: string; sitting?: Sitting; count?: boolean }
+const unvotedPrefix = 'pi.unvoted.'
+const tryLater = (e: unknown) => !(e instanceof ApiError) || e.status >= 500 || e.status === 429
+
+// sendVote sends an answer now, or keeps it for later: 'sent' or 'later'. A
+// clear refusal (a duplicate, a closed question) is thrown for the screen.
+export async function sendVote(questionId: string, optionId: string, key: string, sitting?: Sitting, count = false): Promise<'sent' | 'later'> {
+  try {
+    await castVote(questionId, optionId, key, sitting, count)
+    remove(unvotedPrefix + questionId)
+    return 'sent'
+  } catch (e) {
+    if (!tryLater(e)) throw e
+    const v: UnsentVote = { key, optionId, count, ...(sitting ? { sitting } : {}) }
+    save(unvotedPrefix + questionId, JSON.stringify(v))
+    return 'later'
+  }
+}
+
+export const unsentVotes = (): string[] => keys(unvotedPrefix).map((k) => k.slice(unvotedPrefix.length))
+
+// sendUnvoted sends every waiting answer once more, with its original key.
+export async function sendUnvoted() {
+  for (const questionId of unsentVotes()) {
+    let v: UnsentVote | null = null
+    try {
+      v = JSON.parse(load(unvotedPrefix + questionId) ?? 'null')
+    } catch {
+      // unreadable: dropped below
+    }
+    if (!v || typeof v.key !== 'string' || typeof v.optionId !== 'string') {
+      remove(unvotedPrefix + questionId)
+      continue
+    }
+    try {
+      await castVote(questionId, v.optionId, v.key, v.sitting, v.count === true)
+      remove(unvotedPrefix + questionId)
+    } catch (e) {
+      if (!tryLater(e)) remove(unvotedPrefix + questionId)
+    }
+  }
 }
 
 // withDevice runs a request with this phone's pass. When the server stops
@@ -308,11 +357,12 @@ export type Kept = {
     planChecks?: number
     weeklyNotes: number
     votes: number
+    reports?: number // What helped reports (backend/whathelped.go)
     firstAnswer?: string
   }
   keptFor: { answersDays: number; weeklyNotesDays: number; votesDays: number; backupDays?: number }
 }
-export type Deleted = { answers: number; steps: number; planChecks?: number; weeklyNotes: number; votes: number }
+export type Deleted = { answers: number; steps: number; planChecks?: number; weeklyNotes: number; votes: number; reports?: number }
 
 // Everything the server holds for this phone, written out, for "Download my
 // book". Shapes mirror backend/keep.go.
@@ -382,6 +432,25 @@ export async function deleteEverywhere(today: string): Promise<Deleted> {
 }
 
 // saveStep starts the small step on an answered card, or says how it went.
+// reportHelped adds how a step went to the anonymous What helped totals
+// (backend/whathelped.go): the outcome alone, kept under a key of its own
+// with only the week. Sent only while the person keeps that choice on.
+export function reportHelped(questionId: string, optionId: string, outcome: 'helped_lot' | 'helped_little' | 'no_change' | 'not_tried', date: string): Promise<unknown> {
+  return withDevice((voterId) =>
+    request('/api/what-helped', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ questionId, optionId, outcome, date, voterId }),
+    }),
+  )
+}
+
+// postCount sends one anonymous product count: the event's name and nothing
+// else, with no pass (productCounts.ts decides whether to send at all).
+export function postCount(event: string): Promise<unknown> {
+  return request('/api/counts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event }) })
+}
+
 // needStep: the person picked the card's second step, the one serving what
 // the answer reached for, so the server's mirror shows those words.
 export function saveStep(
@@ -407,8 +476,8 @@ export function saveStep(
 export type Verdict = 'me' | 'partly' | 'not_me'
 const VERDICTS: Verdict[] = ['me', 'partly', 'not_me']
 
-export function rateCard(questionId: string, optionId: string, verdict: Verdict): Promise<unknown> {
-  const r: UnsentRating = { key: randomId(), optionId, verdict }
+export function rateCard(questionId: string, optionId: string, verdict: Verdict, count = false): Promise<unknown> {
+  const r: UnsentRating = { key: randomId(), optionId, verdict, count }
   save(unratedPrefix + questionId, JSON.stringify(r))
   return sendRating(questionId, r)
 }
@@ -418,7 +487,7 @@ export function rateCard(questionId: string, optionId: string, verdict: Verdict)
 // connection still reaches the mirror ("Not me" decides what it reads) and
 // can never count twice. An answer from the server, other than "busy", ends
 // it: the tap got there, or never can.
-type UnsentRating = { key: string; optionId: string; verdict: Verdict }
+type UnsentRating = { key: string; optionId: string; verdict: Verdict; count?: boolean }
 const unratedPrefix = 'pi.unrated.'
 
 async function sendRating(questionId: string, r: UnsentRating): Promise<unknown> {
@@ -427,7 +496,7 @@ async function sendRating(questionId: string, r: UnsentRating): Promise<unknown>
       request('/api/ratings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Idempotency-Key': r.key },
-        body: JSON.stringify({ questionId, optionId: r.optionId, verdict: r.verdict, voterId }),
+        body: JSON.stringify({ questionId, optionId: r.optionId, verdict: r.verdict, voterId, count: r.count === true }),
       }),
     )
     remove(unratedPrefix + questionId)
@@ -556,7 +625,7 @@ const draftPrefix = 'pi.draft.'
 const editionPrefix = 'pi.edition.'
 const pickPrefix = 'pi.pick.'
 const leaningPrefix = 'pi.leaning.'
-const perQuestion = [choicePrefix, pendingPrefix, draftPrefix, 'pi.at.', 'pi.rated.', 'pi.unrated.']
+const perQuestion = [choicePrefix, pendingPrefix, draftPrefix, 'pi.at.', 'pi.rated.', 'pi.unrated.', 'pi.unvoted.']
 
 function randomId(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {

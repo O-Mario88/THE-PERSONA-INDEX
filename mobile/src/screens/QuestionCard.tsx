@@ -1,11 +1,18 @@
-// One question on its own screen: tap an answer or put it in your own words, and the same screen turns into
-// what it may say about you, one small step to try and whether it is you.
-// Every rule lives in the shared code; this file only draws it.
+// One question on its own screen: tap an answer or put it in your own words,
+// and the same screen turns into what it may say about you, then Continue.
+// A sitting reads as one conversation (Edwin's brief, 2026-10-28): what to
+// try waits for the close (Close.tsx), and keeping a card or saying whether
+// it is you waits for Insights. Every rule lives in the shared code; this
+// file only draws it.
 import { useEffect, useMemo, useState } from 'react'
-import { Linking, Pressable, Text, View } from 'react-native'
+import type { PulseCounts } from '@shared/humanPulse'
+import { notAloneFor } from '@shared/insights'
+import { PulseLine } from '../ui/Pulse'
+import { Linking, Pressable, View } from 'react-native'
+import { Text } from '../ui/textScale'
 import {
   ApiError,
-  castVote,
+  sendVote,
   CLOSED,
   dropVoteKey,
   earlierAnswer,
@@ -34,22 +41,22 @@ import {
   type Sitting,
   type Verdict,
 } from '@shared/api'
-import { isEvening } from '@shared/day'
 import { HELPLINE_LINE } from '@shared/helplineText'
-import { moveFor, startMove } from '@shared/moves'
-import { focusPlan, keepCard, keptCard, makePlan, unkeepCard } from '@shared/notebook'
+import { focusPlan, makePlan } from '@shared/notebook'
 import { inOrder } from '@shared/order'
 import { loadPeople, namesLine } from '@shared/people'
-import { DEFAULT_WORDS_DAYS, helplineHere } from '@shared/prefs'
+import { countAnswersOn, crisisHere, DEFAULT_WORDS_DAYS, helplineHere, loadPrefs } from '@shared/prefs'
 import { isLowMood, loadHistory, recalledAnswer, recordAnswer, recordSkip, recordVerdict, threadLine } from '@shared/profile'
 import { isNeed, NEED_PHRASES } from '@shared/needs'
 import { splitReveal } from '@shared/reveal'
-import { themeName, themeStyle } from '@shared/themes'
+import { themeName } from '@shared/themes'
+import { themeIcon } from '../ui/parts'
 import { keepCardText } from '@shared/insights'
 import { rateAnswer } from '@shared/rating'
 import { CRISIS_LINE, focusTouch, HEAVY_HEADLINE, HEAVY_THANKS, LOCAL_NOTE, NO_PEOPLE, NOT_ME_REPLY, peopleAsk, SWAP_NOTE, VERDICT_REPLIES } from '@shared/words'
-import { font, lift, radius, useTheme } from '../theme'
-import { B, Button, Chip, Field, Option, T, Tinted } from '../ui/kit'
+import { font, lift, radius, useTheme, typeScale } from '../theme'
+import { B, Button, Chip, Field, Option, T, Tinted, Private } from '../ui/kit'
+import { addSpoken, SpeakInstead } from '../ui/Speak'
 
 export type Done = 'answered' | 'skipped'
 
@@ -59,15 +66,15 @@ type Props = {
   sitting?: Sitting
   wordsDays?: number
   writeFirst?: boolean
-  index?: number
-  of?: number
   onDone?: (questionId: string, done: Done) => void
   onNext: () => void
+  // Today's Human Pulse counts, once it is on, and where "See how others answered" goes.
+  pulse?: { counts: PulseCounts | null; onExplore: (questionId: string) => void }
 }
 
 type Mode = 'options' | 'writing' | 'closest'
 
-export function QuestionCard({ question, date, sitting, wordsDays = DEFAULT_WORDS_DAYS, writeFirst = false, index, of, onDone, onNext }: Props) {
+export function QuestionCard({ question, date, sitting, wordsDays = DEFAULT_WORDS_DAYS, writeFirst = false, onDone, onNext, pulse }: Props) {
   const [choice, setChoice] = useState<string | null>(() => recalledChoice(question.id))
   const [words, setWords] = useState<OwnWords | null>(() => recalledWords(question.id))
   const [draft, setDraft] = useState(() => (recalledChoice(question.id) ? '' : recalledDraft(question.id)))
@@ -76,7 +83,6 @@ export function QuestionCard({ question, date, sitting, wordsDays = DEFAULT_WORD
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [kept, setKept] = useState(false)
-  const theme = themeStyle(question.theme)
   const intimate = question.care === 'intimate'
   const options = useMemo(() => inOrder(question), [question])
 
@@ -115,7 +121,9 @@ export function QuestionCard({ question, date, sitting, wordsDays = DEFAULT_WORD
     setSending(true)
     setError(null)
     const sent = intimate ? PRIVATE_OPTION : o.id
-    const send = () => castVote(question.id, sent, voteKey(question.id, sent), sitting)
+    // Counted in the shared totals only once the person said yes (prefs.countAnswers).
+    // Kept on the phone and sent later when the server can't take it now (api.ts sendVote).
+    const send = () => sendVote(question.id, sent, voteKey(question.id, sent), sitting, countAnswersOn(loadPrefs()))
     try {
       try {
         await send()
@@ -165,9 +173,9 @@ export function QuestionCard({ question, date, sitting, wordsDays = DEFAULT_WORD
   return (
     <View style={{ gap: 18 }}>
       <View style={{ flexDirection: 'row' }}>
-        <Chip icon={theme.icon} label={question.theme ? themeName(question.theme) : 'Today'} />
+        <Chip icon={themeIcon(question.theme)} label={question.theme ? themeName(question.theme) : 'Today'} />
       </View>
-      <T v="title" style={{ fontSize: 30, lineHeight: 34 }}>
+      <T v="title">
         {question.prompt}
       </T>
       {question.local && <T tone="muted">{LOCAL_NOTE}</T>}
@@ -177,7 +185,7 @@ export function QuestionCard({ question, date, sitting, wordsDays = DEFAULT_WORD
           {options.map((o) => (
             <Option key={o.id} label={o.label} disabled={sending} onPress={() => vote(o)} />
           ))}
-          <Option icon="✎" label="In my own words" disabled={sending} onPress={() => setMode('writing')} />
+          <Option icon="pencil" label="In my own words" disabled={sending} onPress={() => setMode('writing')} />
           <Button kind="text" label="Skip" disabled={sending} onPress={skip} style={{ alignSelf: 'center' }} />
         </View>
       )}
@@ -193,10 +201,11 @@ export function QuestionCard({ question, date, sitting, wordsDays = DEFAULT_WORD
             placeholder="Say it the way it really is for you."
             onChangeText={editDraft}
           />
+          <SpeakInstead onText={(t) => editDraft(addSpoken(draft, t, max))} />
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
-            <T v="small" tone="muted" style={{ flex: 1 }}>
-              🔒 Kept on this phone. The app never sends it.
-            </T>
+            <View style={{ flex: 1 }}>
+              <Private>Kept on this phone. The app never sends it.</Private>
+            </View>
             <T v="small" tone="muted">
               {max - draft.length} left
             </T>
@@ -232,7 +241,7 @@ export function QuestionCard({ question, date, sitting, wordsDays = DEFAULT_WORD
       {choice === SKIPPED && (
         <>
           <T tone="muted">You skipped this one. That's fine.</T>
-          <Button wide label="Next" onPress={onNext} />
+          <Button wide label="Continue" onPress={onNext} />
         </>
       )}
 
@@ -240,14 +249,14 @@ export function QuestionCard({ question, date, sitting, wordsDays = DEFAULT_WORD
         <>
           {words && <YourWords words={words} />}
           <T tone="muted">You already answered this one on this phone.</T>
-          <Button wide label="Next" onPress={onNext} />
+          <Button wide label="Continue" onPress={onNext} />
         </>
       )}
 
       {choice === CLOSED && (
         <>
           <T tone="muted">You answered this one before you deleted everything. It stays closed today, so it isn't counted twice.</T>
-          <Button wide label="Next" onPress={onNext} />
+          <Button wide label="Continue" onPress={onNext} />
         </>
       )}
 
@@ -258,7 +267,7 @@ export function QuestionCard({ question, date, sitting, wordsDays = DEFAULT_WORD
             None of the options matched what you meant, so there is no card for this one. I'd rather say nothing than guess about you. Your words are kept in
             your mirror, on this phone only.
           </T>
-          <Button wide label="Next" onPress={onNext} />
+          <Button wide label="Continue" onPress={onNext} />
         </View>
       )}
 
@@ -269,10 +278,8 @@ export function QuestionCard({ question, date, sitting, wordsDays = DEFAULT_WORD
           option={chosen}
           words={words}
           date={date}
-          wordsDays={wordsDays}
-          card={index !== undefined && of ? `Card ${index + 1} of ${of}` : undefined}
-          nextLabel={index !== undefined && of && index + 1 < of ? `Question ${index + 2} of ${of}` : 'Next'}
           onNext={onNext}
+          pulse={pulse}
         />
       )}
 
@@ -289,7 +296,7 @@ function Quote({ text }: { text: string }) {
   const p = useTheme()
   return (
     <View style={{ borderLeftWidth: 3, borderLeftColor: p.amber, paddingLeft: 14 }}>
-      <T v="body" style={{ fontFamily: font.semibold, fontSize: 18, lineHeight: 26 }}>
+      <T v="body" style={{ fontFamily: font.semibold }}>
         “{text}”
       </T>
     </View>
@@ -311,26 +318,22 @@ function YourWords({ words }: { words: OwnWords }) {
 }
 
 // The answer: one insight card with the whole reading at once (Edwin,
-// 2026-10-27: the headline alone was too short), then Next, keeping it,
-// one small step and whether it is you.
+// 2026-10-27: the headline alone was too short), one line saying you're not
+// the only one, then Continue. Nothing competes with the next question.
 function Answer({
   question,
   option,
   words,
   date,
-  wordsDays,
-  card,
-  nextLabel,
   onNext,
+  pulse,
 }: {
   question: Question
   option: Opt
   words: OwnWords | null
   date: string
-  wordsDays: number
-  card?: string
-  nextLabel: string
   onNext: () => void
+  pulse?: Props['pulse']
 }) {
   const insight = option.heavy ? undefined : option.insight
   const [thread] = useState(() => threadLine(loadHistory(), question, option.id, date))
@@ -338,10 +341,9 @@ function Answer({
     const f = focusPlan()
     return f && (option.traits?.[f.trait] ?? 0) !== 0 ? f : null
   })
-  const [notMe, setNotMe] = useState(() => recalledVerdict(question.id) === 'not_me')
+  const [notMe] = useState(() => recalledVerdict(question.id) === 'not_me')
   return (
     <View style={{ gap: 16 }}>
-      {card && <T v="label">{card}</T>}
       {words ? (
         <YourWords words={words} />
       ) : (
@@ -364,11 +366,12 @@ function Answer({
           focus={notMe || !focus ? null : focusTouch(focus.when, focus.will)}
         />
       )}
+      {/* After your own reading, one line saying you're not the only one (never after a heavy answer). Exploring it waits for later. */}
+      {insight && pulse?.counts && !option.heavy && !question.local && (
+        <PulseLine line={notAloneFor(pulse.counts.questions, question.id, option.id)} stale={pulse.counts.stale} />
+      )}
       {insight && isLowMood(question.theme, option.depth) && <Helpline />}
-      <Button wide label={nextLabel} onPress={onNext} />
-      {insight && <KeepThis question={question} option={option} words={words} date={date} />}
-      {insight?.step && <TryThis question={question} option={option} step={insight.step} needStep={insight.needStep} date={date} />}
-      {insight && <Rate question={question} option={option} date={date} wordsDays={wordsDays} onVerdict={(v) => setNotMe(v === 'not_me')} />}
+      <Button wide label="Continue" onPress={onNext} />
     </View>
   )
 }
@@ -385,6 +388,7 @@ function Helpline() {
 }
 
 export function HeavyCard() {
+  const crisis = crisisHere()
   const people = loadPeople()
   const names = people?.names ?? []
   const draft = names[0] ? `Hey ${names[0]}, had a heavy day. Free for a 5-minute call later?` : ''
@@ -396,8 +400,8 @@ export function HeavyCard() {
       {people?.helps && <T>What helps, in your words: “{people.helps}”</T>}
       {names.length > 0 && (
         <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
-          <Button small kind="light" icon="chat" label="WhatsApp" onPress={() => Linking.openURL(`https://wa.me/?text=${encodeURIComponent(draft)}`)} />
-          <Button small kind="outline" icon="sms" label="SMS" onPress={() => Linking.openURL(`sms:?&body=${encodeURIComponent(draft)}`)} />
+          <Button small kind="secondary" icon="chat" label="WhatsApp" onPress={() => Linking.openURL(`https://wa.me/?text=${encodeURIComponent(draft)}`)} />
+          <Button small kind="secondary" icon="sms" label="SMS" onPress={() => Linking.openURL(`sms:?&body=${encodeURIComponent(draft)}`)} />
         </View>
       )}
       {names.length === 0 && <T>{NO_PEOPLE}</T>}
@@ -408,6 +412,7 @@ export function HeavyCard() {
           Talk to someone now
         </Text>
       </T>
+      {crisis && <Button small kind="danger" icon="chat" label={crisis.label} onPress={() => Linking.openURL(`tel:${crisis.tel}`)} />}
       <T v="tiny">Something to think about, never a diagnosis.</T>
     </Tinted>
   )
@@ -448,11 +453,11 @@ function InsightPanel({
           </T>
         )}
       </View>
-      <T v="title" style={{ fontSize: 26, lineHeight: 31 }}>
+      <T v="title">
         {headline}
       </T>
       {body ? (
-        <T tone="text2" style={{ fontSize: 17, lineHeight: 26 }}>
+        <T v="reading" tone="text2">
           {body}
         </T>
       ) : null}
@@ -477,107 +482,8 @@ function Side({ label, color, text }: { label: string; color: string; text: stri
   )
 }
 
-function KeepThis({ question, option, words, date }: { question: Question; option: Opt; words: OwnWords | null; date: string }) {
-  const [kept, setKept] = useState(() => !!keptCard(question.id))
-  function keep() {
-    const insight = option.insight!
-    const { headline, body } = splitReveal(insight.reveal)
-    const verdict = recalledVerdict(question.id)
-    keepCard({
-      date,
-      questionId: question.id,
-      theme: question.theme ?? '',
-      ...(question.care === 'intimate' ? { private: true as const } : {}),
-      prompt: question.prompt,
-      answer: words?.closest ?? option.label,
-      ...(words ? { words: words.words } : {}),
-      headline,
-      ...(body ? { body } : {}),
-      ...(insight.otherSide ? { otherSide: insight.otherSide } : {}),
-      ...(insight.step ? { step: insight.step } : {}),
-      ...(verdict && verdict !== 'rated' ? { verdict } : {}),
-    })
-    setKept(true)
-  }
-  if (kept)
-    return (
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-        <T tone="leaf" bold>
-          ✓ Kept in your notebook, on this phone only.
-        </T>
-        <Button
-          kind="text"
-          label="Undo"
-          onPress={() => {
-            unkeepCard(question.id)
-            setKept(false)
-          }}
-        />
-      </View>
-    )
-  return (
-    <View style={{ flexDirection: 'row' }}>
-      <Chip label="＋ Keep in Notebook" onPress={keep} />
-    </View>
-  )
-}
-
-function TryThis({ question, option, step, needStep, date }: { question: Question; option: Opt; step: string; needStep?: string; date: string }) {
-  const p = useTheme()
-  const [state, setState] = useState<'open' | 'started' | 'later' | 'own' | 'planned'>(() => (moveFor(question.id) ? 'started' : 'open'))
-  const [evening] = useState(() => isEvening())
-  const choices = needStep && needStep !== step ? [step, needStep] : [step]
-  const [pick, setPick] = useState(0)
-  const started = state === 'started' ? (moveFor(question.id)?.step ?? choices[pick]) : null
-  function start() {
-    setState('started')
-    startMove(date, question.id, option.id, choices[pick], Date.now(), pick === 1, !!question.local).catch(() => {})
-  }
-  return (
-    <Tinted tone="blue">
-      <T v="h3">Something you could try</T>
-      {started ? (
-        <T>{started}</T>
-      ) : choices.length === 1 ? (
-        <T>{step}</T>
-      ) : (
-        <View style={{ gap: 8 }}>
-          <T tone="muted">Pick one.</T>
-          {choices.map((c, i) => (
-            <Pressable
-              key={i}
-              accessibilityRole="radio"
-              accessibilityState={{ checked: pick === i }}
-              onPress={() => setPick(i)}
-              style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}
-            >
-              <View style={{ width: 18, height: 18, borderRadius: 9, borderWidth: 2, borderColor: p.lime, marginTop: 3, backgroundColor: pick === i ? p.lime : 'transparent' }} />
-              <T style={{ flex: 1 }}>{c}</T>
-            </Pressable>
-          ))}
-        </View>
-      )}
-      {state === 'open' && (
-        <View style={{ flexDirection: 'row', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
-          <Button small label="I'll try it" onPress={start} />
-          <Button kind="text" label="My own idea" onPress={() => setState('own')} />
-          <Button kind="text" label="Not now" onPress={() => setState('later')} />
-        </View>
-      )}
-      {state === 'own' && <OwnIdea option={option} date={date} onMade={() => setState('planned')} onCancel={() => setState('open')} />}
-      {state === 'planned' && <T tone="muted">Your own plan, kept in your notebook. Next time you sit down, I'll ask how it went.</T>}
-      {state === 'started' && (
-        <T tone="muted">
-          {evening
-            ? "Added to your small steps. Give it a go tomorrow, and I'll ask how it went in your mirror."
-            : "Added to today's small steps. I'll ask how it went this evening."}
-        </T>
-      )}
-    </Tinted>
-  )
-}
-
-function OwnIdea({ option, date, onMade, onCancel }: { option: Opt; date: string; onMade: () => void; onCancel: () => void }) {
+// Your own way to try it, tied to a moment, kept as a plan in your notebook.
+export function OwnIdea({ option, date, onMade, onCancel }: { option: Opt; date: string; onMade: () => void; onCancel: () => void }) {
   const [when, setWhen] = useState('')
   const [will, setWill] = useState('')
   const [focus] = useState(focusPlan)
@@ -589,9 +495,7 @@ function OwnIdea({ option, date, onMade, onCancel }: { option: Opt; date: string
       {focus && <T tone="muted">{SWAP_NOTE}</T>}
       <Field label="When" value={when} maxLength={80} onChangeText={setWhen} />
       <Field label="I will" value={will} maxLength={80} onChangeText={setWill} />
-      <T v="small" tone="muted">
-        🔒 Your plan stays on this phone. I only ever send whether you did it.
-      </T>
+      <Private>Your plan stays on this phone. I only ever send whether you did it.</Private>
       <View style={{ flexDirection: 'row', gap: 16, alignItems: 'center' }}>
         <Button
           small
@@ -643,14 +547,14 @@ export function VerdictRow({ onTap }: { onTap: (v: Verdict) => void }) {
           style={({ pressed }) => ({
             flex: 1,
             alignItems: 'center',
-            paddingVertical: 12,
-            borderRadius: radius.md,
+            paddingVertical: 10,
+            borderRadius: radius.sm,
             borderWidth: 1,
             borderColor: p.lineStrong,
             backgroundColor: pressed ? p.accentWash : p.surface,
           })}
         >
-          <Text style={{ fontFamily: font.bold, fontSize: 15, color: p.text }}>{label}</Text>
+          <Text style={{ fontFamily: font.bold, ...typeScale.small, color: p.text }}>{label}</Text>
         </Pressable>
       ))}
     </View>
@@ -685,9 +589,7 @@ function Closer({ question, option, date, wordsDays }: { question: Question; opt
             />
           ))}
           <Field label="Or in a line of your own" value={line} maxLength={140} onChangeText={setLine} />
-          <T v="small" tone="muted">
-            🔒 Kept on this phone. The app never sends it.
-          </T>
+          <Private>Kept on this phone. The app never sends it.</Private>
           <View style={{ flexDirection: 'row', gap: 16, alignItems: 'center' }}>
             <Button
               small

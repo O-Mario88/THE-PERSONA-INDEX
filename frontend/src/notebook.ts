@@ -67,7 +67,7 @@ export type Practised = Stamp & { kind: 'practice'; date: string; practice: stri
 // kept with what it was about, and brought back later.
 export type ReflectionArea = 'work' | 'school' | 'family' | 'culture' | 'social' | 'health' | 'money' | 'self'
 export type ReflectionGroup = 'learnt' | 'strength' | 'grow'
-export type ReflectionSource = 'answers' | 'week' | 'circle'
+export type ReflectionSource = 'answers' | 'week' | 'circle' | 'moment' | 'sense' // moment: kept in a sentence or two (moments.ts); sense: help making sense of something (makeSense.ts)
 export type ReflectionPeriod = 'day' | 'week' | 'month'
 export type Reflection = Stamp & {
   kind: 'reflection'
@@ -84,6 +84,12 @@ export type Reflection = Stamp & {
   free?: true // written freely, with no question (Reflect)
   why?: string // why the question appeared: "From your answers on Tuesday"
   thread?: string // the id of the reflection that started its thread
+  // Help making sense of something (makeSense.ts): the starting point, and
+  // the result as the person left it.
+  start?: string
+  possibility?: string
+  step?: string
+  say?: string
 }
 
 // "Something I'd like to try" (Reflect): an intention saved from a
@@ -162,9 +168,11 @@ const INTENTION_CHECK_DAYS = 7
 
 export const intentions = () => all<Intention>('intention').sort((a, b) => b.date.localeCompare(a.date) || b.at - a.at)
 
-export function keepIntention(i: { id: string; date: string; text: string; from: string }) {
+// days: when the gentle check-in comes, a week unless said (two days for a
+// step from a hard moment, makeSense.ts).
+export function keepIntention({ days = INTENTION_CHECK_DAYS, ...i }: { id: string; date: string; text: string; from: string; days?: number }) {
   const text = i.text.trim()
-  if (text) write({ ...i, text, kind: 'intention', checkOn: addDays(i.date, INTENTION_CHECK_DAYS), at: 0 })
+  if (text) write({ ...i, text, kind: 'intention', checkOn: addDays(i.date, days), at: 0 })
 }
 
 export function removeIntention(id: string) {

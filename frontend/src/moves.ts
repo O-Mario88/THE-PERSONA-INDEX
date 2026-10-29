@@ -130,6 +130,20 @@ export function setMoveStatus(
   return send({ ...m, status }, today)
 }
 
+// restartMove opens a step again from today, to try it once more: started,
+// dated today, and sent again.
+export function restartMove(questionId: string, date: string, at = Date.now()): Promise<void> {
+  const m = moveFor(questionId)
+  if (!m) return Promise.resolve()
+  update(questionId, (x) => {
+    x.status = 'started'
+    x.date = date
+    x.at = at
+    if (!x.local) x.unsent = true
+  })
+  return send({ ...m, status: 'started', date, at }, date)
+}
+
 // sendUnsent sends again every step the server did not get, once.
 export async function sendUnsent(today: string) {
   for (const m of loadMoves().filter((x) => x.unsent)) {

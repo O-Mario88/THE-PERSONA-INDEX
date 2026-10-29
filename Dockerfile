@@ -23,7 +23,7 @@ COPY backend/content/sources.json backend/content/sources.json
 RUN npm run build:web --prefix mobile
 
 # The API: one static binary, no C libraries.
-FROM golang:1.24-bookworm AS api
+FROM golang:1.25-bookworm AS api
 WORKDIR /src/backend
 COPY backend/go.mod backend/go.sum ./
 RUN go mod download

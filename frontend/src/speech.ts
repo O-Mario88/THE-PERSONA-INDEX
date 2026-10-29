@@ -40,9 +40,10 @@ export async function localSpeech(): Promise<boolean> {
   }
 }
 
-// listen starts on-device dictation, handing each finished phrase to onText.
-// It returns the function that stops it.
-export function listen(onText: (text: string) => void, onEnd: () => void): () => void {
+// listen starts on-device dictation, handing each finished phrase to onText
+// and, when onInterim is given, the phrase still being heard (Speak instead
+// shows the words as they come). It returns the function that stops it.
+export function listen(onText: (text: string) => void, onEnd: () => void, onInterim?: (text: string) => void): () => void {
   const C = recognitionClass()
   if (!C) {
     onEnd()
@@ -51,10 +52,20 @@ export function listen(onText: (text: string) => void, onEnd: () => void): () =>
   const r = new C()
   r.lang = lang()
   r.continuous = true
-  r.interimResults = false
+  r.interimResults = !!onInterim
   r.processLocally = true
+  // Phrases already handed over, so one the browser sends again isn't kept twice.
+  let kept = 0
   r.onresult = (e) => {
-    for (let i = e.resultIndex; i < e.results.length; i++) if (e.results[i].isFinal) onText(e.results[i][0].transcript.trim())
+    let heard = ''
+    for (let i = Math.min(e.resultIndex, kept); i < e.results.length; i++) {
+      if (!e.results[i].isFinal) heard += e.results[i][0].transcript
+      else if (i >= kept) {
+        onText(e.results[i][0].transcript.trim())
+        kept = i + 1
+      }
+    }
+    onInterim?.(heard.trim())
   }
   r.onend = onEnd
   r.onerror = onEnd

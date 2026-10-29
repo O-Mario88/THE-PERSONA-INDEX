@@ -40,6 +40,10 @@ type Ballot struct {
 	DeviceKey string
 	Answer    *MirrorAnswer // a vote: the answer the mirror keeps
 	Rating    *Rating       // a rating: noted on the answer the mirror keeps
+	// Uncounted keeps the ballot out of the shared totals: the phone has not
+	// chosen to add to them. It still holds the one-answer rule and reaches
+	// the mirror.
+	Uncounted bool
 }
 
 // Rating is the tap under the card (that's me, partly, not me), as the
@@ -58,6 +62,7 @@ type VoteEvent struct {
 	AcceptedAt time.Time
 	idemKey    string
 	tallied    bool
+	uncounted  bool
 }
 
 var (
@@ -75,6 +80,13 @@ type Store interface {
 	MirrorStore
 	VaultStore
 	SocialStore
+	HelpedStore
+	PatronStore          // patron.go
+	PairStore            // pair.go
+	ProductCountStore    // productcounts.go
+	ReflectTogetherStore // reflecttogether.go
+	OutsideNoteStore     // outsidenotes.go
+	PushStore            // notify.go
 }
 
 // VoteStore is the durable boundary: a vote is acknowledged only after Accept
@@ -105,15 +117,22 @@ type VoteStore interface {
 }
 
 type memoryStore struct {
-	mu        sync.Mutex
-	events    []VoteEvent
-	byIdemKey map[string]int // scoped idempotency key -> index into events
-	byDedupe  map[string]int // voteDedupeKey -> index into events
-	counts    map[string]map[string]int
-	mirror    memoryMirror           // see mirrorstore.go
-	vaults    map[string]memoryVault // see vault.go
-	social    memorySocial           // see socialmemory.go
-	closer    memoryCloser           // see closermemory.go
+	mu              sync.Mutex
+	events          []VoteEvent
+	byIdemKey       map[string]int // scoped idempotency key -> index into events
+	byDedupe        map[string]int // voteDedupeKey -> index into events
+	counts          map[string]map[string]int
+	mirror          memoryMirror                              // see mirrorstore.go
+	vaults          map[string]memoryVault                    // see vault.go
+	social          memorySocial                              // see socialmemory.go
+	closer          memoryCloser                              // see closermemory.go
+	helped          map[string]map[HelpedStepKey]HelpedReport // reporter key -> step -> report; see whathelped.go
+	patron          map[string][]Entitlement                  // owner -> what they hold; see patron.go
+	pairs           []Pair                                    // see pair.go
+	productCounts   map[string]map[string]int                 // day -> event -> count; see productcounts.go
+	reflectTogether map[string]ReflectTogether                // see reflecttogether.go
+	outsideNotes    map[string]OutsideNote                    // see outsidenotes.go
+	pushTokens      map[string]PushToken                      // token -> address; see notify.go
 }
 
 func newMemoryStore() *memoryStore {
@@ -122,9 +141,15 @@ func newMemoryStore() *memoryStore {
 		mirror: memoryMirror{answers: map[string]map[string]MirrorAnswer{}, steps: map[string]map[string]MirrorStep{},
 			weeks: map[string]map[string]WeekSummary{}, folds: map[string]bool{}, forgotten: map[string]string{},
 			checks: map[string]map[string]PlanCheck{}},
-		vaults: map[string]memoryVault{},
-		social: newMemorySocial(),
-		closer: newMemoryCloser(),
+		vaults:          map[string]memoryVault{},
+		social:          newMemorySocial(),
+		closer:          newMemoryCloser(),
+		helped:          map[string]map[HelpedStepKey]HelpedReport{},
+		patron:          map[string][]Entitlement{},
+		productCounts:   map[string]map[string]int{},
+		reflectTogether: map[string]ReflectTogether{},
+		outsideNotes:    map[string]OutsideNote{},
+		pushTokens:      map[string]PushToken{},
 	}
 }
 
@@ -154,7 +179,7 @@ func (m *memoryStore) Accept(_ context.Context, idempotencyKey string, b Ballot,
 		return VoteEvent{}, ErrDuplicateVote
 	}
 
-	e := VoteEvent{ID: newEventID(), QuestionID: b.QuestionID, OptionID: b.OptionID, VoterHash: b.VoterHash, AcceptedAt: at, idemKey: idempotencyKey}
+	e := VoteEvent{ID: newEventID(), QuestionID: b.QuestionID, OptionID: b.OptionID, VoterHash: b.VoterHash, AcceptedAt: at, idemKey: idempotencyKey, uncounted: b.Uncounted}
 	m.events = append(m.events, e)
 	m.byIdemKey[idem] = len(m.events) - 1
 	m.byDedupe[dedupe] = len(m.events) - 1
@@ -196,14 +221,17 @@ func (m *memoryStore) Tally(_ context.Context, limit int) (int, error) {
 		if e.tallied {
 			continue
 		}
+		e.tallied = true
+		n++
+		if e.uncounted {
+			continue
+		}
 		byOption := m.counts[e.QuestionID]
 		if byOption == nil {
 			byOption = map[string]int{}
 			m.counts[e.QuestionID] = byOption
 		}
 		byOption[e.OptionID]++
-		e.tallied = true
-		n++
 	}
 	return n, nil
 }

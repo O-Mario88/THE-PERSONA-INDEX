@@ -14,9 +14,11 @@ import { localDate } from '@shared/day'
 import { useNods } from '@shared/friendsData'
 import { loadHistory } from '@shared/profile'
 import { count } from '@shared/pulse'
-import { ringOf, type Rings } from '@shared/rings'
+
 import {
   getCircle,
+  AUDIENCES,
+  audienceOf,
   getCommon,
   getReachOuts,
   getShares,
@@ -40,12 +42,13 @@ import {
   type ThemeOption,
 } from '@shared/social'
 import { useAccount } from '@shared/useAccount'
-import { font, radius, useTheme } from '../theme'
+import { font, radius, useTheme, typeScale } from '../theme'
 import { Icon, type IconName } from '../ui/Icon'
 import { Button, Chip, Field, T, Tinted } from '../ui/kit'
-import { Avatar, Disc, type Tone } from '../ui/parts'
+import { CardHead, Avatar, Disc, type Tone } from '../ui/parts'
+import { locale } from '@shared/locale'
 
-const dayMonth = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', timeZone: 'UTC' })
+const dayMonth = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString(locale(), { day: 'numeric', month: 'long', timeZone: 'UTC' })
 
 function names(list: string[]): string {
   if (list.length <= 1) return list[0] ?? ''
@@ -127,7 +130,7 @@ function useFriends(): FriendView[] | null {
 
 const MAX_CLOSER_CARDS = 2
 
-export function CloserTogether({ friends, rings }: { friends: FriendView[]; rings: Rings }) {
+export function CloserTogether({ friends, inner }: { friends: FriendView[]; inner: string[] }) {
   const [received, setReceived] = useState<ReachOutView[]>([])
   const refresh = useCallback(() => {
     getReachOuts().then(
@@ -137,14 +140,14 @@ export function CloserTogether({ friends, rings }: { friends: FriendView[]; ring
   }, [])
   useEffect(refresh, [refresh])
 
-  const quiet = friends.find((f) => !f.muted && f.connect && !f.active && ringOf(rings, f.id) !== 'outer')
+  const quiet = friends.find((f) => !f.muted && f.connect && !f.active && inner.includes(f.id))
   const cards = received.slice(0, MAX_CLOSER_CARDS)
   const showQuiet = quiet && cards.length < MAX_CLOSER_CARDS
   if (cards.length === 0 && !showQuiet) return null
 
   return (
     <View style={{ gap: 14 }}>
-      <T v="label">Closer together</T>
+      <T v="eyebrow">Closer together</T>
       {cards.map((r) => (
         <View key={r.id} style={{ flexDirection: 'row', gap: 12 }}>
           <Avatar name={r.from.name} size={40} />
@@ -226,14 +229,17 @@ export function Growing({ date, questions, circle }: { date: string; questions: 
   return (
     <View style={{ gap: 14 }}>
       <Head title="Growing together" sub="How people are showing up today, so you know you are not alone in it." />
+      {/* One number sits in a row beside its icon; several share the width. */}
       <View style={{ flexDirection: 'row', gap: 12 }}>
         {tiles.map((t) => (
-          <View key={t.name} style={{ flex: 1, gap: 6 }}>
+          <View key={t.name} style={tiles.length === 1 ? { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 } : { flex: 1, gap: 6 }}>
             <Disc icon={t.icon} tone={t.tone} size={40} />
-            <T v="title">{t.n}</T>
-            <T v="small" tone="muted">
-              {t.name}
-            </T>
+            <View style={{ flexShrink: 1 }}>
+              <T v="title">{t.n}</T>
+              <T v="small" tone="muted">
+                {t.name}
+              </T>
+            </View>
           </View>
         ))}
       </View>
@@ -339,7 +345,7 @@ export function CommonGround({ friends }: { friends: FriendView[] }) {
                 </T>
               </View>
             </View>
-            <T style={{ fontFamily: font.semibold, fontSize: 22, lineHeight: 28 }}>{pair.headline}</T>
+            <T style={{ fontFamily: font.semibold, ...typeScale.heading }}>{pair.headline}</T>
             <Chips>
               {pair.shared.map((id) => (
                 <Chip key={id} label={label(id)} />
@@ -492,17 +498,12 @@ export function WhatHelped() {
           onCancel={() => setComposing(false)}
         />
       ) : (
-        <Button small kind="outline" label="Share what helped you" onPress={() => setComposing(true)} style={{ alignSelf: 'flex-start' }} />
+        <Button small kind="secondary" label="Share what helped you" onPress={() => setComposing(true)} style={{ alignSelf: 'flex-start' }} />
       )}
 
       {sent.length > 0 && (
         <View style={{ gap: 10 }}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityState={{ expanded: showMine }}
-            onPress={() => setShowMine(!showMine)}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
-          >
+          <Pressable accessibilityRole="button" accessibilityState={{ expanded: showMine }} onPress={() => setShowMine(!showMine)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <T bold>What you’ve shared ({sent.length})</T>
             <View style={{ transform: [{ rotate: showMine ? '90deg' : '0deg' }] }}>
               <Icon name="chevron" size={16} color={p.text} />
@@ -515,13 +516,7 @@ export function WhatHelped() {
                 <T v="small" tone="muted">
                   {themeName(s.theme)} · with {s.to.length ? s.to.join(', ') : 'no one now'}
                 </T>
-                <Button
-                  kind="text"
-                  small
-                  label="Withdraw"
-                  onPress={() => withdrawShare(s.id).then(refresh, () => setError('That didn’t go through.'))}
-                  style={{ alignSelf: 'flex-start' }}
-                />
+                <Button kind="text" small label="Withdraw" onPress={() => withdrawShare(s.id).then(refresh, () => setError('That didn’t go through.'))} style={{ alignSelf: 'flex-start' }} />
               </View>
             ))}
         </View>
@@ -544,8 +539,12 @@ function HelpedCard({ share: s, title }: { share: ShareView; title: string }) {
           </T>
         </View>
       </View>
-      {title ? <T v="eyebrow" tone="muted">{title}</T> : null}
-      <T style={{ fontFamily: font.semibold, fontSize: 20, lineHeight: 27 }}>“{s.text}”</T>
+      {title ? (
+        <T v="eyebrow" tone="muted">
+          {title}
+        </T>
+      ) : null}
+      <T style={{ fontFamily: font.semibold, ...typeScale.heading }}>“{s.text}”</T>
       {s.why ? (
         <View style={{ flexDirection: 'row', gap: 10 }}>
           <Icon name="sun" size={18} color={p.text} />
@@ -590,21 +589,19 @@ export function SupportCelebrate({ today }: { today?: string }) {
         <>
           {today && (
             <Tinted tone="purple">
-              <Disc icon="heart" tone="purple" size={44} />
-              <T v="h3">Is there someone you’d like to encourage?</T>
+              <CardHead icon="heart" tone="purple" title="Is there someone you’d like to encourage?" />
               <T v="small" tone="muted">
                 A small message can make a big difference.
               </T>
-              <Button small kind="soft" label="Reach out" iconAfter="arrow" onPress={() => setOpen('encourage')} style={{ alignSelf: 'flex-start' }} />
+              <Button small kind="secondary" label="Reach out" iconAfter="arrow" onPress={() => setOpen('encourage')} style={{ alignSelf: 'flex-start' }} />
             </Tinted>
           )}
           <Tinted tone="amber">
-            <Disc icon="sun" tone="amber" size={44} />
-            <T v="h3">Celebrate a win together</T>
+            <CardHead icon="sun" tone="amber" title="Celebrate a win together" />
             <T v="small" tone="muted">
               Made progress on something that matters? Tell someone who matters.
             </T>
-            <Button small kind="soft" label="Share a win" iconAfter="arrow" onPress={() => setOpen('celebrate')} style={{ alignSelf: 'flex-start' }} />
+            <Button small kind="secondary" label="Share a win" iconAfter="arrow" onPress={() => setOpen('celebrate')} style={{ alignSelf: 'flex-start' }} />
           </Tinted>
           <Button kind="text" small label="Having a hard week? Ask someone for support" onPress={() => setOpen('support')} style={{ alignSelf: 'flex-start' }} />
         </>
@@ -623,7 +620,7 @@ export function SupportCelebrate({ today }: { today?: string }) {
 // ---- the pickers (Closer.tsx, Friends.tsx) ----
 
 const SHARE_NOTE_MAX = 160
-const KIND_TITLES: Record<ShareKind, string> = { helped: 'Share what helped', win: 'Share a win' }
+const KIND_TITLES: Record<ShareKind, string> = { helped: 'Share what helped', win: 'Share a win', reflection: 'Share a reflection', answer: 'Share an answer', mirror: 'Share part of your Mirror' }
 
 export function ShareComposer({ kind, text: initial, onDone, onCancel }: { kind: ShareKind; text: string; onDone: () => void; onCancel: () => void }) {
   const friends = useFriends()
@@ -696,6 +693,16 @@ export function ShareComposer({ kind, text: initial, onDone, onCancel }: { kind:
       <T v="small" bold>
         Who sees it
       </T>
+      {/* A whole group in one tap: loved ones, workmates or close friends (Edwin, 2026-10-29). */}
+      {friends && friends.length > 0 && AUDIENCES.some((a) => audienceOf(friends, a.id).length > 0) && (
+        <Chips>
+          {AUDIENCES.filter((a) => audienceOf(friends, a.id).length > 0).map((a) => {
+            const ids = audienceOf(friends, a.id)
+            const all = ids.every((id) => to.includes(id))
+            return <Chip key={a.id} label={a.label} icon="people" on={all} onPress={() => setTo(all ? to.filter((x) => !ids.includes(x)) : [...new Set([...to, ...ids])])} />
+          })}
+        </Chips>
+      )}
       {friends === null ? (
         <T v="small" tone="muted">
           Finding your circle…
@@ -771,7 +778,9 @@ export function ReachOutPicker({ kind, onDone, onCancel }: { kind: ReachKind; on
           Add someone to your circle first.
         </T>
       )}
-      {friends?.map((f) => <PickFriend key={f.id} radio name={f.name} on={to === f.id} onPress={() => setTo(f.id)} />)}
+      {friends?.map((f) => (
+        <PickFriend key={f.id} radio name={f.name} on={to === f.id} onPress={() => setTo(f.id)} />
+      ))}
       <T v="small" bold>
         Say
       </T>
@@ -855,12 +864,7 @@ export function NodPicker({ date, title }: { date: string; title?: string }) {
       </T>
       <Chips>
         {friends.map((f) => (
-          <Chip
-            key={f.id}
-            label={`${f.name}${already.includes(f.id) ? ' · sent' : ''}`}
-            on={to === f.id}
-            onPress={already.includes(f.id) ? undefined : () => setTo(to === f.id ? null : f.id)}
-          />
+          <Chip key={f.id} label={`${f.name}${already.includes(f.id) ? ' · sent' : ''}`} on={to === f.id} onPress={already.includes(f.id) ? undefined : () => setTo(to === f.id ? null : f.id)} />
         ))}
       </Chips>
       {to && (

@@ -1,7 +1,8 @@
 // One short read: the topic, the words, something
 // to try, and two more on the same area.
 import { useEffect } from 'react'
-import { Linking, Text, View } from 'react-native'
+import { Linking, View } from 'react-native'
+import { Text } from '../ui/textScale'
 import { HELPLINE_LINE } from '@shared/helplineText'
 import { helplineHere } from '@shared/prefs'
 import { appOnly, heavy, minutes, related, topicOf } from '@shared/reads/reads'
@@ -23,11 +24,13 @@ export function ReadScreen({ read, date, intimacy, onBack, onOpen }: { read: Rea
         {topicOf(read)} · {minutes(read)} min read
       </T>
       <T v="title">{read.title}</T>
-      <T tone="text2" style={{ fontSize: 18, lineHeight: 27 }}>
+      <T v="reading" tone="text2">
         {read.summary}
       </T>
       {read.paragraphs.map((para, i) => (
-        <T key={i}>{para}</T>
+        <T key={i} v="reading">
+          {para}
+        </T>
       ))}
       <Tinted>
         <T v="eyebrow">Something to try</T>

@@ -83,8 +83,5 @@ export function keepLetter(year: string, text: string, today: string) {
   })
 }
 
-// The reading depth the person last chose, Essential or Explore deeper, so
-// the Mirrors open the way they like to read them.
-const DEPTH = `${PREFIX}depth`
-export const readsDeep = () => load(DEPTH) === 'deep'
-export const rememberDepth = (deep: boolean) => (deep ? save(DEPTH, 'deep') : remove(DEPTH))
+// The reading depth, Essential or Explore deeper, is one choice for every
+// page now (depth.ts), still kept under pi.mirror.depth.

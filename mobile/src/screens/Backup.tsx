@@ -3,12 +3,14 @@
 // and no account behind it (frontend/src/vault.ts). Phones get the crypto it
 // needs from platform/subtle.ts, so a backup made in a browser opens here.
 import { useEffect, useState } from 'react'
-import { TextInput, View } from 'react-native'
+import { View } from 'react-native'
+import { TextInput } from '../ui/textScale'
 import { onChange } from '@shared/storage'
 import { newPhrase, normalisePhrase, phraseProblem, restore, restoreWriting, setWords, turnOff, turnOn, vaultState, type PhraseProblem, type VaultState } from '@shared/vault'
-import { font, lift, radius, useTheme } from '../theme'
+import { font, lift, radius, useTheme, typeScale } from '../theme'
 import { Icon } from '../ui/Icon'
 import { Button, T, Toggle } from '../ui/kit'
+import { locale } from '@shared/locale'
 
 type Mode =
   | { kind: 'idle' }
@@ -74,7 +76,7 @@ function WordsField({ label, value, onChangeText, lines = 1 }: { label: string; 
           paddingHorizontal: 16,
           paddingVertical: 14,
           fontFamily: font.regular,
-          fontSize: 16,
+          ...typeScale.body,
           color: p.text,
           textAlignVertical: 'top',
         }}
@@ -146,7 +148,7 @@ export function BackupSettings({ onRestored }: { onRestored: () => void }) {
             server, where I can't open them.
           </Muted>
           <Button
-            kind="soft"
+            kind="secondary"
             label="Back up with a 12-word phrase"
             onPress={() => {
               setError(null)
@@ -176,7 +178,7 @@ export function BackupSettings({ onRestored }: { onRestored: () => void }) {
             </View>
           ) : (
             <>
-              <Button kind="soft" label="Show my phrase" onPress={() => setMode({ kind: 'show' })} />
+              <Button kind="secondary" label="Show my phrase" onPress={() => setMode({ kind: 'show' })} />
               <Button kind="text" small label="Turn off backup" onPress={() => setMode({ kind: 'confirm-off' })} style={{ alignSelf: 'flex-start' }} />
             </>
           )}
@@ -193,9 +195,9 @@ function backupStatus(st: VaultState): string {
   if (st.dirty) return 'Some changes are waiting to be backed up.'
   if (!st.savedAt) return 'Backed up.'
   const at = new Date(st.savedAt)
-  const time = at.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+  const time = at.toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' })
   const sameDay = at.toDateString() === new Date().toDateString()
-  return sameDay ? `Last backed up today at ${time}.` : `Last backed up on ${at.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })}.`
+  return sameDay ? `Last backed up today at ${time}.` : `Last backed up on ${at.toLocaleDateString(locale(), { day: 'numeric', month: 'long' })}.`
 }
 
 function Phrase({ phrase }: { phrase: string }) {

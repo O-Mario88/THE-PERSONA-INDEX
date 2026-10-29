@@ -2,7 +2,7 @@
 // (mobile/DESIGN.md explains each choice). Change a colour here, never in a
 // screen.
 import { createContext, useContext, type ReactNode } from 'react'
-import type { ViewStyle } from 'react-native'
+import { Platform, type ViewStyle } from 'react-native'
 
 export type Palette = {
   dark: boolean
@@ -12,6 +12,7 @@ export type Palette = {
   surface3: string
   line: string
   lineStrong: string
+  control: string // the edge of a control (a switch's off track, a ring, a tick box, a text box): 3:1 or more on what it sits on
   text: string
   text2: string
   muted: string
@@ -47,16 +48,20 @@ export type Palette = {
 
 export const light: Palette = {
   dark: false,
-  bg: '#fbf7f0',
-  surface: '#fffdf9',
-  surface2: '#f4ede1',
-  surface3: '#ebe2d3',
-  line: '#ece3d4',
-  lineStrong: '#ddd1bd',
+  // A soft neutral grey page with white cards (Edwin, 2026-10-29: the cream
+  // read as yellowed and dated). Cream stays for brand moments: the Welcome,
+  // the launch, the Today header and the conversation sheet's paper.
+  bg: '#f3f3f0',
+  surface: '#ffffff',
+  surface2: '#ebeae6',
+  surface3: '#e2e1dc',
+  line: '#e4e3de',
+  lineStrong: '#d4d3cd',
+  control: '#8a8780',
   text: '#12283a',
   text2: '#3d4f5c',
-  muted: '#69737c',
-  leaf: '#5f7d58',
+  muted: '#5a656e', // 4.5:1 or more on the page, white and the tinted fills
+  leaf: '#55714f', // 4.5:1 or more as words on the page and on white
   leafSoft: '#b5c7ae',
   lime: '#013d5a',
   onLime: '#ffffff',
@@ -70,7 +75,7 @@ export const light: Palette = {
   blueWash: '#e4edf2',
   purple: '#6d597a',
   purpleWash: '#efe9f1',
-  rose: '#c8553a',
+  rose: '#b4472e', // "the other side": 4.5:1 or more on the page and on white
   roseWash: '#fbe9e2',
   amber: '#e48a3c',
   amberInk: '#8a4b12',
@@ -89,23 +94,24 @@ export const dark: Palette = {
   ...light,
   dark: true,
   lime: '#f4a258',
-  onLime: '#1d1206',
-  bg: '#0b1a24',
-  surface: '#102330',
-  surface2: '#16303f',
-  surface3: '#1d3a4b',
-  line: '#1d3545',
-  lineStrong: '#2a4759',
+  onLime: '#013d5a', // navy words on marigold (Edwin, 2026-10-28)
+  bg: '#08131b',
+  surface: '#132a3b',
+  surface2: '#1a3548',
+  surface3: '#22425a',
+  line: '#1f3a4e',
+  lineStrong: '#2e4d63',
+  control: '#6a8597',
   text: '#f6efe3',
   text2: '#d6d2c9',
   muted: '#9eaab3',
   leaf: '#a9c3a1',
   leafSoft: '#7c9a74',
-  accentInk: '#f4a258',
-  accentWash: '#183242',
-  accentLine: '#2a4a5c',
+  accentInk: '#8cc4da', // links and labels; marigold stays for buttons, choices and the open tab
+  accentWash: '#1b3a4d',
+  accentLine: '#2e5266',
   btn: '#f4a258',
-  onBtn: '#1d1206',
+  onBtn: '#013d5a',
   blue: '#8db1f5',
   blueWash: '#17233a',
   purple: '#b9a4f5',
@@ -124,17 +130,36 @@ export const dark: Palette = {
   sideOnInk: '#f4a258',
 }
 
-// Figtree, bundled. React Native picks a font file by name, not by weight.
+// Geist, bundled (Edwin, 2026-10-28: Figtree felt imposing on a small phone;
+// Geist is narrower and calmer, the face the Edify app uses). React Native picks a font file by name, not by weight.
 export const font = {
-  regular: 'Figtree_400Regular',
-  medium: 'Figtree_500Medium',
-  semibold: 'Figtree_600SemiBold',
-  bold: 'Figtree_700Bold',
+  regular: 'Geist_400Regular',
+  medium: 'Geist_500Medium',
+  semibold: 'Geist_600SemiBold',
+  bold: 'Geist_700Bold',
 }
+
+// One type scale (the light-mode review, 2026-10-29): every size in the app
+// comes from here, so nothing drifts. Body text is 16 on 24 and readings 17
+// on 26; nothing is smaller than 13 except tab labels. Text size in Settings
+// multiplies all of it (ui/textScale.tsx). The logo, the launch and the
+// Welcome's serif heading are pictures of the brand and keep their own.
+export const typeScale = {
+  figure: { fontSize: 44, lineHeight: 50 }, // one big number on a card
+  display: { fontSize: 30, lineHeight: 36 }, // page titles and the Today greeting
+  title: { fontSize: 24, lineHeight: 30 }, // the question in a sitting, a card's headline
+  heading: { fontSize: 19, lineHeight: 25 }, // card titles and section headings
+  sub: { fontSize: 17, lineHeight: 24 }, // answer options and row titles
+  reading: { fontSize: 17, lineHeight: 26 }, // readings and reflections
+  body: { fontSize: 16, lineHeight: 24 },
+  small: { fontSize: 14, lineHeight: 20 }, // notes under controls, chips, segments
+  caption: { fontSize: 13, lineHeight: 18 }, // labels above cards, dates, counts
+  tab: { fontSize: 12, lineHeight: 16 }, // tab labels only
+} as const
 
 // A 4px grid, a 24px gutter, and the radii of the web app.
 export const space = { 1: 4, 2: 8, 3: 12, 4: 16, 5: 20, 6: 24, 8: 32, 10: 40 } as const
-export const gutter = 24
+export const gutter = 20
 // From this width a browser or a Mac window gets the sidebar instead of the
 // tab bar.
 export const WIDE = 900
@@ -143,6 +168,26 @@ export const RAIL_AT = 1340
 export const RAIL_W = 300
 export const SIDE_W = 248
 export const radius = { sm: 10, md: 14, lg: 18, xl: 24, pill: 999 } as const
+
+// The launch, loading and welcome pages (Edwin's design, 2026-10-29) look
+// the same in light and dark: the logo on midnight, then a sunrise.
+export const brand = {
+  night: '#0b1c2c', // behind the logo, and the phone's own splash (app.json)
+  onNight: '#ffffff',
+  onNight2: '#dce4ea',
+  sprout: '#c1e863', // the logo's light leaf: the progress bar and the welcome button
+  marigold: '#f4a258', // the button on a midnight Spotlight, in light and dark alike
+  onMarigold: '#013d5a', // navy words on orange, never black (Edwin, 2026-10-28)
+  onSprout: '#0b1c2c',
+  track: '#e9e5dd', // the empty part of the bar, on the sunrise
+  ink: '#12283a', // words on the sunrise
+  inkSoft: '#4a5866', // the logo's line on the sunrise
+  dawn: '#f6f1ea', // the sunrise's own cream, while its picture loads
+} as const
+
+// A serif for the welcome's one heading, as in Edwin's design: the phone's
+// own, so nothing more is downloaded.
+export const serif = Platform.select({ ios: 'Georgia', android: 'serif', default: 'Georgia, "Times New Roman", serif' })
 
 // A card's lift: a hairline plus a soft shadow in light, none in dark.
 const CARD_SHADOW = '0 1px 2px rgba(18, 40, 58, 0.04), 0 6px 20px rgba(18, 40, 58, 0.05)'

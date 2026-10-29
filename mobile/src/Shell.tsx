@@ -4,31 +4,45 @@
 // only draws them.
 import { StatusBar } from 'expo-status-bar'
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentRef, type ReactNode } from 'react'
-import { AppState, Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native'
+import { AppState, BackHandler, Linking, Platform, Pressable, ScrollView, useWindowDimensions, View } from 'react-native'
+import { Text, TextScaleProvider } from './ui/textScale'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { ApiError, cacheEdition, cachedEdition, getDay, pruneLocal, pruneWords, recalledChoice, sendPlanChecks, sendUnrated, type DailySet, type Question } from '@shared/api'
-import { dayAt, nextTurn, WINDOW_INFO, type Day, type OpenWindow, type Sitting } from '@shared/day'
+import { ApiError, cacheEdition, cachedEdition, getDay, pruneLocal, pruneWords, recalledChoice, sendPlanChecks, sendUnrated, sendUnvoted, type DailySet, type Question } from '@shared/api'
+import { clock, dayAt, nextTurn, WINDOW_INFO, type Day, type OpenWindow, type Sitting } from '@shared/day'
 import { heroFor, type Progress } from '@shared/homeHero'
 import { pruneNotebook } from '@shared/notebook'
 import { sendUnsent } from '@shared/moves'
+import { carryLine, rememberLine } from '@shared/continuity'
+import { journeyNote, lastMemory, linkLine, personalLine } from '@shared/todayFocus'
 import { forgetPick, isFirstDay, loadHistory, todaysPick, writeFirstOf, type Half } from '@shared/profile'
-import { blackOn, intimacyOn, loadPrefs, pulseOn, regionHere, savePrefs, type Prefs } from '@shared/prefs'
+import { darkNow, intimacyOn, loadPrefs, pulseOn, regionHere, savePrefs, sharingAsked, textScaleOf, type Prefs } from '@shared/prefs'
 import { cachedPack, fetchPack, regionalFor, regionalToday } from '@shared/regional'
-import { keys, load as loadKey, remove as removeKey, save as saveKey } from '@shared/storage'
+import { addDays, keys, load as loadKey, remove as removeKey, save as saveKey } from '@shared/storage'
 import { NAME_KEY, WELCOMED } from '@shared/welcomeKeys'
-import { pruneCardTexts } from '@shared/insights'
-import { CONNECT_OPEN_KEY, dayWithYou, glimpseHere, inWeekOne, isNewcomer, lastLeaning, markStarted, needsAccount, SHOW_ALL_KEY } from '@shared/firstWeek'
-import { signInMethods, type AccountView } from '@shared/social'
+import { cardTextOf, pruneCardTexts } from '@shared/insights'
+import { seedEchoes } from '@shared/echoes'
+import { refreshPatron } from '@shared/patron'
+import { CONNECT_OPEN_KEY, dayWithYou, glimpseHere, inWeekOne, isNewcomer, markStarted, needsAccount, SHOW_ALL_KEY } from '@shared/firstWeek'
+import type { SenseStart } from '@shared/makeSense'
+import { getOutside, getReflectTogether, getShares, inviteFromURL, signInMethods, type AccountView } from '@shared/social'
+import { inboxOf } from '@shared/inbox'
+import { onPeopleNotice, refreshPush } from './platform/push'
+import { inviteCodeIn, keepInvite, pendingInvite } from '@shared/invites'
 import { pullSync } from '@shared/sync'
 import { useAccount } from '@shared/useAccount'
 import { startBackups } from '@shared/vault'
 import { startReminders, type Opens } from './platform/reminders'
 import { markWindow } from '@shared/windows'
 import type { Read } from '@shared/reads/types'
-import { dark as darkPalette, font, light as lightPalette, radius, RAIL_AT, RAIL_W, ThemeProvider, useTheme, WIDE } from './theme'
-import { Back, Button, Page, PrivacyLine, T, Tinted } from './ui/kit'
+import { dark as darkPalette, font, light as lightPalette, radius, RAIL_AT, RAIL_W, ThemeProvider, useTheme, WIDE, typeScale } from './theme'
+import { Back, Button, feel, LoadingPage, Page, PageMemory, PrivacyLine, scrollOpenPageToTop, T, Tinted } from './ui/kit'
 import { Icon, type IconName } from './ui/Icon'
+import { CardHead } from './ui/parts'
+import { usePulse } from './ui/Pulse'
+import { setPatronOpener } from './ui/Patron'
+import { PatronPage } from './screens/PatronPage'
 import { Sidebar, type SideItem } from './ui/Sidebar'
+import { Enter, PushedPage } from './ui/Stack'
 import { QuestionCard } from './screens/QuestionCard'
 import { Close } from './screens/Close'
 import { Afternoon, Midday, Night } from './screens/Windows'
@@ -37,18 +51,32 @@ import { SignUp } from './screens/SignUp'
 import { Today } from './screens/Today'
 import { Reflect } from './screens/Reflect'
 import { Insights } from './screens/Insights'
+import { mirrorDay } from '@shared/mirrorDay'
+import { flushCounts } from '@shared/productCounts'
+import { Journey } from './screens/Journey'
 import { Connect } from './screens/Connect'
 import { KeptScreen, You } from './screens/You'
 import { Settings } from './screens/Settings'
 import { Mirror } from './screens/Mirror'
 import { ReadScreen } from './screens/ReadScreen'
 import { CountryAsk } from './screens/Country'
+import { themeName } from '@shared/themes'
 import { InstallInvite } from './screens/Browser'
+import { AskRemindersQuietly, RemindersOn } from './screens/Reminders'
+import { ShareChoices } from './screens/ShareChoices'
+import { setLanguage, tr, trf } from '@shared/i18n'
 import { backFromGoogle } from './platform/googleWeb'
+import { locale } from '@shared/locale'
+import { EmptyState } from './ui/Scene'
+import { MakeSense } from './screens/MakeSense'
 
 type State = { kind: 'loading' } | { kind: 'ready'; set: DailySet; day: string; offline?: true } | { kind: 'empty' } | { kind: 'error' }
 type Tab = 'today' | 'notebook' | 'circle' | 'insights' | 'account'
-type View_ = Tab | 'settings' | 'kept' | 'read' | 'signin' | 'mirror'
+type View_ = Tab | 'settings' | 'kept' | 'read' | 'signin' | 'mirror' | 'journey' | 'patron'
+// The pages that open on top of a tab and slide away again (ui/Stack.tsx).
+type Inner = Exclude<View_, Tab>
+const ROOTS = new Set<View_>(['today', 'notebook', 'circle', 'insights', 'account'])
+const isInner = (v: View_): v is Inner => !ROOTS.has(v)
 
 const TABS: { tab: Tab; name: string; icon: IconName }[] = [
   { tab: 'today', name: 'Today', icon: 'home' },
@@ -58,13 +86,10 @@ const TABS: { tab: Tab; name: string; icon: IconName }[] = [
   { tab: 'account', name: 'You', icon: 'you' },
 ]
 
-const SIGNUP_POINTS = [
-  'Your first glimpse and every answer, kept',
-  'Three new questions each morning and evening',
-  'Your first mirror on Sunday',
-  'Your notebook stays encrypted',
-]
+const SIGNUP_POINTS = ['Your first glimpse and every answer, kept', 'Three new questions each morning and evening', 'A Mirror of your week, every week', 'Your notebook stays encrypted']
 const SIGNIN_ASKED = 'pi.signin.asked'
+// One gentle second offer, from the second day, for someone who chose Start without an account.
+const SIGNIN_AGAIN = 'pi.signin.again'
 
 const themesOf = (qs: Question[]) => qs.map((q) => q.theme).filter((t): t is string => !!t)
 
@@ -73,14 +98,7 @@ function progressOf(qs: Question[]): Progress {
   return done === 0 ? 'none' : done === qs.length ? 'done' : 'started'
 }
 
-function homeNote(today: string, dayN: number | null): string | null {
-  const lean = lastLeaning(today)
-  const day = dayN && dayN > 1 ? `Day ${dayN} with you. ` : ''
-  if (lean) return `${day}Last time, your answers leaned towards ${lean}.`
-  return day ? day.trim() : null
-}
-
-const weekday = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString('en', { weekday: 'long', timeZone: 'UTC' })
+const weekday = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString(locale(), { weekday: 'long', timeZone: 'UTC' })
 
 // useDay: the device's date and window, turning by itself, and checked again
 // whenever the app comes back to the front.
@@ -120,35 +138,109 @@ function useStep(steps: Question[]) {
   return { at, go }
 }
 
-export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart: () => void }) {
+export function Shell({ phoneDark, onRestart, onDayReady }: { phoneDark: boolean; onRestart: () => void; onDayReady?: () => void }) {
   const [state, setState] = useState<State>({ kind: 'loading' })
   const [attempt, setAttempt] = useState(0)
+  // The launch waits for today (App.tsx): say when it's in, or why not.
+  useEffect(() => {
+    if (state.kind !== 'loading') onDayReady?.()
+  }, [state.kind, onDayReady])
   // Back from Google's sign-in on the website: open on sign-in to finish it.
   const [tab, setTab] = useState<View_>(() => (backFromGoogle() ? 'signin' : 'today'))
+  // An invite link that opened the app (personaindex.com/c/<code>) waits on
+  // this device until the person accepts it or says not now, and opens Connect.
+  const [invite, setInvite] = useState<string | null>(pendingInvite)
+  useEffect(() => {
+    const take = (code: string | null) => {
+      if (!code) return
+      keepInvite(code)
+      setInvite(code)
+      setTab('circle')
+    }
+    if (Platform.OS === 'web') {
+      const code = typeof location === 'undefined' ? null : inviteCodeIn(location.pathname + location.search)
+      inviteFromURL() // tidies the address bar
+      take(code)
+      return
+    }
+    Linking.getInitialURL().then(
+      (url) => take(url ? inviteCodeIn(url) : null),
+      () => {},
+    )
+    const sub = Linking.addEventListener('url', (e) => take(inviteCodeIn(e.url)))
+    return () => sub.remove()
+  }, [])
   const { width: windowWidth } = useWindowDimensions()
   const wide = windowWidth >= WIDE
   const rail = windowWidth >= RAIL_AT
   const [writeFree, setWriteFree] = useState(false)
+  const [writePrompt, setWritePrompt] = useState<string | null>(null)
+  const [writeFollows, setWriteFollows] = useState<string | null>(null)
   const mirrorScroll = useRef<ComponentRef<typeof ScrollView>>(null)
   const [back, setBack] = useState<Tab>('today')
+  // The tab underneath an inner page, and the inner page on top: it stays
+  // mounted while it slides away after Back, then goes.
+  const rootTab: Tab = isInner(tab) ? back : tab
+  const [stackTop, setStackTop] = useState<Inner | null>(isInner(tab) ? tab : null)
+  if (isInner(tab) && stackTop !== tab) setStackTop(tab)
+  const goBack = useCallback(() => setTab(back), [back])
   const [reading, setReading] = useState<Read | null>(null)
   const [prefs, setPrefs] = useState<Prefs>(loadPrefs)
+  const [connectFocus, setConnectFocus] = useState<string | null>(null)
+  // The app's language: the person's choice, or the phone's (i18n/index.ts).
+  setLanguage(prefs.lang ?? 'auto', locale())
   const [pickVersion, setPickVersion] = useState(0)
   const [flow, setFlow] = useState<OpenWindow | null>(null)
+  // Help making sense of something (screens/MakeSense.tsx): open over Today.
+  const [sense, setSense] = useState<{ start?: SenseStart; first?: boolean } | null>(null)
   const [, setFinished] = useState(0)
   const onDone = useCallback(() => setFinished((n) => n + 1), [])
   const { date, window: win, sitting: clockSitting } = useDay()
+  // One Human Pulse for every page (shared humanPulse.ts), once it is on.
+  const pulseCounts = usePulse(date, pulseOn(prefs))
   const [welcome, setWelcome] = useState(() => loadKey(WELCOMED) === null && loadHistory().answers.length === 0 && keys('pi.choice.').length === 0)
   const [localName, setLocalName] = useState(() => loadKey(NAME_KEY) ?? '')
   const me = useAccount()
   const [askedSignIn, setAskedSignIn] = useState(() => !!loadKey(SIGNIN_ASKED))
   const weekOne = inWeekOne(date)
+  // Notices about people you trust (platform/push.ts): a tap opens Connect, and
+  // after signing in the server hears this phone's address for that person.
+  useEffect(() => onPeopleNotice(() => setTab('circle')), [])
+  useEffect(() => {
+    if (me) refreshPush()
+  }, [me?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+  // A dot on Connect when something from your people is waiting: checked when
+  // the app comes back, every minute while open, and on leaving Connect.
+  const [peopleNew, setPeopleNew] = useState(false)
+  useEffect(() => {
+    if (!me) {
+      setPeopleNew(false)
+      return
+    }
+    let live = true
+    const check = () =>
+      Promise.all([getShares(), getReflectTogether().catch(() => ({ questions: [], items: [] })), getOutside().catch(() => undefined)]).then(
+        ([shares, together, outside]) => live && setPeopleNew(inboxOf(shares, together.items, outside).some((e) => e.isNew)),
+        () => {},
+      )
+    check()
+    const timer = setInterval(check, 60_000)
+    const sub = AppState.addEventListener('change', (st) => st === 'active' && check())
+    return () => {
+      live = false
+      clearInterval(timer)
+      sub.remove()
+    }
+  }, [me?.id, rootTab === 'circle']) // eslint-disable-line react-hooks/exhaustive-deps
+  const dotOn = (t: Tab) => t === 'circle' && peopleNew && rootTab !== 'circle'
   const dayN = dayWithYou(date)
   const [signup, setSignup] = useState(false)
   const [canSignIn, setCanSignIn] = useState(false)
   // The 12-word backup, when it is on: changes are sealed and sent a little
   // after they happen (vault.ts).
   useEffect(() => startBackups(), [])
+  // Seasonal Echoes remember answers from before they existed too (echoes.ts).
+  useEffect(() => seedEchoes(loadHistory(), (id) => cardTextOf(id)?.label, date), [date])
   // A tapped reminder opens where it said: the day's sitting, the Mirrors or Reflect.
   const onReminder = useRef<(w: Opens) => void>(() => {})
   useEffect(() => startReminders((w) => onReminder.current(w)), [])
@@ -162,8 +254,11 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
       live = false
     }
   }, [])
-  const accountFirst = canSignIn && needsAccount(!!me, date)
-  const connectShown = !weekOne || !!me || loadKey(CONNECT_OPEN_KEY) === '1'
+  // The first week asks for a free account from the second day (firstWeek.ts), but never of
+  // someone who chose Start without an account on the Welcome: they keep going, with one gentle
+  // offer at a close instead (the light-mode review, 2026-10-29).
+  const accountFirst = canSignIn && needsAccount(!!me, date) && !askedSignIn
+  const [offeredAgain, setOfferedAgain] = useState(() => !!loadKey(SIGNIN_AGAIN))
 
   useEffect(() => {
     let live = true
@@ -191,6 +286,7 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
     pruneCardTexts(date)
     sendUnsent(date)
     sendUnrated()
+    sendUnvoted()
     sendPlanChecks()
   }, [date])
 
@@ -221,13 +317,15 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
   )
   const evening: Progress | null = hasEvening ? (eveningReady ? progressOf(eveningQs) : 'none') : null
 
-  // Opening the app in a sitting's own window with questions left goes
-  // straight to them; otherwise it opens on Today.
+  // The app opens on Today, where the questions are one tap away and "Need a
+  // moment?" is in reach for a hard day (Edwin's brief, 2026-10-29: help with
+  // a difficult moment, a weekly benefit rather than a daily obligation). A
+  // new day or part of the day closes a sitting left open.
   const [flowFor, setFlowFor] = useState('')
   const flowKey = set ? `${set.date}|${win}` : ''
   if (set && flowFor !== flowKey) {
     setFlowFor(flowKey)
-    setFlow(set.review ? null : win === 'morning' && morning !== 'done' ? 'morning' : win === 'evening' && evening !== null && evening !== 'done' ? 'evening' : null)
+    setFlow(null)
   }
 
   const sitting: Sitting | null = flow === 'morning' ? 'morning' : flow === 'evening' ? 'evening' : null
@@ -245,6 +343,8 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
   function changePrefs(next: Prefs) {
     savePrefs(next)
     setPrefs(next)
+    // Saying yes to counting sends what waited for it, once (productCounts.ts).
+    if (next.countUse === true && prefs.countUse !== true) flushCounts()
     if (next.wordsDays !== prefs.wordsDays) pruneWords(date, next.wordsDays)
     if (!set || (next.adult === prefs.adult && next.mild === prefs.mild)) return
     const started = (qs: Question[]) => qs.some((q) => recalledChoice(q.id))
@@ -256,28 +356,65 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
   }
 
   function goTab(t: Tab) {
+    if (isInner(tab)) setStackTop(null)
     setTab(t)
     setWriteFree(false)
+    setWritePrompt(null)
+    setWriteFollows(null)
     if (t === 'today' && tab === 'today') setFlow(null)
   }
   // Today's "What's on your mind?" opens Reflect on a blank page.
-  function write() {
+  function write(prompt?: string, followsUp?: string) {
     setTab('notebook')
-    setWriteFree(true)
+    setWritePrompt(prompt ?? null)
+    setWriteFollows(followsUp ?? null)
+    setWriteFree(!prompt)
   }
-  function open(v: 'settings' | 'kept' | 'signin' | 'mirror') {
+  // "See how others answered": Connect, opened on that exact question.
+  function exploreWithOthers(questionId: string) {
+    saveKey(CONNECT_OPEN_KEY, '1')
+    setConnectFocus(questionId)
+    setTab('circle')
+  }
+  function open(v: 'settings' | 'kept' | 'signin' | 'mirror' | 'journey' | 'patron') {
     if (tab === 'today' || tab === 'notebook' || tab === 'circle' || tab === 'insights' || tab === 'account') setBack(tab)
     setTab(v)
   }
   onReminder.current = (w) => (w === 'mirrors' ? open('mirror') : setTab(w === 'reflect' ? 'notebook' : 'today'))
+  // Any "See Patron" opens the Patron page (ui/Patron.tsx).
+  const openRef = useRef(open)
+  openRef.current = open
+  useEffect(() => {
+    setPatronOpener(() => openRef.current('patron'))
+    return () => setPatronOpener(null)
+  }, [])
+  // What the server says this person holds, each time the app opens or the account changes.
+  useEffect(() => {
+    refreshPatron().catch(() => {})
+  }, [me?.id])
   function openRead(r: Read) {
     setReading(r)
-    if (tab !== 'read' && tab !== 'settings' && tab !== 'kept' && tab !== 'signin' && tab !== 'mirror') setBack(tab)
+    if (tab !== 'read' && tab !== 'settings' && tab !== 'kept' && tab !== 'signin' && tab !== 'mirror' && tab !== 'journey' && tab !== 'patron') setBack(tab)
     setTab('read')
   }
   function closeFlow() {
     if (set && flow && flow !== 'morning' && flow !== 'evening') markWindow(set.date, flow)
     setFlow(null)
+  }
+  // The welcome's way in, with or without an account.
+  function beginJourney(name: string) {
+    saveKey(WELCOMED, '1')
+    markStarted(date)
+    if (name) {
+      saveKey(NAME_KEY, name)
+      setLocalName(name)
+    }
+    setWelcome(false)
+    // A useful result first (Edwin's brief, 2026-10-29): "What would you like
+    // help making sense of today?" The day's three wait on Today, so the
+    // sitting the app opened by itself behind the welcome is put away.
+    setFlow(null)
+    setSense({ first: true })
   }
   const afterSignIn = (acc: AccountView) => {
     saveKey(SIGNIN_ASKED, '1')
@@ -285,14 +422,125 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
     pullSync(acc.sync).catch(() => {})
   }
 
-  // Same rule as the web: midnight when the phone asks for dark, and on Today
-  // through the evening and night; the Dark mode switch turns both off.
-  const dark = blackOn(prefs) && (phoneDark || ((win === 'evening' || win === 'night' || win === 'rest') && tab === 'today'))
+  // Android's back: an inner page handles its own (ui/Stack.tsx); then out
+  // of a sitting, then back to Today, then out of the app.
+  const backPress = useRef<() => boolean>(() => false)
+  backPress.current = () => {
+    if (isInner(tab)) return false
+    if (flow) {
+      closeFlow()
+      return true
+    }
+    if (tab !== 'today') {
+      goTab('today')
+      return true
+    }
+    return false
+  }
+  useEffect(() => {
+    if (Platform.OS !== 'android') return
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => backPress.current())
+    return () => sub.remove()
+  }, [])
+
+  // Light or dark for every page, chosen in Settings (prefs.ts darkNow).
+  // Automatic is dark in the evening and at night, and when the phone is dark.
+  const dark = darkNow(prefs, phoneDark, win === 'evening' || win === 'night' || win === 'rest')
   const palette = dark ? darkPalette : lightPalette
 
-  const hero = set
-    ? heroFor({ date: set.date, window: win, review: !!set.review, morning, evening, pulse: prefs.pulse !== false, friend: null })
-    : null
+  // The open sitting's next question previews it on Today, never an intimate one.
+  const nextPrompt = (qs: Question[]) => {
+    const next = qs.find((q) => !recalledChoice(q.id))
+    return next && next.care !== 'intimate' ? next.prompt : null
+  }
+  const plainHero = set ? heroFor({ date: set.date, window: win, review: !!set.review, morning, evening, friend: null, mirrorOn: mirrorDay() }) : null
+  const preview = plainHero?.opens === 'morning' ? nextPrompt(morningQs) : plainHero?.opens === 'evening' ? nextPrompt(eveningQs) : null
+  const hero = set && preview ? heroFor({ date: set.date, window: win, review: !!set.review, morning, evening, friend: null, preview, mirrorOn: mirrorDay() }) : plainHero
+
+  // Focused Today: what you said last time, tied to the sitting on offer
+  // only when one of its questions truly comes back to it (todayFocus.ts).
+  const memory = set && !welcome ? lastMemory(set.date, loadHistory()) : null
+  const offering = hero && ((hero.opens === 'morning' && morning !== 'done') || (hero.opens === 'evening' && evening !== null && evening !== 'done'))
+  const link = memory && offering ? linkLine(memory, themesOf(hero.opens === 'evening' ? eveningQs : morningQs)) : null
+  const journey = set && !welcome ? journeyNote(set.date, loadHistory(), offering ? themesOf(hero.opens === 'evening' ? eveningQs : morningQs) : []) : null
+  const dayDone = evening === 'done' || (evening === null && morning === 'done')
+  const tomorrowThemes = (set?.tomorrowThemes ?? []).slice(0, 2).map((t) => themeName(t).toLowerCase())
+  const tomorrow = dayDone && tomorrowThemes.length > 0 ? `Tomorrow your morning three open at ${clock(5 * 60)}, with questions about ${tomorrowThemes.join(' and ')}.` : null
+
+  // The inner pages, drawn on top of the tab they opened from.
+  function innerPage(v: Inner): ReactNode {
+    if (v === 'signin') {
+      return (
+        <SignUp
+          page={{ label: 'Sign in, or come back', title: 'Your Notebook is waiting.', lead: 'No password to remember. A 6-digit code to your email, phone or WhatsApp.', head: 'Sign in' }}
+          notNow="Back"
+          onNotNow={() => setTab(back)}
+          onDone={(acc) => {
+            afterSignIn(acc)
+            setTab(back)
+          }}
+        />
+      )
+    }
+    if (v === 'settings') {
+      return (
+        <Settings
+          prefs={prefs}
+          onChange={changePrefs}
+          onBack={() => setTab(back)}
+          name={localName}
+          onName={(n) => {
+            if (n) saveKey(NAME_KEY, n)
+            else removeKey(NAME_KEY)
+            setLocalName(n)
+          }}
+          onShowAll={
+            weekOne
+              ? () => {
+                  saveKey(SHOW_ALL_KEY, '1')
+                  setFinished((n) => n + 1)
+                }
+              : undefined
+          }
+          onOpenKept={() => setTab('kept')}
+          onRestored={onRestart}
+        />
+      )
+    }
+    if (v === 'kept') {
+      return <KeptScreen today={date} mild={!intimacyOn(prefs)} signedIn={!!me} onBack={() => setTab(back)} onDeleted={() => setFinished((n) => n + 1)} />
+    }
+    if (v === 'read' && reading) {
+      return <ReadScreen read={reading} date={date} intimacy={intimacyOn(prefs)} onBack={() => setTab(back)} onOpen={openRead} />
+    }
+    if (v === 'journey') {
+      return <Journey today={date} onBack={() => setTab(back)} onWrite={write} />
+    }
+    if (v === 'patron') {
+      return <PatronPage onBack={() => setTab(back)} />
+    }
+    if (v === 'mirror') {
+      return (
+        <Page scrollRef={mirrorScroll}>
+          <Back onPress={() => setTab(back)} />
+          <Mirror
+            today={set?.date ?? date}
+            onOpenKept={() => setTab('kept')}
+            onCircle={() => goTab('circle')}
+            onRead={openRead}
+            onOpenChoices={() => goTab('account')}
+            onWrite={(prompt) => write(prompt)}
+            jumpTo={(v) => {
+              const sv = mirrorScroll.current
+              const inner = sv?.getInnerViewRef()
+              if (sv && inner) v.measureLayout(inner, (_x, y) => sv.scrollTo({ y: Math.max(0, y - 12), animated: true }))
+            }}
+          />
+        </Page>
+      )
+    }
+    return null
+  }
 
   const signupName = me?.name || localName
   let body: ReactNode = null
@@ -302,31 +550,19 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
     body = (
       <Welcome
         onBegin={(name) => {
-          saveKey(WELCOMED, '1')
-          markStarted(date)
-          if (name) {
-            saveKey(NAME_KEY, name)
-            setLocalName(name)
-          }
-          setWelcome(false)
+          // They chose to start without an account: no second offer after the first sitting.
+          saveKey(SIGNIN_ASKED, '1')
+          setAskedSignIn(true)
+          beginJourney(name)
         }}
-      />
-    )
-    fullScreen = true
-  } else if (tab === 'signin') {
-    body = (
-      <SignUp
-        page={{ label: 'Sign in, or come back', title: 'Your Notebook is waiting.', lead: 'No password to remember. A 6-digit code to your email, phone or WhatsApp.', head: 'Sign in' }}
-        notNow="Back"
-        onNotNow={() => setTab(back)}
-        onDone={(acc) => {
+        onSignedIn={(acc, name) => {
           afterSignIn(acc)
-          setTab(back)
+          beginJourney(name || acc.name)
         }}
       />
     )
     fullScreen = true
-  } else if (set && tab === 'today' && (signup || (accountFirst && (flow === 'morning' || flow === 'evening')))) {
+  } else if (set && rootTab === 'today' && (signup || (accountFirst && (flow === 'morning' || flow === 'evening')))) {
     body = (
       <SignUp
         page={{
@@ -349,80 +585,82 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
       />
     )
     fullScreen = true
-  } else if (tab === 'settings') {
+  } else if (rootTab === 'notebook') {
     body = (
-      <Settings
-        prefs={prefs}
-        onChange={changePrefs}
-        onBack={() => setTab(back)}
-        name={localName}
-        onName={(n) => {
-          if (n) saveKey(NAME_KEY, n)
-          else removeKey(NAME_KEY)
-          setLocalName(n)
-        }}
-        onShowAll={
-          weekOne
-            ? () => {
-                saveKey(SHOW_ALL_KEY, '1')
-                setFinished((n) => n + 1)
-              }
-            : undefined
-        }
-        onOpenKept={() => setTab('kept')}
-        onRestored={onRestart}
+      <Reflect
+        today={date}
+        questions={[...morningQs, ...eveningQs]}
+        mild={!intimacyOn(prefs)}
+        startFree={writeFree}
+        startPrompt={writePrompt}
+        startFollowsUp={writeFollows}
+        name={me?.name || localName || null}
       />
     )
-  } else if (tab === 'kept') {
-    body = <KeptScreen today={date} mild={!intimacyOn(prefs)} signedIn={!!me} onBack={() => setTab(back)} onDeleted={() => setFinished((n) => n + 1)} />
-  } else if (tab === 'read' && reading) {
-    body = <ReadScreen read={reading} date={date} intimacy={intimacyOn(prefs)} onBack={() => setTab(back)} onOpen={openRead} />
-  } else if (tab === 'mirror') {
+  } else if (rootTab === 'insights') {
     body = (
-      <Page scrollRef={mirrorScroll}>
-        <Back onPress={() => setTab(back)} />
-        <Mirror
-          today={set?.date ?? date}
-          onOpenKept={() => setTab('kept')}
-          onCircle={() => goTab('circle')}
-          onRead={openRead}
-          onOpenSettings={() => open('settings')}
-          jumpTo={(v) => {
-            const sv = mirrorScroll.current
-            const inner = sv?.getInnerViewRef()
-            if (sv && inner) v.measureLayout(inner, (_x, y) => sv.scrollTo({ y: Math.max(0, y - 12), animated: true }))
-          }}
-        />
-      </Page>
+      <Insights
+        today={date}
+        questions={[...morningQs, ...eveningQs]}
+        pulseCounts={pulseCounts}
+        onExplore={exploreWithOthers}
+        onOpenMirror={() => open('mirror')}
+        onOpenJourney={() => open('journey')}
+        onToday={() => goTab('today')}
+      />
     )
-  } else if (tab === 'notebook') {
-    body = <Reflect today={date} questions={[...morningQs, ...eveningQs]} mild={!intimacyOn(prefs)} startFree={writeFree} name={me?.name || localName || null} />
-  } else if (tab === 'insights') {
-    body = <Insights today={date} questions={[...morningQs, ...eveningQs]} pulse={pulseOn(prefs)} onOpenReflect={() => goTab('notebook')} onOpenSettings={() => goTab('account')} onOpenMirror={() => open('mirror')} />
-  } else if (tab === 'circle') {
-    body = <Connect me={me} onSignIn={() => open('signin')} today={date} questions={[...morningQs, ...eveningQs]} />
-  } else if (tab === 'account') {
+  } else if (rootTab === 'circle') {
     body = (
-      <You
+      <Connect
         me={me}
-        localName={localName}
-        prefs={prefs}
-        onChange={changePrefs}
         onSignIn={() => open('signin')}
-        onOpenSettings={() => open('settings')}
-        onOpenKept={() => open('kept')}
+        today={date}
+        questions={[...morningQs, ...eveningQs]}
+        pulse={pulseOn(prefs) ? pulseCounts : false}
+        focus={connectFocus}
+        onWrite={write}
+        invite={invite}
+        onInviteDone={() => setInvite(null)}
       />
     )
-  } else if (tab === 'today' && set && flow && hero) {
+  } else if (rootTab === 'account') {
+    body = <You me={me} localName={localName} prefs={prefs} onChange={changePrefs} onSignIn={() => open('signin')} onOpenSettings={() => open('settings')} onOpenKept={() => open('kept')} />
+  } else if (rootTab === 'today' && sense) {
+    body = <MakeSense key={sense.start ?? 'pick'} today={date} start={sense.start} first={sense.first} onClose={() => setSense(null)} />
+    fullScreen = true
+  } else if (rootTab === 'today' && set && flow && hero) {
     fullScreen = true
     if (flow === 'morning' || flow === 'evening') {
       const name = WINDOW_INFO[flow].name
       const at = flowStep.at
       const closing = at >= steps.length
       const glimpse = closing && steps.length > 0 && glimpseHere(set.date, flow)
+      // The app shows it remembers: the sitting opens with an earlier answer.
+      const remember = rememberLine(set.date, loadHistory())
+      const carry = closing ? carryLine(set.date, loadHistory()) : null
+      const offerAccount = canSignIn && !me && !askedSignIn
+      const offerAgain = canSignIn && !me && askedSignIn && !offeredAgain && dayN > 1
+      // One ask at most at the close (the light-mode review, 2026-10-29): the
+      // reminder offer after the first glimpse, else what to add to shared
+      // totals (asked once, nothing ticked: Edwin, 2026-10-29), else signing
+      // in, then the 18+ question, then where you live, each asked once.
+      const ask: 'reminder' | 'sharing' | 'signin' | 'adult' | 'country' | null =
+        !closing || steps.length === 0
+          ? null
+          : glimpse
+            ? 'reminder'
+            : !sharingAsked(prefs)
+              ? 'sharing'
+              : offerAccount || offerAgain
+                ? 'signin'
+                : hasIntimate && prefs.adult === null && isNewcomer() && dayN > 1
+                  ? 'adult'
+                  : prefs.country === undefined
+                    ? 'country'
+                    : null
       body = (
         <Flow
-          label={steps.length === 0 ? name : closing ? `${name} close` : `${name} · ${at + 1} of ${steps.length}`}
+          label={steps.length === 0 ? tr(name) : closing ? trf('{name} close', { name: tr(name) }) : trf('{name} · {n} of {m}', { name: tr(name), n: at + 1, m: steps.length })}
           onClose={closeFlow}
           dashes={steps.map((q, i) => ({ done: !!recalledChoice(q.id), now: at === i, go: () => flowStep.go(i) }))}
           line={
@@ -430,13 +668,18 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
               ? weekOne && dayN > 1
                 ? `Day ${dayN} with you · ${weekday(set.date)}${flow === 'evening' ? ' evening' : ''}`
                 : weekOne || firstDay
-                  ? `Your first ${flow} · ${weekday(set.date)}`
+                  ? trf('Your first {sitting} · {day}', { sitting: tr(flow), day: weekday(set.date) })
                   : `${set.edition ? `Edition #${set.edition}` : "Today's questions"} · ${weekday(set.date)}${flow === 'evening' ? ' evening' : ''}`
               : undefined
           }
         >
           {hasIntimate && prefs.adult === null && !isNewcomer() && !closing && !firstDay && <AdultGate onAnswer={(adult) => changePrefs({ ...prefs, adult })} />}
-          {steps.length === 0 && <T tone="muted">{flow === 'evening' ? 'Your evening three open at 5 pm.' : 'Your morning three open at 5 am.'}</T>}
+          {steps.length === 0 && <T tone="muted">{flow === 'evening' ? `Your evening three open at ${clock(17 * 60)}.` : `Your morning three open at ${clock(5 * 60)}.`}</T>}
+          {at === 0 && current && remember && (
+            <Tinted tone="plain">
+              <T tone="text2">{remember}</T>
+            </Tinted>
+          )}
           {current && (
             <QuestionCard
               key={current.id}
@@ -445,10 +688,9 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
               sitting={flow}
               wordsDays={prefs.wordsDays}
               writeFirst={current.id === writeFirst}
-              index={at}
-              of={steps.length}
               onDone={onDone}
               onNext={() => flowStep.go(at + 1)}
+              pulse={{ counts: pulseCounts, onExplore: exploreWithOthers }}
             />
           )}
           {closing &&
@@ -469,46 +711,33 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
                 date={set.date}
                 questions={morningQs}
                 eveningThemes={hasEvening ? themesOf(eveningQs) : null}
+                carry={carry}
                 tomorrowThemes={set.tomorrowThemes ?? []}
                 glimpse={glimpse ? { name: me?.name || localName || null } : undefined}
                 dayWithYou={weekOne ? dayN : undefined}
               />
             ))}
-          {closing && steps.length > 0 && !me && !askedSignIn && !glimpse && canSignIn && (
-            <Tinted>
-              <T v="h2">Your {steps.length === 3 ? 'three cards are' : 'cards are'} on this phone. Keep them everywhere.</T>
-              <T tone="text2">Signing in syncs your Notebook across devices. No password, just a 6-digit code.</T>
-              <View style={{ flexDirection: 'row', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
-                <Button small label="Sign in" onPress={() => open('signin')} />
-                <Button
-                  kind="text"
-                  label="Not now"
-                  onPress={() => {
-                    saveKey(SIGNIN_ASKED, '1')
-                    setAskedSignIn(true)
-                  }}
-                />
-              </View>
-            </Tinted>
+          {ask === 'reminder' ? <RemindersOn /> : closing && steps.length > 0 && <AskRemindersQuietly />}
+          {ask === 'signin' && (
+            <AccountOffer
+              cards={steps.length}
+              // The second offer is made once: kept as made when it shows, and gone once the close is left.
+              onShown={() => askedSignIn && saveKey(SIGNIN_AGAIN, '1')}
+              onGone={() => askedSignIn && setOfferedAgain(true)}
+              onSignIn={() => open('signin')}
+              onNotNow={() => {
+                saveKey(SIGNIN_ASKED, '1')
+                saveKey(SIGNIN_AGAIN, '1')
+                setAskedSignIn(true)
+                setOfferedAgain(true)
+              }}
+            />
           )}
-          {closing && steps.length > 0 && hasIntimate && prefs.adult === null && isNewcomer() && dayN > 1 && !glimpse && (
-            <AdultGate again onAnswer={(adult) => changePrefs({ ...prefs, adult })} />
-          )}
-          {closing && steps.length > 0 && prefs.country === undefined && !glimpse && <CountryAsk onAnswer={(country) => changePrefs({ ...prefs, country })} />}
-          {glimpse && (
-            <View style={{ gap: 12, alignItems: 'center' }}>
-              <Button wide label={canSignIn && !me ? 'Keep going' : 'Back to today'} onPress={() => (canSignIn && !me ? setSignup(true) : closeFlow())} style={{ alignSelf: 'stretch' }} />
-              <Button
-                kind="text"
-                label="Invite one friend who knows you well"
-                onPress={() => {
-                  saveKey(CONNECT_OPEN_KEY, '1')
-                  setFlow(null)
-                  goTab('circle')
-                }}
-              />
-            </View>
-          )}
+          {ask === 'sharing' && <ShareChoices prefs={prefs} onSave={changePrefs} />}
+          {ask === 'adult' && <AdultGate again onAnswer={(adult) => changePrefs({ ...prefs, adult })} />}
+          {ask === 'country' && <CountryAsk onAnswer={(country) => changePrefs({ ...prefs, country })} />}
+          {/* Someone who chose "Start without an account" on the Welcome isn't asked again here. */}
+          {glimpse && <Button wide label={offerAccount ? 'Keep going' : 'Back to today'} onPress={() => (offerAccount ? setSignup(true) : closeFlow())} />}
           {closing && steps.length > 0 && !glimpse && <Button wide label="Back to today" onPress={closeFlow} />}
           <PrivacyLine onKept={() => open('kept')} onSettings={() => open('settings')} />
         </Flow>
@@ -522,7 +751,7 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
     } else if (flow === 'afternoon') {
       body = (
         <Flow label={pulseOn(prefs) ? 'Live · afternoon pulse' : 'Afternoon'} onClose={closeFlow}>
-          <Afternoon questions={morningQs} pulse={prefs.pulse} onPulse={(on) => changePrefs({ ...prefs, pulse: on })} />
+          <Afternoon questions={morningQs} pulse={pulseOn(prefs)} />
         </Flow>
       )
     } else if (flow === 'night') {
@@ -542,66 +771,57 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
             date={set.date}
             window={win}
             name={me?.name || localName || null}
-            note={homeNote(set.date, weekOne ? dayN : null)}
+            note={personalLine(weekOne ? dayN : null, memory)}
             hero={hero}
+            memory={memory}
+            journey={journey}
+            link={link}
+            tomorrow={tomorrow}
             onOpen={() => {
               if (hero.opens === 'mirror') open('mirror')
               else if (hero.opens) setFlow(hero.opens)
             }}
             onAccount={() => goTab('account')}
-            morning={morning}
-            evening={evening}
             themes={themesOf([...morningQs, ...eveningQs])}
             intimacy={intimacyOn(prefs)}
             onRead={openRead}
             rail={rail}
             onWrite={write}
+            onInsights={() => goTab('insights')}
+            onMirror={() => open('mirror')}
+            onConnect={() => goTab('circle')}
+            onSense={(start) => setSense({ start })}
           >
-            {!set.review && morning !== 'done' && win !== 'morning' && clockSitting === 'morning' && (
-              <Tinted>
-                <T>Your morning three are still open until 17:00.</T>
-                <Button small label="Answer them" onPress={() => setFlow('morning')} />
-              </Tinted>
-            )}
-            {!set.review && evening !== null && evening !== 'done' && win === 'night' && (
-              <Tinted>
-                <T>Your evening three are still open until midnight.</T>
-                <Button small label="Answer them" onPress={() => setFlow('evening')} />
-              </Tinted>
-            )}
-            {set.review && (
-              <Tinted tone="plain">
-                <T v="h2">Sunday is for looking back.</T>
-                <T tone="muted">No new questions today. Fresh questions arrive tomorrow at 5 am.</T>
-              </Tinted>
-            )}
+            {!weekOne && <InviteNudge today={set.date} signedIn={!!me} onOpen={() => goTab('circle')} />}
             <InstallInvite today={set.date} />
-            <PrivacyLine onKept={() => open('kept')} onSettings={() => open('settings')} />
           </Today>
         ) : state.kind === 'empty' ? (
-          <T>No questions today yet. Check back soon.</T>
+          <EmptyState scene="dawn" title="No questions yet today" line="They usually arrive early in the morning. Check back soon." />
         ) : state.kind === 'error' ? (
-          <View style={{ gap: 12 }}>
-            <T>I couldn't load today's questions.</T>
-            <Button
-              small
-              label="Try again"
-              onPress={() => {
-                setState({ kind: 'loading' })
-                setAttempt((n) => n + 1)
-              }}
-            />
-          </View>
+          <EmptyState
+            scene="night"
+            title="Today’s questions didn’t load"
+            line="Check your connection and try again. Your notebook and earlier answers are all still here."
+            action="Try again"
+            onAction={() => {
+              setState({ kind: 'loading' })
+              setAttempt((n) => n + 1)
+            }}
+          />
         ) : (
-          <T tone="muted" center>
-            Getting today's questions ready…
-          </T>
+          <LoadingPage label="Getting today's questions ready…" />
         )}
       </Page>
     )
   }
 
-  const shown = TABS.filter((t) => t.tab !== 'circle' || connectShown)
+  // Sign-in covers the whole window, tab bar and sidebar included, as before.
+  if (stackTop === 'signin' && isInner(tab)) fullScreen = true
+  // A sitting rises into place when it opens (ui/Stack.tsx).
+  const sittingOpen = !welcome && rootTab === 'today' && !!set && !!flow && !!hero && !signup
+
+  // Five places, always (Edwin's brief, 2026-10-28): Connect is useful from day one, friends or not.
+  const shown = TABS
   // A wide browser or Mac window keeps the sidebar through a sitting, as the
   // web app does; the welcome and sign-up pages stand alone.
   const sidebar = wide && !welcome && !(fullScreen && !flow)
@@ -615,6 +835,7 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
       icon: t.icon,
       on: tab === t.tab || (t.tab === 'insights' && tab === 'mirror'),
       onPress: () => goTab(t.tab),
+      dot: dotOn(t.tab),
     }))
   const sideExtras: SideItem[] = weekOne
     ? []
@@ -624,51 +845,90 @@ export function Shell({ phoneDark, onRestart }: { phoneDark: boolean; onRestart:
       ]
   return (
     <ThemeProvider palette={palette}>
-      {/* Light clock and icons on midnight, dark ones on cream. */}
-      <StatusBar style={dark ? 'light' : 'dark'} />
-      <View style={{ flex: 1, flexDirection: sidebar ? 'row' : 'column', backgroundColor: palette.bg }}>
-        {sidebar && (
-          <Sidebar
-            top={[...sideItems(shown.filter((t) => t.tab !== 'account')), ...sideExtras]}
-            foot={[
-              ...sideItems(shown.filter((t) => t.tab === 'account')),
-              { key: 'settings', name: 'Settings', icon: 'gear', on: tab === 'settings', onPress: () => open('settings') },
-            ]}
-          />
-        )}
-        <View style={{ flex: 1 }}>{body}</View>
-        {showTabs && <TabBar tab={tab} onTab={goTab} shown={shown} />}
-      </View>
+      <TextScaleProvider scale={textScaleOf(prefs)}>
+        {/* Light clock and icons on midnight, dark ones on cream. */}
+        <StatusBar style={dark ? 'light' : 'dark'} />
+        <View style={{ flex: 1, flexDirection: sidebar ? 'row' : 'column', backgroundColor: palette.bg }}>
+          {sidebar && (
+            <Sidebar
+              top={[...sideItems(shown.filter((t) => t.tab !== 'account')), ...sideExtras]}
+              foot={[...sideItems(shown.filter((t) => t.tab === 'account')), { key: 'settings', name: 'Settings', icon: 'gear', on: tab === 'settings', onPress: () => open('settings') }]}
+            />
+          )}
+          <View style={{ flex: 1 }}>
+            <PageMemory.Provider value={sittingOpen ? null : rootTab}>{sittingOpen ? <Enter key={flow}>{body}</Enter> : body}</PageMemory.Provider>
+            {stackTop && (
+              <PushedPage key={stackTop} leaving={!isInner(tab)} wide={wide} onBack={goBack} onGone={() => setStackTop(null)}>
+                {innerPage(stackTop)}
+              </PushedPage>
+            )}
+          </View>
+          {showTabs && <TabBar tab={tab} onTab={goTab} shown={shown} dotOn={dotOn} />}
+        </View>
+      </TextScaleProvider>
     </ThemeProvider>
+  )
+}
+
+// The offer to sign in at a close: shown once, then never again, whether or
+// not it was answered.
+function AccountOffer({ cards, onShown, onGone, onSignIn, onNotNow }: { cards: number; onShown: () => void; onGone: () => void; onSignIn: () => void; onNotNow: () => void }) {
+  const once = useRef({ onShown, onGone })
+  useEffect(() => {
+    once.current.onShown()
+    const gone = once.current.onGone
+    return () => gone()
+  }, [])
+  return (
+    <Tinted>
+      <T v="h2">Your {cards === 3 ? 'three cards are' : 'cards are'} on this phone. Keep them everywhere.</T>
+      <T tone="text2">Signing in syncs your Notebook across devices. No password, just a 6-digit code.</T>
+      <View style={{ flexDirection: 'row', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+        <Button small label="Sign in" onPress={onSignIn} />
+        <Button kind="text" label="Not now" onPress={onNotNow} />
+      </View>
+    </Tinted>
   )
 }
 
 // Inner pages light the tab they belong under.
 function tabHome(tab: View_): View_ {
-  return tab === 'settings' || tab === 'kept' || tab === 'signin' ? 'account' : tab === 'mirror' ? 'insights' : tab
+  return tab === 'settings' || tab === 'kept' || tab === 'signin' || tab === 'patron' ? 'account' : tab === 'mirror' || tab === 'journey' ? 'insights' : tab
 }
 
-function TabBar({ tab, onTab, shown }: { tab: View_; onTab: (t: Tab) => void; shown: typeof TABS }) {
+function TabBar({ tab, onTab, shown, dotOn }: { tab: View_; onTab: (t: Tab) => void; shown: typeof TABS; dotOn: (t: Tab) => boolean }) {
   const p = useTheme()
   const insets = useSafeAreaInsets()
   return (
-    <View
-      accessibilityRole="tablist"
-      style={{ flexDirection: 'row', backgroundColor: p.surface, borderTopWidth: 1, borderTopColor: p.line, paddingBottom: Math.max(insets.bottom, 8), paddingTop: 8 }}
-    >
+    <View accessibilityRole="tablist" style={{ flexDirection: 'row', backgroundColor: p.surface, borderTopWidth: 1, borderTopColor: p.line, paddingBottom: Math.max(insets.bottom, 8), paddingTop: 8 }}>
       {shown.map((t) => {
         const on = tabHome(tab) === t.tab
         return (
           <Pressable
             key={t.tab}
             accessibilityRole="tab"
-            accessibilityLabel={t.name}
+            accessibilityLabel={dotOn(t.tab) ? `${tr(t.name)}, something new` : tr(t.name)}
             accessibilityState={{ selected: on }}
-            onPress={() => onTab(t.tab)}
-            style={{ flex: 1, alignItems: 'center', gap: 4, paddingVertical: 4 }}
+            onPress={() => {
+              feel('select')
+              if (on && !isInner(tab)) scrollOpenPageToTop()
+              onTab(t.tab)
+            }}
+            style={{ flex: 1, alignItems: 'center', gap: 3, paddingVertical: 2 }}
           >
-            <Icon name={t.icon} size={24} color={on ? p.lime : p.muted} width={on ? 2 : 1.6} />
-            <Text style={{ fontFamily: on ? font.bold : font.medium, fontSize: 12, color: on ? p.text : p.muted }}>{t.name}</Text>
+            {/* The open tab sits in a soft capsule, as on iPhone and Android now. */}
+            {/* Always drawn and shown by opacity: on Android a colour added later loses the round corners. */}
+            <View style={{ width: 56, height: 30, alignItems: 'center', justifyContent: 'center' }}>
+              <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 15, backgroundColor: p.accentWash, opacity: on ? 1 : 0 }} />
+              {/* Positioned too, so on the web the icon paints above the capsule, as it does on a phone. */}
+              <View style={{ position: 'relative' }}>
+                <Icon name={t.icon} size={22} color={on ? p.lime : p.muted} width={on ? 2.1 : 1.6} />
+                {dotOn(t.tab) && <View style={{ position: 'absolute', top: -2, right: -4, width: 9, height: 9, borderRadius: 5, backgroundColor: p.lime, borderWidth: 1.5, borderColor: p.surface }} />}
+              </View>
+            </View>
+            <Text maxScale={1.15} style={{ fontFamily: on ? font.bold : font.medium, ...typeScale.tab, color: on ? p.text : p.muted }}>
+              {tr(t.name)}
+            </Text>
           </Pressable>
         )
       })}
@@ -677,19 +937,7 @@ function TabBar({ tab, onTab, shown }: { tab: View_; onTab: (t: Tab) => void; sh
 }
 
 // A sitting or window, full screen: the back arrow, its name, the dashes.
-function Flow({
-  label,
-  onClose,
-  dashes,
-  line,
-  children,
-}: {
-  label: string
-  onClose: () => void
-  dashes?: { done: boolean; now: boolean; go: () => void }[]
-  line?: string
-  children: ReactNode
-}) {
+function Flow({ label, onClose, dashes, line, children }: { label: string; onClose: () => void; dashes?: { done: boolean; now: boolean; go: () => void }[]; line?: string; children: ReactNode }) {
   const p = useTheme()
   return (
     <Page bottom={48}>
@@ -725,12 +973,37 @@ function AdultGate({ again, onAnswer }: { again?: boolean; onAnswer: (adult: boo
   return (
     <Tinted tone="plain">
       <T v="h2">{again ? 'One more thing: are you 18 or older?' : 'Are you 18 or older?'}</T>
-      <T tone="muted">
-        Some questions are about intimacy and sex. They are frank, never graphic, and only kept as "a private answer".{again ? ' You can change this any time in Settings.' : ''}
-      </T>
+      <T tone="muted">Some questions are about intimacy and sex. They are frank, never graphic, and only kept as "a private answer".{again ? ' You can change this any time in Settings.' : ''}</T>
       <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
         <Button small label="Yes, I'm 18 or older" onPress={() => onAnswer(true)} />
-        <Button small kind="ghost" label="No" onPress={() => onAnswer(false)} />
+        <Button small kind="secondary" label="No" onPress={() => onAnswer(false)} />
+      </View>
+    </Tinted>
+  )
+}
+
+// After the first Mirror: one gentle invitation to bring in someone who knows
+// you, since Connect is otherwise easy to miss. "Not now" waits a week.
+const INVITE_LATER = 'pi.invite.later'
+
+function InviteNudge({ today, signedIn, onOpen }: { today: string; signedIn: boolean; onOpen: () => void }) {
+  const [later, setLater] = useState(() => loadKey(INVITE_LATER))
+  if (later && addDays(later, 7) > today) return null
+  return (
+    <Tinted style={{ gap: 10 }}>
+      <CardHead icon="heart" tone="rose" title="Reach out when you’re ready" />
+      <T tone="text2">Is there someone you’d feel comfortable reconnecting with? Your Circle is here whenever you want it, and friends never see your answers.</T>
+      <View style={{ flexDirection: 'row', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+        <Button small kind="secondary" label={signedIn ? 'Invite a friend' : 'Start your circle'} iconAfter="chevron" onPress={onOpen} />
+        <Button
+          small
+          kind="text"
+          label="Not now"
+          onPress={() => {
+            saveKey(INVITE_LATER, today)
+            setLater(today)
+          }}
+        />
       </View>
     </Tinted>
   )

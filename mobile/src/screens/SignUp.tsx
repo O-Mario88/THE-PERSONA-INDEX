@@ -3,15 +3,16 @@
 // or a phone, or Apple and Google through their own sheets (idSignIn.ts).
 // Only the ways the server can really use are shown.
 import { useEffect, useState } from 'react'
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native'
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native'
+import { Text } from '../ui/textScale'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ApiError } from '@shared/api'
 import * as AppleAuthentication from 'expo-apple-authentication'
 import { patchAccount, sendCode, signInMethods, signInWithID, verifyCode, type AccountView, type SignInMethods } from '@shared/social'
 import { Cancelled, appProviders, appleToken, googleToken, type IdToken, type Providers } from '../platform/idSignIn'
 import { doneWithGoogleReturn, takeGoogleReturn } from '../platform/googleWeb'
-import { font, gutter, radius, useTheme } from '../theme'
-import { Button, Field, T } from '../ui/kit'
+import { font, gutter, radius, useTheme, typeScale } from '../theme'
+import { Button, Card, Field, T } from '../ui/kit'
 import { Icon } from '../ui/Icon'
 
 const ERRORS: Record<string, string> = {
@@ -32,7 +33,7 @@ type Step = { at: 'start' } | { at: 'code'; address: string; kind: 'email' | 'ph
 
 export type SignUpPage = { label: string; title: string; lead: string; head: string; points?: string[] }
 
-export function SignUp({ page, onDone, onNotNow, notNow }: { page: SignUpPage; onDone: (me: AccountView) => void; onNotNow: () => void; notNow: string }) {
+export function SignUp({ page, onDone, onNotNow, notNow, name: given = '' }: { page: SignUpPage; onDone: (me: AccountView) => void; onNotNow: () => void; notNow: string; name?: string }) {
   const p = useTheme()
   const insets = useSafeAreaInsets()
   const [methods, setMethods] = useState<SignInMethods | null>(null)
@@ -41,7 +42,7 @@ export function SignUp({ page, onDone, onNotNow, notNow }: { page: SignUpPage; o
   const [via, setVia] = useState<'email' | 'phone' | 'whatsapp'>('email')
   const [address, setAddress] = useState('')
   const [code, setCode] = useState('')
-  const [name, setName] = useState('')
+  const [name, setName] = useState(given)
   const [handle, setHandle] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -109,46 +110,34 @@ export function SignUp({ page, onDone, onNotNow, notNow }: { page: SignUpPage; o
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: p.bg }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 40 }}>
-        <View style={{ backgroundColor: p.navy, paddingHorizontal: gutter, paddingTop: Math.max(insets.top, 20) + 16, paddingBottom: 28, gap: 18 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <Text style={{ fontFamily: font.bold, fontSize: 16, color: p.onNavy }}>P</Text>
-            <T v="label" tone="onNavy">
-              The Persona Index
+        {/* A calm cream header in Today's style (Edwin, 2026-10-28: the blue
+            block made the page feel crowded and pushed the form off screen). */}
+        <View style={{ paddingHorizontal: gutter, paddingTop: Math.max(insets.top, 20) + 16, gap: 16, maxWidth: 640, width: '100%', alignSelf: 'center' }}>
+          <View style={{ gap: 8 }}>
+            <T v="eyebrow">
+              {page.label}
             </T>
+            <T v="display">{page.title}</T>
+            <T tone="text2">{page.lead}</T>
           </View>
-          <T v="label" style={{ color: p.brandLime }}>
-            {page.label}
-          </T>
-          <T v="display" tone="onNavy" style={{ fontSize: 40, lineHeight: 44 }}>
-            {page.title}
-          </T>
-          <T tone="onNavy2" style={{ fontSize: 18, lineHeight: 27 }}>
-            {page.lead}
-          </T>
           {page.points && (
-            <View style={{ gap: 10 }}>
+            <Card style={{ gap: 10 }}>
               {page.points.map((pt) => (
-                <View key={pt} style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
-                  <Icon name="check" size={16} color={p.brandLime} />
-                  <T tone="onNavy2" style={{ flex: 1 }}>
-                    {pt}
-                  </T>
+                <View key={pt} style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}>
+                  <View style={{ paddingTop: 3 }}>
+                    <Icon name="check" size={16} color={p.accentInk} width={2.2} />
+                  </View>
+                  <T style={{ flex: 1 }}>{pt}</T>
                 </View>
               ))}
-            </View>
+            </Card>
           )}
-          <T v="tiny" tone="onNavy2">
-            3 questions a morning, 3 an evening · personaindex.com
-          </T>
         </View>
 
-        <View style={{ paddingHorizontal: gutter, paddingTop: 28, gap: 16, maxWidth: 640, width: '100%', alignSelf: 'center' }}>
+        <View style={{ paddingHorizontal: gutter, paddingTop: 24, gap: 16, maxWidth: 640, width: '100%', alignSelf: 'center' }}>
           {step.at === 'start' && (
             <>
-              <View style={{ gap: 4 }}>
-                <T v="title">{page.head}</T>
-                <T tone="muted">No password. One tap or a code.</T>
-              </View>
+              <T v="title">{page.head}</T>
               {!methods && <T tone="muted">One moment…</T>}
               {none && <T tone="text2">{ERRORS.sign_in_unavailable}</T>}
               {methods && providers.apple && (
@@ -161,7 +150,7 @@ export function SignUp({ page, onDone, onNotNow, notNow }: { page: SignUpPage; o
                 />
               )}
               {methods && providers.google && (
-                <Button wide kind="outline" label="Continue with Google" disabled={busy} onPress={() => withID('google', () => googleToken(methods))} />
+                <Button wide kind="secondary" label="Continue with Google" disabled={busy} onPress={() => withID('google', () => googleToken(methods))} />
               )}
               {codes && oneTap && (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
@@ -184,7 +173,7 @@ export function SignUp({ page, onDone, onNotNow, notNow }: { page: SignUpPage; o
                           onPress={() => setVia(t.id)}
                           style={{ flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: radius.sm, backgroundColor: via === t.id ? p.surface : 'transparent' }}
                         >
-                          <Text style={{ fontFamily: font.bold, fontSize: 15, color: via === t.id ? p.text : p.muted }}>{t.name}</Text>
+                          <Text style={{ fontFamily: font.bold, ...typeScale.small, color: via === t.id ? p.text : p.muted }}>{t.name}</Text>
                         </Pressable>
                       ))}
                     </View>
@@ -220,17 +209,22 @@ export function SignUp({ page, onDone, onNotNow, notNow }: { page: SignUpPage; o
 
           {step.at === 'code' && (
             <>
-              <T v="label">{step.kind === 'phone' ? 'Check your messages' : 'Check your email'}</T>
+              <T v="eyebrow">{step.kind === 'phone' ? 'Check your messages' : 'Check your email'}</T>
               <T v="title">We sent a 6-digit code to {step.address}</T>
               <T tone="muted">It works for 10 minutes. Nothing to type back, just the six digits.</T>
               <Field
                 value={code}
-                onChangeText={(t) => setCode(t.replace(/\D/g, '').slice(0, 6))}
+                onChangeText={(t) => {
+                  const digits = t.replace(/\D/g, '').slice(0, 6)
+                  setCode(digits)
+                  // A code that's typed, pasted or filled in from the message goes straight through.
+                  if (digits.length === 6 && !busy) run(async () => finish((await verifyCode(step.address, digits)).account))
+                }}
                 keyboardType="number-pad"
                 textContentType="oneTimeCode"
                 autoComplete="one-time-code"
                 accessibilityLabel="The code"
-                style={{ fontSize: 28, letterSpacing: 12, textAlign: 'center', fontFamily: font.bold }}
+                style={{ ...typeScale.title, letterSpacing: 12, textAlign: 'center', fontFamily: font.bold }}
               />
               <T v="small" tone="muted">
                 This device will be added to your account. You can sign it out any time from You.

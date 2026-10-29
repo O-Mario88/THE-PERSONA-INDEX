@@ -5,10 +5,13 @@
 // Not me. The older, fuller view stays under "Explore deeper". The rules all
 // live in the shared mirrorStory.ts and mirrorChoices.ts.
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ComponentRef, type ReactNode } from 'react'
-import { Linking, Pressable, Share, TextInput, View } from 'react-native'
+import { Linking, Pressable, Share, View } from 'react-native'
+import { TextInput } from '../ui/textScale'
 import Svg, { Circle, Path } from 'react-native-svg'
 import { getPeriodMirror, PERIODS_BACK, type Mirror as MirrorData, type PeriodMirror } from '@shared/api'
 import { connectionBetween } from '@shared/connection'
+import { checkIns, heldBack, stepKey, stepWords } from '@shared/growthJourney'
+import { loadMoves } from '@shared/moves'
 import { getNotAlone, type NotAloneQuestion } from '@shared/insights'
 import { reflectSettings, threadsBetween } from '@shared/journal'
 import {
@@ -19,8 +22,6 @@ import {
   keepLetter,
   keepProud,
   proudOf,
-  readsDeep,
-  rememberDepth,
   rememberFit,
   stillImportant,
   undoDirection,
@@ -48,6 +49,7 @@ import {
   periodNeeds,
   periodStory,
   say,
+  sharedMoment,
   weekDirection,
   weekStory,
   whenSaid,
@@ -63,19 +65,32 @@ import {
   type Observation,
   type OthersPick,
   type OthersStep,
+  type SharedMoment,
   type Span,
   type Story,
 } from '@shared/mirrorStory'
+import { mirrorName } from '@shared/mirrorDay'
 import { leanings, periodName, weekRange } from '@shared/mirrorText'
+import { focusChoices, FOCUS_NEXT, matteredOf, recurringOf, saidHelped, stillOpen, WEEK_QUESTIONS, type FocusChoice } from '@shared/mirrorWeek'
 import { checkIntention, intentions, reflections } from '@shared/notebook'
 import { checkPattern, hasPatterns, patternCheckOf } from '@shared/patterns'
 import { helplineHere, loadPrefs, pulseOn } from '@shared/prefs'
 import { leaningVerdict, loadHistory, notMeSides, rememberLeaning } from '@shared/profile'
-import { font, radius, useTheme } from '../theme'
+import { font, radius, useTheme, typeScale } from '../theme'
 import { Icon, type IconName } from '../ui/Icon'
-import { Button, Chip, T, Tinted } from '../ui/kit'
-import { Disc, type Tone } from '../ui/parts'
+import { DepthSwitch, useDeeper } from '../ui/Depth'
+import { Button, Chip, Option, T, Tinted } from '../ui/kit'
+import { CardHead, Disc, type Tone } from '../ui/parts'
+import { PrepareSheet } from './ConversationSheet'
+import { PairWeekCard } from './WalkAlongside'
 import { CircleLine, InConnection, MirrorPatterns, MirrorThreads, showConnection } from './MirrorBits'
+import { locale } from '@shared/locale'
+import { shows } from '@shared/release'
+import { noteMirrorWeek } from '@shared/productCounts'
+import { ShareSheet } from './ShareSheet'
+import { connectionWeek, saySupport, SUPPORT_ASK, supportFor, type SupportAnswer } from '@shared/connectionWeek'
+import { getOutside, getReflectTogether, getShares } from '@shared/social'
+import { useAccount } from '@shared/useAccount'
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
@@ -114,12 +129,12 @@ function StoryHero({ eyebrow, story, meta, span }: { eyebrow: string; story: Sto
         <T v="eyebrow" tone="onNavy2">
           {eyebrow}
         </T>
-        <T v="quote" tone="onNavy" style={{ fontSize: 28, lineHeight: 33 }}>
+        <T v="quote" tone="onNavy" style={typeScale.title}>
           {story.headline}
         </T>
         <View style={{ width: 40, height: 3, borderRadius: 2, backgroundColor: p.brandLime }} />
         {story.paragraphs.map((x, i) => (
-          <T key={i} style={{ color: '#eef3f6', fontSize: 17, lineHeight: 27 }}>
+          <T key={i} style={{ color: '#eef3f6', ...typeScale.reading }}>
             {x}
           </T>
         ))}
@@ -183,18 +198,13 @@ function Section({ id, icon, tone = 'green', title, note, children }: { id: stri
   const ref = useSectionRef(id)
   return (
     <View ref={ref} collapsable={false} style={{ gap: 14 }}>
-      <View style={{ flexDirection: 'row', gap: 12, alignItems: 'flex-start' }}>
-        <Disc icon={icon} tone={tone} size={40} />
-        <View style={{ flex: 1, gap: 2 }}>
-          <T v="h3">
-            {title}
+      <View style={{ gap: 6 }}>
+        <CardHead icon={icon} tone={tone} title={title} />
+        {note ? (
+          <T v="small" tone="muted">
+            {note}
           </T>
-          {note ? (
-            <T v="small" tone="muted">
-              {note}
-            </T>
-          ) : null}
-        </View>
+        ) : null}
       </View>
       {children}
     </View>
@@ -217,7 +227,7 @@ function Quote({ text, when }: { text: string; when?: string }) {
   const p = useTheme()
   return (
     <View style={{ borderLeftWidth: 3, borderLeftColor: p.purple, paddingLeft: 14, gap: 4 }}>
-      <T style={{ fontFamily: font.semibold, fontSize: 19, lineHeight: 27 }}>“{text}”</T>
+      <T style={{ fontFamily: font.semibold, ...typeScale.sub }}>“{text}”</T>
       {when ? <Fine>{when}</Fine> : null}
     </View>
   )
@@ -377,7 +387,7 @@ function NotAloneView({ picks }: { picks: NotAlonePick[] }) {
       {picks.map((x) => (
         <View key={x.questionId} style={{ gap: 6 }} accessible accessibilityLabel={`${x.same} of ${x.total} people chose “${x.label}” too, when asked: ${x.prompt}`}>
           <T v="h3">
-            {x.same.toLocaleString('en-GB')} of {x.total.toLocaleString('en-GB')} people
+            {x.same.toLocaleString(locale())} of {x.total.toLocaleString(locale())} people
           </T>
           <T v="small" tone="text2">
             chose “{x.label}” too, when asked: {x.prompt}
@@ -385,6 +395,19 @@ function NotAloneView({ picks }: { picks: NotAlonePick[] }) {
           <Bar part={x.same / Math.max(1, x.total)} />
         </View>
       ))}
+    </View>
+  )
+}
+
+// The moments we share: a move towards someone that the person recorded, in
+// their words, and what it taught them, written privately in Reflect.
+function MomentView({ moment, onWrite }: { moment: SharedMoment; onWrite?: (prompt: string) => void }) {
+  const prompt = moment.prompt
+  return (
+    <View style={{ gap: 6 }}>
+      <T>{moment.line}</T>
+      {moment.ask ? <T bold>{moment.ask}</T> : null}
+      {prompt && onWrite ? <Button kind="text" small label="Write about it, privately" iconAfter="arrow" onPress={() => onWrite(prompt)} style={{ alignSelf: 'flex-start' }} /> : null}
     </View>
   )
 }
@@ -402,7 +425,7 @@ function OthersView({ picks }: { picks: OthersPick[] }) {
               </T>
               <Bar small part={r.count === null ? 0.03 : r.count / Math.max(1, x.total)} />
               <T v="small" bold style={{ width: 44, textAlign: 'right' }}>
-                {r.count === null ? 'a few' : r.count.toLocaleString('en-GB')}
+                {r.count === null ? 'a few' : r.count.toLocaleString(locale())}
               </T>
             </View>
           ))}
@@ -469,12 +492,12 @@ function Area({ label, value, onChange, max, lines = 2, id }: { label: string; v
       style={{
         minHeight: 24 * lines + 28,
         borderWidth: 1.5,
-        borderColor: p.line,
+        borderColor: p.control,
         backgroundColor: p.surface,
         borderRadius: radius.md,
         padding: 14,
         fontFamily: font.regular,
-        fontSize: 16,
+        ...typeScale.body,
         color: p.text,
         textAlignVertical: 'top',
       }}
@@ -497,19 +520,14 @@ function DirectionBox({ span, from, today, direction, title, allowOwn = false }:
   return (
     <View ref={ref} collapsable={false}>
       <Box>
-        <View style={{ flexDirection: 'row', gap: 12 }}>
-          <Disc icon="arrow" tone="amber" size={40} />
-          <View style={{ flex: 1, gap: 4 }}>
-            <T v="h3">
-              {title}
+        <View style={{ gap: 6 }}>
+          <CardHead icon="arrow" tone="amber" title={title} />
+          {direction && <T v="quote">{direction.text}</T>}
+          {direction && (
+            <T v="small" tone="muted">
+              {direction.why}
             </T>
-            {direction && <T v="quote" style={{ fontSize: 20, lineHeight: 27 }}>{direction.text}</T>}
-            {direction && (
-              <T v="small" tone="muted">
-                {direction.why}
-              </T>
-            )}
-          </View>
+          )}
         </View>
         {chosen ? (
           <View style={{ gap: 4 }}>
@@ -554,44 +572,120 @@ function DirectionBox({ span, from, today, direction, title, allowOwn = false }:
   )
 }
 
-// Two reading depths: the essential Mirror, and the whole of it.
-function DepthSwitch({ deep, onChange }: { deep: boolean; onChange: (deep: boolean) => void }) {
-  const p = useTheme()
+// "What do you want to carry into next week?": one action, "Choose what to
+// focus on next", then the choices: the week's suggestion, what they said
+// helped, what they are still finding out, their own idea, or not now. A
+// choice is kept as something to try, and Today asks how it went a week on.
+function WeekFocus({ from, today, choices }: { from: string; today: string; choices: FocusChoice[] }) {
+  const ref = useSectionRef('ms-direction')
+  const [chosen, setChosen] = useState(() => directionChoice('week', from))
+  const [choosing, setChoosing] = useState(false)
+  const [own, setOwn] = useState<string | null>(null)
+  const kept = chosen && chosen.choice !== 'not_now' ? intentions().find((i) => i.id === `mirror-week-${from}`)?.text : undefined
+  function choose(choice: 'try' | 'own' | 'not_now', key: string, text?: string) {
+    chooseDirection('week', from, choice, key, today, text)
+    setChosen(directionChoice('week', from))
+    setChoosing(false)
+    setOwn(null)
+  }
   return (
-    <View accessibilityRole="tablist" accessibilityLabel="Reading depth" style={{ flexDirection: 'row', gap: 4, padding: 4, borderRadius: radius.pill, backgroundColor: p.surface2, alignSelf: 'center' }}>
-      {(
-        [
-          [false, 'Essential'],
-          [true, 'Explore deeper'],
-        ] as const
-      ).map(([d, label]) => (
-        <Pressable
-          key={label}
-          accessibilityRole="tab"
-          accessibilityState={{ selected: deep === d }}
-          onPress={() => onChange(d)}
-          style={{ paddingHorizontal: 16, paddingVertical: 8, borderRadius: radius.pill, backgroundColor: deep === d ? p.surface : 'transparent' }}
-        >
-          <T v="small" bold tone={deep === d ? 'text' : 'muted'}>
-            {label}
-          </T>
-        </Pressable>
-      ))}
+    <View ref={ref} collapsable={false}>
+      <Box>
+        <CardHead icon="arrow" tone="amber" title={WEEK_QUESTIONS.carry} />
+        {chosen ? (
+          <View style={{ gap: 6 }}>
+            {kept ? <T v="quote">{kept}</T> : null}
+            <T v="small" tone="text2">
+              {chosen.choice === 'not_now' ? 'Put away for now. Nothing else will be suggested in its place.' : 'Kept as something to try. Today will ask how it went in a week.'}
+            </T>
+            <Button
+              kind="text"
+              small
+              label="Change"
+              onPress={() => {
+                undoDirection('week', from)
+                setChosen(null)
+              }}
+              style={{ alignSelf: 'flex-start' }}
+            />
+          </View>
+        ) : own !== null ? (
+          <View style={{ gap: 10 }}>
+            <T v="small" bold>
+              Your own idea, in a few words
+            </T>
+            <Area label="Your own idea, in a few words" value={own} onChange={setOwn} max={200} />
+            <Row>
+              <Button small label="Keep it" disabled={!own.trim()} onPress={() => own.trim() && choose('own', 'own', own)} />
+              <Chip label="Cancel" onPress={() => setOwn(null)} />
+            </Row>
+          </View>
+        ) : choosing ? (
+          <View style={{ gap: 10 }}>
+            {choices.map((c) => (
+              <Option key={c.key} label={c.text} onPress={() => choose('try', c.key, c.text)} />
+            ))}
+            <Row>
+              <Chip label="My own idea" onPress={() => setOwn('')} />
+              <Chip label="Not now" onPress={() => choose('not_now', 'not_now')} />
+            </Row>
+          </View>
+        ) : (
+          <Button label={FOCUS_NEXT} onPress={() => setChoosing(true)} style={{ alignSelf: 'flex-start' }} />
+        )}
+      </Box>
     </View>
   )
 }
 
-function useDepth() {
-  const [deep, setDeepState] = useState(readsDeep)
-  return [
-    deep,
-    (d: boolean) => {
-      rememberDepth(d)
-      setDeepState(d)
-    },
-  ] as const
+// Connection this week (Edwin, 2026-10-29): only what actually happened
+// between you and people you trust, by name, and, if you received support,
+// whether it helped. Shown only when something happened, and only signed in.
+function ConnectionThisWeek({ from, to, support, onSupport }: { from: string; to: string; support: SupportAnswer | null; onSupport: (a: SupportAnswer) => void }) {
+  const me = useAccount()
+  const [week, setWeek] = useState<{ lines: string[]; received: boolean } | null>(null)
+  useEffect(() => {
+    if (!me) return
+    let live = true
+    Promise.all([getShares(), getReflectTogether(), getOutside()]).then(
+      ([sh, rt, out]) => live && setWeek(connectionWeek(sh, rt, out, from, to)),
+      () => {},
+    )
+    return () => {
+      live = false
+    }
+  }, [me, from, to])
+  if (!week || week.lines.length === 0) return null
+  const answers: [SupportAnswer, string][] = [
+    ['helped', 'It helped'],
+    ['some', 'A little'],
+    ['no', 'Not really'],
+  ]
+  return (
+    <Section id="ms-connection" icon="heart" tone="rose" title="Connection this week" note="Only what happened between you and people you trust.">
+      {week.lines.map((l) => (
+        <T key={l} tone="text2">
+          {l}
+        </T>
+      ))}
+      {week.received &&
+        (support ? (
+          <Fine>{support === 'no' ? 'You said it didn’t help much this time. That’s worth knowing too.' : 'You said it helped. I’ll remember that, under what helped.'}</Fine>
+        ) : (
+          <View style={{ gap: 8 }}>
+            <T bold>{SUPPORT_ASK}</T>
+            <Row>
+              {answers.map(([a, label]) => (
+                <Chip key={a} label={label} onPress={() => onSupport(a)} />
+              ))}
+            </Row>
+          </View>
+        ))}
+    </Section>
+  )
 }
 
+// Two reading depths: the essential Mirror, and the whole of it.
 function Deeper({ deep, children }: { deep: boolean; children: ReactNode }) {
   return deep ? (
     <View accessibilityLabel="Explore deeper" style={{ gap: 20 }}>
@@ -657,7 +751,8 @@ export function SundayMirror({
   m,
   today,
   back,
-  onOpenSettings,
+  onOpenChoices,
+  onWrite,
   jumpTo,
   deeper,
   footer,
@@ -665,27 +760,28 @@ export function SundayMirror({
   m: MirrorData
   today: string
   back: number
-  onOpenSettings?: () => void
+  onOpenChoices?: () => void
+  onWrite?: (prompt: string) => void
   jumpTo?: (v: Host) => void
   deeper: ReactNode
   footer: ReactNode
 }) {
   const jumps = useJumps(jumpTo)
-  const [deep, setDeep] = useDepth()
+  const [deep, setDeep] = useDeeper('mirror')
   const [, setTick] = useState(0)
+  const [sharing, setSharing] = useState(false)
+  // A return for another Mirror, counted once if the person said yes (productCounts.ts).
+  useEffect(() => noteMirrorWeek(m.from), [m.from])
   const history = useMemo(loadHistory, [m])
   const notMe = notMeSides(today)
   const leans = leanings(m.traits, notMe)
-  const helped = useMemo(
-    () =>
-      helpedFor(m.from, m.to, {
-        // A step marked this week counts this week, whenever it was saved.
-        steps: m.steps.map((s) => ({ step: s.step, started: s.started < m.from ? m.from : s.started, status: s.status })),
-        intentions: intentions(),
-      }),
-    [m],
-  )
+  // A step marked this week counts this week, whenever it was saved; its
+  // check-in, when there is one, says how it went.
+  const steps = useMemo(() => m.steps.map((s) => ({ ...s, started: s.started < m.from ? m.from : s.started })), [m])
+  const checks = useMemo(checkIns, [m])
+  const helped = useMemo(() => helpedFor(m.from, m.to, { steps, intentions: intentions(), checks }), [m, steps, checks])
   const connection = connectionBetween(m.from, m.to)
+  const moment = sharedMoment({ from: m.from, to: m.to, history, steps, checks, connection })
   const story = weekStory({
     from: m.from,
     to: m.to,
@@ -710,20 +806,25 @@ export function SundayMirror({
   }, [today, pulse])
   const alone = notAlonePicks(history, m.from, m.to, counts)
   const othersPicks = othersHelped(history, m.from, m.to, others)
-  const words = reflectSettings().reflectionsInMirror ? ownWordsPick(reflections(), m.from, m.to) : null
-  const direction = weekDirection({ from: m.from, history, helped, nextStep: m.nextSteps[0]?.step })
-  const helpedLine = helpedSentence(helped)
-  const connected = showConnection(m.from, m.to)
-  const revealed = `${found.length === 1 ? 'One thing' : `${cap(say(found.length))} things`}`
+  // The five questions (Edwin's brief, 2026-10-29), each answered only from
+  // what the person kept, chose or said (shared mirrorWeek.ts).
+  const written = useMemo(reflections, [m])
+  const mattered = matteredOf(written, m.from, m.to)
+  // A line from Reflect, never one already shown under what mattered.
+  const words = reflectSettings().reflectionsInMirror ? ownWordsPick(written.filter((r) => !mattered.some((x) => x.id === r.id)), m.from, m.to) : null
+  // Never a step they said made things harder, unless they choose it again.
+  const held = heldBack(loadMoves(), checks)
+  const direction = weekDirection({ from: m.from, history, helped, nextStep: m.nextSteps.find((s) => !held.has(stepKey(s.step)))?.step })
+  const recurring = recurringOf(written, m.from, m.to)
+  // Support from people you trust counts as something that helped once the
+  // person says so (Connection this week, Edwin 2026-10-29).
+  const [support, setSupport] = useState(() => supportFor(m.from))
+  const supportItem: HelpedItem[] = support === 'helped' || support === 'some' ? [{ text: 'Support from people you trust', outcome: support, date: m.to, source: 'plan', times: 1 }] : []
+  const said = [...saidHelped(helped), ...supportItem]
+  const open = stillOpen(helped)
+  const focus = focusChoices(direction, helped)
 
-  const jumpList = [
-    found.length > 0 && { id: 'ms-revealed', icon: 'leaf', tone: 'green', title: `${revealed} revealed`, note: 'What stood out this week' },
-    pulse && alone.length > 0 && { id: 'ms-alone', icon: 'people', tone: 'blue', title: 'You’re not alone', note: 'Shared experiences' },
-    (helped.length > 0 || othersPicks.length > 0) && { id: 'ms-helped', icon: 'bulb', tone: 'amber', title: 'What helped', note: othersPicks.length ? 'For you and others' : 'What you tried' },
-    connected && { id: 'ms-connection', icon: 'heart', tone: 'rose', title: 'Your connections', note: 'Support and encouragement' },
-  ].filter(Boolean) as Jump[]
-
-  const eyebrow = back === 0 ? 'Your Sunday Mirror' : `Your Sunday Mirror · ${weekRange(m.from)}`
+  const eyebrow = back === 0 ? `Your ${mirrorName()}` : `Your ${mirrorName()} · ${weekRange(m.from)}`
   const meta = m.stats.answers > 0 ? `${m.stats.answers} ${m.stats.answers === 1 ? 'answer' : 'answers'} on ${say(m.stats.daysActive)} ${m.stats.daysActive === 1 ? 'day' : 'days'}` : undefined
 
   return (
@@ -737,41 +838,57 @@ export function SundayMirror({
         </Tinted>
       )}
 
-      <JumpRow jumps={jumpList} />
-
-      {found.length > 0 && (
-        <Section id="ms-revealed" icon="leaf" title={`${revealed} your answers revealed`} note="Based on your daily answers. Not labels: what your answers suggest.">
-          {found.map((o, i) => (
-            <ObservationCard key={o.key} o={o} n={i + 1} today={today} onFit={() => setTick((t) => t + 1)} />
-          ))}
-        </Section>
-      )}
-
-      {helped.length > 0 && (
-        <Section id="ms-helped" icon="check" title="What helped you this week?" note="Based on the steps you chose to try, in your own words.">
-          {helpedLine ? <T v="quote" style={{ fontSize: 19, lineHeight: 26 }}>{helpedLine}</T> : null}
-          <HelpedList items={helped} span="week" />
-        </Section>
-      )}
-
-      <Section id="ms-words" icon="notebook" tone="purple" title="In your own words" note="From your private reflections, only on this phone.">
-        <OwnWordsView pick={words} span="week" />
+      <Section id="ms-mattered" icon="star" tone="purple" title={WEEK_QUESTIONS.mattered} note="From the moments you made sense of or kept, only on this phone.">
+        {mattered.map((x) => (
+          <Quote key={x.id} text={x.text} when={`${whenSaid(x.date, 'week')} · ${x.label.replace(/\.$/, '')}`} />
+        ))}
+        {words && <OwnWordsView pick={words} span="week" />}
+        {!mattered.length && !words && <Quiet>Nothing kept this week. The story above comes from your daily answers.</Quiet>}
       </Section>
 
-      <Section id="ms-alone" icon="people" tone="blue" title="You’re not alone">
-        {!pulse ? (
-          <>
-            <Quiet>With the Human Pulse on, this shows how many people chose the same answer as you. Off unless you turn it on.</Quiet>
-            {onOpenSettings && <Button kind="text" small label="Human Pulse in Settings" onPress={onOpenSettings} style={{ alignSelf: 'flex-start' }} />}
-          </>
-        ) : alone.length > 0 ? (
+      <Section id="ms-revealed" icon="refresh" title={WEEK_QUESTIONS.recurring} note="From your daily answers and the moments you came back to. Not labels: what your answers suggest.">
+        {recurring.map((line) => (
+          <T key={line} v="reading">
+            {line}
+          </T>
+        ))}
+        {found.map((o, i) => (
+          <ObservationCard key={o.key} o={o} n={i + 1} today={today} onFit={() => setTick((t) => t + 1)} />
+        ))}
+        {!recurring.length && !found.length && <Quiet>Nothing came up more than once yet.</Quiet>}
+      </Section>
+
+      <Section id="ms-helped" icon="check" title={WEEK_QUESTIONS.helped} note="Only what you said after trying it.">
+        {said.length ? <HelpedList items={said} span="week" /> : <Quiet>You haven’t said that anything helped this week. When you try a step, Today asks how it went.</Quiet>}
+      </Section>
+
+      <Section id="ms-open" icon="clock" tone="amber" title={WEEK_QUESTIONS.unresolved} note="Steps still in progress, and ones that didn’t help as hoped.">
+        {open.length ? <HelpedList items={open} span="week" /> : <Quiet>Nothing is left open from this week.</Quiet>}
+      </Section>
+
+      <WeekFocus from={m.from} today={today} choices={focus} />
+      {/* Share a part of this week with someone you trust (Edwin, 2026-10-29). */}
+      <Button small kind="text" icon="share" label="Share a part of this week" onPress={() => setSharing(true)} style={{ alignSelf: 'flex-start' }} />
+      {sharing && <ShareSheet kind="mirror" text={[story.headline, ...story.paragraphs].join(' ')} onClose={() => setSharing(false)} />}
+
+      <Section id="ms-alone" icon="people" tone="blue" title="The moments we share">
+        {/* Alongside the one person someone walks with (Edwin's brief, 2026-10-29). */}
+        {shows('walkAlongside') && <PairWeekCard from={m.from} />}
+        {pulse && alone.length > 0 && (
           <>
             <NotAloneView picks={alone} />
             <Fine>Real counts, shown only once enough people have answered. Shared, not a sign that one answer is right.</Fine>
           </>
-        ) : (
-          <Quiet>The picture is still forming for this week’s questions.</Quiet>
         )}
+        {moment && <MomentView moment={moment} onWrite={onWrite} />}
+        {!pulse ? (
+          <>
+            <Quiet>The Human Pulse is switched off, so no numbers show here. You can turn it back on in You, under Privacy and choices.</Quiet>
+            {onOpenChoices && <Button kind="text" small label="Privacy and choices" onPress={onOpenChoices} style={{ alignSelf: 'flex-start' }} />}
+          </>
+        ) : alone.length === 0 && !moment ? (
+          <Quiet>The picture is still forming for this week’s questions.</Quiet>
+        ) : null}
       </Section>
 
       {othersPicks.length > 0 && (
@@ -780,17 +897,20 @@ export function SundayMirror({
         </Section>
       )}
 
-      {connected && (
-        <Section id="ms-connection" icon="heart" tone="rose" title="Your week in connection">
-          <InConnection from={m.from} to={m.to} span="week" />
-          <CircleLine own={m.traits} />
-        </Section>
-      )}
-
-      <DirectionBox span="week" from={m.from} today={today} direction={direction} title="One gentle direction for next week" />
+      <ConnectionThisWeek
+        from={m.from}
+        to={m.to}
+        support={support}
+        onSupport={(a) => {
+          saySupport(m.from, a)
+          setSupport(a)
+        }}
+      />
 
       <DepthSwitch deep={deep} onChange={setDeep} />
       <Deeper deep={deep}>{deeper}</Deeper>
+      {/* The conversation sheet (Edwin's brief, 2026-10-29), at the bottom of the Sunday Mirror. */}
+      <PrepareSheet today={today} />
       {footer}
     </Page>
   )
@@ -836,7 +956,7 @@ export function PeriodStory({ p: pm, today, back, jumpTo, deeper, footer }: { p:
   const p = useTheme()
   const jumps = useJumps(jumpTo)
   const noun = pm.period
-  const [deep, setDeep] = useDepth()
+  const [deep, setDeep] = useDeeper('mirror')
   const [showAll, setShowAll] = useState(false)
   const [, setTick] = useState(0)
   const history = useMemo(loadHistory, [pm])
@@ -947,7 +1067,7 @@ export function PeriodStory({ p: pm, today, back, jumpTo, deeper, footer }: { p:
 
       {helped.length > 0 && (
         <Section id="ms-worked" icon="check" title="What worked for you" note="Only what you marked yourself. Choosing a step is not the same as it working.">
-          {helpedSentence(helped) ? <T v="quote" style={{ fontSize: 19, lineHeight: 26 }}>{helpedSentence(helped)}</T> : null}
+          {helpedSentence(helped) ? <T v="quote" style={typeScale.sub}>{helpedSentence(helped)}</T> : null}
           <HelpedList items={helped} span={noun} />
         </Section>
       )}
@@ -1029,16 +1149,11 @@ function ThemeBox({ noun, from, today, themes, back }: { noun: 'month' | 'quarte
     <View style={{ gap: 16 }}>
       {themes.length > 0 && !chosen && (
         <View style={{ gap: 12 }}>
-          <View style={{ flexDirection: 'row', gap: 12 }}>
-            <Disc icon="arrow" tone="amber" size={40} />
-            <View style={{ flex: 1, gap: 2 }}>
-              <T v="h3">
-                One direction for the coming {noun}
-              </T>
-              <T v="small" tone="muted">
-                A theme from your own answers, if one feels right. Pick one, or none.
-              </T>
-            </View>
+          <View style={{ gap: 6 }}>
+            <CardHead icon="arrow" tone="amber" title={`One direction for the coming ${noun}`} />
+            <T v="small" tone="muted">
+              A theme from your own answers, if one feels right. Pick one, or none.
+            </T>
           </View>
           <Row>
             {themes.map((t) => (
@@ -1065,7 +1180,7 @@ function ThemeBox({ noun, from, today, themes, back }: { noun: 'month' | 'quarte
 export function YearMirror({ y, today, back, jumpTo, deeper, footer }: { y: PeriodMirror; today: string; back: number; jumpTo?: (v: Host) => void; deeper: ReactNode; footer: ReactNode }) {
   const p = useTheme()
   const jumps = useJumps(jumpTo)
-  const [deep, setDeep] = useDepth()
+  const [deep, setDeep] = useDeeper('mirror')
   const quarters = useQuarters(y, today)
   const chapters = [1, 2, 3, 4].map((q) => chapterOf(q, quarters ? quarters[q - 1] : null))
   const story = quarters ? yearStory(chapters, y) : { headline: 'Gathering your year…', paragraphs: [], evidence: [] }
@@ -1099,7 +1214,7 @@ export function YearMirror({ y, today, back, jumpTo, deeper, footer }: { y: Peri
       <StoryHero
         eyebrow={`My year in perspective · ${y.label}`}
         story={story}
-        meta={y.stats.answers > 0 ? `${y.stats.answers.toLocaleString('en-GB')} answers in ${y.stats.weeksActive} weeks` : undefined}
+        meta={y.stats.answers > 0 ? `${y.stats.answers.toLocaleString(locale())} answers in ${y.stats.weeksActive} weeks` : undefined}
         span="year"
       />
       <JumpRow jumps={jumpList} />
@@ -1233,7 +1348,7 @@ function ChapterCard({ c }: { c: Chapter }) {
   return (
     <View style={{ gap: 4, padding: 16, borderRadius: radius.lg, borderWidth: 1, borderColor: p.line, backgroundColor: quiet ? 'transparent' : p.surface, borderStyle: quiet ? 'dashed' : 'solid' }}>
       <T v="label">{c.months}</T>
-      <T v="quote" style={{ fontSize: 20, lineHeight: 26, color: quiet ? p.muted : p.text }}>
+      <T v="quote" style={{ color: quiet ? p.muted : p.text }}>
         {c.title}
       </T>
       {c.state === 'told' && (
@@ -1324,8 +1439,8 @@ function Forward({
   const lastTold = [...chapters].reverse().find((c) => c.state === 'told')
   const lines: string[] = []
   if (lastTold) lines.push(`What still matters, by your latest answers: ${NEED_PHRASES[lastTold.needs[0].need]}.`)
-  if (helped[0]) lines.push(`What you learned helps you: “${helped[0]}”${helped[1] ? ` and “${helped[1]}”` : ''}.`)
-  if (y.noChange && y.noChange[0]) lines.push(`What made little difference, and is fine to leave: “${y.noChange[0].step}”.`)
+  if (helped[0]) lines.push(`What you learned helps you: “${stepWords(helped[0])}”${helped[1] ? ` and “${stepWords(helped[1])}”` : ''}.`)
+  if (y.noChange && y.noChange[0]) lines.push(`What made little difference, and is fine to leave: “${stepWords(y.noChange[0].step)}”.`)
 
   function copy() {
     const parts = [`My year in perspective · ${y.label}`, '', ...chapters.map((c) => `${c.months}: ${c.title}`), '', ...lines]

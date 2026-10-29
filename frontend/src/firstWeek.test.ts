@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { dayWithYou, glimpseHere, inWeekOne, lastLeaning, markStarted, needsAccount } from './firstWeek'
+import { dayWithYou, glimpseHere, inWeekOne, markStarted, needsAccount } from './firstWeek'
 import type { History } from './profile'
 
 const a = (date: string, more: object = {}) => ({ date, questionId: `${date}-q`, theme: 'habits', depth: 2, traits: { conscientiousness: 1 }, ...more })
@@ -48,10 +48,29 @@ describe('the first week', () => {
     expect(needsAccount(false, '2026-10-13')).toBe(true)
     expect(needsAccount(true, '2026-10-13')).toBe(false)
   })
+})
 
-  it('says what the last answers leaned towards, but not after a heavy answer', () => {
-    expect(lastLeaning('2026-10-13', { answers: [a('2026-10-12')], skips: [] })).toBe('getting things done')
-    expect(lastLeaning('2026-10-13', { answers: [a('2026-10-12'), a('2026-10-13', { heavy: true })], skips: [] })).toBeNull()
-    expect(lastLeaning('2026-10-13', { answers: [], skips: [] })).toBeNull()
+describe('what brings someone back in their first week', () => {
+  const ans = (date: string, traits: Record<string, number>) => ({ date, questionId: `q-${date}-${Object.keys(traits)[0]}`, theme: 'habits', depth: 2, traits })
+
+  it('finds what keeps coming up only once there are two days of answers', async () => {
+    const { acrossDays } = await import('./firstWeek')
+    const one = { answers: [ans('2026-10-27', { extraversion: 1 })], skips: [] }
+    expect(acrossDays('2026-10-27', one)).toEqual({ days: 1, lean: null })
+    const two = { answers: [ans('2026-10-27', { extraversion: 1 }), ans('2026-10-28', { extraversion: 1 }), ans('2026-10-28', { conscientiousness: 1 })], skips: [] }
+    expect(acrossDays('2026-10-28', two).days).toBe(2)
+  })
+
+  it('shows the answers behind what keeps coming up, newest first, only the ones that leaned that way', async () => {
+    const { acrossDaysWhy } = await import('./firstWeek')
+    const h = {
+      answers: [ans('2026-10-26', { extraversion: 1 }), ans('2026-10-27', { extraversion: 1 }), ans('2026-10-28', { extraversion: -1 }), ans('2026-10-28', { neuroticism: 1 })],
+      skips: [],
+    }
+    const text = (id: string) => ({ date: '2026-10-28', questionId: id, prompt: `Asked ${id}?`, label: `Chose ${id}` })
+    const why = acrossDaysWhy('2026-10-28', h, text)
+    expect(why.every((w) => !w.asked.includes('2026-10-28-extraversion'))).toBe(true)
+    expect(why.map((w) => w.date)).toEqual([...why.map((w) => w.date)].sort().reverse())
+    expect(why.find((w) => w.asked === 'Asked q-2026-10-27-extraversion?')).toEqual({ date: '2026-10-27', asked: 'Asked q-2026-10-27-extraversion?', said: 'Chose q-2026-10-27-extraversion' })
   })
 })

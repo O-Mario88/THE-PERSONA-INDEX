@@ -76,7 +76,8 @@ type Forgotten struct {
 	Steps      int `json:"steps"`
 	PlanChecks int `json:"planChecks"`
 	Weeks      int `json:"weeklyNotes"`
-	Votes      int `json:"votes"` // raw votes and ratings; anonymous totals already counted stay
+	Votes      int `json:"votes"`   // raw votes and ratings; anonymous totals already counted stay
+	Reports    int `json:"reports"` // What Helped reports (whathelped.go)
 }
 
 // Kept counts what the server holds for one device.
@@ -87,6 +88,7 @@ type Kept struct {
 	PlanChecks  int    `json:"planChecks"`
 	Weeks       int    `json:"weeklyNotes"`
 	Votes       int    `json:"votes"`
+	Reports     int    `json:"reports"`               // What Helped reports (whathelped.go)
 	FirstAnswer string `json:"firstAnswer,omitempty"` // the oldest answer's date
 }
 

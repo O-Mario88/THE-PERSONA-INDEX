@@ -13,6 +13,7 @@ import { dayMonth } from '@shared/reflect'
 import { accountToken, outsideMirror, type OutsideMirror } from '@shared/social'
 import { font, lift, radius, useTheme } from '../theme'
 import { Button, Chip, T } from '../ui/kit'
+import { locale } from '@shared/locale'
 
 type Span = 'week' | Period
 
@@ -136,7 +137,7 @@ export function monthsBetween(from: string, to: string): { key: string; from: st
   }
   return out
 }
-const monthName = (key: string) => new Date(`${key}-01T00:00:00Z`).toLocaleDateString('en-GB', { month: 'short', timeZone: 'UTC' })
+const monthName = (key: string) => new Date(`${key}-01T00:00:00Z`).toLocaleDateString(locale(), { month: 'short', timeZone: 'UTC' })
 
 export function showConnection(from: string, to: string): boolean {
   return !!accountToken() || connectionBetween(from, to).days > 0
