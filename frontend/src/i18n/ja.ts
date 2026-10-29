@@ -243,7 +243,7 @@ export const ja: Record<string, string> = {
   'Pick up where you left off. A few minutes, just for you.': '前回の続きから。数分間、あなたのためだけに。',
   'Let’s see what today adds to it.': '今日が何を加えてくれるか見てみましょう。',
   'From what today’s answers reached for.': '今日の回答が求めていたものから。',
-  'Each day you answer adds to it. A missed day takes nothing away.': '答えた日ごとに積み重なります。休んだ日があっても何も失われません。',
+  'Each day you answer adds to it, whenever you come.': '答えた日ごとに積み重なります。いつ来ても大丈夫です。',
   'Pick one part of your life to look at this week': '今週見つめたい暮らしの一面を選んでください',
   Change: '変更',
   'I’ll ask you how it went.': 'どうだったか、あとで聞きますね。',

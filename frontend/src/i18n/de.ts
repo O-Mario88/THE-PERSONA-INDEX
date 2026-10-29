@@ -243,7 +243,7 @@ export const de: Record<string, string> = {
   'Pick up where you left off. A few minutes, just for you.': 'Mach da weiter, wo du aufgehört hast. Ein paar Minuten, nur für dich.',
   'Let’s see what today adds to it.': 'Mal sehen, was heute dazukommt.',
   'From what today’s answers reached for.': 'Aus dem, wonach deine Antworten heute gesucht haben.',
-  'Each day you answer adds to it. A missed day takes nothing away.': 'Jeder Tag, an dem du antwortest, kommt dazu. Ein verpasster Tag nimmt nichts weg.',
+  'Each day you answer adds to it, whenever you come.': 'Jeder Tag, an dem du antwortest, kommt dazu, wann immer du kommst.',
   'Pick one part of your life to look at this week': 'Wähle einen Bereich deines Lebens, den du dir diese Woche anschaust',
   Change: 'Ändern',
   'I’ll ask you how it went.': 'Ich frage dich, wie es gelaufen ist.',

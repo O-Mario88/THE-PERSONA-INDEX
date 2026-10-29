@@ -243,7 +243,7 @@ export const ru: Record<string, string> = {
   'Pick up where you left off. A few minutes, just for you.': 'Продолжи с того места, где остановился(лась). Несколько минут, только для тебя.',
   'Let’s see what today adds to it.': 'Посмотрим, что добавит сегодняшний день.',
   'From what today’s answers reached for.': 'Из того, к чему тянулись твои сегодняшние ответы.',
-  'Each day you answer adds to it. A missed day takes nothing away.': 'Каждый день с ответами что-то добавляет. Пропущенный день ничего не отнимает.',
+  'Each day you answer adds to it, whenever you come.': 'Каждый день с ответами что-то добавляет, в любое время.',
   'Pick one part of your life to look at this week': 'Выбери одну сферу жизни, на которую посмотришь на этой неделе',
   Change: 'Изменить',
   'I’ll ask you how it went.': 'Я спрошу, как всё прошло.',

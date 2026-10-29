@@ -176,7 +176,7 @@ export const fr: Record<string, string> = {
   'Pick up where you left off. A few minutes, just for you.': 'Reprends là où tu t\'étais arrêté. Quelques minutes, rien que pour toi.',
   'Let’s see what today adds to it.': "Voyons ce qu'aujourd'hui y ajoute.",
   'From what today’s answers reached for.': "D'après ce que tes réponses du jour cherchaient.",
-  'Each day you answer adds to it. A missed day takes nothing away.': "Chaque jour où tu réponds y ajoute. Un jour manqué n'enlève rien.",
+  'Each day you answer adds to it, whenever you come.': 'Chaque jour où tu réponds y ajoute, quand tu veux.',
   'Pick one part of your life to look at this week': 'Choisis une partie de ta vie à regarder cette semaine',
   Change: 'Changer',
   'I’ll ask you how it went.': "Je te demanderai comment ça s'est passé.",

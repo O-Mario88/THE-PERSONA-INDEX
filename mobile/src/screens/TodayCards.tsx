@@ -257,7 +257,7 @@ export function MirrorCard({ today, onWrite, onInsights, onMirror }: { today: st
           <View key={i} style={{ flex: 1, height: 8, borderRadius: radius.pill, backgroundColor: d ? p.lime : p.surface3 }} />
         ))}
       </View>
-      <T tone="text2">{m.lean ? `So far, your answers lean towards ${m.lean}.` : 'Each day you answer adds to it. A missed day takes nothing away.'}</T>
+      <T tone="text2">{m.lean ? `So far, your answers lean towards ${m.lean}.` : 'Each day you answer adds to it, whenever you come.'}</T>
       {!m.first && <JourneyLine today={today} onWrite={onWrite} />}
       <Button small kind="text" label="See what I’ve noticed" iconAfter="arrow" onPress={onInsights} style={{ alignSelf: 'flex-start' }} />
     </Section>

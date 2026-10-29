@@ -243,7 +243,7 @@ export const ko: Record<string, string> = {
   'Pick up where you left off. A few minutes, just for you.': '멈춘 곳에서 이어서. 몇 분, 오직 당신을 위해.',
   'Let’s see what today adds to it.': '오늘은 무엇이 더해질지 볼까요.',
   'From what today’s answers reached for.': '오늘의 답변이 바라던 것에서.',
-  'Each day you answer adds to it. A missed day takes nothing away.': '답한 날마다 쌓여요. 빠진 날이 있어도 사라지는 건 없어요.',
+  'Each day you answer adds to it, whenever you come.': '답한 날마다 쌓여요. 언제 와도 괜찮아요.',
   'Pick one part of your life to look at this week': '이번 주에 살펴볼 삶의 한 부분을 골라 보세요',
   Change: '바꾸기',
   'I’ll ask you how it went.': '어땠는지 물어볼게요.',
