@@ -87,6 +87,16 @@ describe('the week’s story', () => {
     expect(empty.evidence).toEqual([])
   })
 
+  // Found on the iPhone: an account made today has no answers on the server
+  // yet, but the phone holds the week's answers, and the Mirror called the
+  // week empty above patterns drawn from those very answers.
+  it('never calls a week quiet when this phone holds answers from it', () => {
+    const h = history(answer('2026-10-13', { need: 'security' }), answer('2026-10-14', { need: 'security' }))
+    const s = weekStory({ from, to, history: h, answers: 0, heavy: false, helped: [] })
+    expect(s.headline).not.toBe('A quiet week so far.')
+    expect(s.headline).toBe('A week of looking for firm ground.')
+  })
+
   it('leaves out intimate, heavy and "Not me" answers', () => {
     const h = history(
       answer('2026-10-12', { need: 'calm', theme: 'intimacy' }),

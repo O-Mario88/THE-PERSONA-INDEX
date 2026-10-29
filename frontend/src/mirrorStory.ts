@@ -301,7 +301,10 @@ export function weekStory(input: {
   const needs = needsBetween(h, from, to).filter((r) => r.answers >= 2)
   const [n1, n2] = needs
   const helpedSome = input.helped.find((i) => i.outcome === 'helped' || i.outcome === 'some')
-  if (input.answers === 0) {
+  // Quiet only when neither the server nor this phone has an answer from the week:
+  // a new account's answers can live on the phone before the server counts them.
+  const onPhone = h.answers.some((a) => a.date >= from && a.date <= to)
+  if (input.answers === 0 && !onPhone) {
     return {
       headline: 'A quiet week so far.',
       paragraphs: [
