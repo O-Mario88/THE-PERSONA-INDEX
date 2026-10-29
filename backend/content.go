@@ -479,7 +479,6 @@ func indexBank(f bankFile) (contentBank, error) {
 // The week: Monday to Saturday bring three questions for the morning (5 am to
 // 4:30 pm on the phone) and three more for the evening (5 pm to midnight);
 // Sunday brings none and is the day for the weekly mirror.
-const halves = 2 // 0 the morning, 1 the evening
 
 // questionDay numbers the days that bring questions, counting from
 // 1970-01-01 (unix day 0), so a Sunday never uses up a question. It is -1 for

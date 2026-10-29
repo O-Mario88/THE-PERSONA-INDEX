@@ -148,7 +148,7 @@ func main() {
 		}
 		srv.static = site
 	}
-	if days := bank.scheduledUntil().Sub(time.Now()).Hours() / 24; days < scheduleWarnDays {
+	if days := time.Until(bank.scheduledUntil()).Hours() / 24; days < scheduleWarnDays {
 		slog.Warn(fmt.Sprintf("the frozen schedule ends in %.0f days; run `cd backend && go run . schedule` and ship the result", days))
 	}
 

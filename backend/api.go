@@ -122,10 +122,6 @@ type QuestionBank interface {
 	GetSet(date string) (DailySet, bool)
 }
 
-type emptyBank struct{}
-
-func (emptyBank) GetSet(string) (DailySet, bool) { return DailySet{}, false }
-
 // Server holds the API's dependencies. Handlers are stateless over HTTP; vote
 // state lives behind the server so tests can use an in-memory store.
 type Server struct {
