@@ -48,17 +48,20 @@ export type Palette = {
 
 export const light: Palette = {
   dark: false,
-  bg: '#f6f1e8',
+  // A soft neutral grey page with white cards (Edwin, 2026-10-29: the cream
+  // read as yellowed and dated). Cream stays for brand moments: the Welcome,
+  // the launch, the Today header and the conversation sheet's paper.
+  bg: '#f3f3f0',
   surface: '#ffffff',
-  surface2: '#f4ede1',
-  surface3: '#ebe2d3',
-  line: '#ece3d4',
-  lineStrong: '#ddd1bd',
-  control: '#958a77',
+  surface2: '#ebeae6',
+  surface3: '#e2e1dc',
+  line: '#e4e3de',
+  lineStrong: '#d4d3cd',
+  control: '#8a8780',
   text: '#12283a',
   text2: '#3d4f5c',
-  muted: '#5a656e', // 4.5:1 or more on cream, white and the tinted fills
-  leaf: '#5f7d58',
+  muted: '#5a656e', // 4.5:1 or more on the page, white and the tinted fills
+  leaf: '#55714f', // 4.5:1 or more as words on the page and on white
   leafSoft: '#b5c7ae',
   lime: '#013d5a',
   onLime: '#ffffff',
@@ -72,7 +75,7 @@ export const light: Palette = {
   blueWash: '#e4edf2',
   purple: '#6d597a',
   purpleWash: '#efe9f1',
-  rose: '#c8553a',
+  rose: '#b4472e', // "the other side": 4.5:1 or more on the page and on white
   roseWash: '#fbe9e2',
   amber: '#e48a3c',
   amberInk: '#8a4b12',

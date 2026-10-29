@@ -20,20 +20,24 @@ percentages).
 
 ## Colour
 
-Midnight for trust and depth, cream like a notebook, herb for growth,
+Midnight for trust and depth, a soft warm grey page with white cards (the
+cream read as yellowed and dated, Edwin 2026-10-29; cream stays for brand
+moments: the Welcome, the launch, the Today header, the conversation sheet's
+paper), herb for growth,
 marigold for warmth and celebrating, terracotta for "the other side". Red is
 for real warnings only. Every text pair is at least 4.5:1.
 
 | Palette key | Light | Dark | Use |
 |---|---|---|---|
-| `bg`, `surface` | `#f6f1e8`, `#ffffff` | `#08131b`, `#132a3b` | page, cards (white on a deeper cream, and clear steps in dark, since the review of 2026-10-28) |
-| `surface2`, `surface3` | `#f4ede1`, `#ebe2d3` | `#1a3548`, `#22425a` | chips, tracks, quiet buttons |
-| `line`, `lineStrong` | `#ece3d4`, `#ddd1bd` | `#1f3a4e`, `#2e4d63` | hairlines, empty rings |
-| `text`, `text2`, `muted` | `#12283a`, `#3d4f5c`, `#69737c` | `#f6efe3`, `#d6d2c9`, `#9eaab3` | words |
+| `bg`, `surface` | `#f3f3f0`, `#ffffff` | `#08131b`, `#132a3b` | page, cards (white cards on a soft warm grey since 2026-10-29, and clear steps in dark) |
+| `surface2`, `surface3` | `#ebeae6`, `#e2e1dc` | `#1a3548`, `#22425a` | chips, tracks, quiet buttons |
+| `line`, `lineStrong` | `#e4e3de`, `#d4d3cd` | `#1f3a4e`, `#2e4d63` | hairlines |
+| `control` | `#8a8780` | `#6a8597` | the edge of a control: a switch's off track, answer rings, tick boxes, text boxes (3:1 or more) |
+| `text`, `text2`, `muted` | `#12283a`, `#3d4f5c`, `#5a656e` | `#f6efe3`, `#d6d2c9`, `#9eaab3` | words (muted is 4.5:1 or more on the page, white and the tinted fills) |
 | `lime` / `onLime` | midnight `#013d5a` / white | marigold `#f4a258` / `#1d1206` | the filled accent: chosen options, chips, progress |
 | `btn` / `onBtn` | midnight / white | marigold / dark ink | primary buttons |
 | `brandLime` | `#f4a258` | same | the leaf and active icon on the sidebar |
-| `leaf`, `leafSoft` | `#5f7d58`, `#b5c7ae` | `#a9c3a1`, `#7c9a74` | icons, checks, progress |
+| `leaf`, `leafSoft` | `#55714f`, `#b5c7ae` | `#a9c3a1`, `#7c9a74` | icons, checks, progress |
 | `accentInk`, `accentWash`, `accentLine` | `#0b4f70`, `#e7f0ed`, `#bdd3ce` | `#8cc4da`, `#1b3a4d`, `#2e5266` | links, labels, celeste boxes. In dark, marigold is kept for buttons, choices and the open tab, and links and labels take a calm blue, so the two never compete |
 | `amber`, `rose`, `blue`, `purple` + `Wash` | ink on a pale wash | darker washes | discs and tinted boxes |
 | `navy`, `onNavy`, `onNavy2` | midnight, white, `#c7d8e2` | `#133246`, white, `#c2d2dc` | hero cards, the close |
