@@ -8,7 +8,7 @@ import { checkInFor, checkIns, dueStep, revisitFor, stepWords, type CheckIn } fr
 import { acrossDays, startedOn } from './firstWeek'
 import { readWriting } from './kinder'
 import { loadMoves, type Move } from './moves'
-import { reflections, type Reflection, type ReflectionArea } from './notebook'
+import { intentionsDue, reflections, type Intention, type Reflection, type ReflectionArea } from './notebook'
 import { cardTextOf } from './insights'
 import { NEED_PHRASES } from './needs'
 import type { ReflectionStyle } from './prefs'
@@ -116,6 +116,7 @@ export function journeyNote(today: string, h: History, todaysThemes: string[], m
 
 export type QuietStep =
   | { kind: 'followUp'; move: Move }
+  | { kind: 'checkIn'; intention: Intention }
   | { kind: 'revisit'; move: Move; line: string }
   | { kind: 'carry'; text: string }
   | { kind: 'idea'; questionId: string; optionId: string; step: string; from: string }
@@ -125,9 +126,12 @@ export type QuietStep =
 // today touches the same part of life, then one thing to carry from today's
 // answers, then a small idea from your own recent cards. Someone who asked
 // for small, practical ideas (My Reflection Style) gets the idea first.
-export function quietStep(today: string, h: History, moves: Move[] = loadMoves(), style?: ReflectionStyle): QuietStep | null {
+export function quietStep(today: string, h: History, moves: Move[] = loadMoves(), style?: ReflectionStyle, due: Intention[] = intentionsDue(today)): QuietStep | null {
   const move = dueStep(today, moves)
   if (move) return { kind: 'followUp', move }
+  // A step kept from a hard moment or from Reflect, on its check-in day
+  // (Edwin's brief, 2026-10-29: remember what happened next).
+  if (due[0]) return { kind: 'checkIn', intention: due[0] }
   const again = revisitFor(today, h, moves)
   if (again) return { kind: 'revisit', ...again }
   const carry = (): QuietStep | null => {

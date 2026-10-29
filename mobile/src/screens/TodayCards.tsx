@@ -5,7 +5,8 @@ import { useState } from 'react'
 import { Pressable, View } from 'react-native'
 import { tryAgain } from '@shared/growthJourney'
 import { startMove } from '@shared/moves'
-import type { ReflectionArea } from '@shared/notebook'
+import { checkIntention, type Intention, type IntentionCheck, type ReflectionArea } from '@shared/notebook'
+import { dateOf } from '@shared/locale'
 import { loadPrefs } from '@shared/prefs'
 import { loadHistory } from '@shared/profile'
 import { minutes, todaysRead } from '@shared/reads/reads'
@@ -25,6 +26,7 @@ import { CheckIn } from './CheckIn'
 // Its title says which (Edwin's Today mockup, 2026-10-28).
 const STEP_LABEL: Record<QuietStep['kind'], string> = {
   followUp: 'How did it go?',
+  checkIn: 'How did it go?',
   revisit: 'Something that helped before',
   carry: 'One thing worth trying',
   idea: 'One thing worth trying',
@@ -35,7 +37,7 @@ export function QuietStepCard({ today }: { today: string }) {
   const pulse = usePagePulse(today)
   if (!step) return null
   // What the people who tried the same step found (the Human Pulse, Edwin 2026-10-29).
-  const source = step.kind === 'idea' ? step : step.kind === 'carry' ? null : step.move.local ? null : step.move
+  const source = step.kind === 'idea' ? step : step.kind === 'carry' || step.kind === 'checkIn' ? null : step.move.local ? null : step.move
   // Open on the page under its label, not in a box: Today keeps one strong
   // card, the day's questions, and sections around it (the light-mode
   // review, 2026-10-29).
@@ -102,7 +104,39 @@ function StepBody({ today, step, onSaid }: { today: string; step: QuietStep; onS
       </>
     )
   }
+  if (step.kind === 'checkIn') return <StepCheckIn intention={step.intention} today={today} onSaid={onSaid} />
   return <CheckIn move={step.move} today={today} onDone={onSaid} />
+}
+
+// How a step you wanted to try went (a hard moment's step, makeSense.ts, or
+// one from Reflect). The answer is what "Remember what helps me" builds on,
+// so it is kept as said: no score, and letting it go is an answer too.
+const CHECKS: { check: IntentionCheck; label: string; reply: string }[] = [
+  { check: 'helped', label: 'It helped', reply: 'I’ll remember that, and bring it back if something similar happens.' },
+  { check: 'some', label: 'A little', reply: 'A little counts. I’ll keep it in mind.' },
+  { check: 'not_yet', label: 'Not yet', reply: 'That’s fine. It’s still in your Notebook.' },
+  { check: 'let_go', label: 'Let it go', reply: 'Let go. It won’t come back here.' },
+]
+
+function StepCheckIn({ intention, today, onSaid }: { intention: Intention; today: string; onSaid: (reply: string) => void }) {
+  return (
+    <>
+      <T v="h3">“{intention.text.replace(/[.!]+$/, '')}”</T>
+      <T v="small" tone="muted">{`You said you’d try this on ${dateOf(intention.date, { weekday: 'long' })}.`}</T>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+        {CHECKS.map((c) => (
+          <Chip
+            key={c.check}
+            label={c.label}
+            onPress={() => {
+              checkIntention(intention.id, c.check, today)
+              onSaid(c.reply)
+            }}
+          />
+        ))}
+      </View>
+    </>
+  )
 }
 
 // The Mirror that's coming: how far away, a dot for each day this week

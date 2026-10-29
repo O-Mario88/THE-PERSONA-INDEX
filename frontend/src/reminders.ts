@@ -82,7 +82,7 @@ export function planReminders(
         out.push({ id: `${REMINDER_PREFIX}evening.${day}`, date: day, minutes: e, opens: 'today', title: 'Your evening three are waiting', body: 'A quiet look back at the day.' })
     }
     if (s.intentions && due.has(day) && later(CHECK_IN_AT))
-      out.push({ id: `${REMINDER_PREFIX}checkin.${day}`, date: day, minutes: CHECK_IN_AT, opens: 'reflect', title: 'A gentle check-in', body: 'A gentle check-in on something you wanted to try. Only you see it.' })
+      out.push({ id: `${REMINDER_PREFIX}checkin.${day}`, date: day, minutes: CHECK_IN_AT, opens: 'today', title: 'A gentle check-in', body: 'How did the step you wanted to try go? Only you see it.' })
   }
   return out
 }

@@ -116,14 +116,15 @@ export const isPatron = (today: string, s: PatronStatus = patronStatus()): boole
 
 // ---- free tries ----
 
-export type FreeKind = 'sheet' | 'voice'
-// sheet: one conversation sheet across 14 or 30 days; voice: three times speaking instead of typing.
-export const FREE_TRIES: Record<FreeKind, number> = { sheet: 1, voice: 3 }
+export type FreeKind = 'sheet' | 'voice' | 'memory'
+// sheet: one conversation sheet across 14 or 30 days; voice: three times speaking instead of typing;
+// memory: the first time a step that helped before is brought back (makeSense.ts memoryFor).
+export const FREE_TRIES: Record<FreeKind, number> = { sheet: 1, voice: 3, memory: 1 }
 
 function used(): Record<FreeKind, number> {
   const v = loadJSON(FREE_KEY) as Partial<Record<FreeKind, unknown>> | null
   const n = (x: unknown) => (typeof x === 'number' && Number.isFinite(x) && x > 0 ? Math.floor(x) : 0)
-  return { sheet: n(v?.sheet), voice: n(v?.voice) }
+  return { sheet: n(v?.sheet), voice: n(v?.voice), memory: n(v?.memory) }
 }
 
 export const freeLeft = (kind: FreeKind): number => Math.max(0, FREE_TRIES[kind] - used()[kind])

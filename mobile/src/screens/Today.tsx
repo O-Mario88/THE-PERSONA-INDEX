@@ -20,6 +20,7 @@ import { Icon } from '../ui/Icon'
 import { KeepMoment } from './KeepMoment'
 import { HeavyCard } from './QuestionCard'
 import { MirrorCard, QuietStepCard, TodaysRead } from './TodayCards'
+import { STARTS, type SenseStart } from '@shared/makeSense'
 
 interface TodayProps {
   date: string
@@ -39,10 +40,11 @@ interface TodayProps {
   rail?: boolean // a right-hand column beside the feed, on a very wide screen
   onWrite: (prompt?: string, followsUp?: string) => void
   onInsights: () => void
+  onSense: (start: SenseStart) => void // help making sense of something (MakeSense.tsx)
   children?: ReactNode
 }
 
-export function Today({ date, window: w, name, note, hero, memory, journey, link, tomorrow, onOpen, onAccount, themes, intimacy, onRead, rail, onWrite, onInsights, children }: TodayProps) {
+export function Today({ date, window: w, name, note, hero, memory, journey, link, tomorrow, onOpen, onAccount, themes, intimacy, onRead, rail, onWrite, onInsights, onSense, children }: TodayProps) {
   const { width } = useWindowDimensions()
   const header = (
     <View style={styles.header}>
@@ -62,7 +64,7 @@ export function Today({ date, window: w, name, note, hero, memory, journey, link
   )
   const main = <MainCard today={date} hero={hero} memory={memory} journey={journey} link={link} tomorrow={tomorrow} onOpen={onOpen} onWrite={onWrite} />
   const step = <QuietStepCard today={date} />
-  const moment = <NeedAMoment today={date} onWrite={onWrite} />
+  const moment = <NeedAMoment today={date} onWrite={onWrite} onSense={onSense} />
   const mirror = <MirrorCard today={date} onWrite={onWrite} onInsights={onInsights} />
   if (rail) {
     return (
@@ -290,34 +292,32 @@ function MemoryRow({ memory, today, onWrite }: { memory: Memory; today: string; 
 // The real-life moment: open the app because something happened, not
 // because it's time. Each way in opens one fitting question in Reflect;
 // heavy goes to people and a helpline first.
-const MOMENTS = [
-  {
-    label: 'I need clarity',
-    prompt: 'What are you trying to decide, and what matters most to you in it?',
-  },
-  {
-    label: 'A difficult conversation',
-    prompt: 'Who is the conversation with, and what do you most want them to understand?',
-  },
-  {
-    label: 'Something good happened',
-    prompt: 'What happened? Tell me about it, so you can come back to it.',
-  },
-]
+const GOOD = { label: 'Something good happened', prompt: 'What happened? Tell me about it, so you can come back to it.' }
 
-function NeedAMoment({ today, onWrite }: { today: string; onWrite: (prompt?: string) => void }) {
+function NeedAMoment({ today, onWrite, onSense }: { today: string; onWrite: (prompt?: string) => void; onSense: (start: SenseStart) => void }) {
   const [heavy, setHeavy] = useState(false)
   const [keeping, setKeeping] = useState(false)
   const [more, setMore] = useState(false)
+  const start = (id: SenseStart) => STARTS.find((x) => x.id === id) ?? STARTS[0]
   return (
     <Section title="Need a moment?" icon="heart">
-      {/* Wrapped, never cut off at the edge, and the less-used ones behind More
-          (the light-mode review, 2026-10-29). */}
+      {/* Heavy first, then the ways into making sense of something (Edwin's
+          brief, 2026-10-29), the rest behind More, wrapped, never cut off. */}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         <Chip label="Something feels heavy" on={heavy} onPress={() => setHeavy(!heavy)} />
-        <Chip label="Keep a moment" on={keeping} onPress={() => setKeeping(!keeping)} />
-        <Chip label="Just write" onPress={() => onWrite()} />
-        {more ? MOMENTS.map((m) => <Chip key={m.label} label={m.label} onPress={() => onWrite(m.prompt)} />) : <Chip label="More" icon="chevron" onPress={() => setMore(true)} />}
+        {(['overthinking', 'conversation', 'yes'] as SenseStart[]).map((id) => (
+          <Chip key={id} label={start(id).short} onPress={() => onSense(id)} />
+        ))}
+        {more ? (
+          <>
+            <Chip label={start('week').short} onPress={() => onSense('week')} />
+            <Chip label="Keep a moment" on={keeping} onPress={() => setKeeping(!keeping)} />
+            <Chip label={GOOD.label} onPress={() => onWrite(GOOD.prompt)} />
+            <Chip label="Just write" onPress={() => onWrite()} />
+          </>
+        ) : (
+          <Chip label="More" icon="chevron" onPress={() => setMore(true)} />
+        )}
       </View>
       {(keeping || heavy) && (
         <Card style={{ gap: 10 }}>

@@ -23,6 +23,7 @@ import { cardTextOf, pruneCardTexts } from '@shared/insights'
 import { seedEchoes } from '@shared/echoes'
 import { refreshPatron } from '@shared/patron'
 import { CONNECT_OPEN_KEY, dayWithYou, glimpseHere, inWeekOne, isNewcomer, markStarted, needsAccount, SHOW_ALL_KEY } from '@shared/firstWeek'
+import type { SenseStart } from '@shared/makeSense'
 import { signInMethods, type AccountView } from '@shared/social'
 import { pullSync } from '@shared/sync'
 import { useAccount } from '@shared/useAccount'
@@ -61,6 +62,7 @@ import { setLanguage, tr, trf } from '@shared/i18n'
 import { backFromGoogle } from './platform/googleWeb'
 import { locale } from '@shared/locale'
 import { EmptyState } from './ui/Scene'
+import { MakeSense } from './screens/MakeSense'
 
 type State = { kind: 'loading' } | { kind: 'ready'; set: DailySet; day: string; offline?: true } | { kind: 'empty' } | { kind: 'error' }
 type Tab = 'today' | 'notebook' | 'circle' | 'insights' | 'account'
@@ -160,6 +162,8 @@ export function Shell({ phoneDark, onRestart, onDayReady }: { phoneDark: boolean
   setLanguage(prefs.lang ?? 'auto', locale())
   const [pickVersion, setPickVersion] = useState(0)
   const [flow, setFlow] = useState<OpenWindow | null>(null)
+  // Help making sense of something (screens/MakeSense.tsx): open over Today.
+  const [sense, setSense] = useState<{ start?: SenseStart; first?: boolean } | null>(null)
   const [, setFinished] = useState(0)
   const onDone = useCallback(() => setFinished((n) => n + 1), [])
   const { date, window: win, sitting: clockSitting } = useDay()
@@ -342,11 +346,11 @@ export function Shell({ phoneDark, onRestart, onDayReady }: { phoneDark: boolean
       setLocalName(name)
     }
     setWelcome(false)
-    // The first questions straight away, whatever the hour they're open.
-    if (set && !set.review) {
-      if (morning !== 'done' && canSit('morning')) setFlow('morning')
-      else if (evening !== null && evening !== 'done' && canSit('evening')) setFlow('evening')
-    }
+    // A useful result first (Edwin's brief, 2026-10-29): "What would you like
+    // help making sense of today?" The day's three wait on Today, so the
+    // sitting the app opened by itself behind the welcome is put away.
+    setFlow(null)
+    setSense({ first: true })
   }
   const afterSignIn = (acc: AccountView) => {
     saveKey(SIGNIN_ASKED, '1')
@@ -545,6 +549,9 @@ export function Shell({ phoneDark, onRestart, onDayReady }: { phoneDark: boolean
     body = <Connect me={me} onSignIn={() => open('signin')} today={date} questions={[...morningQs, ...eveningQs]} pulse={pulseOn(prefs) ? pulseCounts : false} focus={connectFocus} onWrite={write} />
   } else if (rootTab === 'account') {
     body = <You me={me} localName={localName} prefs={prefs} onChange={changePrefs} onSignIn={() => open('signin')} onOpenSettings={() => open('settings')} onOpenKept={() => open('kept')} />
+  } else if (rootTab === 'today' && sense) {
+    body = <MakeSense key={sense.start ?? 'pick'} today={date} start={sense.start} first={sense.first} onClose={() => setSense(null)} />
+    fullScreen = true
   } else if (rootTab === 'today' && set && flow && hero) {
     fullScreen = true
     if (flow === 'morning' || flow === 'evening') {
@@ -701,6 +708,7 @@ export function Shell({ phoneDark, onRestart, onDayReady }: { phoneDark: boolean
             rail={rail}
             onWrite={write}
             onInsights={() => goTab('insights')}
+            onSense={(start) => setSense({ start })}
           >
             {!weekOne && <InviteNudge today={set.date} signedIn={!!me} onOpen={() => goTab('circle')} />}
             <InstallInvite today={set.date} />

@@ -38,9 +38,9 @@ describe('planReminders', () => {
     expect(p.find((r) => r.id.startsWith('reminder.evening'))?.minutes).toBe(23 * 60 + 30)
   })
 
-  it('checks in only on the days an intention is due, and opens Reflect', () => {
+  it('checks in only on the days an intention is due, and opens Today, where the check-in waits', () => {
     const p = planReminders(on({ intentions: true }), TUE, 0, new Set(), ['2026-10-29', '2026-12-01'])
-    expect(p).toEqual([expect.objectContaining({ id: 'reminder.checkin.2026-10-29', minutes: 9 * 60, opens: 'reflect' })])
+    expect(p).toEqual([expect.objectContaining({ id: 'reminder.checkin.2026-10-29', minutes: 9 * 60, opens: 'today' })])
   })
 
   it('never carries a word of the person’s own', () => {

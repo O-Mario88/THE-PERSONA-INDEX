@@ -110,6 +110,14 @@ describe('one quiet next step', () => {
   it('shows nothing when there is nothing of yours to go on', () => {
     expect(quietStep('2026-10-28', { answers: [], skips: [] }, [])).toBeNull()
   })
+
+  // Edwin's brief, 2026-10-29: "remember what happened next". A step kept
+  // from a hard moment (or from Reflect) comes back on Today on its check-in day.
+  it('asks how a step you wanted to try went, on its check-in day, after a sitting’s own follow-up', () => {
+    const due = [{ kind: 'intention' as const, id: 'sense-1-step', date: '2026-10-26', text: 'Ask for time before answering.', from: 'sense-1', checkOn: '2026-10-28', at: 1 }]
+    expect(quietStep('2026-10-28', { answers: [], skips: [] }, [], undefined, due)).toMatchObject({ kind: 'checkIn', intention: { id: 'sense-1-step' } })
+    expect(quietStep('2026-10-28', { answers: [], skips: [] }, [started('2026-10-26')], undefined, due)?.kind).toBe('followUp')
+  })
 })
 
 describe('the coming Mirror', () => {
