@@ -16,6 +16,7 @@ import { CardHead, Avatar } from '../ui/parts'
 import { Section } from '../ui/Layout'
 import { CloserTogether, CommonGround, Growing, SupportCelebrate, WhatHelped } from './ConnectMore'
 import { NotAloneSection } from './NotAlone'
+import { WalkAlongside } from './WalkAlongside'
 import type { PulseCounts } from '@shared/humanPulse'
 
 export function Connect({
@@ -116,6 +117,8 @@ export function Connect({
         ))}
       </Card>
 
+      {/* Walk alongside one person (Edwin's brief, 2026-10-29). */}
+      <WalkAlongside friends={friends.filter((f) => !f.muted)} />
       {today && <Growing date={today} questions={questions} circle={circle} />}
       {friends.length > 0 && (
         <>

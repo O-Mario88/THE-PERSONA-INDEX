@@ -79,6 +79,7 @@ import { DepthSwitch, useDeeper } from '../ui/Depth'
 import { Button, Chip, T, Tinted } from '../ui/kit'
 import { CardHead, Disc, type Tone } from '../ui/parts'
 import { PrepareSheet } from './ConversationSheet'
+import { PairWeekCard } from './WalkAlongside'
 import { CircleLine, InConnection, MirrorPatterns, MirrorThreads, showConnection } from './MirrorBits'
 import { locale } from '@shared/locale'
 
@@ -731,6 +732,8 @@ export function SundayMirror({
       </Section>
 
       <Section id="ms-alone" icon="people" tone="blue" title="The moments we share">
+        {/* Alongside the one person someone walks with (Edwin's brief, 2026-10-29). */}
+        <PairWeekCard from={m.from} />
         {pulse && alone.length > 0 && (
           <>
             <NotAloneView picks={alone} />
