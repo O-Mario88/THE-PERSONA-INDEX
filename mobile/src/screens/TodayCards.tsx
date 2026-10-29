@@ -36,12 +36,15 @@ export function QuietStepCard({ today }: { today: string }) {
   if (!step) return null
   // What the people who tried the same step found (the Human Pulse, Edwin 2026-10-29).
   const source = step.kind === 'idea' ? step : step.kind === 'carry' ? null : step.move.local ? null : step.move
+  // Open on the page under its label, not in a box: Today keeps one strong
+  // card, the day's questions, and sections around it (the light-mode
+  // review, 2026-10-29).
   return (
-    <Card style={{ gap: 10 }}>
+    <View style={{ gap: 10, marginTop: 8 }}>
       <T v="eyebrow">{STEP_LABEL[step.kind]}</T>
       {said ? <T tone="text2">{said}</T> : <StepBody today={today} step={step} onSaid={setSaid} />}
       {source && <PulseNote text={pulse.step(source.questionId, source.optionId)} />}
-    </Card>
+    </View>
   )
 }
 

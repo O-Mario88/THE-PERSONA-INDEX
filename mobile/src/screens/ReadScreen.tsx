@@ -28,7 +28,9 @@ export function ReadScreen({ read, date, intimacy, onBack, onOpen }: { read: Rea
         {read.summary}
       </T>
       {read.paragraphs.map((para, i) => (
-        <T key={i}>{para}</T>
+        <T key={i} v="reading">
+          {para}
+        </T>
       ))}
       <Tinted>
         <T v="eyebrow">Something to try</T>
