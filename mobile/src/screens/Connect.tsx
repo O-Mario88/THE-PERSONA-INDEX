@@ -1,12 +1,10 @@
-// Connect: a private space for understanding,
-// encouragement and meaningful connection. No feed. Your Circle (the three
-// private circles, placed on this device only), inviting a friend, Growing
-// together, Our Common Ground, What Helped Us and Support & Celebrate, with
-// at most two quiet "Closer together" cards above them.
+// Connect: a place to feel understood by people you trust (Edwin,
+// 2026-10-29). No feed, no activity status. Your people, each a Connection or
+// in your Inner Circle (kept on this device only), and inviting a friend.
 import { useCallback, useEffect, useState } from 'react'
-import { Pressable, ScrollView, Share, View } from 'react-native'
+import { ScrollView, Share, View } from 'react-native'
 import { ApiError } from '@shared/api'
-import { loadRings, placeIn, RING_NAMES, RING_NOTES, RINGS, ringOf, type Ring, type Rings } from '@shared/rings'
+import { CONNECTION, INNER_CIRCLE, innerCircle, setInner } from '@shared/rings'
 import type { Question } from '@shared/api'
 import { createInvite, getCircle, inviteLink, TAG_NAMES, TAGS, type AccountView, type CircleView, type Tag } from '@shared/social'
 import { dayMonth } from '@shared/reflect'
@@ -40,7 +38,7 @@ export function Connect({
   const reflectOn = () => onWrite('When you saw how others answered, what did you notice? Does it change how you see your own answer?')
   const [circle, setCircle] = useState<CircleView | null>(null)
   const [error, setError] = useState('')
-  const [rings, setRings] = useState<Rings>(loadRings)
+  const [inner, setInnerIds] = useState<string[]>(innerCircle)
   const refresh = useCallback(() => {
     getCircle().then(
       (c) => {
@@ -71,7 +69,6 @@ export function Connect({
   }
 
   const friends = circle?.friends ?? []
-  const counts = RINGS.map((r) => friends.filter((f) => ringOf(rings, f.id) === r).length)
   return (
     <Page
       aside={
@@ -83,30 +80,16 @@ export function Connect({
       <PageHeader title="Connect" line="A little understanding goes a long way." />
       <NotAloneSection pulse={pulse} focus={focus} onReflect={reflectOn} />
       {error ? <T tone="danger">{error}</T> : null}
-      {shows('circleExtras') && friends.length > 0 && <CloserTogether friends={friends} rings={rings} />}
+      {shows('circleExtras') && friends.length > 0 && <CloserTogether friends={friends} inner={inner} />}
 
       <Card style={{ gap: 14 }}>
-        <T v="h2">Your Circle</T>
+        <T v="h2">{`Your people · ${friends.length}`}</T>
         {friends.length > 0 && <Faces names={friends.map((f) => f.name)} />}
-        <View style={{ flexDirection: 'row', gap: 24 }}>
-          <Stat n={friends.length} label="People in your circle" />
-          <Stat n={circle?.active ?? 0} label="Active this week" />
-        </View>
-        <View style={{ flexDirection: 'row', gap: 8 }}>
-          {RINGS.map((r, i) => (
-            <View key={r} style={{ flex: 1, gap: 2 }}>
-              <T v="h3">{counts[i]}</T>
-              <T v="small" tone="muted">
-                {RING_NAMES[r]}
-              </T>
-            </View>
-          ))}
-        </View>
         <T v="small" tone="muted">
-          Which circle someone is in stays on this phone. Nobody, the server included, ever learns it.
+          {`Everyone here is a ${CONNECTION}. Add the people closest to you to your ${INNER_CIRCLE}. Who is in it stays on this phone: nobody, the server included, ever learns it.`}
         </T>
         {friends.map((f) => (
-          <Friend key={f.id} name={f.name} sub={`${TAG_NAMES[f.tag]}${f.active ? ' · active this week' : ''}`} ring={ringOf(rings, f.id)} onPlace={(r) => setRings(placeIn(f.id, r))} />
+          <Friend key={f.id} name={f.name} sub={TAG_NAMES[f.tag]} inner={inner.includes(f.id)} onInner={(on) => setInnerIds(setInner(f.id, on))} />
         ))}
       </Card>
 
@@ -152,46 +135,19 @@ function Faces({ names }: { names: string[] }) {
   )
 }
 
-function Stat({ n, label }: { n: number; label: string }) {
+// One person: their name, how you know them, and whether they are in your
+// Inner Circle. Nothing about their activity: no status, no last seen.
+function Friend({ name, sub, inner, onInner }: { name: string; sub: string; inner: boolean; onInner: (on: boolean) => void }) {
   return (
-    <View style={{ gap: 2 }}>
-      <T v="display">{n}</T>
-      <T v="small" tone="muted">
-        {label}
-      </T>
-    </View>
-  )
-}
-
-function Friend({ name, sub, ring, onPlace }: { name: string; sub: string; ring: Ring; onPlace: (r: Ring) => void }) {
-  const [open, setOpen] = useState(false)
-  return (
-    <View style={{ gap: 10 }}>
-      <Pressable accessibilityRole="button" onPress={() => setOpen(!open)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-        <Avatar name={name} size={40} />
-        <View style={{ flex: 1 }}>
-          <T v="h3">{name}</T>
-          <T v="small" tone="muted">
-            {sub}
-          </T>
-        </View>
-        <Chip label={RING_NAMES[ring]} />
-      </Pressable>
-      {open && (
-        <View style={{ gap: 8, paddingLeft: 52 }}>
-          {RINGS.map((r) => (
-            <Pressable key={r} accessibilityRole="radio" accessibilityState={{ checked: r === ring }} onPress={() => onPlace(r)}>
-              <T bold={r === ring}>
-                {r === ring ? '● ' : '○ '}
-                {RING_NAMES[r]}
-              </T>
-              <T v="small" tone="muted">
-                {RING_NOTES[r]}
-              </T>
-            </Pressable>
-          ))}
-        </View>
-      )}
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+      <Avatar name={name} size={40} />
+      <View style={{ flex: 1 }}>
+        <T v="h3">{name}</T>
+        <T v="small" tone="muted">
+          {inner ? `${sub} · ${INNER_CIRCLE}` : sub}
+        </T>
+      </View>
+      <Chip label={inner ? INNER_CIRCLE : `Add to ${INNER_CIRCLE}`} on={inner} onPress={() => onInner(!inner)} />
     </View>
   )
 }

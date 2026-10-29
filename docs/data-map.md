@@ -22,7 +22,7 @@ Every key is named in one registry, `frontend/src/registry.ts`, which also says 
 | Whether the home screen invite was answered | `pi.install.v1` | Until deleted | Never |
 | What the person asked to be called, for the greeting | `pi.name` | Until deleted | Only sealed in the backup |
 | Your own moves towards friends, for "Your week in connection" in the Mirrors: the day and the kind (a quiet nod, a shared insight, asking for support, a win), never who | `pi.connection.v1` | A year | Only sealed in the backup. Never sent: the server counts none of these |
-| Which of the three circles (inner, close, friends) each friend was placed in | `pi.rings` | Until deleted | Only sealed in the backup. Never sent: no friend and not the server learns which circle they are in |
+| Who the person added to their Inner Circle (everyone else is a Connection; an older phone's three circles are read as Inner Circle or Connection) | `pi.rings` | Until deleted | Only sealed in the backup. Never sent: no friend and not the server learns who is in it |
 | That the welcome was shown before the first sitting | `pi.welcomed` | Until deleted | Never |
 | "Not yet" on the midday step check | `pi.midday.<date>` | The day | Never |
 | Device pass: a server-signed random id, no personal data | `pi.device.v1` | Until "Delete everywhere" | Sent with every vote, step and mirror request |

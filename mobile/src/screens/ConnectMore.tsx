@@ -14,7 +14,7 @@ import { localDate } from '@shared/day'
 import { useNods } from '@shared/friendsData'
 import { loadHistory } from '@shared/profile'
 import { count } from '@shared/pulse'
-import { ringOf, type Rings } from '@shared/rings'
+
 import {
   getCircle,
   AUDIENCES,
@@ -130,7 +130,7 @@ function useFriends(): FriendView[] | null {
 
 const MAX_CLOSER_CARDS = 2
 
-export function CloserTogether({ friends, rings }: { friends: FriendView[]; rings: Rings }) {
+export function CloserTogether({ friends, inner }: { friends: FriendView[]; inner: string[] }) {
   const [received, setReceived] = useState<ReachOutView[]>([])
   const refresh = useCallback(() => {
     getReachOuts().then(
@@ -140,7 +140,7 @@ export function CloserTogether({ friends, rings }: { friends: FriendView[]; ring
   }, [])
   useEffect(refresh, [refresh])
 
-  const quiet = friends.find((f) => !f.muted && f.connect && !f.active && ringOf(rings, f.id) !== 'outer')
+  const quiet = friends.find((f) => !f.muted && f.connect && !f.active && inner.includes(f.id))
   const cards = received.slice(0, MAX_CLOSER_CARDS)
   const showQuiet = quiet && cards.length < MAX_CLOSER_CARDS
   if (cards.length === 0 && !showQuiet) return null
