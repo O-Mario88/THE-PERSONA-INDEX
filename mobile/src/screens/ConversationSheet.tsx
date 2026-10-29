@@ -1,9 +1,10 @@
-// The conversation sheet (Edwin's brief, 2026-10-29: "Bring to a
-// Conversation"). A sheet slides up to choose the days and what goes in,
-// then shows the page itself: to read from during the conversation, print,
-// or share as a PDF. Everything is made here, on the phone (shared
-// conversationSheet.ts); nothing is sent anywhere unless the person shares
-// the page.
+// Bring to a Conversation (Edwin's brief, 2026-10-29): a brief for a
+// conversation with a partner, a manager, a mentor or coach, a counsellor or
+// a friend. Choose who it's for, write what you want to discuss, pick any
+// moments to bring, then read and edit all five parts before anything is
+// printed or shared. Everything is made here, on the phone (shared
+// conversationSheet.ts); nothing is sent anywhere unless the person shares it.
+// One complete brief is free; after that, briefs are part of Patron.
 import { useMemo, useState, type ReactNode } from 'react'
 import { Modal, Platform, Pressable, ScrollView, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -13,34 +14,37 @@ import * as Print from 'expo-print'
 import * as Sharing from 'expo-sharing'
 import { Geist_400Regular, Geist_700Bold } from '@expo-google-fonts/geist'
 import {
-  BOX_TITLES,
-  DEFAULT_PARTS,
+  BRIEF_FOR,
+  briefTitle,
+  linesOf,
   makeSheet,
+  SECTION_TITLES,
   SHEET_EMPTY,
   SHEET_FOOTER,
   sheetDates,
   sheetGate,
   sheetHTML,
-  sheetTitles,
   wordsChoices,
+  type BriefFor,
   type Sheet,
-  type SheetParts,
   type SheetRange,
 } from '@shared/conversationSheet'
 import { checkIns } from '@shared/growthJourney'
 import { cardTextOf } from '@shared/insights'
 import { loadMoves } from '@shared/moves'
-import { allGoodThings, reflections } from '@shared/notebook'
+import { intentions, reflections } from '@shared/notebook'
 import { noteFreeTry } from '@shared/patron'
 import { loadHistory } from '@shared/profile'
 import { dayMonth } from '@shared/reflect'
 import { addDays, load } from '@shared/storage'
 import { NAME_KEY } from '@shared/welcomeKeys'
-import { brand, gutter, radius, useTheme, typeScale } from '../theme'
+import { brand, font, gutter, radius, useTheme, typeScale } from '../theme'
 import { Icon } from '../ui/Icon'
 import { Mark } from '../ui/Logo'
 import { canOpenPatron, openPatron, PatronNote } from '../ui/Patron'
-import { Button, feel, RowGroup, RowLink, Segmented, T } from '../ui/kit'
+import { Button, Card, feel, Option, RowGroup, RowLink, Segmented, T } from '../ui/kit'
+import { addSpoken, SpeakInstead } from '../ui/Speak'
+import { TextInput } from '../ui/textScale'
 
 const web = Platform.OS === 'web'
 
@@ -54,8 +58,6 @@ const PAPER = {
   ink2: '#33414d',
   muted: '#6f6556',
   head: '#013d5a',
-  tag: '#eef3e0',
-  tagInk: '#24420f',
 } as const
 
 const RANGES: { value: string; label: string }[] = [
@@ -64,12 +66,7 @@ const RANGES: { value: string; label: string }[] = [
   { value: '30', label: '30 days' },
 ]
 
-const PARTS: { key: keyof SheetParts; label: string; sub: string }[] = [
-  { key: 'patterns', label: 'What kept coming up', sub: 'The parts of life you answered about most, what you reached for, and both sides of a reading' },
-  { key: 'steps', label: 'Steps I tried and how they went', sub: 'Only the ones you said helped, or made things harder' },
-  { key: 'good', label: 'Three good things', sub: 'How often you noted them and what they were mostly about, never the words' },
-  { key: 'words', label: 'My own words and kept moments', sub: 'Off unless you choose. Then you pick exactly which ones.' },
-]
+const DISCUSS_MAX = 600
 
 // The entry on My Journey and at the bottom of the Sunday Mirror.
 export function PrepareSheet({ today }: { today: string }) {
@@ -78,8 +75,8 @@ export function PrepareSheet({ today }: { today: string }) {
   return (
     <>
       <RowLink
-        label="Prepare a conversation sheet"
-        sub="A one-page summary of your recent days to bring to a trusted conversation, counsellor or mentor."
+        label="Prepare for a conversation"
+        sub="A short brief for your partner, manager, mentor, counsellor or a friend: what you want to discuss, what you tried, and what to ask."
         icon={<Icon name="doc" size={22} color={p.accentInk} />}
         onPress={() => setOpen(true)}
       />
@@ -89,31 +86,36 @@ export function PrepareSheet({ today }: { today: string }) {
 }
 
 type Shared = 'idle' | 'busy' | 'done' | 'failed'
+type Stage = 'who' | 'about' | 'edit' | 'preview'
 
 export function ConversationSheet({ today, onClose }: { today: string; onClose: () => void }) {
   const p = useTheme()
   const insets = useSafeAreaInsets()
+  const [stage, setStage] = useState<Stage>('who')
+  const [who, setWho] = useState<BriefFor>('counsellor')
+  const [discuss, setDiscuss] = useState('')
   const [range, setRange] = useState<SheetRange>(7)
-  const [parts, setParts] = useState<SheetParts>(DEFAULT_PARTS)
   const [picked, setPicked] = useState<string[]>([])
   const [sheet, setSheet] = useState<Sheet | null>(null)
   const [shared, setShared] = useState<Shared>('idle')
-  // A free longer sheet, once made, can be remade while this stays open.
-  const [unlocked, setUnlocked] = useState<SheetRange | null>(null)
-  const data = useMemo(() => ({ history: loadHistory(), moves: loadMoves(), checks: checkIns(), good: allGoodThings(), written: reflections() }), [])
+  // The free brief, once made, can be edited and remade while this stays open.
+  const [unlocked, setUnlocked] = useState(false)
+  const data = useMemo(() => ({ history: loadHistory(), moves: loadMoves(), checks: checkIns(), intentions: intentions(), written: reflections() }), [])
   const choices = useMemo(() => wordsChoices(data.written, addDays(today, -(range - 1)), today), [data, range, today])
-  const gate = unlocked === range ? 'open' : sheetGate(range, today)
+  const gate = unlocked ? 'open' : sheetGate(today)
+  const forOf = BRIEF_FOR.find((f) => f.id === who) ?? BRIEF_FOR[0]
 
   function make() {
     if (gate === 'patron') return
     if (gate === 'trial') {
       noteFreeTry('sheet')
-      setUnlocked(range)
+      setUnlocked(true)
     }
     feel('done')
     const name = load(NAME_KEY) ?? undefined
-    setSheet(makeSheet({ today, range, parts, ...data, textOf: cardTextOf, picked: picked.filter((id) => choices.some((c) => c.id === id)), name }))
+    setSheet(makeSheet({ today, range, for: who, discuss, ...data, textOf: cardTextOf, picked: picked.filter((id) => choices.some((c) => c.id === id)), name }))
     setShared('idle')
+    setStage('edit')
   }
 
   async function share(s: Sheet) {
@@ -125,13 +127,16 @@ export function ConversationSheet({ today, onClose }: { today: string; onClose: 
     }
   }
 
-  const toggle = (k: keyof SheetParts) => setParts((x) => ({ ...x, [k]: !x[k] }))
   const pick = (id: string) => setPicked((xs) => (xs.includes(id) ? xs.filter((x) => x !== id) : [...xs, id]))
+  const back = stage === 'about' ? 'who' : stage === 'edit' ? 'about' : stage === 'preview' ? 'edit' : null
 
   return (
     <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <View style={{ flex: 1, backgroundColor: p.bg }}>
+        {/* A new ScrollView for each step, so each one opens at its top. */}
         <ScrollView
+          key={stage}
+          keyboardShouldPersistTaps="handled"
           contentContainerStyle={{
             paddingHorizontal: gutter,
             paddingTop: Platform.OS === 'ios' ? 20 : Math.max(insets.top, 16) + 4,
@@ -143,12 +148,142 @@ export function ConversationSheet({ today, onClose }: { today: string; onClose: 
           }}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            {sheet ? <Button kind="text" label="Change what’s in it" onPress={() => setSheet(null)} /> : null}
+            {back ? <Button kind="text" icon="back" label="Back" onPress={() => setStage(back)} /> : null}
             <View style={{ flex: 1 }} />
             <Button kind="text" label="Close" onPress={onClose} />
           </View>
 
-          {sheet ? (
+          {stage === 'who' && (
+            <>
+              <View style={{ gap: 6 }}>
+                <T v="title">Prepare for a conversation</T>
+                <T tone="text2">A short brief to bring along: what you want to discuss, what you tried, and what to ask. You read and change every part before anyone sees it. Who is it for?</T>
+              </View>
+              {BRIEF_FOR.map((f) => (
+                <Option
+                  key={f.id}
+                  label={f.purpose}
+                  onPress={() => {
+                    setWho(f.id)
+                    setStage('about')
+                  }}
+                />
+              ))}
+            </>
+          )}
+
+          {stage === 'about' && (
+            <>
+              <View style={{ gap: 6 }}>
+                <T v="eyebrow">{forOf.purpose}</T>
+                <T v="title">What do you want to discuss?</T>
+              </View>
+              <TextInput
+                value={discuss}
+                onChangeText={(t) => setDiscuss(t.slice(0, DISCUSS_MAX))}
+                placeholder={forOf.placeholder}
+                placeholderTextColor={p.muted}
+                multiline
+                accessibilityLabel="What do you want to discuss?"
+                style={{
+                  minHeight: 120,
+                  borderWidth: 1.5,
+                  borderColor: p.control,
+                  backgroundColor: p.surface,
+                  borderRadius: radius.md,
+                  padding: 14,
+                  fontFamily: font.regular,
+                  ...typeScale.body,
+                  color: p.text,
+                  textAlignVertical: 'top',
+                }}
+              />
+              <SpeakInstead onText={(t) => setDiscuss(addSpoken(discuss, t, DISCUSS_MAX))} />
+              <View style={{ gap: 8 }}>
+                <T v="h3">How far back?</T>
+                <Segmented label="How far back?" options={RANGES} value={String(range)} onChange={(v) => setRange(Number(v) as SheetRange)} />
+              </View>
+              <View style={{ gap: 8 }}>
+                <T v="h3">Moments to bring</T>
+                <T v="small" tone="muted">
+                  Only the ones you tick go in.
+                </T>
+                {choices.length ? (
+                  <RowGroup>
+                    {choices.map((r) => (
+                      <Tick
+                        key={r.id}
+                        label={short(r.answer)}
+                        sub={`${dayMonth(r.date)} · ${r.source === 'moment' ? 'A moment you kept' : r.free || !r.question.trim() ? 'Written freely' : r.question}`}
+                        on={picked.includes(r.id)}
+                        onPress={() => pick(r.id)}
+                      />
+                    ))}
+                  </RowGroup>
+                ) : (
+                  <T v="small" tone="muted">
+                    Nothing written in these days yet.
+                  </T>
+                )}
+              </View>
+              {gate === 'trial' && (
+                <T v="small" tone="muted">
+                  Your first brief is free.
+                </T>
+              )}
+              {gate === 'patron' && (
+                <PatronNote
+                  text="Preparing for your conversations, as often as you need, is part of The Persona Index Patron. Your free brief is used."
+                  onOpen={
+                    canOpenPatron()
+                      ? () => {
+                          onClose()
+                          openPatron()
+                        }
+                      : undefined
+                  }
+                />
+              )}
+              <Button wide label="Make my brief" disabled={gate === 'patron' || discuss.trim().length < 3} onPress={make} />
+              <T v="small" tone="muted" center>
+                Made on this phone. Nothing is sent anywhere unless you share it.
+              </T>
+            </>
+          )}
+
+          {stage === 'edit' && sheet && (
+            <>
+              <View style={{ gap: 6 }}>
+                <T v="title">Read it through, and change anything</T>
+                <T tone="text2">Tap Edit on any part. One item a line.</T>
+              </View>
+              <EditPart n={1} title={SECTION_TITLES[0]} text={sheet.discuss} onChange={(t) => setSheet({ ...sheet, discuss: t })} />
+              <Card style={{ gap: 8 }}>
+                <PartHead n={2} title={SECTION_TITLES[1]} />
+                {sheet.moments.length ? (
+                  sheet.moments.map((m) => (
+                    <View key={`${m.date}${m.text}`} style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}>
+                      <View style={{ flex: 1, gap: 2 }}>
+                        <T v="tiny">{`${dayMonth(m.date)}${m.question ? ` · ${m.question}` : ''}`}</T>
+                        <T>{m.text}</T>
+                      </View>
+                      <Button small kind="text" label="Remove" onPress={() => setSheet({ ...sheet, moments: sheet.moments.filter((x) => x !== m) })} />
+                    </View>
+                  ))
+                ) : (
+                  <T v="small" tone="muted">
+                    {SHEET_EMPTY.moments}
+                  </T>
+                )}
+              </Card>
+              <EditPart n={3} title={SECTION_TITLES[2]} lines={sheet.felt} onLines={(felt) => setSheet({ ...sheet, felt })} empty={SHEET_EMPTY.felt} />
+              <EditPart n={4} title={SECTION_TITLES[3]} lines={sheet.tried} onLines={(tried) => setSheet({ ...sheet, tried })} empty={SHEET_EMPTY.tried} />
+              <EditPart n={5} title={SECTION_TITLES[4]} lines={sheet.bring} onLines={(bring) => setSheet({ ...sheet, bring })} empty={SHEET_EMPTY.bring} numbered />
+              <Button wide label="Preview it" onPress={() => setStage('preview')} />
+            </>
+          )}
+
+          {stage === 'preview' && sheet && (
             <>
               <SheetView sheet={sheet} />
               <Button wide icon="share" label={web ? 'Print or save as PDF' : 'Share or print'} busy={shared === 'busy'} onPress={() => share(sheet)} />
@@ -160,77 +295,103 @@ export function ConversationSheet({ today, onClose }: { today: string; onClose: 
                     : 'Read it from here during the conversation, or share it as a PDF before you meet.'}
               </T>
             </>
-          ) : (
-            <>
-              <View style={{ gap: 6 }}>
-                <T v="title">Prepare a conversation sheet</T>
-                <T tone="text2">A one-page summary of your recent days to bring to a trusted conversation, counsellor or mentor.</T>
-              </View>
-
-              <View style={{ gap: 8 }}>
-                <T v="h3">How far back?</T>
-                <Segmented label="How far back?" options={RANGES} value={String(range)} onChange={(v) => setRange(Number(v) as SheetRange)} />
-                {gate === 'trial' && (
-                  <T v="small" tone="muted">
-                    Your first longer sheet is free.
-                  </T>
-                )}
-                {gate === 'patron' && (
-                  <PatronNote
-                    text="Preparing conversation sheets across 14 and 30 days is part of The Persona Index Patron."
-                    onOpen={
-                      canOpenPatron()
-                        ? () => {
-                            onClose()
-                            openPatron()
-                          }
-                        : undefined
-                    }
-                  />
-                )}
-              </View>
-
-              <View style={{ gap: 8 }}>
-                <T v="h3">What to include</T>
-                <RowGroup>
-                  {PARTS.map((x) => (
-                    <Tick key={x.key} label={x.label} sub={x.sub} on={parts[x.key]} onPress={() => toggle(x.key)} />
-                  ))}
-                </RowGroup>
-              </View>
-
-              {parts.words && (
-                <View style={{ gap: 8 }}>
-                  <T v="h3">Which of your words?</T>
-                  {choices.length ? (
-                    <RowGroup>
-                      {choices.map((r) => (
-                        <Tick
-                          key={r.id}
-                          label={short(r.answer)}
-                          sub={`${dayMonth(r.date)} · ${r.source === 'moment' ? 'A moment you kept' : r.free || !r.question.trim() ? 'Written freely' : r.question}`}
-                          on={picked.includes(r.id)}
-                          onPress={() => pick(r.id)}
-                        />
-                      ))}
-                    </RowGroup>
-                  ) : (
-                    <T v="small" tone="muted">
-                      Nothing written in these days yet.
-                    </T>
-                  )}
-                </View>
-              )}
-
-              <Button wide label="Make my sheet" disabled={gate === 'patron'} onPress={make} />
-              <T v="small" tone="muted" center>
-                Made on this phone. Nothing is sent anywhere unless you share it.
-              </T>
-            </>
           )}
         </ScrollView>
       </View>
     </Modal>
+  )
+}
+
+function PartHead({ n, title, right }: { n: number; title: string; right?: ReactNode }) {
+  const p = useTheme()
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+      <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: p.btn, alignItems: 'center', justifyContent: 'center' }}>
+        <T v="tiny" bold style={{ color: p.onBtn }}>
+          {String(n)}
+        </T>
+      </View>
+      <T v="h3" style={{ flex: 1 }}>
+        {title}
+      </T>
+      {right}
+    </View>
+  )
+}
+
+// One part of the brief: read as it will print, or edited as text, one item a line.
+function EditPart({
+  n,
+  title,
+  text,
+  onChange,
+  lines,
+  onLines,
+  empty,
+  numbered,
+}: {
+  n: number
+  title: string
+  text?: string
+  onChange?: (t: string) => void
+  lines?: string[]
+  onLines?: (l: string[]) => void
+  empty?: string
+  numbered?: boolean
+}) {
+  const p = useTheme()
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(() => (lines ? lines.join('\n') : (text ?? '')))
+  const done = () => {
+    if (lines && onLines) onLines(linesOf(draft))
+    else onChange?.(draft.trim())
+    setEditing(false)
+  }
+  const shown = lines ?? (text?.trim() ? [text] : [])
+  return (
+    <Card style={{ gap: 8 }}>
+      <PartHead n={n} title={title} right={<Button small kind="text" label={editing ? 'Done' : 'Edit'} onPress={editing ? done : () => setEditing(true)} />} />
+      {editing ? (
+        <TextInput
+          value={draft}
+          onChangeText={setDraft}
+          multiline
+          autoFocus
+          accessibilityLabel={title}
+          style={{
+            minHeight: 96,
+            borderWidth: 1.5,
+            borderColor: p.control,
+            backgroundColor: p.surface,
+            borderRadius: radius.md,
+            padding: 12,
+            fontFamily: font.regular,
+            ...typeScale.body,
+            color: p.text,
+            textAlignVertical: 'top',
+          }}
+        />
+      ) : shown.length ? (
+        shown.map((l, i) =>
+          lines ? (
+            <View key={`${i}${l}`} style={{ flexDirection: 'row', gap: 8 }}>
+              <T bold tone="accent">
+                {numbered ? `${i + 1}.` : '•'}
+              </T>
+              <T style={{ flex: 1 }}>{l}</T>
+            </View>
+          ) : (
+            <T key="text" v="reading">
+              {l}
+            </T>
+          ),
+        )
+      ) : (
+        <T v="small" tone="muted">
+          {empty ?? SHEET_EMPTY.discuss}
+        </T>
+      )}
+    </Card>
   )
 }
 
@@ -281,64 +442,26 @@ function Tick({ label, sub, on, onPress }: { label: string; sub?: string; on: bo
 // ---- the page on the screen ----
 
 function SheetView({ sheet }: { sheet: Sheet }) {
-  const t = sheetTitles(sheet.range)
-  const boxes: { key: string; title: string; numbered: boolean; body: ReactNode }[] = []
-  if (sheet.energy)
-    boxes.push({
-      key: 'energy',
-      title: BOX_TITLES.energy,
-      numbered: true,
-      body: (
-        <>
-          {sheet.energy.areas.length > 0 && (
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-              {sheet.energy.areas.map((a) => (
-                <View key={a} style={{ backgroundColor: PAPER.tag, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
-                  <T v="tiny" bold style={{ color: PAPER.tagInk }}>
-                    {a}
-                  </T>
-                </View>
-              ))}
-            </View>
-          )}
-          <Line>{sheet.energy.line}</Line>
-        </>
-      ),
-    })
-  if (sheet.sides)
-    boxes.push({
-      key: 'sides',
-      title: t.sides,
-      numbered: true,
-      body: sheet.sides.length ? sheet.sides.map((x) => <Quote key={x.label} label={x.label} text={`“${x.text}”`} />) : <Line muted>{SHEET_EMPTY.sides}</Line>,
-    })
-  if (sheet.tried)
-    boxes.push({
-      key: 'tried',
-      title: BOX_TITLES.tried,
-      numbered: true,
-      body: sheet.tried.length ? sheet.tried.map((l) => <Bullet key={l}>{l}</Bullet>) : <Line muted>{SHEET_EMPTY.tried}</Line>,
-    })
-  boxes.push({
-    key: 'talk',
-    title: BOX_TITLES.talk,
-    numbered: true,
-    body: sheet.talk.map((q, i) => (
-      <Bullet key={q} mark={`${i + 1}.`}>
-        {q}
+  const items = (xs: string[], numbered = false) =>
+    xs.map((l, i) => (
+      <Bullet key={`${i}${l}`} mark={numbered ? `${i + 1}.` : '•'}>
+        {l}
       </Bullet>
-    )),
-  })
-  if (sheet.good) boxes.push({ key: 'good', title: BOX_TITLES.good, numbered: false, body: <Line>{sheet.good}</Line> })
-  if (sheet.words?.length)
-    boxes.push({
-      key: 'words',
-      title: BOX_TITLES.words,
-      numbered: false,
-      body: sheet.words.map((w) => <Quote key={`${w.date}${w.text}`} label={`${dayMonth(w.date)}${w.question ? ` · ${w.question}` : ''}`} text={w.text} />),
-    })
-  const numbered = boxes.filter((b) => b.numbered)
-
+    ))
+  const boxes: { title: string; body: ReactNode }[] = [
+    { title: SECTION_TITLES[0], body: sheet.discuss.trim() ? <Line>{sheet.discuss}</Line> : <Line muted>{SHEET_EMPTY.discuss}</Line> },
+    {
+      title: SECTION_TITLES[1],
+      body: sheet.moments.length ? (
+        sheet.moments.map((w) => <Quote key={`${w.date}${w.text}`} label={`${dayMonth(w.date)}${w.question ? ` · ${w.question}` : ''}`} text={w.text} />)
+      ) : (
+        <Line muted>{SHEET_EMPTY.moments}</Line>
+      ),
+    },
+    { title: SECTION_TITLES[2], body: sheet.felt.length ? items(sheet.felt) : <Line muted>{SHEET_EMPTY.felt}</Line> },
+    { title: SECTION_TITLES[3], body: sheet.tried.length ? items(sheet.tried) : <Line muted>{SHEET_EMPTY.tried}</Line> },
+    { title: SECTION_TITLES[4], body: sheet.bring.length ? items(sheet.bring, true) : <Line muted>{SHEET_EMPTY.bring}</Line> },
+  ]
   return (
     <View style={{ backgroundColor: PAPER.page, borderRadius: radius.lg, overflow: 'hidden', borderWidth: 1, borderColor: PAPER.line }}>
       <View style={{ backgroundColor: brand.night, padding: 20, flexDirection: 'row', gap: 14, alignItems: 'center' }}>
@@ -348,7 +471,7 @@ function SheetView({ sheet }: { sheet: Sheet }) {
             To bring to a conversation
           </T>
           <T v="title" style={{ color: brand.onNight }}>
-            {t.title}
+            {briefTitle(sheet.for)}
           </T>
           <T v="small" style={{ color: brand.onNight2 }}>
             {`${sheetDates(sheet)}${sheet.name ? ` · ${sheet.name}` : ''}`}
@@ -356,16 +479,14 @@ function SheetView({ sheet }: { sheet: Sheet }) {
         </View>
       </View>
       <View style={{ padding: 12, gap: 10 }}>
-        {boxes.map((b) => (
-          <View key={b.key} style={{ backgroundColor: PAPER.box, borderRadius: radius.md, borderWidth: 1, borderColor: PAPER.line, padding: 14, gap: 8 }}>
+        {boxes.map((b, i) => (
+          <View key={b.title} style={{ backgroundColor: PAPER.box, borderRadius: radius.md, borderWidth: 1, borderColor: PAPER.line, padding: 14, gap: 8 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              {b.numbered && (
-                <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: brand.night, alignItems: 'center', justifyContent: 'center' }}>
-                  <T v="tiny" bold style={{ color: brand.sprout }}>
-                    {String(numbered.indexOf(b) + 1)}
-                  </T>
-                </View>
-              )}
+              <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: brand.night, alignItems: 'center', justifyContent: 'center' }}>
+                <T v="tiny" bold style={{ color: brand.sprout }}>
+                  {String(i + 1)}
+                </T>
+              </View>
               <T v="h3" style={{ color: PAPER.head, flex: 1 }}>
                 {b.title}
               </T>
@@ -438,10 +559,10 @@ async function sharePage(sheet: Sheet): Promise<boolean> {
   const html = sheetHTML(sheet, await pageFonts())
   if (web) return printOnWeb(html)
   const { uri } = await Print.printToFileAsync({ html, width: 595, height: 842 })
-  const pdf = new File(Paths.cache, `conversation-sheet-${sheet.to}.pdf`)
+  const pdf = new File(Paths.cache, `conversation-brief-${sheet.to}.pdf`)
   if (pdf.exists) pdf.delete()
   new File(uri).moveSync(pdf)
-  await Sharing.shareAsync(pdf.uri, { mimeType: 'application/pdf', UTI: 'com.adobe.pdf', dialogTitle: 'Your conversation sheet' })
+  await Sharing.shareAsync(pdf.uri, { mimeType: 'application/pdf', UTI: 'com.adobe.pdf', dialogTitle: 'Your conversation brief' })
   return true
 }
 

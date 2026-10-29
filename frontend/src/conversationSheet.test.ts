@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { BOX_TITLES, DEFAULT_PARTS, makeSheet, SHEET_EMPTY, SHEET_FOOTER, sheetDates, sheetGate, sheetHTML, sheetTitles, wordsChoices, type SheetInput } from './conversationSheet'
+import { BRIEF_FOR, briefTitle, linesOf, makeSheet, SECTION_TITLES, SHEET_EMPTY, SHEET_FOOTER, sheetDates, sheetGate, sheetHTML, wordsChoices, type SheetInput } from './conversationSheet'
 import type { CheckIn } from './growthJourney'
 import type { CardText } from './insights'
 import type { Move } from './moves'
-import type { GoodThings, Reflection } from './notebook'
+import type { Intention, Reflection } from './notebook'
 import { noteFreeTry, savePatron } from './patron'
 import type { History } from './profile'
 import { voiceProblems } from './voice'
@@ -58,12 +58,6 @@ const checks: CheckIn[] = [
   { questionId: 'q-old', date: '2026-10-02', tried: 'yes', outcome: 'helped' },
 ]
 
-const good: GoodThings[] = [
-  { kind: 'good', at: 1, date: '2026-10-28', lines: ['Lunch with my sister', 'Finished the report', 'A long walk in the park'] },
-  { kind: 'good', at: 1, date: '2026-10-26', lines: ['Called mum', 'Slept well'] },
-  { kind: 'good', at: 1, date: '2026-10-12', lines: ['An old good thing'] },
-]
-
 const reflection = (id: string, date: string, answerText: string, extra: Partial<Reflection> = {}): Reflection => ({
   kind: 'reflection',
   at: 1,
@@ -85,115 +79,148 @@ const written: Reflection[] = [
   reflection('r-old', '2026-09-01', 'Too long ago.'),
 ]
 
+const intention = (id: string, date: string, text: string, check?: Intention['check']): Intention => ({
+  kind: 'intention',
+  at: 1,
+  id,
+  date,
+  text,
+  from: 'sense-x',
+  checkOn: date,
+  ...(check ? { check, checkedOn: date } : {}),
+})
+const kept: Intention[] = [
+  intention('i-1', '2026-10-27', 'Ask for time before answering.', 'helped'),
+  intention('i-2', '2026-10-26', 'Plan one hour of rest.', 'not_yet'),
+  intention('i-3', '2026-10-25', 'Let this one go.', 'let_go'),
+]
+
 const input = (over: Partial<SheetInput> = {}): SheetInput => ({
   today: TODAY,
   range: 7,
-  parts: DEFAULT_PARTS,
+  for: 'counsellor',
+  discuss: 'I keep taking on extra work and I am tired all the time.',
   history,
   moves,
   checks,
+  intentions: kept,
   textOf: (id) => cards[id] ?? null,
-  good,
   written,
   picked: [],
   name: 'Edwin',
   ...over,
 })
 
-describe('the conversation sheet', () => {
+// Edwin's brief, 2026-10-29: "Make Bring to a Conversation a launch feature…
+// for everyday conversations as well as professional sessions… 1. What I want
+// to discuss. 2. Specific moments I selected. 3. What I felt or needed. 4. What
+// I tried and what happened. 5. Questions or requests I want to bring. Users
+// must preview and edit it before exporting or sharing."
+describe('the conversation brief', () => {
+  it('is for someone the person chooses, in everyday words', () => {
+    expect(BRIEF_FOR.map((f) => f.purpose)).toEqual([
+      'Help me explain this to my partner.',
+      'Help me prepare for my manager.',
+      'Help me get the most from my next session.',
+      'Help me remember what to discuss in my session.',
+      'Help me say what’s been on my mind.',
+    ])
+    expect(makeSheet(input({ for: 'manager' })).for).toBe('manager')
+    expect(briefTitle('manager')).toBe('To talk through with my manager')
+  })
+
   it('covers the days chosen, ending today', () => {
     expect(makeSheet(input())).toMatchObject({ from: '2026-10-23', to: TODAY, range: 7, name: 'Edwin' })
     expect(makeSheet(input({ range: 30 })).from).toBe('2026-09-30')
   })
 
-  it('names the parts of life and the needs that came up most, never from an intimacy answer', () => {
-    expect(makeSheet(input()).energy).toEqual({
-      areas: ['Work', 'Family', 'Friends and social'],
-      line: 'From 4 answers on 4 days. What I reached for most was feeling settled and doing well.',
-    })
+  it('starts with what the person wants to discuss, in their own words', () => {
+    expect(makeSheet(input()).discuss).toBe('I keep taking on extra work and I am tired all the time.')
   })
 
-  it('shows both sides of a reading the person said sounds like them', () => {
-    expect(makeSheet(input()).sides).toEqual([
-      { label: 'What sounded like me', text: 'You carry more than your share without being asked.' },
-      { label: 'The other side of it', text: 'When you never say no, your own work waits until the evening.' },
-    ])
-  })
-
-  it('lists only the steps that helped or made things harder, newest first, in the first person', () => {
-    expect(makeSheet(input()).tried).toEqual(['Tried “Ask one person for help”: it made things harder.', 'Tried “Say no to one extra shift”: it helped a little, and I felt a little lighter.'])
-  })
-
-  it('asks two open questions from what is still unresolved', () => {
-    expect(makeSheet(input()).talk).toEqual([
-      'Trying “Ask one person for help” made things harder. What got in the way?',
-      'A reading said “You plan in years, not weeks”, and I said it only partly fits. Which part doesn’t?',
-    ])
-  })
-
-  it('counts the good things and says what they were mostly about', () => {
-    expect(makeSheet(input()).good).toBe('I noted good things on 2 of these 7 days, most often about time with people.')
-    expect(makeSheet(input({ good: [] })).good).toBe('No good things noted in these days.')
-  })
-
-  it('leaves out whatever the person unticks, and still offers questions to talk through', () => {
-    const s = makeSheet(input({ parts: { patterns: false, steps: false, good: false, words: false } }))
-    expect(s).toMatchObject({ energy: null, sides: null, tried: null, good: null, words: null })
-    expect(s.talk).toEqual(['What would make the coming week feel a little lighter?', 'What would I most like this conversation to help me with?'])
-    const html = sheetHTML(s)
-    expect(html).not.toContain('Ask one person for help')
-    expect(html).not.toContain('Work')
-  })
-
-  it('brings in the person’s own words only when they turn them on, and only the ones they tick', () => {
-    expect(makeSheet(input({ picked: ['moment-1'] })).words).toBeNull()
-    const s = makeSheet(input({ parts: { ...DEFAULT_PARTS, words: true }, picked: ['moment-1', 'r-2', 'r-old'] }))
-    expect(s.words).toEqual([
+  it('brings in only the moments the person picked from those days', () => {
+    expect(makeSheet(input()).moments).toEqual([])
+    expect(makeSheet(input({ picked: ['moment-1', 'r-2', 'r-old'] })).moments).toEqual([
       { date: '2026-10-27', question: null, text: 'Told my manager I needed the evening off.' },
       { date: '2026-10-26', question: 'What did this week teach you about rest?', text: 'That I rest better when I plan it.' },
     ])
-    expect(sheetHTML(s)).not.toContain('Words nobody ticked')
   })
 
-  it('offers the moments and reflections of those days to pick from, newest first', () => {
-    expect(wordsChoices(written, '2026-10-23', TODAY).map((r) => r.id)).toEqual(['moment-1', 'r-2', 'r-3'])
+  it('says what they felt or needed, from what came up most, never from an intimacy answer', () => {
+    expect(makeSheet(input()).felt).toEqual(['Where my energy went: work, family, friends and social.', 'What I reached for most was feeling settled and doing well.'])
   })
 
-  it('writes one printable page with every word escaped', () => {
-    const s = makeSheet(input({ parts: { ...DEFAULT_PARTS, words: true }, written: [reflection('x', '2026-10-28', '<script>alert(1)</script> & more')], picked: ['x'] }))
+  it('adds a hard moment they made sense of in those days, in their words', () => {
+    const sense = reflection('sense-1', '2026-10-28', 'the extra shift', { source: 'sense', start: 'yes', question: 'I keep saying yes when I want to say no.' })
+    expect(makeSheet(input({ written: [...written, sense] })).felt[0]).toBe('I keep saying yes when I want to say no.')
+  })
+
+  it('lists what they tried and how it went, from the questions and from steps they kept', () => {
+    expect(makeSheet(input()).tried).toEqual([
+      'Tried “Ask for time before answering”: it helped.',
+      'Tried “Ask one person for help”: it made things harder.',
+      'Planned “Plan one hour of rest”: I haven’t managed it yet.',
+      'Tried “Say no to one extra shift”: it helped a little, and I felt a little lighter.',
+    ])
+  })
+
+  it('lists a step they chose and haven’t reported on yet, without saying how it went', () => {
+    const fresh = intention('i-4', '2026-10-29', 'Ask for a day to think before saying yes.')
+    expect(makeSheet(input({ intentions: [fresh] })).tried).toContain('Chose to try “Ask for a day to think before saying yes”: too soon to say how it went.')
+    expect(makeSheet(input({ intentions: [intention('i-5', '2026-09-01', 'Too long ago.')] })).tried.join(' ')).not.toContain('Too long ago')
+  })
+
+  it('offers questions to bring from what is unresolved, then one that suits who it’s for', () => {
+    expect(makeSheet(input()).bring).toEqual([
+      'Trying “Ask one person for help” made things harder. What got in the way?',
+      'A reading said “You plan in years, not weeks”, and I said it only partly fits. Which part doesn’t?',
+      'Feeling settled kept coming up. Where would I like more of it right now?',
+    ])
+    // A manager gets no personal readings or needs, only the practical.
+    expect(makeSheet(input({ for: 'manager' })).bring).toEqual(['Trying “Ask one person for help” made things harder. What got in the way?', 'What would make my work feel more manageable right now?'])
+    expect(makeSheet(input({ for: 'partner', history: { answers: [], skips: [] } as History, moves: [], checks: [] })).bring).toEqual(['What would help us both feel heard this week?'])
+  })
+
+  it('takes the person’s edits one line at a time, dropping empty lines', () => {
+    expect(linesOf('  First thing \n\n Second thing\n')).toEqual(['First thing', 'Second thing'])
+  })
+
+  it('prints the five sections as the person left them, numbered, with every word escaped', () => {
+    const s = { ...makeSheet(input({ picked: ['moment-1'] })), discuss: '<script>alert(1)</script> & more', bring: ['Can we change the rota?'] }
     const html = sheetHTML(s, { regular: 'data:font/ttf;base64,AA', bold: 'data:font/ttf;base64,BB' })
+    for (const title of SECTION_TITLES) expect(html).toContain(title)
     expect(html).toContain('&lt;script&gt;alert(1)&lt;/script&gt; &amp; more')
     expect(html).not.toContain('<script>')
-    expect(html).toContain('Where my energy went')
+    expect(html).toContain('Can we change the rota?')
+    expect(html).toContain('Told my manager I needed the evening off.')
     expect(html).toContain('data:font/ttf;base64,AA')
     expect(html).toContain('never a diagnosis')
-    // A font address that could break out of the page's style is left out.
     expect(sheetHTML(s, { regular: "x');}</style><script>alert(1)</script>" })).not.toContain('</style><script>')
+    expect(sheetHTML({ ...s, moments: [], tried: [] })).toContain(SHEET_EMPTY.moments)
   })
 
   it('speaks in the app’s own voice', () => {
-    const full = makeSheet(input({ parts: { ...DEFAULT_PARTS, words: true }, picked: ['moment-1'] }))
-    const bare = makeSheet(input({ parts: { patterns: false, steps: false, good: false, words: false } }))
     const lines = [
-      full.energy?.line ?? '',
-      ...(full.sides ?? []).map((x) => x.label),
-      ...(full.tried ?? []),
-      ...full.talk,
-      ...bare.talk,
-      full.good ?? '',
-      SHEET_FOOTER,
-      ...Object.values(BOX_TITLES),
+      ...BRIEF_FOR.flatMap((f) => [f.label, f.purpose, f.placeholder, briefTitle(f.id)]),
+      ...BRIEF_FOR.flatMap((f) => makeSheet(input({ for: f.id })).bring),
+      ...makeSheet(input()).felt,
+      ...makeSheet(input()).tried,
+      ...SECTION_TITLES,
       ...Object.values(SHEET_EMPTY),
-      ...[7, 14, 30].flatMap((r) => Object.values(sheetTitles(r as 7 | 14 | 30))),
+      SHEET_FOOTER,
     ]
     for (const line of lines) expect(voiceProblems(line), line).toEqual([])
   })
 
   it('speaks as the person, so a need for choosing is “choosing for myself”', () => {
     const own = { answers: [answer('2026-10-28', 'plans-asked-about', 'plans', { need: 'freedom' })], skips: [] } as History
-    const s = makeSheet(input({ history: own }))
-    expect(s.energy).toEqual({ areas: ['Myself'], line: 'From 1 answer on 1 day. What I reached for most was choosing for myself.' })
-    expect(s.talk).toContain('Choosing for myself kept coming up. Where would I like more of it right now?')
+    const s = makeSheet(input({ history: own, moves: [], checks: [] }))
+    expect(s.felt).toEqual(['Where my energy went: myself.', 'What I reached for most was choosing for myself.'])
+    expect(s.bring).toContain('Choosing for myself kept coming up. Where would I like more of it right now?')
+  })
+
+  it('offers the moments and reflections of those days to pick from, newest first', () => {
+    expect(wordsChoices(written, '2026-10-23', TODAY).map((r) => r.id)).toEqual(['moment-1', 'r-2', 'r-3'])
   })
 
   it('writes the span of days as the phone writes dates', () => {
@@ -201,24 +228,16 @@ describe('the conversation sheet', () => {
     expect(sheetDates({ from: '2026-10-23', to: TODAY })).toMatch(/^23\s?–\s?29 October 2026$/)
     expect(sheetDates({ from: '2026-09-30', to: TODAY })).toMatch(/^30 September\s?–\s?29 October 2026$/)
   })
-
-  it('names itself after the days it covers', () => {
-    expect(sheetTitles(7)).toEqual({ title: 'My last 7 days', sides: 'Both sides of my week' })
-    expect(sheetTitles(14)).toEqual({ title: 'My last 14 days', sides: 'Both sides of my last two weeks' })
-    expect(sheetTitles(30)).toEqual({ title: 'My last 30 days', sides: 'Both sides of my month' })
-  })
 })
 
-// Edwin: "Every user gets their first Conversation Sheet free… Preparing
-// conversation sheets across 14 and 30 days is part of The Persona Index Patron."
-describe('who can make which sheet', () => {
-  it('keeps the last 7 days open to everyone, gives one longer sheet free, then asks for Patron', () => {
-    expect(sheetGate(7, TODAY)).toBe('open')
-    expect(sheetGate(30, TODAY)).toBe('trial')
+// "Give them one complete brief free, so they can judge the actual result.
+// Charge for recurring preparation and deeper synthesis across their history."
+describe('who can make a brief', () => {
+  it('gives one complete brief free, then asks for Patron', () => {
+    expect(sheetGate(TODAY)).toBe('trial')
     noteFreeTry('sheet')
-    expect(sheetGate(14, TODAY)).toBe('patron')
-    expect(sheetGate(7, TODAY)).toBe('open')
+    expect(sheetGate(TODAY)).toBe('patron')
     savePatron({ plan: 'monthly', until: '2026-11-28' })
-    expect(sheetGate(30, TODAY)).toBe('open')
+    expect(sheetGate(TODAY)).toBe('open')
   })
 })
