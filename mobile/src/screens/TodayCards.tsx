@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { Pressable, View } from 'react-native'
 import { tryAgain } from '@shared/growthJourney'
 import { startMove } from '@shared/moves'
-import { checkIntention, type Intention, type IntentionCheck, type ReflectionArea } from '@shared/notebook'
+import { checkIntention, intentions, reflections, type Intention, type IntentionCheck, type ReflectionArea } from '@shared/notebook'
 import { dateOf } from '@shared/locale'
 import { loadPrefs } from '@shared/prefs'
 import { loadHistory } from '@shared/profile'
@@ -15,6 +15,7 @@ import { AREA_NAMES } from '@shared/reflect'
 import { load, loadJSON, saveJSON } from '@shared/storage'
 import { mirrorDay, mirrorName } from '@shared/mirrorDay'
 import { nextMirror, quietStep, type QuietStep } from '@shared/todayFocus'
+import { dismissWelcomeBack, welcomeBack, WELCOME_BACK, WELCOME_BACK_LINE } from '@shared/welcomeBack'
 import { lift, radius, useTheme } from '../theme'
 import { Button, Card, Chip, feel, RowLink, T } from '../ui/kit'
 import { Icon } from '../ui/Icon'
@@ -137,6 +138,54 @@ function StepCheckIn({ intention, today, onSaid }: { intention: Intention; today
         ))}
       </View>
     </>
+  )
+}
+
+// After a break (Edwin's brief, 2026-10-29): "Welcome back. Start with today,
+// or pick up what you were exploring." No missed days, nothing to catch up
+// on. Said once for each break (welcomeBack.ts).
+export function WelcomeBackCard({ today, onStart, onWrite }: { today: string; onStart?: () => void; onWrite: (prompt?: string) => void }) {
+  const [w, setW] = useState(() => welcomeBack(today, loadHistory(), reflections(), intentions()))
+  if (!w) return null
+  const done = () => {
+    dismissWelcomeBack(today)
+    setW(null)
+  }
+  const pickUp = w.pickUp
+  return (
+    <Card style={{ gap: 12 }}>
+      <View style={{ gap: 4 }}>
+        <T v="h2">{WELCOME_BACK}</T>
+        <T tone="text2">{WELCOME_BACK_LINE}</T>
+      </View>
+      {pickUp && (
+        <View style={{ gap: 4 }}>
+          <T v="eyebrow">{pickUp.label}</T>
+          <T v="quote">{`“${pickUp.text}”`}</T>
+        </View>
+      )}
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+        <Button
+          small
+          label="Start with today"
+          onPress={() => {
+            done()
+            onStart?.()
+          }}
+        />
+        {pickUp && (
+          <Button
+            small
+            kind="secondary"
+            label="Pick it up"
+            onPress={() => {
+              done()
+              onWrite(pickUp.prompt)
+            }}
+          />
+        )}
+      </View>
+    </Card>
   )
 }
 

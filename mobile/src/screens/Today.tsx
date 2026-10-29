@@ -19,7 +19,7 @@ import { Logo } from '../ui/Logo'
 import { Icon } from '../ui/Icon'
 import { KeepMoment } from './KeepMoment'
 import { HeavyCard } from './QuestionCard'
-import { MirrorCard, QuietStepCard, TodaysRead } from './TodayCards'
+import { MirrorCard, QuietStepCard, TodaysRead, WelcomeBackCard } from './TodayCards'
 import { STARTS, type SenseStart } from '@shared/makeSense'
 
 interface TodayProps {
@@ -86,6 +86,7 @@ export function Today({
   )
   const main = <MainCard today={date} hero={hero} memory={memory} journey={journey} link={link} tomorrow={tomorrow} onOpen={onOpen} onWrite={onWrite} />
   const step = <QuietStepCard today={date} />
+  const back = <WelcomeBackCard today={date} onStart={hero.action ? onOpen : undefined} onWrite={onWrite} />
   const moment = <NeedAMoment today={date} onWrite={onWrite} onSense={onSense} />
   const mirror = <MirrorCard today={date} onWrite={onWrite} onInsights={onInsights} onMirror={onMirror} />
   if (rail) {
@@ -94,6 +95,7 @@ export function Today({
         {header}
         <View style={{ flexDirection: 'row', gap: 24, alignItems: 'flex-start' }}>
           <View style={{ flex: 1, gap: 20 }}>
+            {back}
             {main}
             {step}
             {moment}
@@ -110,6 +112,7 @@ export function Today({
   return (
     <>
       {header}
+      {back}
       {main}
       {step}
       {moment}
