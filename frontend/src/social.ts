@@ -270,12 +270,32 @@ export const leaveTogether = (id: string) => call<void>(`/api/together/${encodeU
 // two friends share, once both opted in; a reach-out is one fixed phrase to
 // one friend, and the sender is never told whether it was seen.
 
-export type ShareKind = 'helped' | 'win'
+export type ShareKind = 'helped' | 'win' | 'reflection' | 'answer' | 'mirror'
 export type ThemeOption = { id: string; label: string }
-export type ShareView = { id: string; kind: ShareKind; theme: string; text: string; why?: string; try?: string; date: string }
-export type SentShareView = { id: string; kind: ShareKind; theme: string; text: string; why?: string; try?: string; date: string; to: string[] }
+// "What would feel helpful?" (Edwin, 2026-10-29): what the author would like back.
+export type ShareMode = 'share' | 'encourage' | 'celebrate' | 'experience' | 'talk'
+export type ShareAudience = 'people' | 'inner'
+// A private reply: a gentle opening, or a short message in one's own words.
+export type NoteKind = 'resonated' | 'talk' | 'similar' | 'encourage' | 'celebrate' | 'words'
+export type NoteView = { id: string; from: string; mine: boolean; kind: NoteKind; text?: string; date: string }
+export type SharedPerson = { id: string; name: string; notes: NoteView[] }
+export type ShareView = { id: string; from: FriendView; kind: ShareKind; theme: string; text: string; why?: string; try?: string; date: string; mode: ShareMode; replies: boolean; notes: NoteView[] }
+export type SentShareView = {
+  id: string
+  kind: ShareKind
+  theme: string
+  text: string
+  why?: string
+  try?: string
+  date: string
+  to: string[]
+  mode: ShareMode
+  replies: boolean
+  audience: ShareAudience
+  people: SharedPerson[]
+}
 export type SharesView = { themes: ThemeOption[]; received: ShareView[]; sent: SentShareView[] }
-export type NewShare = { kind: ShareKind; theme: string; text: string; why?: string; try?: string; to: string[] }
+export type NewShare = { kind: ShareKind; theme?: string; text: string; why?: string; try?: string; to: string[]; mode?: ShareMode; replies?: boolean; audience?: ShareAudience }
 
 export type CommonTag = { id: string; label: string; value: string; explore: string }
 export type CommonPair = { friend: FriendView; shared: string[]; headline: string; explore: string }
@@ -291,6 +311,10 @@ export const SHARE_TEXT_MAX = 280
 export const getShares = () => call<SharesView>('/api/shares')
 export const postShare = (s: NewShare) => call<{ id: string }>('/api/shares', json('POST', s))
 export const withdrawShare = (id: string) => call<void>(`/api/shares/${encodeURIComponent(id)}`, json('DELETE'))
+// A private reply in the thread between the author and one person; the author names whose thread.
+export const postNote = (shareId: string, n: { kind: NoteKind; text?: string; with?: string }) => call<{ id: string }>(`/api/shares/${encodeURIComponent(shareId)}/notes`, json('POST', n))
+// Ends one person's access to an item, quietly, with their thread.
+export const removeSharePerson = (shareId: string, friendId: string) => call<void>(`/api/shares/${encodeURIComponent(shareId)}/people/${encodeURIComponent(friendId)}`, json('DELETE'))
 export const getCommon = () => call<CommonView>('/api/common')
 export const putCommon = (tags: string[]) => call<void>('/api/common', json('PUT', { tags }))
 export const setCommonFriend = (id: string, on: boolean) => call<void>(`/api/common/friends/${encodeURIComponent(id)}`, json('PUT', { on }))

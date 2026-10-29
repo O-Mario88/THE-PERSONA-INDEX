@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmp"
 	"errors"
 	"log"
 	"net/http"
@@ -42,7 +43,20 @@ var ShareThemes = []Option{
 	{ID: "focus", Label: "Focus"},
 }
 
-var shareKinds = []string{"helped", "win"}
+// The kinds of item a person can share (Edwin, 2026-10-29): something that
+// helped, a win, an excerpt of a reflection, an answer, or part of a Mirror.
+var shareKinds = []string{"helped", "win", "reflection", "answer", "mirror"}
+
+// "What would feel helpful?": the author says what kind of response they
+// would like, so someone sharing something hard gets understanding rather
+// than advice.
+var shareModes = []string{"share", "encourage", "celebrate", "experience", "talk"}
+
+// Who an item was shared with, as the author chose it: particular people, or
+// their Inner Circle (resolved to people on the phone, which alone knows who
+// is in it). It lets the phone end access for someone it removes from the
+// Inner Circle.
+var shareAudiences = []string{"people", "inner"}
 
 // CommonTag is one thing two friends may find they share, with the words
 // shown when they do.
@@ -86,7 +100,7 @@ var ReachPhrases = map[string][]Option{
 
 const (
 	shareTextMin  = 10
-	shareTextMax  = 280
+	shareTextMax  = 500 // room for an excerpt of a reflection
 	shareNoteMax  = 160 // "Why it helped" and "Try it for yourself"
 	shareMaxTo    = 12
 	maxOpenShares = 20 // shared by one person and not withdrawn
@@ -107,15 +121,18 @@ var linkPattern = regexp.MustCompile(`(?i)(https?://|www\.|\b[a-z0-9-]+\.(com|or
 
 // Share is one shared insight as kept.
 type Share struct {
-	ID      string
-	From    string
-	Kind    string // helped | win
-	Theme   string
-	Text    string
-	Why     string
-	Try     string
-	Created time.Time
-	To      []string // account ids
+	ID       string
+	From     string
+	Kind     string // helped | win
+	Theme    string
+	Text     string
+	Why      string
+	Try      string
+	Created  time.Time
+	To       []string // account ids
+	Mode     string   // one of shareModes
+	Replies  bool     // whether replies are welcome
+	Audience string   // one of shareAudiences
 }
 
 // ReachOut is one fixed phrase from one friend to another.
@@ -144,38 +161,50 @@ type CommonTagSet struct {
 }
 
 type shareBody struct {
-	Kind  string   `json:"kind"`
-	Theme string   `json:"theme"`
-	Text  string   `json:"text"`
-	Why   string   `json:"why"`
-	Try   string   `json:"try"`
-	To    []string `json:"to"`
+	Kind     string   `json:"kind"`
+	Theme    string   `json:"theme"`
+	Text     string   `json:"text"`
+	Why      string   `json:"why"`
+	Try      string   `json:"try"`
+	To       []string `json:"to"`
+	Mode     string   `json:"mode"`
+	Replies  *bool    `json:"replies"`  // absent: welcome
+	Audience string   `json:"audience"` // absent: people
 }
 
-// ShareView is a shared insight as a friend sees it: "A perspective from
-// your circle", with no name (Edwin's mockup). Who it came from stays on the
-// server, for muting and Connect off.
+// ShareView is a shared item as one of its people sees it: with the name of
+// the friend who chose to share it with them (Edwin, 2026-10-29: something
+// they actively chose to share, never an extracted insight), what would feel
+// helpful, and their private thread with that friend.
 type ShareView struct {
-	ID    string `json:"id"`
-	Kind  string `json:"kind"`
-	Theme string `json:"theme"`
-	Text  string `json:"text"`
-	Why   string `json:"why,omitempty"`
-	Try   string `json:"try,omitempty"`
-	Date  string `json:"date"`
+	ID      string     `json:"id"`
+	From    FriendView `json:"from"`
+	Kind    string     `json:"kind"`
+	Theme   string     `json:"theme"`
+	Text    string     `json:"text"`
+	Why     string     `json:"why,omitempty"`
+	Try     string     `json:"try,omitempty"`
+	Date    string     `json:"date"`
+	Mode    string     `json:"mode"`
+	Replies bool       `json:"replies"`
+	Notes   []NoteView `json:"notes"`
 }
 
 // SentShareView is a shared insight as its sender sees it: with the names
 // of the friends it went to, so it is clear what is shared and with whom.
 type SentShareView struct {
-	ID    string   `json:"id"`
-	Kind  string   `json:"kind"`
-	Theme string   `json:"theme"`
-	Text  string   `json:"text"`
-	Why   string   `json:"why,omitempty"`
-	Try   string   `json:"try,omitempty"`
-	Date  string   `json:"date"`
-	To    []string `json:"to"`
+	ID       string         `json:"id"`
+	Kind     string         `json:"kind"`
+	Theme    string         `json:"theme"`
+	Text     string         `json:"text"`
+	Why      string         `json:"why,omitempty"`
+	Try      string         `json:"try,omitempty"`
+	Date     string         `json:"date"`
+	To       []string       `json:"to"`
+	Mode     string         `json:"mode"`
+	Replies  bool           `json:"replies"`
+	Audience string         `json:"audience"`
+	People   []SharedPerson `json:"people"` // each person it went to, with their thread
 }
 
 // SharesView is GET /api/shares.
@@ -283,8 +312,12 @@ func (s *Server) checkShare(acc Account, b shareBody) (Share, string) {
 	switch n := utf8.RuneCountInString(text); {
 	case !slices.Contains(shareKinds, b.Kind):
 		return Share{}, "unknown_kind"
-	case !slices.ContainsFunc(ShareThemes, func(o Option) bool { return o.ID == b.Theme }):
+	case b.Theme != "" && !slices.ContainsFunc(ShareThemes, func(o Option) bool { return o.ID == b.Theme }):
 		return Share{}, "unknown_theme"
+	case b.Mode != "" && !slices.Contains(shareModes, b.Mode):
+		return Share{}, "unknown_mode"
+	case b.Audience != "" && !slices.Contains(shareAudiences, b.Audience):
+		return Share{}, "unknown_audience"
 	case n < shareTextMin || n > shareTextMax:
 		return Share{}, "text_length"
 	case utf8.RuneCountInString(why) > shareNoteMax || utf8.RuneCountInString(try) > shareNoteMax:
@@ -297,7 +330,8 @@ func (s *Server) checkShare(acc Account, b shareBody) (Share, string) {
 	if len(to) == 0 || len(to) > shareMaxTo {
 		return Share{}, "recipients"
 	}
-	return Share{ID: randomID(), From: acc.ID, Kind: b.Kind, Theme: b.Theme, Text: text, Why: why, Try: try, Created: s.clock().UTC(), To: to}, ""
+	mode, audience, replies := cmp.Or(b.Mode, "share"), cmp.Or(b.Audience, "people"), b.Replies == nil || *b.Replies
+	return Share{ID: randomID(), From: acc.ID, Kind: b.Kind, Theme: b.Theme, Text: text, Why: why, Try: try, Created: s.clock().UTC(), To: to, Mode: mode, Replies: replies, Audience: audience}, ""
 }
 
 func (s *Server) GetShares(w http.ResponseWriter, r *http.Request) {
@@ -309,23 +343,29 @@ func (s *Server) GetShares(w http.ResponseWriter, r *http.Request) {
 	friends, err1 := s.social.Friends(ctx, acc.ID)
 	received, err2 := s.social.SharesTo(ctx, acc.ID)
 	sent, err3 := s.social.SharesFrom(ctx, acc.ID)
-	if err := errors.Join(err1, err2, err3); err != nil {
+	notes, err4 := s.notesFor(ctx, received, sent)
+	if err := errors.Join(err1, err2, err3, err4); err != nil {
 		log.Printf("shares: %v", err)
 		writeError(w, http.StatusServiceUnavailable, "unavailable")
 		return
 	}
 	out := SharesView{Themes: ShareThemes, Received: []ShareView{}, Sent: []SentShareView{}}
 	for _, sh := range received {
-		if _, ok := visibleFrom(acc, friends, sh.From); !ok {
+		f, ok := visibleFrom(acc, friends, sh.From)
+		if !ok {
 			continue
 		}
-		out.Received = append(out.Received, ShareView{ID: sh.ID, Kind: sh.Kind, Theme: sh.Theme, Text: sh.Text, Why: sh.Why, Try: sh.Try, Date: sh.Created.Format(dateLayout)})
+		thread := threadView(notes[sh.ID], acc.ID, acc.ID, names(acc, friends))
+		out.Received = append(out.Received, ShareView{ID: sh.ID, From: friendView(f, s.today()), Kind: sh.Kind, Theme: sh.Theme, Text: sh.Text, Why: sh.Why, Try: sh.Try,
+			Date: sh.Created.Format(dateLayout), Mode: sh.Mode, Replies: sh.Replies, Notes: thread})
 	}
 	for _, sh := range sent {
-		v := SentShareView{ID: sh.ID, Kind: sh.Kind, Theme: sh.Theme, Text: sh.Text, Why: sh.Why, Try: sh.Try, Date: sh.Created.Format(dateLayout), To: []string{}}
+		v := SentShareView{ID: sh.ID, Kind: sh.Kind, Theme: sh.Theme, Text: sh.Text, Why: sh.Why, Try: sh.Try, Date: sh.Created.Format(dateLayout), To: []string{},
+			Mode: sh.Mode, Replies: sh.Replies, Audience: sh.Audience, People: []SharedPerson{}}
 		for _, f := range friends {
 			if slices.Contains(sh.To, f.AccountID) {
 				v.To = append(v.To, f.Name)
+				v.People = append(v.People, SharedPerson{ID: f.AccountID, Name: f.Name, Notes: threadView(notes[sh.ID], f.AccountID, acc.ID, names(acc, friends))})
 			}
 		}
 		out.Sent = append(out.Sent, v)

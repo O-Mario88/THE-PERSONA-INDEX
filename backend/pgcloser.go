@@ -13,8 +13,8 @@ import (
 
 func (p *pgStore) PutShare(ctx context.Context, sh Share) error {
 	return pgx.BeginFunc(ctx, p.pool, func(tx pgx.Tx) error {
-		if _, err := tx.Exec(ctx, `INSERT INTO shares (id, sender, kind, theme, body, why, try_this, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-			sh.ID, sh.From, sh.Kind, sh.Theme, sh.Text, sh.Why, sh.Try, sh.Created); err != nil {
+		if _, err := tx.Exec(ctx, `INSERT INTO shares (id, sender, kind, theme, body, why, try_this, created_at, mode, replies, audience) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+			sh.ID, sh.From, sh.Kind, sh.Theme, sh.Text, sh.Why, sh.Try, sh.Created, sh.Mode, sh.Replies, sh.Audience); err != nil {
 			return fmt.Errorf("put share: %w", err)
 		}
 		if _, err := tx.Exec(ctx, `INSERT INTO share_recipients (share_id, recipient) SELECT $1, unnest($2::text[])`, sh.ID, sh.To); err != nil {
@@ -25,7 +25,8 @@ func (p *pgStore) PutShare(ctx context.Context, sh Share) error {
 }
 
 const shareColumns = `s.id, s.sender, s.kind, s.theme, s.body, s.why, s.try_this, s.created_at,
-	coalesce((SELECT array_agg(r.recipient ORDER BY r.recipient) FROM share_recipients r WHERE r.share_id = s.id), '{}')`
+	coalesce((SELECT array_agg(r.recipient ORDER BY r.recipient) FROM share_recipients r WHERE r.share_id = s.id), '{}'),
+	s.mode, s.replies, s.audience`
 
 func scanShares(rows pgx.Rows, err error) ([]Share, error) {
 	if err != nil {
@@ -33,7 +34,7 @@ func scanShares(rows pgx.Rows, err error) ([]Share, error) {
 	}
 	return pgx.CollectRows(rows, func(r pgx.CollectableRow) (Share, error) {
 		var sh Share
-		return sh, r.Scan(&sh.ID, &sh.From, &sh.Kind, &sh.Theme, &sh.Text, &sh.Why, &sh.Try, &sh.Created, &sh.To)
+		return sh, r.Scan(&sh.ID, &sh.From, &sh.Kind, &sh.Theme, &sh.Text, &sh.Why, &sh.Try, &sh.Created, &sh.To, &sh.Mode, &sh.Replies, &sh.Audience)
 	})
 }
 

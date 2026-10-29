@@ -289,6 +289,8 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/shares", s.GetShares)
 	mux.HandleFunc("POST /api/shares", s.PostShare)
 	mux.HandleFunc("DELETE /api/shares/{id}", s.WithdrawShare)
+	mux.HandleFunc("POST /api/shares/{id}/notes", s.PostShareNote)
+	mux.HandleFunc("DELETE /api/shares/{id}/people/{friendId}", s.RemoveSharePerson)
 	mux.HandleFunc("GET /api/common", s.GetCommon)
 
 	// Patron (patron.go) and walking alongside one person (pair.go).

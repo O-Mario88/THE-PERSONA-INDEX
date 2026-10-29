@@ -620,7 +620,7 @@ export function SupportCelebrate({ today }: { today?: string }) {
 // ---- the pickers (Closer.tsx, Friends.tsx) ----
 
 const SHARE_NOTE_MAX = 160
-const KIND_TITLES: Record<ShareKind, string> = { helped: 'Share what helped', win: 'Share a win' }
+const KIND_TITLES: Record<ShareKind, string> = { helped: 'Share what helped', win: 'Share a win', reflection: 'Share a reflection', answer: 'Share an answer', mirror: 'Share part of your Mirror' }
 
 export function ShareComposer({ kind, text: initial, onDone, onCancel }: { kind: ShareKind; text: string; onDone: () => void; onCancel: () => void }) {
   const friends = useFriends()

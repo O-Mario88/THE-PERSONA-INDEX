@@ -30,9 +30,9 @@ func TestSharedInsights(t *testing.T) {
 		if len(got.Received) != 1 || got.Received[0].Theme != "managing-stress" || !strings.HasPrefix(got.Received[0].Text, "Taking a short break") {
 			t.Fatalf("Kofi should see Ama's insight, got %+v", got.Received)
 		}
-		// "A perspective from your circle": the name is not sent.
-		if raw := send(t, s, "GET", "/api/shares", kofi.AccountToken, nil).Body.String(); strings.Contains(raw, "Ama") || strings.Contains(raw, ama.Account.ID) {
-			t.Fatalf("a received share must not say who sent it: %s", raw)
+		// Something Ama chose to share with Kofi carries her name (Edwin, 2026-10-29).
+		if from := decode[SharesView](t, send(t, s, "GET", "/api/shares", kofi.AccountToken, nil)).Received[0].From.Name; from != "Ama" {
+			t.Fatalf("a received share should say who chose to share it, got %q", from)
 		}
 		if n := len(decode[SharesView](t, send(t, s, "GET", "/api/shares", joel.AccountToken, nil)).Received); n != 0 {
 			t.Fatalf("Joel was not chosen, yet sees %d", n)
